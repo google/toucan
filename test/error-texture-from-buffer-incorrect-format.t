@@ -1,0 +1,11 @@
+Device* device = new Device();
+Window* window = new Window(device, 0, 0, 640, 480);
+auto tex = new sampled Texture1D<RGBA8unorm>(device, 1);
+auto buffer = new Buffer<float<4>[]>(device);
+auto data = buffer.MapWrite();
+data[0] = float<4>(1.0, 1.0, 1.0, 1.0);
+buffer.Unmap();
+CommandEncoder* encoder = new CommandEncoder(device);
+tex.CopyFromBuffer(encoder, buffer, 1);
+device.GetQueue().Submit(encoder.Finish());
+return 0.0;

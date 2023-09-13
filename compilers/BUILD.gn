@@ -1,0 +1,116 @@
+# Copyright 2023 The Toucan Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# import("third_party/dawn/scripts/dawn_features.gni")
+
+#action("get_llvm_libs") {
+#  script = "../tools/run-llvm-config"
+#  outputs = [
+#    "$target_gen_dir/llvm_libs.gni"
+#  ]
+#  args = [
+#    "third_party/llvm/llvm/out/$debug_or_release/bin/llvm-config '\$\{lib\}\ " + rebase_path("$root_build_dir/llvm_libs.gni", root_build_dir),
+#  ]
+#}
+
+import("llvm_libs.gni")
+
+llvm_lib_dirs = [ "../third_party/llvm/llvm/out/$debug_or_release/lib" ]
+if (is_win) {
+  dawn_needs_libs = []
+} else {
+  dawn_needs_libs = [
+    "curses",
+    "z",
+    "dl",
+    "pthread",
+  ]
+}
+
+executable("tj") {
+  include_dirs = [
+    "..",
+  ]
+  include_dirs += llvm_include_dirs
+  libs = llvm_libs
+  libs += dawn_needs_libs
+  lib_dirs = llvm_lib_dirs
+  if (is_win) {
+    libs += [
+      "gdi32.lib",
+      "user32.lib",
+    ]
+  }
+  if (is_linux) {
+    libs += [
+      "X11",
+      "X11-xcb",
+    ]
+    ldflags = [
+      "-Wl,-rpath=\$ORIGIN",
+      "-export-dynamic",
+    ]
+  }
+
+  sources = [ "tj.cc", ]
+  deps = [ "//api:api",
+           "//api:init_types",
+           "//ast:ast",
+           "//codegen:codegen",
+           "//parser:parser",
+           "//third_party/dawn/src/dawn:proc_shared",
+           "//third_party/dawn/src/dawn:cpp",
+           "//third_party/dawn/src/dawn/native:shared",
+           "//third_party/build/libjpeg-turbo",
+         ]
+
+  if (is_win) {
+    deps += [ "//third_party/getopt:getopt" ]
+    include_dirs += [ "../third_party/getopt" ]
+  }
+  #  public_defines = [
+  #    "__STDC_LIMIT_MACROS",
+  #    "__STDC_CONSTANT_MACROS",
+  #  ]
+  if (is_mac) {
+    frameworks = [
+      "AppKit.framework",
+      "Metal.framework",
+      "QuartzCore.framework",
+    ]
+  }
+}
+
+executable("tc") {
+  include_dirs = [
+    "..",
+  ]
+  include_dirs += llvm_include_dirs
+  libs = llvm_libs
+  lib_dirs = llvm_lib_dirs
+  libs += dawn_needs_libs
+
+  sources = [ "tc.cc", ]
+  deps = [
+    "//api:init_types",
+    "//ast:ast",
+    "//bindings:gen_bindings_sources",
+    "//codegen:codegen",
+    "//parser:parser",
+  ]
+  if (is_win) {
+    deps += [ "//third_party/getopt:getopt" ]
+    include_dirs += [ "../third_party/getopt" ]
+  }
+}

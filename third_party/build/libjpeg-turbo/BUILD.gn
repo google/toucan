@@ -1,0 +1,125 @@
+# Copyright 2023 The Toucan Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+source_set("libjpeg-turbo") {
+  libjpeg = "../../libjpeg-turbo"
+  include_dirs = [
+    ".",
+    "$libjpeg",
+  ]
+
+  if (is_wasm) {
+    cflags = [ "-Wno-shift-count-overflow" ]
+  }
+  sources = [
+    "$libjpeg/jaricom.c",
+    "$libjpeg/jcapimin.c",
+    "$libjpeg/jcarith.c",
+    "$libjpeg/jccoefct.c",
+    "$libjpeg/jccolor.c",
+    "$libjpeg/jcdctmgr.c",
+    "$libjpeg/jchuff.c",
+    "$libjpeg/jcicc.c",
+    "$libjpeg/jcinit.c",
+    "$libjpeg/jcmainct.c",
+    "$libjpeg/jcmarker.c",
+    "$libjpeg/jcmaster.c",
+    "$libjpeg/jcomapi.c",
+    "$libjpeg/jcparam.c",
+    "$libjpeg/jcphuff.c",
+    "$libjpeg/jcprepct.c",
+    "$libjpeg/jcsample.c",
+    "$libjpeg/jctrans.c",
+    "$libjpeg/jdapimin.c",
+    "$libjpeg/jdapistd.c",
+    "$libjpeg/jdarith.c",
+    "$libjpeg/jdatadst.c",
+    "$libjpeg/jdatasrc.c",
+    "$libjpeg/jdcoefct.c",
+    "$libjpeg/jdcolor.c",
+    "$libjpeg/jddctmgr.c",
+    "$libjpeg/jdhuff.c",
+    "$libjpeg/jdicc.c",
+    "$libjpeg/jdinput.c",
+    "$libjpeg/jdmainct.c",
+    "$libjpeg/jdmarker.c",
+    "$libjpeg/jdmaster.c",
+    "$libjpeg/jdmerge.c",
+    "$libjpeg/jdphuff.c",
+    "$libjpeg/jdpostct.c",
+    "$libjpeg/jdsample.c",
+    "$libjpeg/jdtrans.c",
+    "$libjpeg/jerror.c",
+    "$libjpeg/jfdctflt.c",
+    "$libjpeg/jfdctfst.c",
+    "$libjpeg/jfdctint.c",
+    "$libjpeg/jidctflt.c",
+    "$libjpeg/jidctfst.c",
+    "$libjpeg/jidctint.c",
+    "$libjpeg/jidctred.c",
+    "$libjpeg/jquant1.c",
+    "$libjpeg/jquant2.c",
+    "$libjpeg/jutils.c",
+    "$libjpeg/jmemmgr.c",
+    "$libjpeg/jmemnobs.c",
+  ]
+  if (false && current_cpu == "x64") {
+    sources += [
+      "$libjpeg/simd/x86_64/jccolext-avx2.asm",
+      "$libjpeg/simd/x86_64/jccolext-sse2.asm",
+      "$libjpeg/simd/x86_64/jccolor-avx2.asm",
+      "$libjpeg/simd/x86_64/jccolor-sse2.asm",
+      "$libjpeg/simd/x86_64/jcgray-avx2.asm",
+      "$libjpeg/simd/x86_64/jcgray-sse2.asm",
+      "$libjpeg/simd/x86_64/jcgryext-avx2.asm",
+      "$libjpeg/simd/x86_64/jcgryext-sse2.asm",
+      "$libjpeg/simd/x86_64/jchuff-sse2.asm",
+      "$libjpeg/simd/x86_64/jcphuff-sse2.asm",
+      "$libjpeg/simd/x86_64/jcsample-avx2.asm",
+      "$libjpeg/simd/x86_64/jcsample-sse2.asm",
+      "$libjpeg/simd/x86_64/jdcolext-avx2.asm",
+      "$libjpeg/simd/x86_64/jdcolext-sse2.asm",
+      "$libjpeg/simd/x86_64/jdcolor-avx2.asm",
+      "$libjpeg/simd/x86_64/jdcolor-sse2.asm",
+      "$libjpeg/simd/x86_64/jdmerge-avx2.asm",
+      "$libjpeg/simd/x86_64/jdmerge-sse2.asm",
+      "$libjpeg/simd/x86_64/jdmrgext-avx2.asm",
+      "$libjpeg/simd/x86_64/jdmrgext-sse2.asm",
+      "$libjpeg/simd/x86_64/jdsample-avx2.asm",
+      "$libjpeg/simd/x86_64/jdsample-sse2.asm",
+      "$libjpeg/simd/x86_64/jfdctflt-sse.asm",
+      "$libjpeg/simd/x86_64/jfdctfst-sse2.asm",
+      "$libjpeg/simd/x86_64/jfdctint-avx2.asm",
+      "$libjpeg/simd/x86_64/jfdctint-sse2.asm",
+      "$libjpeg/simd/x86_64/jidctflt-sse2.asm",
+      "$libjpeg/simd/x86_64/jidctfst-sse2.asm",
+      "$libjpeg/simd/x86_64/jidctint-avx2.asm",
+      "$libjpeg/simd/x86_64/jidctint-sse2.asm",
+      "$libjpeg/simd/x86_64/jidctred-sse2.asm",
+      "$libjpeg/simd/x86_64/jquantf-sse2.asm",
+      "$libjpeg/simd/x86_64/jquanti-avx2.asm",
+      "$libjpeg/simd/x86_64/jquanti-sse2.asm",
+      "$libjpeg/simd/x86_64/jsimd.c",
+      "$libjpeg/simd/x86_64/jsimdcpu.asm",
+    ]
+  } else if (current_cpu == "i386") {
+    sources += [ "$libjpeg/simd/i386/jsimd.c" ]
+  } else if (current_cpu == "arm32") {
+    sources += [ "$libjpeg/simd/arm/aarch32/jsimd.c" ]
+  } else if (current_cpu == "arm64") {
+    sources += [ "$libjpeg/simd/arm/aarch64/jsimd.c" ]
+  } else {
+    sources += [ "$libjpeg/jsimd_none.c" ]
+  }
+}

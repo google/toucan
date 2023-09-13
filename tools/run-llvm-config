@@ -1,0 +1,33 @@
+#!/usr/bin/python3
+#
+# Invokes llvm-config, and massages the result into a list of libs usable by GN.
+# argv[1] is the path to the llvm-config binary.
+# argv[2] is the output file (llvm_libs.gni)
+#
+# [
+#   "Foo<libsuffix>",
+#   "Bar<libsuffix>",
+# ]
+
+import io
+import sys
+import subprocess
+
+llvm_config = sys.argv[1]
+suffix = '${lib}'
+result = sys.argv[2]
+
+with open(result, 'w') as output:
+  output.write('if (is_win) {\n')
+  output.write('  lib = ".lib"\n')
+  output.write('} else {\n')
+  output.write('  lib = ""\n')
+  output.write('}\n\n')
+
+  with subprocess.Popen([llvm_config, "--libs", "engine", "mcjit", "x86codegen"], stdout=subprocess.PIPE) as input:
+
+    output.write('llvm_libs = [\n')
+    for line in io.TextIOWrapper(input.stdout, encoding="utf-8"):
+      for lib in line.split():
+        output.write('  "' + lib[2:] + suffix + '",\n')
+    output.write(']\n')

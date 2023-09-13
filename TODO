@@ -1,0 +1,103 @@
+- rename 'auto' -> 'let'
+- implement cpu-side intrinsics (e.g., sin, cos, etc on vectors)
+- port to ARM
+- port to Android
+- implement window resize event
+- implement Window.GetWidth() and Window.GetHeight()
+- implement raw ptr optimization (or explicit raw ptrs?)
+- implement include
+- implement foreach
+- implement multiple inputs to vertex shader
+- implement strings
+- implement System.Log()
+- get rid of main return value
+- implement Math.inverse() on CPU side
+- implement bounds checking
+- implement null ptr checking
+- implement scoped enums
+- use O1 optimization in TC
+- add gtest support
+- convert many tests to unit tests
+- implement Math fns, e.g. dot()
+- implement parsing of a method call without .
+- finish storage textures
+- refactor tc & tj
+- change length attribute to builtin function
+- fix LLVM codegen of chained array access
+- implement "constant" keyword
+- remove the need to "prime" the Utils methods
+- implement -> operator
+- validate return values in semantic pass
+- runtime check on SetData that data.length matches Buffer length
+- implement "using" of a class (for static methods)
+- implement range checking of integer types in constant folding
+- clean up load handling in parser, semantic pass
+  - Load should actually load, and never called on a stack member
+- don't load the "this" pointer by default; it might get removed?
+- constify all Visitor arguments and Accept() functions?
+- all pointers are implicitly readonly in shader code?
+- autogenerate actual SPIR-V functions for pass-through methods? e.g., MapRead()
+- use static class initializers in the .h (class.num_fields_, e.g.)
+- remove AutoType in favour of parse-time checking?
+- ensure index/vertex/uniform/storage qualifiers are only applied to Buffer
+- template bind groups by class?
+- decide on Vector vs List naming: VarVector? or VarList?
+- implement "Is<>" and "As<>"
+- write shader validation pass
+ - check bind group contents: non-empty (to satisfy WGSL)
+ - all classes other than bind groups must be POD
+ - no virtual functions
+ - no allocation
+ - no pointers other than Buffer, Texture*, TextureView*
+ - no conditional assignment to pointer variables
+- Native function registry
+- refactor UnresolvedStaticMethodCall and UnresolvedMethodCall
+- convert bindings generator from C to C++
+- texture formats
+- prevent calls into null via native methods in api.gg that don't exist
+- implement long, ulong
+- implement readonly, writeonly, readwrite
+- Make ClassTemplate take a vector of TemplateTypes, not just Type*
+  - or maybe just a vector of std::string?
+- do parameter translation on API entry, exit
+  - create wrapper objects in API constructors, creators
+- finish destructors
+- finish ptr impls
+- implement narrowing class casts
+- call field initializers
+- check for uninitialized load in locals
+- use shared_ptr in scope->method?  (just in case the parser blows up before
+  the method parse completes)
+- clean up scope stuff:
+  - make scopes optional, and remove all strings from AST?
+- Var's outside of VarVectors and stmts probably leaking (e.g., classes, methods)
+- better error message for failed method match
+- integrate all loads & stores into 2 opcodes w/size field?
+-----
+- rip all strings out of types
+ - use ptrs to symbols only?
+ - use indices into symbols only?
+ - use indices into string table only?  ***
+ - put strings only in symbol table, pointing into type table
+   - con:  hard to get method names when doing "pretty" code gen
+- refactor type resolution in semantic pass?
+----
+- remove ClassName
+x remove TypeExpr
+x make smart pointers non-intrusive (allocate control block separately from object)
+  x remove structs in favour of classes
+x llvm prob:  if I disable lazy compilation, native methods don't work
+              if I don't, WIN32 gives invalid results due to lack of SSE prot
+  x #ifdef'ed WIN32 for now
+x finish vtables
+x finish enums
+x add "debug output" flag to code gen (for function->dump())
+x move benchmarks to bench dir; make tests fast
+x fix stack frame layout for local vars
+x update GVM:  implement array access, classes, field access, methods, vtable
+x move all codegen into another directory?
+x remove offset from CodeGenARB?
+x clean up native bindings:  list of functions should be generated from api.gg
+  x put this in the other bindings generation code
+x do node -> type resolution in a virtual func, or visitor
+x do constant folding in a virtual func, or visitor

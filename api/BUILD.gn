@@ -1,0 +1,79 @@
+# Copyright 2023 The Toucan Authors
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     https://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+action("generate_bindings") {
+  if (current_toolchain != host_toolchain) {
+    gen_bindings = "//bindings:gen_bindings($host_toolchain)"
+  } else {
+    gen_bindings = "//bindings:gen_bindings"
+  }
+  deps = [ gen_bindings ]
+  script = "../tools/run.py"
+  sources = [ "api.t" ]
+  outputs = [ 
+    "$target_gen_dir/init_types.cc",
+    "$target_gen_dir/api.h",
+  ]
+
+  gen_bindings_executable =
+    get_label_info(gen_bindings, "root_out_dir") + "/" +
+    get_label_info(gen_bindings, "name")
+
+  args = [
+    "./" + rebase_path(gen_bindings_executable, root_build_dir),
+    "-o", rebase_path(target_gen_dir, root_build_dir) + "/init_types.cc",
+    "-h", rebase_path(target_gen_dir, root_build_dir) + "/api.h",
+  ] + rebase_path(sources, root_build_dir)
+}
+
+source_set("api") {
+  deps = [
+    ":generate_bindings",
+  ]
+  if (!is_wasm) {
+    deps += [
+      "//third_party/dawn/src/dawn:proc_static",
+      "//third_party/dawn/src/dawn/native:headers",
+    ]
+  }
+  sources = [
+    "api_dawn.cc",
+    "api_image_codecs.cc",
+  ]
+  if (is_win) {
+    sources += [ "api_win.cc" ]
+  }
+  if (is_linux) {
+    sources += [ "api_x11.cc" ]
+    deps += [ "//third_party/Vulkan-Headers:vulkan_headers" ]
+  }
+  if (is_mac) {
+    sources += [ "api_mac.mm" ]
+  }
+  if (is_wasm) {
+    sources += [ "api_wasm.cc" ]
+  }
+  include_dirs = [
+    "..",
+    target_gen_dir,
+    "../third_party/libjpeg-turbo",
+    "../third_party/build/libjpeg-turbo",
+  ]
+}
+
+source_set("init_types") {
+  deps = [ ":generate_bindings" ]
+  include_dirs = [ ".." ]
+  sources = [ "$target_gen_dir/init_types.cc" ]
+}
