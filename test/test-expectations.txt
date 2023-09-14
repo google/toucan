@@ -226,8 +226,6 @@ test/static-method-with-args.t
 result is 6.000000
 test/static-method.t
 result is -1234.000000
-test/stupidest-cast-ever.t
-result is 69.000000
 test/swizzle-store.t
 result is 432.000000
 test/templated-class-on-primitive-type.t
@@ -309,3 +307,5 @@ test/workgroup-size.t
 7: workgroup size is not an integer constant
 8: non-compute shaders do not require a workgroup size
 9: non-compute shaders do not require a workgroup size
+test/worst-cast-ever.t
+result is 69.000000
