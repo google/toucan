@@ -21,7 +21,7 @@ deps = {
   "third_party/abseil-cpp"             : "https://chromium.googlesource.com/chromium/src/third_party/abseil-cpp@bc3ab29356a081d0b5dd4ac55e30f4b45d8794cc",
   "third_party/llvm" : "https://github.com/llvm/llvm-project@e37fc3cc3915196fa6d3bc3df27d7683857bbec5",
   "third_party/dawn" : "https://dawn.googlesource.com/dawn.git@f26b1269bdc7a450c02aa7d198028d2501fe3678",
-  "third_party/jinja2" : "https://chromium.googlesource.com/chromium/src/third_party/jinja2@b41863e42637544c2941b574c7877d3e1f663e25",
+  "third_party/jinja2" : "https://chromium.googlesource.com/chromium/src/third_party/jinja2@515dd10de9bf63040045902a4a310d2ba25213a0",
   "third_party/libjpeg-turbo" : "https://github.com/libjpeg-turbo/libjpeg-turbo@3b19db4e6e7493a748369974819b4c5fa84c7614",
   "third_party/markupsafe": "https://chromium.googlesource.com/chromium/src/third_party/markupsafe@8f45f5cfa0009d2a70589bcda0349b8cb2b72783",
   "third_party/opengl-registry" : "https://github.com/KhronosGroup/OpenGL-Registry@eae1d6dde1e283f6fdf803274a2484007e592599",
