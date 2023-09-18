@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+copy("jversion") {
+  sources = [ "../../libjpeg-turbo/jversion.h.in" ]
+  outputs = [ "$target_gen_dir/jversion.h" ]
+}
+
 source_set("libjpeg-turbo") {
   libjpeg = "../../libjpeg-turbo"
   include_dirs = [
     ".",
     "$libjpeg",
+    "$target_gen_dir",
   ]
 
   if (is_wasm) {
