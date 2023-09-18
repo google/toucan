@@ -34,7 +34,6 @@ executable("gen_bindings") {
   ]
 
   if (is_win) {
-    deps += [ "../third_party/getopt:getopt" ]
     include_dirs += [ "../third_party/getopt" ]
   }
 }

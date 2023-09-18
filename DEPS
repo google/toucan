@@ -19,6 +19,7 @@ vars = {
 deps = {
   "buildtools"                            : "https://chromium.googlesource.com/chromium/buildtools.git@505de88083136eefd056e5ee4ca0f01fe9b33de8",
   "third_party/abseil-cpp"             : "https://chromium.googlesource.com/chromium/src/third_party/abseil-cpp@bc3ab29356a081d0b5dd4ac55e30f4b45d8794cc",
+  "third_party/getopt"                 : "https://github.com/skeeto/getopt@4e618ef782dc80b2cf0307ea74b68e6a62b025de",
   "third_party/llvm" : "https://github.com/llvm/llvm-project@e37fc3cc3915196fa6d3bc3df27d7683857bbec5",
   "third_party/dawn" : "https://dawn.googlesource.com/dawn.git@f26b1269bdc7a450c02aa7d198028d2501fe3678",
   "third_party/jinja2" : "https://chromium.googlesource.com/chromium/src/third_party/jinja2@515dd10de9bf63040045902a4a310d2ba25213a0",

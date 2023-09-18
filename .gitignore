@@ -6,6 +6,7 @@ third_party/abseil-cpp
 third_party/binaryen
 third_party/dawn
 third_party/emscripten
+third_party/getopt
 third_party/home-cube
 third_party/jinja2
 third_party/libjpeg-turbo

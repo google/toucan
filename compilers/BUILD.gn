@@ -76,7 +76,6 @@ executable("tj") {
          ]
 
   if (is_win) {
-    deps += [ "//third_party/getopt:getopt" ]
     include_dirs += [ "../third_party/getopt" ]
   }
   #  public_defines = [
@@ -110,7 +109,6 @@ executable("tc") {
     "//parser:parser",
   ]
   if (is_win) {
-    deps += [ "//third_party/getopt:getopt" ]
     include_dirs += [ "../third_party/getopt" ]
   }
 }
