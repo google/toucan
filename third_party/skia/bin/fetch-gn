@@ -18,7 +18,7 @@ if sys.version_info[0] < 3:
 else:
   from urllib.request import urlopen
 
-os.chdir(os.path.join(os.path.dirname(__file__), os.pardir))
+os.chdir(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
 
 gnzip = os.path.join(tempfile.mkdtemp(), 'gn.zip')
 with open(gnzip, 'wb') as f:
