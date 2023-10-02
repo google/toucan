@@ -16,6 +16,7 @@
 #define _LEXER_H
 extern int  g_lineno;
 extern void yyerror(const char* str);
+extern FILE* IncludeFile(const char* filename);
 namespace Toucan {
 class Arg;
 class ArgList;

@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <sys/stat.h>
 
 #include "ast/ast.h"
@@ -35,6 +36,7 @@ static SymbolTable* symbols_;
 static TypeTable* types_;
 static std::string includePath_;
 static Stmts** rootStmts_;
+static std::unordered_set<std::string> includedFiles_;
 
 extern int yylex();
 extern int yylex_destroy();
@@ -573,6 +575,26 @@ static Expr* InlineFile(const char* filename) {
   fread(buffer.get(), size, 1, f);
   Type* type = types_->GetArrayType(types_->GetUByte(), 0, MemoryLayout::Default);
   return Make<Data>(type, std::move(buffer), size);
+}
+
+FILE* IncludeFile(const char* filename) {
+  struct stat statbuf;
+  std::string path = !includePath_.empty() ? includePath_ + "/" + filename
+                                           : filename;
+  if (includedFiles_.find(path) != includedFiles_.end()) {
+    return nullptr;
+  }
+  if (stat(path.c_str(), &statbuf) != 0) {
+    yyerrorf("file \"%s\" not found", filename);
+    return nullptr;
+  }
+  FILE* f = fopen(path.c_str(), "r");
+  if (!f) {
+    yyerrorf("file \"%s\" could not be opened for reading", filename);
+    return nullptr;
+  }
+  includedFiles_.insert(path);
+  return f;
 }
 
 static Expr* ThisExpr() {

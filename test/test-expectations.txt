@@ -148,6 +148,10 @@ test/inc-dec-float.t
 result is 6.000000
 test/inc-dec-short.t
 result is 6.000000
+test/include-twice.t
+result is 6.000000
+test/include.t
+result is 6.000000
 test/index-buffer.t
 result is 0.000000
 test/indexed-bracketed-expr.t

@@ -59,6 +59,8 @@ ALPHA           [a-zA-Z_]
 ALPHANUM        [a-zA-Z0-9_]
 EXPONENT        ([Ee]("-"|"+")?[0-9]+)
 
+%x include
+
 %%
 
 ([0-9]+"."[0-9]*|[0-9]*"."[0-9]+){EXPONENT}? { yylval.f = std::strtof(yytext, nullptr); return T_FLOAT_LITERAL; }
@@ -115,6 +117,7 @@ readwrite { return T_READWRITE; }
 coherent { return T_COHERENT; }
 using   { return T_USING; }
 inline  { return T_INLINE; }
+include BEGIN(include);
 
 int     { return T_INT; }
 uint    { return T_UINT; }
@@ -174,5 +177,21 @@ half    { return T_HALF; }
 ::              { return T_COLONCOLON; }
 
 .               { return yytext[0]; }
+
+<include>[ \t\n]+  /* eat the whitespace */
+<include>[^ \t\n]+ {
+    std::string filename(yytext + 1, strlen(yytext) - 2);
+    FILE* f = IncludeFile(filename.c_str());
+    if (f) {
+        yyin = f;
+        yypush_buffer_state(yy_create_buffer(yyin, YY_BUF_SIZE));
+    }
+    BEGIN(INITIAL);
+}
+
+<<EOF>> {
+    yypop_buffer_state();
+    if (!YY_CURRENT_BUFFER) yyterminate();
+}
 
 %%
