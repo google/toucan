@@ -1,0 +1,32 @@
+class Utils {
+  static float dot(float<2> v1, float<2> v2) {
+    float<2> r = v1 * v2;
+    return r.x + r.y;
+  }
+  static float dot(float<3> v1, float<3> v2) {
+    float<3> r = v1 * v2;
+    return r.x + r.y + r.z;
+  }
+  static float dot(float<4> v1, float<4> v2) {
+    float<4> r = v1 * v2;
+    return r.x + r.y + r.z + r.w;
+  }
+  static float length(float<2> v) {
+    return Math.sqrt(Utils.dot(v, v));
+  }
+  static float length(float<3> v) {
+    return Math.sqrt(Utils.dot(v, v));
+  }
+  static float<4> makeFloat4(float<2> v) {
+    return float<4>(v.x, v.y, 0.0, 1.0);
+  }
+  static float<4> makeFloat4(float<3> v) {
+    return float<4>(v.x, v.y, v.z, 1.0);
+  }
+  static float<2> makeVector(float x, float y, float z, float<2> placeholder) {
+    return float<2>(x, y);
+  }
+  static float<3> makeVector(float x, float y, float z, float<3> placeholder) {
+    return float<3>(x, y, z);
+  }
+}

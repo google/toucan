@@ -1,4 +1,5 @@
 using Vector = float<2>;
+
 class Utils;
 
 int width =  10;

@@ -1,133 +1,11 @@
+include "cube.t"
+include "quaternion.t"
+include "transform.t"
+
 class Vertex {
   Vertex(float<3> p, float<3> n) { position = p; normal = n; }
   float<3> position;
   float<3> normal;
-}
-
-class Utils {
-  static float dot(float<4> v1, float<4> v2) {
-    float<4> r = v1 * v2;
-    return r.x + r.y + r.z + r.w;
-  }
-}
-
-class Quaternion {
-  Quaternion(float x, float y, float z, float w) { q = float<4>(x, y, z, w); }
-  Quaternion(float<4> v) { q = v; }
-  Quaternion(float<3> axis, float angle) {
-    float<3> scaledAxis = axis * Math.sin(angle * 0.5);
-
-    q.x = scaledAxis.x;
-    q.y = scaledAxis.y;
-    q.z = scaledAxis.z;
-    q.w = Math.cos(angle * 0.5);
-  }
-  float len() { return Math.sqrt(Utils.dot(q, q)); }
-  void normalize() { q = q / this.len(); }
-  Quaternion mul(Quaternion other) {
-    float<4> p = other.q;
-    Quaternion r;
-
-    r.q.x = p.w * q.x + p.x * q.w + p.y * q.z - p.z * q.y;
-    r.q.y = p.w * q.y + p.y * q.w + p.z * q.x - p.x * q.z;
-    r.q.z = p.w * q.z + p.z * q.w + p.x * q.y - p.y * q.x;
-    r.q.w = p.w * q.w - p.x * q.x - p.y * q.y - p.z * q.z;
-
-    return r;
-  }
-  float<4,4> toMatrix() {
-    float x = q.x;
-    float y = q.y;
-    float z = q.z;
-    float w = q.w;
-    return float<4,4>(float<4>(1.0-2.0*(y*y+z*z),     2.0*(x*y+z*w),     2.0*(x*z-y*w), 0.0),
-                      float<4>(    2.0*(x*y-z*w), 1.0-2.0*(x*x+z*z),     2.0*(y*z+x*w), 0.0),
-                      float<4>(    2.0*(x*z+y*w),     2.0*(y*z-x*w), 1.0-2.0*(x*x+y*y), 0.0),
-                      float<4>(              0.0,               0.0,               0.0, 1.0));
-  }
-  float<4> q;
-}
-
-class Transform {
-  static float<4,4> identity() {
-    return float<4,4>(float<4>(1.0, 0.0, 0.0, 0.0),
-                      float<4>(0.0, 1.0, 0.0, 0.0),
-                      float<4>(0.0, 0.0, 1.0, 0.0),
-                      float<4>(0.0, 0.0, 0.0, 1.0));
-  }
-  static float<4,4> scale(float x, float y, float z) {
-    return float<4,4>(float<4>(  x, 0.0, 0.0, 0.0),
-                      float<4>(0.0,   y, 0.0, 0.0),
-                      float<4>(0.0, 0.0,   z, 0.0),
-                      float<4>(0.0, 0.0, 0.0, 1.0));
-  }
-  static float<4,4> translate(float x, float y, float z) {
-    return float<4,4>(float<4>(1.0, 0.0, 0.0, 0.0),
-                      float<4>(0.0, 1.0, 0.0, 0.0),
-                      float<4>(0.0, 0.0, 1.0, 0.0),
-                      float<4>(  x,   y,   z, 1.0));
-  }
-  static float<4,4> rotate(float<3> axis, float angle) {
-    Quaternion q = Quaternion(axis, angle);
-    return q.toMatrix();
-  }
-  static float<4,4> projection(float n, float f, float l, float r, float b, float t) {
-    return float<4,4>(
-      float<4>(2.0 * n / (r - l), 0.0, 0.0, 0.0),
-      float<4>(0.0, 2.0 * n / (t - b), 0.0, 0.0),
-      float<4>((r + l) / (r - l), (t + b) / (t - b), -(f + n) / (f - n), -1.0),
-      float<4>(0.0, 0.0, -2.0 * f * n / (f - n), 0.0));
-  }
-  static float<4,4> swapRows(float<4,4> m, int i, int j) {
-    float tmp;
-
-    for (int k = 0; k < 4; ++k) {
-      tmp = m[k][i];
-      m[k][i] = m[k][j];
-      m[k][j] = tmp;
-    }
-    return m;
-  }
-  static float<4,4> invert(float<4,4> matrix) {
-    float<4,4> a = matrix;
-    float<4,4> b = Transform.identity();
-
-    int  i, j, i1, k;
-
-    for (j = 0; j < 4; ++j) {
-      i1 = j;
-      for (i = j + 1; i < 4; ++i)
-        if (Math.abs(a[j][i]) > Math.abs(a[j][i1]))
-          i1 = i;
-
-      if (i1 != j) {
-        a = Transform.swapRows(a, i1, j);
-        b = Transform.swapRows(b, i1, j);
-      }
-
-      if (a[j][j] == 0.0) {
-        return b;
-      }
-
-      float s = 1.0 / a[j][j];
-
-      for (i = 0; i < 4; ++i) {
-        b[i][j] *= s;
-        a[i][j] *= s;
-      }
-
-      for (i = 0; i < 4; ++i) {
-        if (i != j) {
-          float t = a[j][i];
-          for (k = 0; k < 4; ++k) {
-            b[k][i] -= t * b[k][j];
-            a[k][i] -= t * a[k][j];
-          }
-        }
-      }
-    }
-    return b;
-  }
 }
 
 using Format = RGBA8unorm;
@@ -147,8 +25,7 @@ class Loader {
 
 Device* device = new Device();
 
-auto sizer = new ImageDecoder<Format>(inline("third_party/home-cube/right.jpg"));
-auto texture = new sampled Texture2D<RGBA8unorm>(device, sizer.Width(), sizer.Height(), 6);
+auto texture = new sampled Texture2D<RGBA8unorm>(device, 2176, 2176, 6);
 Loader.Load(device, inline("third_party/home-cube/right.jpg"), texture, 0);
 Loader.Load(device, inline("third_party/home-cube/left.jpg"), texture, 1);
 Loader.Load(device, inline("third_party/home-cube/top.jpg"), texture, 2);
@@ -158,53 +35,6 @@ Loader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 
 Window* window = new Window(device, 0, 0, 1024, 1024);
 SwapChain* swapChain = new SwapChain(window);
-
-auto cubeVerts = float<3>[24](
-  // Right face
-  float<3>( 1.0, -1.0, -1.0),
-  float<3>( 1.0, -1.0,  1.0),
-  float<3>( 1.0,  1.0,  1.0),
-  float<3>( 1.0,  1.0, -1.0),
-
-  // Left face
-  float<3>(-1.0, -1.0, -1.0),
-  float<3>(-1.0,  1.0, -1.0),
-  float<3>(-1.0,  1.0,  1.0),
-  float<3>(-1.0, -1.0,  1.0),
-
-  // Bottom face
-  float<3>(-1.0, -1.0, -1.0),
-  float<3>( 1.0, -1.0, -1.0),
-  float<3>( 1.0, -1.0,  1.0),
-  float<3>(-1.0, -1.0,  1.0),
-
-  // Top face
-  float<3>(-1.0,  1.0, -1.0),
-  float<3>(-1.0,  1.0,  1.0),
-  float<3>( 1.0,  1.0,  1.0),
-  float<3>( 1.0,  1.0, -1.0),
-
-  // Front face
-  float<3>(-1.0, -1.0, -1.0),
-  float<3>( 1.0, -1.0, -1.0),
-  float<3>( 1.0,  1.0, -1.0),
-  float<3>(-1.0,  1.0, -1.0),
-
-  // Back face
-  float<3>(-1.0, -1.0,  1.0),
-  float<3>( 1.0, -1.0,  1.0),
-  float<3>( 1.0,  1.0,  1.0),
-  float<3>(-1.0,  1.0,  1.0)
-);
-
-auto cubeIndices = uint[36](
-  0,  1,   2,  0,  2,  3,
-  4,  5,   6,  4,  6,  7,
-  8,  9,  10,  8, 10, 11,
-  12, 13, 14, 12, 14, 15,
-  16, 17, 18, 16, 18, 19,
-  20, 21, 22, 20, 22, 23
-);
 
 auto cubeVB = new vertex Buffer<float<3>[]>(device, cubeVerts.length);
 cubeVB.SetData(&cubeVerts);

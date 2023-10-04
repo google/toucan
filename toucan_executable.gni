@@ -36,6 +36,7 @@ template("toucan_executable") {
       "-o", rebase_path(target_out_dir, root_build_dir) + "/${outer_target}.o",
       "-t", rebase_path(target_gen_dir, root_build_dir) + "/init_types_${outer_target}.cc",
       "-I", "../..",
+      "-I", "../../samples/include",
     ] + rebase_path(sources, root_build_dir)
   }
   executable("${target_name}") {

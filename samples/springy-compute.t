@@ -1,5 +1,9 @@
+include "event-handler.t"
+include "quaternion.t"
+include "transform.t"
+include "utils.t"
+
 using Vector = float<2>;
-class Utils;
 
 int width =  10;
 int height = 10;
@@ -47,112 +51,6 @@ class Spring {
     ks = 3.0;
     kd = 0.3;
     r = 0.0;
-  }
-}
-
-class Quaternion {
-  Quaternion(float x, float y, float z, float w) { q = float<4>(x, y, z, w); }
-  Quaternion(float<4> v) { q = v; }
-  Quaternion(float<3> axis, float angle) {
-    float<3> scaledAxis = axis * Math.sin(angle * 0.5);
-
-    q.x = scaledAxis.x;
-    q.y = scaledAxis.y;
-    q.z = scaledAxis.z;
-    q.w = Math.cos(angle * 0.5);
-  }
-  float len() { return Math.sqrt(Utils.dot(q, q)); }
-  void normalize() { q = q / this.len(); }
-  Quaternion conj() { return Quaternion(-q.x, -q.y, -q.z, q.w); }
-  Quaternion mul(float f) { return Quaternion(q * f); }
-  Quaternion mul(Quaternion other) {
-    float<4> p = other.q;
-    Quaternion r;
-
-    r.q.x = p.w * q.x + p.x * q.w + p.y * q.z - p.z * q.y;
-    r.q.y = p.w * q.y + p.y * q.w + p.z * q.x - p.x * q.z;
-    r.q.z = p.w * q.z + p.z * q.w + p.x * q.y - p.y * q.x;
-    r.q.w = p.w * q.w - p.x * q.x - p.y * q.y - p.z * q.z;
-
-    return r;
-  }
-  float<3> mul(float<3> v) {
-    auto s = Quaternion(v.x, v.y, v.z, 0.0);
-    float<4> r = this.conj().mul(s).mul(Quaternion(q)).q;
-    return float<3>(q.x, q.y, q.z);
-  }
-  float<4,4> toMatrix() {
-    float x = q.x;
-    float y = q.y;
-    float z = q.z;
-    float w = q.w;
-    return float<4,4>(float<4>(1.0-2.0*(y*y+z*z),     2.0*(x*y+z*w),     2.0*(x*z-y*w), 0.0),
-                      float<4>(    2.0*(x*y-z*w), 1.0-2.0*(x*x+z*z),     2.0*(y*z+x*w), 0.0),
-                      float<4>(    2.0*(x*z+y*w),     2.0*(y*z-x*w), 1.0-2.0*(x*x+y*y), 0.0),
-                      float<4>(              0.0,               0.0,               0.0, 1.0));
-  }
-  float<4> q;
-}
-
-class Utils {
-  static float dot(float<2> v1, float<2> v2) {
-    float<2> r = v1 * v2;
-    return r.x + r.y;
-  }
-  static float dot(float<3> v1, float<3> v2) {
-    float<3> r = v1 * v2;
-    return r.x + r.y + r.z;
-  }
-  static float dot(float<4> v1, float<4> v2) {
-    float<4> r = v1 * v2;
-    return r.x + r.y + r.z + r.w;
-  }
-  static float length(float<2> v) {
-    return Math.sqrt(Utils.dot(v, v));
-  }
-  static float length(float<3> v) {
-    return Math.sqrt(Utils.dot(v, v));
-  }
-  static float<4> makeFloat4(float<2> v) {
-    return float<4>(v.x, v.y, 0.0, 1.0);
-  }
-  static float<4> makeFloat4(float<3> v) {
-    return float<4>(v.x, v.y, v.z, 1.0);
-  }
-  static float<2> makeVector(float x, float y, float z, float<2> placeholder) {
-    return float<2>(x, y);
-  }
-  static float<3> makeVector(float x, float y, float z, float<3> placeholder) {
-    return float<3>(x, y, z);
-  }
-  static float<4,4> identity() {
-    return float<4,4>(float<4>(1.0, 0.0, 0.0, 0.0),
-                      float<4>(0.0, 1.0, 0.0, 0.0),
-                      float<4>(0.0, 0.0, 1.0, 0.0),
-                      float<4>(0.0, 0.0, 0.0, 1.0));
-  }
-  static float<4,4> scale(float x, float y, float z) {
-    return float<4,4>(float<4>(  x, 0.0, 0.0, 0.0),
-                      float<4>(0.0,   y, 0.0, 0.0),
-                      float<4>(0.0, 0.0,   z, 0.0),
-                      float<4>(0.0, 0.0, 0.0, 1.0));
-  }
-  static float<4,4> translate(float x, float y, float z) {
-    return float<4,4>(float<4>(1.0, 0.0, 0.0, 0.0),
-                      float<4>(0.0, 1.0, 0.0, 0.0),
-                      float<4>(0.0, 0.0, 1.0, 0.0),
-                      float<4>(  x,   y,   z, 1.0));
-  }
-  static float<4,4> rotate(float<3> axis, float angle) {
-    Quaternion q = Quaternion(axis, angle);
-    return q.toMatrix();
-  }
-  static float<4,4> projection(float n, float f, float l, float r, float b, float t) {
-    return float<4,4>(
-      float<4>(2.0 * n / (r - l), 0.0, 0.0, 0.0),
-      float<4>(0.0, 2.0 * n / (t - b), 0.0, 0.0),
-      float<4>((r + l) / (r - l), (t + b) / (t - b), -(f + n) / (f - n), -1.0),
-      float<4>(0.0, 0.0, -2.0 * f * n / (f - n), 0.0));
   }
 }
 
@@ -341,24 +239,23 @@ auto bodyUBO = new uniform Buffer<DrawUniforms>(device);
 auto bodyBG = new BindGroup(device, bodyUBO);
 auto springUBO = new uniform Buffer<DrawUniforms>(device);
 auto springBG = new BindGroup(device, springUBO);
-float theta = 0.0;
-float phi = 0.0;
-float distance = 0.5 * (float) width;
+EventHandler handler;
+handler.theta = 0.0;
+handler.phi = 0.0;
+handler.distance = 0.5 * (float) width;
 auto drawUniforms = new DrawUniforms();
 auto computeUniforms = new ComputeUniforms();
-float<4,4> projection = Utils.projection(1.0, 100.0, -1.0, 1.0, -1.0, 1.0);
+float<4,4> projection = Transform.projection(1.0, 100.0, -1.0, 1.0, -1.0, 1.0);
 computeUniforms.deltaT = 8.0 / frequency;
 computeUniforms.gravity = Vector(0.0, -0.25);
 auto bindGroup = new BindGroup(device, bindings);
-int<2> anchor;
 double startTime = System.GetCurrentTime();
-bool mouseIsDown = false;
 while(System.IsRunning()) {
-  Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), theta);
-  orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), phi));
+  Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.theta);
+  orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.phi));
   orientation.normalize();
   drawUniforms.matrix = projection;
-  drawUniforms.matrix *= Utils.translate(0.0, 0.0, -distance);
+  drawUniforms.matrix *= Transform.translate(0.0, 0.0, -handler.distance);
   drawUniforms.matrix *= orientation.toMatrix();
   drawUniforms.color = float<4>(1.0, 1.0, 1.0, 1.0);
   springUBO.SetData(drawUniforms);
@@ -407,21 +304,7 @@ while(System.IsRunning()) {
   swapChain.Present();
 
   while (System.HasPendingEvents()) {
-    Event* event = System.GetNextEvent();
-    if (event.type == MouseDown) {
-      mouseIsDown = true;
-    } else if (event.type == MouseUp) {
-      mouseIsDown = false;
-    } else if (event.type == MouseMove) {
-      int<2> diff = event.position - anchor;
-      if (mouseIsDown || (event.modifiers & Control) != 0) {
-        theta += (float) diff.x / 200.0;
-        phi += (float) diff.y / 200.0;
-      } else if ((event.modifiers & Shift) != 0) {
-        distance += (float) diff.y / 100.0;
-      }
-      anchor = event.position;
-    }
+    handler.Handle(System.GetNextEvent());
   }
 }
 return 0.0;
