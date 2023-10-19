@@ -20,6 +20,7 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
@@ -373,8 +374,8 @@ void CodeGenLLVM::UnrefWeakPtr(llvm::Value* ptr) {
 
 llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
   if (method->data) { return static_cast<llvm::Function*>(method->data); }
-  // TODO(senorblanco):  Make sure this Function is destroyed with the Module.
   std::vector<llvm::Type*> params;
+  llvm::Intrinsic::ID intrinsic = llvm::Intrinsic::not_intrinsic;
   if (method->classType->IsNative()) {
     if (method->templateMethod) { return GetOrCreateMethodStub(method->templateMethod); }
     if (method->modifiers & Method::STATIC) {
@@ -387,24 +388,53 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
         }
       }
     }
+    intrinsic = FindIntrinsic(method);
   }
+  bool nativeTypes = method->classType->IsNative() && !intrinsic;
   for (const auto& it : method->formalArgList) {
     Var* var = it.get();
-    if (method->classType->IsNative()) {
+    if (nativeTypes) {
       params.push_back(ConvertTypeToNative(var->type));
     } else {
       params.push_back(ConvertType(var->type));
     }
   }
-  llvm::Type* returnType = method->classType->IsNative() ? ConvertTypeToNative(method->returnType)
-                                                         : ConvertType(method->returnType);
-  llvm::FunctionType* functionType = llvm::FunctionType::get(returnType, params, false);
-  llvm::Function*     function =
-      llvm::Function::Create(functionType, llvm::GlobalValue::ExternalLinkage,
-                             method->GetMangledName(), module_);
+  llvm::Function*     function;
+  if (intrinsic) {
+    function = llvm::Intrinsic::getDeclaration(module_, intrinsic, params);
+    intrinsics_[method] = intrinsic;
+  } else {
+    llvm::Type* returnType = nativeTypes ? ConvertTypeToNative(method->returnType)
+                                         : ConvertType(method->returnType);
+    llvm::FunctionType* functionType = llvm::FunctionType::get(returnType, params, false);
+    function = llvm::Function::Create(functionType, llvm::GlobalValue::ExternalLinkage,
+                                      method->GetMangledName(), module_);
+  }
+
   function->setCallingConv(llvm::CallingConv::C);
   method->data = function;
   return function;
+}
+
+llvm::Intrinsic::ID CodeGenLLVM::FindIntrinsic(Method* method) {
+  constexpr struct {
+    const char*         className;
+    const char*         methodName;
+    llvm::Intrinsic::ID id;
+  } intrinsics[] = {
+      "Math", "sqrt",  llvm::Intrinsic::sqrt,
+      "Math", "sin",   llvm::Intrinsic::sin,
+      "Math", "cos",   llvm::Intrinsic::cos,
+      "Math", "abs",   llvm::Intrinsic::abs,
+  };
+
+  for (auto intrinsic : intrinsics) {
+    if (method->name == intrinsic.methodName &&
+        method->classType->GetName() == intrinsic.className) {
+      return intrinsic.id;
+    }
+  }
+  return llvm::Intrinsic::not_intrinsic;
 }
 
 void CodeGenLLVM::GenCodeForMethod(Method* method) {
@@ -1258,11 +1288,12 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*   method,
       args.push_back(CreateTypePtr(type));
     }
   }
+  bool intrinsic = intrinsics_.find(method) != intrinsics_.end();
   for (auto arg : argList->Get()) {
     llvm::Value* v = GenerateLLVM(arg);
     Type*        type = arg->GetType(types_);
     AppendTemporary(v, type);
-    if (method->classType->IsNative()) { v = ConvertToNative(type, v); }
+    if (method->classType->IsNative() && !intrinsic) { v = ConvertToNative(type, v); }
     args.push_back(v);
   }
   llvm::Function* function = GetOrCreateMethodStub(method);
@@ -1282,7 +1313,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*   method,
   } else {
     result = builder_->CreateCall(function, args);
   }
-  if (method->classType->IsNative()) { result = ConvertFromNative(returnType, result); }
+  if (method->classType->IsNative() && !intrinsic) { result = ConvertFromNative(returnType, result); }
   return result;
 }
 

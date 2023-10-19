@@ -1269,15 +1269,7 @@ void SwapChain_Present(SwapChain* swapChain) { swapChain->swapChain.Present(); }
 void SwapChain_Destroy(SwapChain* This) { delete This; }
 #endif
 
-float Math_sqrt(float f) { return sqrtf(f); }
-
 float Math_rand() { return (float)(rand() % 100) / 100.0f; }
-
-float Math_sin(float f) { return static_cast<float>(sin(f)); }
-
-float Math_cos(float f) { return static_cast<float>(cos(f)); }
-
-float Math_abs(float f) { return abs(f); }
 
 void Math_Destroy(Math* This) {}
 

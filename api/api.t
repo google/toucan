@@ -222,11 +222,23 @@ native class SwapChain<T> {
 
 native class Math {
  ~Math();
-  static float sqrt(float v);
-  static float rand();
-  static float sin(float v);
-  static float cos(float v);
-  static float abs(float v);
+  static float    sqrt(float v);
+  static float<2> sqrt(float<2> v);
+  static float<3> sqrt(float<3> v);
+  static float<4> sqrt(float<4> v);
+  static float    sin(float v);
+  static float<2> sin(float<2> v);
+  static float<3> sin(float<3> v);
+  static float<4> sin(float<4> v);
+  static float    cos(float v);
+  static float<2> cos(float<2> v);
+  static float<3> cos(float<3> v);
+  static float<4> cos(float<4> v);
+  static float    abs(float v);
+  static float<2> abs(float<2> v);
+  static float<3> abs(float<3> v);
+  static float<4> abs(float<4> v);
+  static float    rand();
   static float<3> normalize(float<3> v);
   static float<3> reflect(float<3> incident, float<3> normal);
   static float<3> refract(float<3> incident, float<3> normal, float eta);

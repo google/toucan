@@ -48,6 +48,7 @@ struct ValueTypePair {
 };
 
 using DataVars = std::unordered_map<const void*, llvm::GlobalValue*>;
+using IntrinsicMap = std::unordered_map<Method*, llvm::Intrinsic::ID>;
 using DerefList = std::vector<ValueTypePair>;
 
 class CodeGenLLVM : public Visitor {
@@ -82,6 +83,7 @@ class CodeGenLLVM : public Visitor {
   void            GenerateDestructor(Var* var);
   llvm::Value*    ConvertToNative(Type* type, llvm::Value* value);
   llvm::Value*    ConvertFromNative(Type* type, llvm::Value* value);
+  llvm::Intrinsic::ID   FindIntrinsic(Method* method);
   llvm::GlobalVariable* GetOrCreateVTable(ClassType* classType);
   void                  FillVTable(ClassType* classType);
   void                  InitializeObject(llvm::Value* objPtr, ClassType* classType);
@@ -172,6 +174,7 @@ class CodeGenLLVM : public Visitor {
   DerefList                          temporaries_;
   llvm::Type*                        typeListType_;
   llvm::GlobalValue*                 typeList_;
+  IntrinsicMap                       intrinsics_;
 };
 
 };  // namespace Toucan
