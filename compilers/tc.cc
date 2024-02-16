@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
       }
 
       llvm::legacy::PassManager pass;
-      auto                      fileType = llvm::CGFT_ObjectFile;
+      auto                      fileType = llvm::CodeGenFileType::ObjectFile;
 
       if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, fileType)) {
         std::cerr << "targetMachine can't emit a file of this type";

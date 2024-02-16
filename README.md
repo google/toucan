@@ -69,3 +69,33 @@ There is a primitive test harness in test/test.py, and a set of end-to-end
 tests. Run it as follows:
 
 `test/test.py >& test/test-expectations.txt`
+
+## Building for WASM
+
+1) Bootstrap emscripten
+```
+pushd third_party/emscripten
+./bootstrap
+popd
+```
+
+2) Build binaryen
+
+```
+pushd third_party/binaryen
+git submodule init
+git submodule update
+cmake . && make
+popd
+```
+
+3) Build WASM targets
+
+```
+mkdir -p out/wasm
+echo 'is_debug=false\
+target_os="wasm"\
+target_cpu="wasm"' > out/wasm/args.gn
+gn gen out/wasm
+ninja -C out/wasm
+```

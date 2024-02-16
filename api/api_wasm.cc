@@ -39,7 +39,7 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
           canvas = w.document.getElementById('canvas');
           canvas.width = $2;
           canvas.height = $3;
-          Module.requestFullscreen = () = > { canvas.requestFullscreen(); }
+          Module.requestFullscreen = () => { canvas.requestFullscreen(); }
         } else {
           w = window.open("", "",
                           "left=" + $0 + ", top=" + $1 + ", width=" + $2 + ", height=" + $3);
@@ -49,12 +49,12 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
           w.document.body.appendChild(canvas);
         }
         w.onbeforeunload = function() { Module.numWindows--; };
-        w.onmousedown = w.onmouseup = w.onmousemove = (e) = > {
+        w.onmousedown = w.onmouseup = w.onmousemove = (e) => {
           e.preventDefault;
           Module.events.push(e);
           if (Module.newInput) Module.newInput();
         };
-        w.oncontextmenu = (e) = > {e.preventDefault()};
+        w.oncontextmenu = (e) => {e.preventDefault()};
         specialHTMLTargets["!toucanvas"] = canvas;
         Module.numWindows++;
       },
@@ -65,7 +65,7 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
 
   wgpu::SurfaceDescriptor surfDesc{};
   surfDesc.nextInChain = &canvasDesc;
-  wgpu::Instance instance{};  // null instance
+  wgpu::Instance instance = wgpuCreateInstance(nullptr);
   wgpu::Surface  surface = instance.CreateSurface(&surfDesc);
   return new Window(device, surface, width, height);
 }
@@ -106,7 +106,7 @@ bool System_HasPendingEvents() {
 
 EM_ASYNC_JS(void, JSWaitForNextEvent, (), {
   if (Module.events.length == 0) {
-    await new Promise(resolve = > { Module.newInput = resolve; });
+    await new Promise(resolve => { Module.newInput = resolve; });
     Module.newInput = null;
   }
 });
@@ -154,7 +154,7 @@ SwapChain* SwapChain_SwapChain(Window* window) {
 }
 
 EM_ASYNC_JS(void, JSWaitForRAF, (), {
-  await new Promise(resolve = > { requestAnimationFrame(resolve); });
+  await new Promise(resolve => { requestAnimationFrame(resolve); });
 });
 
 void SwapChain_Present(SwapChain* swapChain) { JSWaitForRAF(); }

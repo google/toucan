@@ -20,7 +20,7 @@ deps = {
   "buildtools"                            : "https://chromium.googlesource.com/chromium/buildtools.git@505de88083136eefd056e5ee4ca0f01fe9b33de8",
   "third_party/abseil-cpp"             : "https://chromium.googlesource.com/chromium/src/third_party/abseil-cpp@bc3ab29356a081d0b5dd4ac55e30f4b45d8794cc",
   "third_party/getopt"                 : "https://github.com/skeeto/getopt@4e618ef782dc80b2cf0307ea74b68e6a62b025de",
-  "third_party/llvm" : "https://github.com/llvm/llvm-project@e37fc3cc3915196fa6d3bc3df27d7683857bbec5",
+  "third_party/llvm" : "https://github.com/llvm/llvm-project@987087df90026605fc8d03ebda5a1cd31b71e609",
   "third_party/dawn" : "https://dawn.googlesource.com/dawn.git@f26b1269bdc7a450c02aa7d198028d2501fe3678",
   "third_party/jinja2" : "https://chromium.googlesource.com/chromium/src/third_party/jinja2@515dd10de9bf63040045902a4a310d2ba25213a0",
   "third_party/libjpeg-turbo" : "https://github.com/libjpeg-turbo/libjpeg-turbo@3b19db4e6e7493a748369974819b4c5fa84c7614",
@@ -31,8 +31,8 @@ deps = {
   "third_party/Vulkan-Headers" : "https://github.com/KhronosGroup/Vulkan-Headers@870a531486f77dfaf124395de80ed38867400d31",
   "third_party/Vulkan-Tools" : "https://github.com/KhronosGroup/Vulkan-Tools@df10a2759b4b60d59b735882217a749d8e5be660",
   "third_party/home-cube" : "https://github.com/SenorBlanco/home-cube@6d801739e9311f37826f08095d09b7345350ab59",
-  "third_party/emscripten" : "https://github.com/emscripten-core/emscripten@09e43acbc620d4d851dd883b980efe1cc96f7d17",
-  "third_party/binaryen" : "https://github.com/WebAssembly/binaryen@ef7f98e50662374b17d88c149a2ba1c11f918e5c",
+  "third_party/emscripten" : "https://github.com/emscripten-core/emscripten@ee97739c3cbe33777e451a657b43640945e01490",
+  "third_party/binaryen" : "https://github.com/WebAssembly/binaryen@11dba9b1c2ad988500b329727f39f4d8786918c5",
 
   'bin': {
     'packages': [
