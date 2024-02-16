@@ -405,19 +405,19 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
     spirv.insert(spirv.end(), codeGenSPIRV.GetBody().begin(), codeGenSPIRV.GetBody().end());
 
 #if TARGET_IS_WASM
-    tint::reader::spirv::Options spirvOptions;
-    tint::Program                program = tint::reader::spirv::Parse(spirv, spirvOptions);
+    tint::spirv::reader::Options spirvOptions;
+    tint::Program                program = tint::spirv::reader::Read(spirv, spirvOptions);
     if (!program.IsValid()) {
       std::cerr << "Tint SPIR-V reader failure:\n" << program.Diagnostics() << "\n";
       return;
     }
-    tint::writer::wgsl::Options wgslOptions;
-    auto                        result = tint::writer::wgsl::Generate(&program, wgslOptions);
-    if (!result.success) {
-      std::cerr << "Tint WGSL writer failure:\n" << result.error << "\n";
+    tint::wgsl::writer::Options wgslOptions;
+    auto                        result = tint::wgsl::writer::Generate(program, wgslOptions);
+    if (result != tint::Success) {
+      std::cerr << "Tint WGSL writer failure:\n" << result.Failure() << "\n";
       return;
     }
-    method->wgsl = result.wgsl;
+    method->wgsl = result.Get().wgsl;
 #else
     method->spirv = spirv;
 #endif

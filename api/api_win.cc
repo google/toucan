@@ -48,9 +48,9 @@ struct Window {
   Device*       device;
 };
 
-static std::unique_ptr<dawn_native::Instance> gNativeInstance;
-static wgpu::Instance                         gInstance;
-static int                                    gNumWindows = 0;
+static std::unique_ptr<dawn::native::Instance> gNativeInstance;
+static wgpu::Instance                          gInstance;
+static int                                     gNumWindows = 0;
 
 static LRESULT CALLBACK mainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
   LONG rc = 0L;
@@ -111,9 +111,8 @@ void Window_Destroy(Window* This) { delete This; }
 
 wgpu::Device createDevice(wgpu::BackendType type) {
   if (!gNativeInstance) {
-    gNativeInstance = std::make_unique<dawn_native::Instance>();
-    gNativeInstance->DiscoverDefaultAdapters();
-    DawnProcTable backendProcs = dawn_native::GetProcs();
+    gNativeInstance = std::make_unique<dawn::native::Instance>();
+    DawnProcTable backendProcs = dawn::native::GetProcs();
     dawnProcSetProcs(&backendProcs);
   }
 
@@ -122,8 +121,7 @@ wgpu::Device createDevice(wgpu::BackendType type) {
     gInstance = wgpu::CreateInstance(&desc);
   }
 
-  std::vector<dawn_native::Adapter> adapters = gNativeInstance->GetAdapters();
-  for (auto adapter : adapters) {
+  for (auto adapter : gNativeInstance->EnumerateAdapters()) {
     wgpu::AdapterProperties properties;
     adapter.GetProperties(&properties);
     if (properties.backendType == type) { return adapter.CreateDevice(); }

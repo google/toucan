@@ -48,9 +48,9 @@ void PrintDeviceError(WGPUErrorType, const char* message, void*) {
 
 }  // namespace
 
-static std::unique_ptr<dawn_native::Instance> gNativeInstance;
-static wgpu::Instance                         gInstance;
-static bool                                   gInitialized = false;
+static std::unique_ptr<dawn::native::Instance> gNativeInstance;
+static wgpu::Instance                          gInstance;
+static bool                                    gInitialized = false;
 
 struct Window {
   Window(NSWindow*     nsw,
@@ -112,9 +112,8 @@ void Initialize() {
 // FIXME: refactor this, and make instance persistent
 wgpu::Device createDevice(wgpu::BackendType type) {
   if (!gNativeInstance) {
-    gNativeInstance = std::make_unique<dawn_native::Instance>();
-    gNativeInstance->DiscoverDefaultAdapters();
-    DawnProcTable backendProcs = dawn_native::GetProcs();
+    gNativeInstance = std::make_unique<dawn::native::Instance>();
+    DawnProcTable backendProcs = dawn::native::GetProcs();
     dawnProcSetProcs(&backendProcs);
   }
 
@@ -123,8 +122,7 @@ wgpu::Device createDevice(wgpu::BackendType type) {
     gInstance = wgpu::CreateInstance(&desc);
   }
 
-  std::vector<dawn_native::Adapter> adapters = gNativeInstance->GetAdapters();
-  for (dawn_native::Adapter adapter : adapters) {
+  for (auto adapter : gNativeInstance->EnumerateAdapters()) {
     wgpu::AdapterProperties properties;
     adapter.GetProperties(&properties);
     if (properties.backendType == type) { return adapter.CreateDevice(); }
@@ -203,8 +201,8 @@ void SwapChain_Destroy(SwapChain* This) {
 }
 
 Device* Device_Device() {
-  static std::unique_ptr<dawn_native::Instance> instance =
-      std::make_unique<dawn_native::Instance>();
+  static std::unique_ptr<dawn::native::Instance> instance =
+      std::make_unique<dawn::native::Instance>();
   wgpu::Device device = createDevice(wgpu::BackendType::Metal);
   if (!device) { return nullptr; }
   device.SetUncapturedErrorCallback(PrintDeviceError, nullptr);

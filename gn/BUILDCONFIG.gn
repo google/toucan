@@ -61,6 +61,7 @@ is_mac = current_os == "mac"
 is_wasm = current_os == "wasm"
 is_win = current_os == "win"
 is_fuchsia = current_os == "fuchsia"
+is_apple = is_ios || is_mac
 
 is_clang = is_android || is_ios || is_mac ||
            (cc == "clang" && cxx == "clang++") || clang_win != ""

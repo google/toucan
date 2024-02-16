@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+build_with_chromium = false
+tint_has_build = false
+
 tint_spirv_tools_dir = "//third_party/SPIRV-Tools"
 tint_spirv_headers_dir = "//third_party/SPIRV-Headers"
+tint_build_benchmarks = false
 tint_build_unittests = false
 tint_root_dir = "//third_party/dawn"

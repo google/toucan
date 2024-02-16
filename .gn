@@ -14,3 +14,7 @@
 
 buildconfig = "//gn/BUILDCONFIG.gn"
 script_executable = "python3"
+
+default_args = {
+  dawn_use_built_dxc = false
+}

@@ -5,6 +5,7 @@ tools/gn.exe
 third_party/abseil-cpp
 third_party/binaryen
 third_party/dawn
+third_party/egl-registry
 third_party/emscripten
 third_party/getopt
 third_party/home-cube
@@ -18,3 +19,4 @@ third_party/SPIRV-Headers
 third_party/SPIRV-Tools
 third_party/Vulkan-Headers
 third_party/Vulkan-Tools
+third_party/Vulkan-Utility-Libraries

@@ -30,6 +30,7 @@
 #undef Success
 #undef Always
 #undef None
+#undef Bool
 
 #include <dawn/dawn_proc.h>
 #include <dawn/native/DawnNative.h>
@@ -51,17 +52,16 @@ int ToToucanEventModifiers(int state) {
 }
 }  // namespace
 
-static std::unique_ptr<dawn_native::Instance> gNativeInstance;
-static wgpu::Instance                         gInstance;
-static int                                    gNumWindows = 0;
-static Atom                                   gWM_DELETE_WINDOW;
+static std::unique_ptr<dawn::native::Instance> gNativeInstance;
+static wgpu::Instance                          gInstance;
+static int                                     gNumWindows = 0;
+static Atom                                    gWM_DELETE_WINDOW;
 
 // FIXME: refactor this
 wgpu::Device createDevice(wgpu::BackendType type) {
   if (!gNativeInstance) {
-    gNativeInstance = std::make_unique<dawn_native::Instance>();
-    gNativeInstance->DiscoverDefaultAdapters();
-    DawnProcTable backendProcs = dawn_native::GetProcs();
+    gNativeInstance = std::make_unique<dawn::native::Instance>();
+    DawnProcTable backendProcs = dawn::native::GetProcs();
     dawnProcSetProcs(&backendProcs);
   }
 
@@ -70,8 +70,7 @@ wgpu::Device createDevice(wgpu::BackendType type) {
     gInstance = wgpu::CreateInstance(&desc);
   }
 
-  std::vector<dawn_native::Adapter> adapters = gNativeInstance->GetAdapters();
-  for (dawn_native::Adapter adapter : adapters) {
+  for (auto adapter : gNativeInstance->EnumerateAdapters()) {
     wgpu::AdapterProperties properties;
     adapter.GetProperties(&properties);
     if (properties.backendType == type) { return adapter.CreateDevice(); }
@@ -116,7 +115,7 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
       reinterpret_cast<PFN_vkCreateXcbSurfaceKHR>(dlsym(vkLib, "vkCreateXcbSurfaceKHR"));
   if (!createXcbSurfaceKHR) { return nullptr; }
 
-  VkInstance vkInstance = dawn_native::vulkan::GetInstance(device->device.Get());
+  VkInstance vkInstance = dawn::native::vulkan::GetInstance(device->device.Get());
   if (!vkInstance) { return nullptr; }
 
   VkXcbSurfaceCreateInfoKHR surfaceCreateInfo;
@@ -160,7 +159,7 @@ static void PrintDeviceError(WGPUErrorType, const char* message, void*) {
 Device* Device_Device() {
   wgpu::Device device = createDevice(wgpu::BackendType::Vulkan);
   if (!device) { return nullptr; }
-  assert(dawn_native::vulkan::GetInstance(device.Get()));
+  assert(dawn::native::vulkan::GetInstance(device.Get()));
   // TODO: add an error callback/interface to Toucan's Device.
   device.SetUncapturedErrorCallback(PrintDeviceError, nullptr);
   return new Device(device);
