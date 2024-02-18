@@ -50,6 +50,7 @@ executable("tj") {
     libs += [
       "gdi32.lib",
       "user32.lib",
+      "ws2_32.lib",
     ]
   }
   if (is_linux) {
@@ -99,6 +100,9 @@ executable("tc") {
   libs = llvm_libs
   lib_dirs = llvm_lib_dirs
   libs += dawn_needs_libs
+  if (is_win) {
+    libs += [ "ws2_32.lib" ]
+  }
 
   sources = [ "tc.cc", ]
   deps = [
