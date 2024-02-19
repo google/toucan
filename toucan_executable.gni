@@ -82,6 +82,7 @@ template("toucan_executable") {
     }
     if (is_wasm) {
       ldflags = [
+        "--shell-file", rebase_path("//emscripten/shell.html", root_build_dir),
         "-sUSE_WEBGPU=1",
         "-sINITIAL_MEMORY=67108864",
         "-sSTACK_SIZE=4194304",
@@ -89,6 +90,12 @@ template("toucan_executable") {
         "-Wno-experimental",
         "-lembind",
         "-msimd128",
+      ]
+      deps += [
+        "//emscripten:images",
+      ]
+      inputs = [
+        "//emscripten/shell.html"
       ]
     }
   }
