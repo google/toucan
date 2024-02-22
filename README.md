@@ -13,6 +13,10 @@ It currently runs on Windows, MacOS, Linux, and Web.
 
 For further information, see [this presentation](https://docs.google.com/presentation/d/1tUlG9w7AsP8pexBWRwk1uYDrwNMvTJqcxdH482ip4LM/edit?usp=sharing&resourcekey=0-gEpoxkfBbXC3qbbKRQhrwg) and [this document](https://docs.google.com/document/d/1oWNt2IoA1u-j7i2D24pnlFP6JIlQdrKZlNY6qoW2K80/edit?usp=sharing&resourcekey=0-mb8K3ATyRv-ZGl34Y4C-zQ).
 
+## Viewing the Toucan samples
+
+If you simply wish to try some live Toucan demos without building the toolchain, navigate to the [Toucan Samples page](https://senorblanco.github.io/toucan-samples/) and follow the instructions.
+
 ## Building the Toucan toolchain
 
 ### Prerequisites
