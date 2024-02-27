@@ -33,7 +33,6 @@ ComputePipeline* computePipeline = new ComputePipeline<BumpCompute>(device);
 auto storageBG = new BindGroup(device, vb);
 
 while (System.IsRunning()) {
-  System.GetNextEvent();
   renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
   CommandEncoder* encoder = new CommandEncoder(device);
   ComputePassEncoder* computeEncoder = encoder.BeginComputePass();
@@ -49,5 +48,6 @@ while (System.IsRunning()) {
   CommandBuffer* cb = encoder.Finish();
   device.GetQueue().Submit(cb);
   swapChain.Present();
+  System.GetNextEvent();
 }
 return 0.0;

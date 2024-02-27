@@ -20,18 +20,17 @@ class PipelineData {
 auto pipeline = new RenderPipeline<PipelineData>(device, null, TriangleList);
 UniformBuffer<UniformData>* uniformBuffer = device.CreateUniformBuffer<UniformData>({ opacity : 0.5 });
 PipelineData* pipelineData = new PipelineData(uniforms : uniformBuffer);
-while (System.IsRunning()) {
-  System.GetNextEvent();
-  renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
-  CommandEncoder* encoder = new CommandEncoder(device);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-  passEncoder.SetPipeline(pipeline);
-  passEncoder.SetPipelineData(pipelineData);
-  passEncoder.SetVertexBuffer(0, vb);
-  passEncoder.Draw(3, 1, 0, 0);
-  passEncoder.End();
-  CommandBuffer* cb = encoder.Finish();
-  queue.Submit(cb);
-  swapChain.Present();
-}
+renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+CommandEncoder* encoder = new CommandEncoder(device);
+RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
+passEncoder.SetPipeline(pipeline);
+passEncoder.SetPipelineData(pipelineData);
+passEncoder.SetVertexBuffer(0, vb);
+passEncoder.Draw(3, 1, 0, 0);
+passEncoder.End();
+CommandBuffer* cb = encoder.Finish();
+queue.Submit(cb);
+swapChain.Present();
+
+while (System.IsRunning()) System.GetNextEvent();
 return 0.0;

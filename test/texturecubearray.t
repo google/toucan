@@ -61,26 +61,25 @@ for (int layer = 0; layer < layers; ++layer) {
   }
 }
 buffer.Unmap();
-CommandEncoder* encoder = new CommandEncoder(device);
-tex.CopyFromBuffer(encoder, buffer, 2, 2, 2, uint<3>(0, 0, 0));
-device.GetQueue().Submit(encoder.Finish());
+CommandEncoder* copyEncoder = new CommandEncoder(device);
+tex.CopyFromBuffer(copyEncoder, buffer, 2, 2, 2, uint<3>(0, 0, 0));
+device.GetQueue().Submit(copyEncoder.Finish());
 auto samplerBG = new BindGroup(device, sampler);
 auto texView = tex.CreateSampledCubeArrayView();
 auto texBG = new BindGroup(device, texView);
-while (System.IsRunning()) {
-  System.GetNextEvent();
-  renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
-  CommandEncoder* encoder = new CommandEncoder(device);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-  passEncoder.SetPipeline(pipeline);
-  passEncoder.SetBindGroup(0, samplerBG);
-  passEncoder.SetBindGroup(1, texBG);
-  passEncoder.SetVertexBuffer(0, vb);
-  passEncoder.SetIndexBuffer(ib);
-  passEncoder.DrawIndexed(6, 1, 0, 0, 0);
-  passEncoder.End();
-  CommandBuffer* cb = encoder.Finish();
-  device.GetQueue().Submit(cb);
-  swapChain.Present();
-}
+renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+CommandEncoder* encoder = new CommandEncoder(device);
+RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
+passEncoder.SetPipeline(pipeline);
+passEncoder.SetBindGroup(0, samplerBG);
+passEncoder.SetBindGroup(1, texBG);
+passEncoder.SetVertexBuffer(0, vb);
+passEncoder.SetIndexBuffer(ib);
+passEncoder.DrawIndexed(6, 1, 0, 0, 0);
+passEncoder.End();
+CommandBuffer* cb = encoder.Finish();
+device.GetQueue().Submit(cb);
+swapChain.Present();
+
+while (System.IsRunning()) System.GetNextEvent();
 return 0.0;

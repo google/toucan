@@ -352,20 +352,8 @@ computeUniforms.gravity = Vector(0.0, -0.25);
 auto bindGroup = new BindGroup(device, bindings);
 int<2> anchor;
 double startTime = System.GetCurrentTime();
+bool mouseIsDown = false;
 while(System.IsRunning()) {
-  while (System.HasPendingEvents()) {
-    Event* event = System.GetNextEvent();
-    if (event.type == MouseMove) {
-      int<2> diff = event.position - anchor;
-      if ((event.modifiers & Control) != 0) {
-        theta += (float) diff.x / 200.0;
-        phi += (float) diff.y / 200.0;
-      } else if ((event.modifiers & Shift) != 0) {
-        distance += (float) diff.y / 100.0;
-      }
-      anchor = event.position;
-    }
-  }
   Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), theta);
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), phi));
   orientation.normalize();
@@ -417,5 +405,23 @@ while(System.IsRunning()) {
   CommandBuffer* cb = encoder.Finish();
   device.GetQueue().Submit(cb);
   swapChain.Present();
+
+  while (System.HasPendingEvents()) {
+    Event* event = System.GetNextEvent();
+    if (event.type == MouseDown) {
+      mouseIsDown = true;
+    } else if (event.type == MouseUp) {
+      mouseIsDown = false;
+    } else if (event.type == MouseMove) {
+      int<2> diff = event.position - anchor;
+      if (mouseIsDown || (event.modifiers & Control) != 0) {
+        theta += (float) diff.x / 200.0;
+        phi += (float) diff.y / 200.0;
+      } else if ((event.modifiers & Shift) != 0) {
+        distance += (float) diff.y / 100.0;
+      }
+      anchor = event.position;
+    }
+  }
 }
 return 0.0;

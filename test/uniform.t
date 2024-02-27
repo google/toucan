@@ -24,18 +24,17 @@ uniforms.opacity = 0.5;
 auto uniformBuffer = new uniform Buffer<UniformData>(device);
 uniformBuffer.SetData(uniforms);
 auto bindGroup = new BindGroup(device, uniformBuffer);
-while (System.IsRunning()) {
-  System.GetNextEvent();
-  renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
-  CommandEncoder* encoder = new CommandEncoder(device);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-  passEncoder.SetPipeline(pipeline);
-  passEncoder.SetBindGroup(0, bindGroup);
-  passEncoder.SetVertexBuffer(0, vb);
-  passEncoder.Draw(3, 1, 0, 0);
-  passEncoder.End();
-  CommandBuffer* cb = encoder.Finish();
-  queue.Submit(cb);
-  swapChain.Present();
-}
+renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+CommandEncoder* encoder = new CommandEncoder(device);
+RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
+passEncoder.SetPipeline(pipeline);
+passEncoder.SetBindGroup(0, bindGroup);
+passEncoder.SetVertexBuffer(0, vb);
+passEncoder.Draw(3, 1, 0, 0);
+passEncoder.End();
+CommandBuffer* cb = encoder.Finish();
+queue.Submit(cb);
+swapChain.Present();
+
+while (System.IsRunning()) System.GetNextEvent();
 return 0.0;

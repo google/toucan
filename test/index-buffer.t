@@ -32,18 +32,17 @@ class Pipeline {
   float<4> fragmentShader(FragmentBuiltins fb, Varyings v) fragment { return v; }
 }
 auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
-while (System.IsRunning()) {
-  System.GetNextEvent();
-  renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
-  CommandEncoder* encoder = new CommandEncoder(device);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-  passEncoder.SetPipeline(pipeline);
-  passEncoder.SetVertexBuffer(0, vb);
-  passEncoder.SetIndexBuffer(ib);
-  passEncoder.DrawIndexed(6, 1, 0, 0, 0);
-  passEncoder.End();
-  CommandBuffer* cb = encoder.Finish();
-  queue.Submit(cb);
-  swapChain.Present();
-}
+renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+CommandEncoder* encoder = new CommandEncoder(device);
+RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
+passEncoder.SetPipeline(pipeline);
+passEncoder.SetVertexBuffer(0, vb);
+passEncoder.SetIndexBuffer(ib);
+passEncoder.DrawIndexed(6, 1, 0, 0, 0);
+passEncoder.End();
+CommandBuffer* cb = encoder.Finish();
+queue.Submit(cb);
+swapChain.Present();
+
+while (System.IsRunning()) System.GetNextEvent();
 return 0.0;

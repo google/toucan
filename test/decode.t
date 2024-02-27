@@ -15,9 +15,9 @@ auto buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() 
 writeonly Format::MemoryType[]^ b = buffer.MapWrite();
 image.Decode(b, texture.MinBufferWidth());
 buffer.Unmap();
-CommandEncoder* encoder = new CommandEncoder(device);
-texture.CopyFromBuffer(encoder, buffer, image.Width(), image.Height(), 1, uint<3>(0, 0, 0));
-device.GetQueue().Submit(encoder.Finish());
+CommandEncoder* copyEncoder = new CommandEncoder(device);
+texture.CopyFromBuffer(copyEncoder, buffer, image.Width(), image.Height(), 1, uint<3>(0, 0, 0));
+device.GetQueue().Submit(copyEncoder.Finish());
 
 Window* window = new Window(device, 0, 0, image.Width(), image.Height());
 SwapChain* swapChain = new SwapChain(window);
@@ -59,20 +59,19 @@ auto sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear
 auto samplerBG = new BindGroup(device, sampler);
 auto texView = texture.CreateSampledView();
 auto texBG = new BindGroup(device, texView);
-while (System.IsRunning()) {
-  System.GetNextEvent();
-  renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
-  CommandEncoder* encoder = new CommandEncoder(device);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-  passEncoder.SetPipeline(pipeline);
-  passEncoder.SetBindGroup(0, samplerBG);
-  passEncoder.SetBindGroup(1, texBG);
-  passEncoder.SetVertexBuffer(0, vb);
-  passEncoder.SetIndexBuffer(ib);
-  passEncoder.DrawIndexed(6, 1, 0, 0, 0);
-  passEncoder.End();
-  CommandBuffer* cb = encoder.Finish();
-  device.GetQueue().Submit(cb);
-  swapChain.Present();
-}
+renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+CommandEncoder* encoder = new CommandEncoder(device);
+RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
+passEncoder.SetPipeline(pipeline);
+passEncoder.SetBindGroup(0, samplerBG);
+passEncoder.SetBindGroup(1, texBG);
+passEncoder.SetVertexBuffer(0, vb);
+passEncoder.SetIndexBuffer(ib);
+passEncoder.DrawIndexed(6, 1, 0, 0, 0);
+passEncoder.End();
+CommandBuffer* cb = encoder.Finish();
+device.GetQueue().Submit(cb);
+swapChain.Present();
+
+while (System.IsRunning()) System.GetNextEvent();
 return 0.0;
