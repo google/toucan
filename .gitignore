@@ -1,7 +1,6 @@
 buildtools
 out
-tools/gn
-tools/gn.exe
+bin
 third_party/abseil-cpp
 third_party/binaryen
 third_party/dawn
@@ -15,6 +14,7 @@ third_party/llvm
 third_party/markupsafe
 third_party/ninja
 third_party/opengl-registry
+third_party/winflexbison
 third_party/SPIRV-Headers
 third_party/SPIRV-Tools
 third_party/Vulkan-Headers

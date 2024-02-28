@@ -19,8 +19,12 @@ action("run_bison") {
     "$target_gen_dir/parser.tab.cc",
     "$target_gen_dir/parser.tab.hh",
   ]
-  args = [
-    "bison",
+  if (is_win) {
+    args = [ rebase_path("//third_party/winflexbison/win_bison.exe") ]
+  } else {
+    args = [ "bison" ]
+  }
+  args += [
     "-v",
     "-d",
     "-b", rebase_path(target_gen_dir, root_build_dir) + "/parser",
@@ -31,8 +35,12 @@ action("run_flex") {
   script = "../tools/run.py"
   sources = [ "lexer.ll" ]
   outputs = [ "$target_gen_dir/lexer.cc" ]
-  args = [
-    "flex",
+  if (is_win) {
+    args = [ rebase_path("//third_party/winflexbison/win_flex.exe") ]
+  } else {
+    args = [ "flex" ]
+  }
+  args += [
     "-o" + rebase_path(target_gen_dir, root_build_dir) + "/lexer.cc",
   ] + rebase_path(sources, root_build_dir)
 }

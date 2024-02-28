@@ -78,17 +78,16 @@ These will be retrieved by the git-sync-deps script.
    popd
 ```
 
-3. Install GnuWin32 versions of bison and flex:
-   https://gnuwin32.sourceforge.net/packages/bison.htm
-   https://gnuwin32.sourceforge.net/packages/flex.htm
-   Download modified bison from http://marin.jb.free.fr/bison/
-   Overwrite Program Files (x86)\GnuWin32\bin\bison.exe with the modified version.
+3. Install Bison and Flex:
+```
+   python3 tools/fetch-win-flex-bison.py
+```
 
 4. Build tc, tj and native samples:
 
 ```
-   mkdir -p out\Release
-   echo "is_debug=false" > out\Release\args.gn
+   mkdir out\Release
+   echo is_debug=false > out\Release\args.gn
    gn gen out\Release
    ninja -C out\Release
 ```
