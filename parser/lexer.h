@@ -15,8 +15,10 @@
 #ifndef _LEXER_H
 #define _LEXER_H
 extern int  g_lineno;
+extern std::string g_filename;
 extern void yyerror(const char* str);
 extern FILE* IncludeFile(const char* filename);
+extern void PopFile();
 namespace Toucan {
 class Arg;
 class ArgList;

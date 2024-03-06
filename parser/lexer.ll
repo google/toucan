@@ -30,6 +30,7 @@ extern Type* FindType(const char* str);
 
 std::unordered_map<std::string, std::string> identifiers_;
 int g_lineno = 1;
+std::string g_filename;
 
 #define YY_NEVER_INTERACTIVE 1
 
@@ -191,7 +192,11 @@ half    { return T_HALF; }
 
 <<EOF>> {
     yypop_buffer_state();
-    if (!YY_CURRENT_BUFFER) yyterminate();
+    if (YY_CURRENT_BUFFER) {
+        PopFile();
+    } else {
+        yyterminate();
+    }
 }
 
 %%

@@ -78,8 +78,10 @@ int main(int argc, char** argv) {
     }
   }
 
+  const char* filename = "(stdin)";
   if (optind < argc) {
-    yyin = fopen(argv[optind], "r");
+    filename = argv[optind];
+    yyin = fopen(filename, "r");
   } else {
     std::cerr << "Usage: " << argv[0] << " <filename>" << std::endl;
     exit(1);
@@ -96,7 +98,7 @@ int main(int argc, char** argv) {
   auto*             apiStmts = nodes.Make<Stmts>();
   const TypeVector& apiTypes = types.GetTypes();
   Stmts*            rootStmts;
-  int syntaxErrors = ParseProgram(&symbols, &types, &nodes, includePath, &rootStmts);
+  int syntaxErrors = ParseProgram(filename, &symbols, &types, &nodes, includePath, &rootStmts);
   if (syntaxErrors > 0) { exit(1); }
   Scope* topScope = symbols.PopScope();
   rootStmts->SetScope(topScope);

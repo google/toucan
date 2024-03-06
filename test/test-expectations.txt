@@ -21,9 +21,9 @@ result is 3.000000
 test/array-length-static.t
 result is 5.000000
 test/array-new.t
-3: array size is not an integer constant
-4: array size is not an integer constant
-5: array size is not an integer constant
+array-new.t:3: array size is not an integer constant
+array-new.t:4: array size is not an integer constant
+array-new.t:5: array size is not an integer constant
 test/arrays.t
 result is 1242.000000
 test/bind-group.t
@@ -148,8 +148,15 @@ test/inc-dec-float.t
 result is 6.000000
 test/inc-dec-short.t
 result is 6.000000
+test/include-not-found.t
+include-not-found.t:1: file "test/include/bogus.t" not found
+test/include-syntax-error-after-included-file.t
+include-syntax-error-after-included-file.t:3: syntax error
+test/include-syntax-error-in-included-file.t
+syntax-error.t:2: syntax error
 test/include-twice.t
-result is 6.000000
+include-twice.t:1: file "test/include/simpleclass.t" not found
+include-twice.t:2: file "test/include/simpleclass.t" not found
 test/include.t
 result is 6.000000
 test/index-buffer.t
@@ -163,10 +170,10 @@ result is 5.000000
 test/inline-file.t
 result is 97.000000
 test/invalid-assignment.t
-1: syntax error
+invalid-assignment.t:1: syntax error
 test/invalid-forward-decl.t
-5: type is already declared as non-class
-8: syntax error
+invalid-forward-decl.t:5: type is already declared as non-class
+invalid-forward-decl.t:8: syntax error
 test/later-class-field.t
 result is -3.000000
 test/length-store-error.t
@@ -188,13 +195,13 @@ result is 3.000000
 test/method.t
 result is 3.000000
 test/missing-class.t
-3: syntax error
+missing-class.t:3: syntax error
 test/missing-field.t
 5:  field "zzz" not found on class "Foo"
 test/missing-method.t
 5:  class Foo has no method zzz()
 test/missing-parent-class.t
-1: syntax error
+missing-parent-class.t:1: syntax error
 test/mutual-recursion.t
 result is 10.000000
 test/named-param-default-value.t
@@ -216,7 +223,7 @@ result is 6.000000
 test/shader-method-call.t
 result is 0.000000
 test/shader.t
-8: syntax error
+shader.t:8: syntax error
 test/short-vector.t
 result is 32764.000000
 test/short.t
@@ -261,7 +268,7 @@ result is 1.000000
 test/unary-minus.t
 result is -7.000000
 test/uniform-ideal.t
-21: syntax error
+uniform-ideal.t:21: syntax error
 test/uniform-triangle.t
 test/uniform-with-padded-array.t
 result is 0.000000
@@ -270,9 +277,9 @@ result is 0.000000
 test/uniform.t
 result is 0.000000
 test/unknown-param-type.t
-2: syntax error
+unknown-param-type.t:2: syntax error
 test/unknown-return-type.t
-2: syntax error
+unknown-return-type.t:2: syntax error
 test/unspecified-template-destructor.t
 result is 42.000000
 test/ushort-vector.t
@@ -292,11 +299,11 @@ result is 432.000000
 test/virtual-function.t
 result is 1.000000
 test/virtual-override-error.t
-10: override of virtual method must be virtual
-13: attempt to override a non-virtual method
+virtual-override-error.t:10: override of virtual method must be virtual
+virtual-override-error.t:13: attempt to override a non-virtual method
 test/void-array.t
-3: invalid array element type "void"
-3: invalid array element type "void"
+void-array.t:3: invalid array element type "void"
+void-array.t:3: invalid array element type "void"
 test/void-ptr-return.t
 result is 3.000000
 test/void-value-error.t
@@ -306,10 +313,10 @@ result is 1.000000
 test/window.t
 result is 0.000000
 test/workgroup-size.t
-5: workgroup size must have 1, 2, or 3 dimensions
-6: workgroup size must have 1, 2, or 3 dimensions
-7: workgroup size is not an integer constant
-8: non-compute shaders do not require a workgroup size
-9: non-compute shaders do not require a workgroup size
+workgroup-size.t:5: workgroup size must have 1, 2, or 3 dimensions
+workgroup-size.t:6: workgroup size must have 1, 2, or 3 dimensions
+workgroup-size.t:7: workgroup size is not an integer constant
+workgroup-size.t:8: non-compute shaders do not require a workgroup size
+workgroup-size.t:9: non-compute shaders do not require a workgroup size
 test/worst-cast-ever.t
 result is 69.000000

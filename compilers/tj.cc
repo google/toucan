@@ -96,8 +96,10 @@ int main(int argc, char** argv) {
     }
   }
 
+  const char* filename = "(stdin)";
   if (optind < argc) {
-    yyin = fopen(argv[optind], "r");
+    filename = argv[optind];
+    yyin = fopen(filename, "r");
   } else {
     yyin = stdin;
   }
@@ -109,7 +111,7 @@ int main(int argc, char** argv) {
   InitTypes(&symbols, &types, &nodes);
   const TypeVector& apiTypes = types.GetTypes();
   Stmts*            rootStmts;
-  int               syntaxErrors = ParseProgram(&symbols, &types, &nodes, "", &rootStmts);
+  int               syntaxErrors = ParseProgram(filename, &symbols, &types, &nodes, "", &rootStmts);
   if (syntaxErrors > 0) { exit(1); }
   Scope* topScope = symbols.PopScope();
   rootStmts->SetScope(topScope);
