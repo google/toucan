@@ -205,7 +205,7 @@ native class ImageDecoder<PF> {
   void Decode(writeonly PF::MemoryType[]^ buffer, uint bufferWidth);
 }
 
-enum EventType { MouseMove, MouseDown, MouseUp, Unknown }
+enum EventType { MouseMove, MouseDown, MouseUp, TouchStart, TouchMove, TouchEnd, Unknown }
 
 enum EventModifiers { Shift = 0x01, Control = 0x02, Alt = 0x04 }
 
@@ -215,6 +215,8 @@ native class Event {
   int<2>      position;
   uint        button;
   uint        modifiers;
+  int<2>[10]  touches;
+  int         numTouches;
 }
 
 native class System {

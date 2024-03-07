@@ -21,6 +21,27 @@
 
 namespace Toucan {
 
+namespace {
+
+static void copyMouseEvent(emscripten::val event, Event* result) {
+  result->button = event["button"].as<int>();
+  result->mousePos[0] = event["clientX"].as<int>();
+  result->mousePos[1] = event["clientY"].as<int>();
+}
+
+static void copyTouches(emscripten::val touches, Event* result) {
+  int length = touches["length"].as<int>();
+  if (length > 10) length = 10;
+  result->numTouches = length;
+  for (int i = 0; i < length; ++i) {
+    emscripten::val touch = touches.call<emscripten::val>("item", i);
+    result->touches[i][0] = touch["clientX"].as<int>();
+    result->touches[i][1] = touch["clientY"].as<int>();
+  }
+}
+
+}
+
 struct Window {
   Window(Device* d, wgpu::Surface s, uint32_t w, uint32_t h)
       : device(d), surface(s), width(w), height(h) {}
@@ -29,36 +50,38 @@ struct Window {
   uint32_t      width, height;
 };
 
+EM_JS(void, createWindow, (int32_t x, int32_t y, int32_t width, int32_t height), {
+    var w;
+    var canvas;
+    if (Module.numWindows == 0) {
+      w = window;
+      canvas = w.document.getElementById("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      Module.requestFullscreen = () => { canvas.requestFullscreen(); }
+    } else {
+      w = window.open("", "",
+                      "left=" + x + ", top=" + y + ", width=" + width + ", height=" + height);
+      w.document.body.style.margin = 0;
+      var canvas = w.document.createElement("canvas");
+      canvas.style.display = "block";
+      w.document.body.appendChild(canvas);
+    }
+    w.onbeforeunload = function() { Module.numWindows--; };
+    const events = ["mousedown", "mousemove", "mouseup", "touchstart", "touchmove", "touchend"];
+    var inputListener = (e) => {
+      e.preventDefault();
+      Module.events.push(e);
+      if (Module.newInput) Module.newInput();
+    };
+    events.forEach((eventType) => w.addEventListener(eventType, inputListener, { passive: false }));
+    w.oncontextmenu = (e) => { e.preventDefault() };
+    specialHTMLTargets["!toucanvas"] = canvas;
+    Module.numWindows++;
+});
+
 Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint32_t height) {
-  EM_ASM(
-      {
-        var w;
-        var canvas;
-        if (Module.numWindows == 0) {
-          w = window;
-          canvas = w.document.getElementById('canvas');
-          canvas.width = $2;
-          canvas.height = $3;
-          Module.requestFullscreen = () => { canvas.requestFullscreen(); }
-        } else {
-          w = window.open("", "",
-                          "left=" + $0 + ", top=" + $1 + ", width=" + $2 + ", height=" + $3);
-          w.document.body.style.margin = 0;
-          var canvas = w.document.createElement("canvas");
-          canvas.style.display = "block";
-          w.document.body.appendChild(canvas);
-        }
-        w.onbeforeunload = function() { Module.numWindows--; };
-        w.onmousedown = w.onmouseup = w.onmousemove = (e) => {
-          e.preventDefault;
-          Module.events.push(e);
-          if (Module.newInput) Module.newInput();
-        };
-        w.oncontextmenu = (e) => {e.preventDefault()};
-        specialHTMLTargets["!toucanvas"] = canvas;
-        Module.numWindows++;
-      },
-      x, y, width, height);
+  EM_ASM({ createWindow($0, $1, $2, $3) }, x, y, width, height);
 
   wgpu::SurfaceDescriptorFromCanvasHTMLSelector canvasDesc{};
   canvasDesc.selector = "!toucanvas";
@@ -118,16 +141,24 @@ Event* System_GetNextEvent() {
   emscripten::val events = emscripten::val::global("Module")["events"];
   emscripten::val event = events.call<emscripten::val>("shift");
   result->type = EventType::MouseMove;
-  result->mousePos[0] = event["clientX"].as<int>();
-  result->mousePos[1] = event["clientY"].as<int>();
-  result->button = event["button"].as<int>();
   std::string type = event["type"].as<std::string>();
   if (type == "mousedown") {
+    copyMouseEvent(event, result);
     result->type = EventType::MouseDown;
   } else if (type == "mouseup") {
+    copyMouseEvent(event, result);
     result->type = EventType::MouseUp;
   } else if (type == "mousemove") {
+    copyMouseEvent(event, result);
     result->type = EventType::MouseMove;
+  } else if (type == "touchstart") {
+    copyTouches(event["touches"], result);
+    result->type = EventType::TouchStart;
+  } else if (type == "touchmove") {
+    copyTouches(event["touches"], result);
+    result->type = EventType::TouchMove;
+  } else if (type == "touchend") {
+    result->type = EventType::TouchEnd;
   } else {
     result->type = EventType::Unknown;
   }

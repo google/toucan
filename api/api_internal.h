@@ -31,11 +31,13 @@ struct SwapChain {
 };
 
 struct Event {
-  unsigned type;
-  unsigned pad;
-  int      mousePos[2];
-  unsigned button;
-  unsigned modifiers;
+  uint32_t type;
+  uint32_t pad;
+  int32_t  mousePos[2];
+  uint32_t button;
+  uint32_t modifiers;
+  int32_t  touches[10][2];
+  int32_t  numTouches;
 };
 
 }  // namespace Toucan

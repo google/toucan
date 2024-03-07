@@ -168,8 +168,7 @@ teapotBindings.uniforms = new uniform Buffer<Uniforms>(device);
 auto teapotBindGroup = new BindGroup(device, teapotBindings);
 
 EventHandler handler;
-handler.theta = 0.0;
-handler.phi = 0.0;
+handler.rotation = float<2>(0.0, 0.0);
 handler.distance = 10.0;
 float<4, 4> projection = Transform.projection(0.5, 200.0, -1.0, 1.0, -1.0, 1.0);
 auto teapotQuat = Quaternion(float<3>(1.0, 0.0, 0.0), -3.1415926 / 2.0);
@@ -177,8 +176,8 @@ teapotQuat.normalize();
 auto teapotRotation = teapotQuat.toMatrix();
 auto depthBuffer = new renderable Texture2D<Depth24Plus>(device, 1024, 1024, 1);
 while (System.IsRunning()) {
-  Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.theta);
-  orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.phi));
+  Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
+  orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
   Uniforms uniforms;
   uniforms.projection = projection;
