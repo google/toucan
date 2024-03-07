@@ -65,7 +65,7 @@ class NodeVisitor : public Visitor {
   template <typename T, typename... ARGS>
   T* Make(ASTNode* orig, ARGS&&... args) {
     T* node = nodes_->Make<T>(std::forward<ARGS>(args)...);
-    node->SetLineNum(orig->GetLineNum());
+    node->SetFileLocation(orig->GetFileLocation());
     return node;
   }
 

@@ -48,7 +48,7 @@ class SemanticPass : public NodeVisitor {
   Result Visit(UnresolvedStaticMethodCall* node) override;
   Result Visit(VarDeclaration* decl) override;
   Result Visit(WhileStatement* stmt) override;
-  Result Error(int lineNum, const char* fmt, ...);
+  Result Error(ASTNode* node, const char* fmt, ...);
   Result Default(ASTNode* node) override;
   int    GetNumErrors() const { return numErrors_; }
 

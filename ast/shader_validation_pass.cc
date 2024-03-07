@@ -18,6 +18,8 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include <filesystem>
+
 #include "symbol.h"
 
 namespace Toucan {
@@ -110,7 +112,7 @@ Result ShaderValidationPass::Visit(ReturnStatement* stmt) {
 }
 
 Result ShaderValidationPass::Visit(NewExpr* expr) {
-  Error(expr->GetLineNum(), "allocation is prohibited in shader methods");
+  Error(expr, "allocation is prohibited in shader methods");
   return {};
 }
 
@@ -142,7 +144,7 @@ Result ShaderValidationPass::Visit(ForStatement* node) {
 }
 
 Result ShaderValidationPass::Visit(NewArrayExpr* expr) {
-  Error(expr->GetLineNum(), "allocation is prohibited in shader methods");
+  Error(expr, "allocation is prohibited in shader methods");
   return {};
 }
 
@@ -152,16 +154,19 @@ Result ShaderValidationPass::Visit(FieldAccess* fieldAccess) {
 }
 
 Result ShaderValidationPass::Default(ASTNode* node) {
-  Error(node->GetLineNum(), "Internal compiler error");
+  Error(node, "Internal compiler error");
   return {};
 }
 
 Result ShaderValidationPass::Resolve(ASTNode* node) { return node->Accept(this); }
 
-void ShaderValidationPass::Error(int lineno, const char* fmt, ...) {
+void ShaderValidationPass::Error(ASTNode* node, const char* fmt, ...) {
+  const FileLocation& location = node->GetFileLocation();
+  std::string         filename =
+      location.filename ? std::filesystem::path(*location.filename).filename().string() : "";
   va_list argp;
   va_start(argp, fmt);
-  fprintf(stderr, "%d:  ", lineno);
+  fprintf(stderr, "%s:%d:  ", filename.c_str(), location.lineNum);
   vfprintf(stderr, fmt, argp);
   fprintf(stderr, "\n");
   numErrors_++;

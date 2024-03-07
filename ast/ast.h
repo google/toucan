@@ -36,16 +36,23 @@ union Result {
   Result() : i(0) {}
 };
 
+struct FileLocation {
+  FileLocation(std::shared_ptr<std::string> f, int n);
+  std::shared_ptr<std::string> filename;
+  int                          lineNum;
+};
+
 class ASTNode {
  public:
   ASTNode();
-  virtual ~ASTNode();
-  virtual Result Accept(Visitor* visitor) = 0;
-  void           SetLineNum(int lineNum) { lineNum_ = lineNum; }
-  int            GetLineNum() const { return lineNum_; }
+  virtual            ~ASTNode();
+  virtual Result      Accept(Visitor* visitor) = 0;
+  void                SetFileLocation(const FileLocation& fileLocation) { fileLocation_ = fileLocation; }
+  const FileLocation& GetFileLocation() const { return fileLocation_; }
+  int                 GetLineNum() const { return fileLocation_.lineNum; }
 
  private:
-  int lineNum_;
+  FileLocation fileLocation_;
 };
 
 class Expr : public ASTNode {
@@ -711,5 +718,5 @@ class Visitor {
   virtual Result Default(ASTNode* node) = 0;
 };
 
-};      // namespace Toucan
+};  // namespace Toucan
 #endif  // _AST_AST_H_

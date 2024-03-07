@@ -34,12 +34,6 @@
 
 using namespace Toucan;
 
-struct FileInfo {
-  FileInfo(const std::string& f, int n) : filename(f), lineno(n) {}
-  std::string filename;
-  int         lineno;
-};
-
 static void PushFile(const char* filename);
 
 static NodeVector* nodes_;
@@ -48,7 +42,7 @@ static TypeTable* types_;
 static std::string includePath_;
 static Stmts** rootStmts_;
 static std::unordered_set<std::string> includedFiles_;
-static std::stack<FileInfo> fileInfo_;
+static std::stack<FileLocation> fileStack_;
 
 extern int yylex();
 extern int yylex_destroy();
@@ -96,7 +90,7 @@ static int AsIntConstant(Expr* expr);
 
 template <typename T, typename... ARGS> T* Make(ARGS&&... args) {
   T* node = nodes_->Make<T>(std::forward<ARGS>(args)...);
-  node->SetLineNum(g_lineno);
+  node->SetFileLocation(fileStack_.top());
   return node;
 }
 inline TypeList* Append(TypeList* typeList) {
@@ -513,16 +507,16 @@ extern "C" int yywrap(void) {
 static int numSyntaxErrors = 0;
 
 void yyerror(const char *s) {
-  std::string filename = std::filesystem::path(g_filename).filename().string();
-  fprintf(stderr, "%s:%d: %s\n", filename.c_str(), g_lineno, s);
+  std::string filename = std::filesystem::path(GetFileName()).filename().string();
+  fprintf(stderr, "%s:%d: %s\n", filename.c_str(), GetLineNum(), s);
   numSyntaxErrors++;
 }
 
 static void yyerrorf(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
-  std::string filename = std::filesystem::path(g_filename).filename().string();
-  fprintf(stderr, "%s:%d: ", filename.c_str(), g_lineno);
+  std::string filename = std::filesystem::path(GetFileName()).filename().string();
+  fprintf(stderr, "%s:%d: ", filename.c_str(), GetLineNum());
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
   numSyntaxErrors++;
@@ -592,9 +586,7 @@ static Expr* InlineFile(const char* filename) {
 }
 
 static void PushFile(const char* filename) {
-  fileInfo_.push({g_filename, g_lineno});
-  g_filename = filename;
-  g_lineno = 1;
+  fileStack_.push(FileLocation(std::make_shared<std::string>(filename), 1));
 }
 
 FILE* IncludeFile(const char* filename) {
@@ -619,9 +611,19 @@ FILE* IncludeFile(const char* filename) {
 }
 
 void PopFile() {
-  g_filename = fileInfo_.top().filename;
-  g_lineno = fileInfo_.top().lineno;
-  fileInfo_.pop();
+  fileStack_.pop();
+}
+
+std::string GetFileName() {
+  return *fileStack_.top().filename;
+}
+
+int GetLineNum() {
+  return fileStack_.top().lineNum;
+}
+
+void IncLineNum() {
+  fileStack_.top().lineNum++;
 }
 
 static Expr* ThisExpr() {
@@ -934,10 +936,10 @@ int ParseProgram(const char* filename,
   rootStmts_ = rootStmts;
   PushFile(filename);
   yyparse();
-  PopFile();
   if (numSyntaxErrors == 0) {
     InstantiateClassTemplates();
   }
+  PopFile();
   nodes_ = nullptr;
   symbols_ = nullptr;
   types_ = nullptr;

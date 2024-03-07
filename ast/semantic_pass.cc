@@ -17,6 +17,8 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
+
+#include <filesystem>
 #include <functional>
 #include <iostream>
 #include <unordered_map>
@@ -35,7 +37,7 @@ Result SemanticPass::Visit(SmartToRawPtr* node) {
   if (!expr) return nullptr;
   Type* exprType = expr->GetType(types_);
   if (!exprType->IsStrongPtr() && !exprType->IsWeakPtr()) {
-    return Error(node->GetLineNum(), "attempt to dereference a non-pointer");
+    return Error(node, "attempt to dereference a non-pointer");
   }
   return Make<SmartToRawPtr>(node, expr);
 }
@@ -48,9 +50,7 @@ Result SemanticPass::Visit(AddressOf* node) {
 }
 
 Result SemanticPass::Visit(ArrayAccess* node) {
-  if (!node->GetIndex()) {
-    return Error(node->GetLineNum(), "variable-sized array type used as expression");
-  }
+  if (!node->GetIndex()) { return Error(node, "variable-sized array type used as expression"); }
   Expr* expr = Resolve(node->GetExpr());
   if (!expr) return nullptr;
   Expr* index = Resolve(node->GetIndex());
@@ -65,14 +65,14 @@ Result SemanticPass::Visit(ArrayAccess* node) {
   exprType = exprType->GetUnqualifiedType();
   Type* indexType = index->GetType(types_);
   if (!indexType->IsInt() && !indexType->IsUInt()) {
-    return Error(node->GetLineNum(), "array index must be integer");
+    return Error(node, "array index must be integer");
   } else if (exprType->IsArray() || exprType->IsMatrix()) {
     return Make<ArrayAccess>(node, expr, index);
   } else if (exprType->IsVector()) {
     ConstantFolder cf;
     return Make<UnresolvedSwizzleExpr>(node, expr, cf.Resolve(index));
   } else {
-    return Error(node->GetLineNum(), "expression is not of indexable type");
+    return Error(node, "expression is not of indexable type");
   }
 }
 
@@ -110,12 +110,11 @@ Result SemanticPass::Visit(ArgList* node) {
   for (auto arg : node->GetArgs()) {
     if (node->IsNamed()) {
       if (arg->GetID().empty()) {
-        return Error(node->GetLineNum(), "if one argument is named, all arguments must be named");
+        return Error(node, "if one argument is named, all arguments must be named");
       }
     } else {
       if (!arg->GetID().empty()) {
-        return Error(node->GetLineNum(),
-                     "if one argument is unnamed, all arguments must be unnamed");
+        return Error(node, "if one argument is unnamed, all arguments must be unnamed");
       }
     }
   }
@@ -130,7 +129,7 @@ Result SemanticPass::Visit(ConstructorNode* node) {
   if (type->IsVector()) {
     auto vectorType = static_cast<VectorType*>(type);
     if (args.size() > vectorType->GetLength()) {
-      return Error(node->GetLineNum(), "incorrect number of arguments to vector constructor");
+      return Error(node, "incorrect number of arguments to vector constructor");
     } else if (args.size() == 1) {
       auto* newArgs = Make<ArgList>(node);
       for (int i = 0; i < vectorType->GetLength(); ++i) {
@@ -142,12 +141,12 @@ Result SemanticPass::Visit(ConstructorNode* node) {
     auto  matrixType = static_cast<MatrixType*>(type);
     Type* columnType = matrixType->GetColumnType();
     if (args.size() != matrixType->GetNumColumns()) {
-      return Error(node->GetLineNum(), "incorrect number of arguments to matrix constructor");
+      return Error(node, "incorrect number of arguments to matrix constructor");
     }
     for (auto arg : args) {
       Type* argType = arg->GetExpr()->GetType(types_);
       if (argType != columnType) {
-        return Error(node->GetLineNum(), "expected type %s in matrix constructor, got %s",
+        return Error(node, "expected type %s in matrix constructor, got %s",
                      columnType->ToString().c_str(), argType->ToString().c_str());
       }
     }
@@ -157,8 +156,7 @@ Result SemanticPass::Visit(ConstructorNode* node) {
     std::vector<Expr*> exprList;
     constructor = classType->FindMethod(classType->GetName(), argList, types_, &exprList);
     if (!constructor) {
-      return Error(node->GetLineNum(),
-                   "constructor for class \"%s\" with those arguments not found",
+      return Error(node, "constructor for class \"%s\" with those arguments not found",
                    classType->GetName().c_str());
     }
     WidenArgList(node, exprList, constructor->formalArgList);
@@ -170,7 +168,7 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
   std::string id = decl->GetID();
   Type*       type = decl->GetType();
   if (symbols_->FindVarInScope(id)) {
-    return Error(decl->GetLineNum(), "variable \"%s\" already defined in this scope", id.c_str());
+    return Error(decl, "variable \"%s\" already defined in this scope", id.c_str());
   }
   if (!type) return nullptr;
   Expr* initExpr = nullptr;
@@ -179,19 +177,18 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
     if (!initExpr) { return nullptr; }
   }
   if (type->IsAuto()) {
-    if (!initExpr) { return Error(decl->GetLineNum(), "auto with no initializer expression"); }
+    if (!initExpr) { return Error(decl, "auto with no initializer expression"); }
     type = initExpr->GetType(types_);
   }
   if (type->IsVoid() || (type->IsArray() && static_cast<ArrayType*>(type)->GetNumElements() == 0)) {
     std::string errorMsg = std::string("cannot create storage of type ") + type->ToString();
-    return Error(decl->GetLineNum(), errorMsg.c_str());
+    return Error(decl, errorMsg.c_str());
   }
   Var* var = symbols_->DefineVar(id, type);
   if (initExpr) {
     Type* initExprType = initExpr->GetType(types_);
     if (!initExprType->CanWidenTo(type)) {
-      return Error(decl->GetLineNum(),
-                   "cannot store a value of type \"%s\" to a location of type \"%s\"",
+      return Error(decl, "cannot store a value of type \"%s\" to a location of type \"%s\"",
                    initExprType->ToString().c_str(), type->ToString().c_str());
     }
     Expr* varExpr = Make<VarExpr>(decl, var);
@@ -216,24 +213,24 @@ Result SemanticPass::ResolveMethodCall(ASTNode*    node,
       if (arg != arglist->GetArgs().back()) { msg += ", "; }
     }
     msg += ")";
-    Error(node->GetLineNum(), msg.c_str());
+    Error(node, msg.c_str());
 
     for (const auto& method : classType->GetMethods()) {
-      if (method->name == id) { Error(node->GetLineNum(), method->ToString().c_str()); }
+      if (method->name == id) { Error(node, method->ToString().c_str()); }
     }
     return nullptr;
   }
   if (!(method->modifiers & Method::STATIC)) {
     if (!expr) {
-      return Error(node->GetLineNum(), "attempt to call non-static method \"%s\" on class \"%s\"",
-                   id.c_str(), classType->ToString().c_str());
+      return Error(node, "attempt to call non-static method \"%s\" on class \"%s\"", id.c_str(),
+                   classType->ToString().c_str());
     } else {
       newArgList[0] = expr;
     }
   }
   for (int i = 0; i < newArgList.size(); ++i) {
     if (!newArgList[i]) {
-      return Error(node->GetLineNum(), "formal parameter \"%s\" has no default value",
+      return Error(node, "formal parameter \"%s\" has no default value",
                    method->formalArgList[i]->name.c_str());
     }
   }
@@ -259,11 +256,9 @@ Result SemanticPass::Visit(UnresolvedMethodCall* node) {
     expr = Make<AddressOf>(node, expr);
     thisPtrType = expr->GetType(types_);
   }
-  if (!type) { return Error(node->GetLineNum(), "calling method on void pointer?"); }
+  if (!type) { return Error(node, "calling method on void pointer?"); }
   type = type->GetUnqualifiedType();
-  if (!type->IsClass()) {
-    return Error(node->GetLineNum(), "expression does not evaluate to class type");
-  }
+  if (!type->IsClass()) { return Error(node, "expression does not evaluate to class type"); }
   ClassType* classType = static_cast<ClassType*>(type);
   return ResolveMethodCall(node, expr, classType, id, arglist);
 }
@@ -301,7 +296,7 @@ Result SemanticPass::Visit(UnresolvedIdentifier* node) {
     Var* thisPtr = symbols_->FindVar("this");
     if (!thisPtr) {
       // TODO:  Implement static field access
-      return Error(node->GetLineNum(), "attempt to access non-static field in static method");
+      return Error(node, "attempt to access non-static field in static method");
     } else {
       Expr* varExpr = Make<VarExpr>(node, thisPtr);
       Expr* loadExpr = Make<LoadExpr>(node, varExpr);
@@ -311,7 +306,7 @@ Result SemanticPass::Visit(UnresolvedIdentifier* node) {
   } else if (const EnumValue* enumValue = symbols_->FindEnumValue(id)) {
     return Make<EnumConstant>(node, enumValue);
   } else {
-    return Error(node->GetLineNum(), "unknown symbol \"%s\"", id.c_str());
+    return Error(node, "unknown symbol \"%s\"", id.c_str());
   }
 }
 
@@ -349,7 +344,7 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
       assert(atype->GetNumElements() > 0);
       return Make<IntConstant>(node, atype->GetNumElements(), 32);  // FIXME: uint?
     } else {
-      return Error(node->GetLineNum(), "unknown array property \"%s\"", id.c_str());
+      return Error(node, "unknown array property \"%s\"", id.c_str());
     }
   } else if (type->IsClass()) {
     ClassType* classType;
@@ -358,7 +353,7 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
     if (field) {
       return Make<FieldAccess>(node, expr, field);
     } else {
-      return Error(node->GetLineNum(), "field \"%s\" not found on class \"%s\"", id.c_str(),
+      return Error(node, "field \"%s\" not found on class \"%s\"", id.c_str(),
                    classType->ToString().c_str());
     }
   } else if (type->IsVector()) {
@@ -366,10 +361,10 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
     if (index >= 0 && index <= 3) {
       return Make<UnresolvedSwizzleExpr>(node, expr, index);
     } else {
-      return Error(node->GetLineNum(), "invalid swizzle '%s'", id.c_str());
+      return Error(node, "invalid swizzle '%s'", id.c_str());
     }
   } else {
-    return Error(node->GetLineNum(), "Expression is not of class, reference or vector type");
+    return Error(node, "Expression is not of class, reference or vector type");
   }
 }
 
@@ -392,18 +387,15 @@ Result SemanticPass::Visit(StoreStmt* node) {
     rhs = Make<InsertElementExpr>(node, loadedBase, rhs, swizzle->GetIndex());
   }
   Type* lhsType = lhs->GetType(types_);
-  if (!lhsType->IsRawPtr()) {
-    return Error(node->GetLineNum(), "expression is not an assignable value");
-  }
+  if (!lhsType->IsRawPtr()) { return Error(node, "expression is not an assignable value"); }
   lhsType = static_cast<RawPtrType*>(lhsType)->GetBaseType();
   Type* rhsType = rhs->GetType(types_);
   int   qualifiers;
   lhsType = lhsType->GetUnqualifiedType(&qualifiers);
   if (qualifiers & Type::Qualifier::ReadOnly) {
-    return Error(node->GetLineNum(), "expression is not an assignable value");
+    return Error(node, "expression is not an assignable value");
   } else if (!rhsType->CanWidenTo(lhsType)) {
-    return Error(node->GetLineNum(),
-                 "cannot store a value of type \"%s\" to a location of type \"%s\"",
+    return Error(node, "cannot store a value of type \"%s\" to a location of type \"%s\"",
                  rhsType->ToString().c_str(), lhsType->ToString().c_str());
   } else {
     return Make<StoreStmt>(node, lhs, rhs);
@@ -437,18 +429,18 @@ Result SemanticPass::Visit(BinOpNode* node) {
   bool  isEqualityOp = node->GetOp() == BinOpNode::EQ || node->GetOp() == BinOpNode::NE;
   if (!lhsType->CanWidenTo(rhsType) && !rhsType->CanWidenTo(lhsType) &&
       !IsValidNonMatchingOp(node->GetOp(), lhsType, rhsType)) {
-    return Error(node->GetLineNum(), "type mismatch on binary operator");
+    return Error(node, "type mismatch on binary operator");
   }
   if (node->GetOp() == BinOpNode::LOGICAL_AND || node->GetOp() == BinOpNode::LOGICAL_AND) {
     if (!lhsType->IsBool() || !rhsType->IsBool()) {
-      return Error(node->GetLineNum(), "non-boolean argument to logical operator");
+      return Error(node, "non-boolean argument to logical operator");
     }
   }
   if (node->IsRelOp()) {
     if (lhsType->IsEnum() || lhsType->IsBool()) {
-      if (!isEqualityOp) { return Error(node->GetLineNum(), "invalid type for binary operator"); }
+      if (!isEqualityOp) { return Error(node, "invalid type for binary operator"); }
     } else if (!(lhsType->IsInt() || lhsType->IsUInt() || lhsType->IsFloatingPoint())) {
-      return Error(node->GetLineNum(), "invalid type for relational operator");
+      return Error(node, "invalid type for relational operator");
     }
   }
   if (lhsType != rhsType) {
@@ -491,12 +483,10 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
   if (unqualifiedType->IsClass()) {
     auto* classType = static_cast<ClassType*>(unqualifiedType);
     if (classType->HasUnsizedArray()) {
-      if (!length) {
-        return Error(node->GetLineNum(), "class with unsized array must be allocated with size");
-      }
+      if (!length) { return Error(node, "class with unsized array must be allocated with size"); }
     }
     if (!classType->IsFullySpecified()) {
-      return Error(node->GetLineNum(), "cannot allocate partially-specified template class %s",
+      return Error(node, "cannot allocate partially-specified template class %s",
                    classType->ToString().c_str());
     }
     std::vector<Expr*> exprList;
@@ -504,14 +494,14 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
     if (constructor) {
       for (int i = 1; i < exprList.size(); ++i) {
         if (!exprList[i]) {
-          return Error(node->GetLineNum(), "formal parameter \"%s\" has no default value",
+          return Error(node, "formal parameter \"%s\" has no default value",
                        constructor->formalArgList[i]->name.c_str());
         }
       }
       WidenArgList(node, exprList, constructor->formalArgList);
       args = Make<ExprList>(node, exprList);
     } else if (classType->IsNative()) {
-      return Error(node->GetArgList()->GetLineNum(), "matching constructor not found");
+      return Error(node->GetArgList(), "matching constructor not found");
     }
   }
   return Make<NewExpr>(node, type, length, constructor, args);
@@ -520,7 +510,7 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
 Result SemanticPass::Visit(IfStatement* s) {
   Expr* expr = Resolve(s->GetExpr());
   if (expr && expr->GetType(types_) != types_->GetBool()) {
-    return Error(s->GetLineNum(), "condition must be boolean");
+    return Error(s, "condition must be boolean");
   } else {
     Stmt* stmt = Resolve(s->GetStmt());
     Stmt* optElse = Resolve(s->GetOptElse());
@@ -532,7 +522,7 @@ Result SemanticPass::Visit(WhileStatement* s) {
   Expr* cond = Resolve(s->GetCond());
   Stmt* body = Resolve(s->GetBody());
   if (cond && cond->GetType(types_) != types_->GetBool()) {
-    return Error(s->GetLineNum(), "condition must be boolean");
+    return Error(s, "condition must be boolean");
   } else {
     return Make<WhileStatement>(s, cond, body);
   }
@@ -542,7 +532,7 @@ Result SemanticPass::Visit(DoStatement* s) {
   Stmt* body = Resolve(s->GetBody());
   Expr* cond = Resolve(s->GetCond());
   if (cond && cond->GetType(types_) != types_->GetBool()) {
-    return Error(s->GetLineNum(), "condition must be boolean");
+    return Error(s, "condition must be boolean");
   } else {
     return Make<DoStatement>(s, body, cond);
   }
@@ -562,9 +552,7 @@ Result SemanticPass::Visit(NewArrayExpr* expr) {
   if (!type) return nullptr;
   if (type->IsArray()) {
     ArrayType* arrayType = static_cast<ArrayType*>(type);
-    if (arrayType->GetNumElements() == 0) {
-      return Error(expr->GetLineNum(), "cannot allocate unsized array");
-    }
+    if (arrayType->GetNumElements() == 0) { return Error(expr, "cannot allocate unsized array"); }
   }
   return Make<NewArrayExpr>(expr, type, sizeExpr);
 }
@@ -581,7 +569,7 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
       // If last statement is not a return statement,
       if (!method->stmts->ContainsReturn()) {
         if (method->returnType != types_->GetVoid()) {
-          return Error(defn->GetLineNum(), "implicit void return, in method returning non-void.");
+          return Error(defn, "implicit void return, in method returning non-void.");
         } else {
           Stmt* last = Make<ReturnStatement>(defn, nullptr, nullptr);
           method->stmts->Append(last);
@@ -600,8 +588,7 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   for (const auto& field : fields) {
     if (field->type->IsUnsizedArray()) {
       if (field != fields.back()) {
-        return Error(defn->GetLineNum(),
-                     "Unsized arrays are only allwed as the last field of a class");
+        return Error(defn, "Unsized arrays are only allwed as the last field of a class");
       }
     }
   }
@@ -611,14 +598,17 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
 }
 
 Result SemanticPass::Default(ASTNode* node) {
-  return Error(node->GetLineNum(),
+  return Error(node,
                "Internal compiler error:  attempt to check semantics on a resolved expression.");
 }
 
-Result SemanticPass::Error(int lineno, const char* fmt, ...) {
+Result SemanticPass::Error(ASTNode* node, const char* fmt, ...) {
+  const FileLocation& location = node->GetFileLocation();
+  std::string         filename =
+      location.filename ? std::filesystem::path(*location.filename).filename().string() : "";
   va_list argp;
   va_start(argp, fmt);
-  fprintf(stderr, "%d:  ", lineno);
+  fprintf(stderr, "%s:%d:  ", filename.c_str(), location.lineNum);
   vfprintf(stderr, fmt, argp);
   fprintf(stderr, "\n");
   numErrors_++;

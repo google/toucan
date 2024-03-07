@@ -148,7 +148,7 @@ TypeList* TypeReplacementPass::ResolveTypes(TypeList* typeList) {
 
 Result TypeReplacementPass::Visit(Stmts* stmts) {
   Stmts* newStmts = Make<Stmts>(stmts);
-  newStmts->SetLineNum(stmts->GetLineNum());
+  newStmts->SetFileLocation(stmts->GetFileLocation());
   if (stmts->GetScope()) { newStmts->SetScope(PushNewScopeAndResolve(stmts->GetScope())); }
 
   for (Stmt* const& it : stmts->GetStmts()) {

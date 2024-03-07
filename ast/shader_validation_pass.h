@@ -55,7 +55,7 @@ class ShaderValidationPass : public Visitor {
   Result            Visit(UnresolvedStaticMethodCall* node) override;
   Result            Visit(VarDeclaration* decl) override;
   Result            Visit(WhileStatement* stmt) override;
-  void              Error(int lineNum, const char* fmt, ...);
+  void              Error(ASTNode* node, const char* fmt, ...);
   Result            Default(ASTNode* node) override;
   const NodeVector& nodes() { return nodes_; }
   int               GetNumErrors() const { return numErrors_; }

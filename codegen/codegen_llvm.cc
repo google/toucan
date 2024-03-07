@@ -1296,8 +1296,10 @@ Result CodeGenLLVM::Visit(UnaryOp* node) {
 }
 
 void CodeGenLLVM::ICE(ASTNode* node) {
-  fprintf(stderr, "%d:  Internal compiler error:  CodeGenLLVM called on unresolved expression.\n",
-          node->GetLineNum());
+  const FileLocation& location = node->GetFileLocation();
+  fprintf(stderr,
+          "%s:%d:  Internal compiler error:  CodeGenLLVM called on unresolved expression.\n",
+          location.filename->c_str(), location.lineNum);
 }
 
 };  // namespace Toucan

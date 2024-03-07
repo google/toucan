@@ -21,7 +21,7 @@ class Stmts;
 };  // namespace Toucan
 
 extern FILE* yyin;
-extern int   ParseProgram(const char* filename,
+extern int   ParseProgram(const char*          filename,
                           Toucan::SymbolTable* symbols,
                           Toucan::TypeTable*   types,
                           Toucan::NodeVector*  nodes,

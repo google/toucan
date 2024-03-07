@@ -1,7 +1,7 @@
 test/aggregate-return.t
 result is 1.000000
 test/allocate-unsized-array.t
-1:  cannot allocate unsized array
+allocate-unsized-array.t:1:  cannot allocate unsized array
 test/allocate-unsized-class.t
 result is 42.000000
 test/api.t
@@ -39,9 +39,9 @@ result is -5.000000
 test/byte.t
 result is -3.000000
 test/cast-classes.t
-14:  cannot store a value of type "null" to a location of type "int"
-17:  cannot store a value of type "Base2*" to a location of type "Base*"
-19:  cannot store a value of type "Derived*" to a location of type "Derived2*"
+cast-classes.t:14:  cannot store a value of type "null" to a location of type "int"
+cast-classes.t:17:  cannot store a value of type "Base2*" to a location of type "Base*"
+cast-classes.t:19:  cannot store a value of type "Derived*" to a location of type "Derived2*"
 test/cast-int-to-float.t
 result is 3.000000
 test/cast-int-vector-to-float-vector.t
@@ -94,37 +94,37 @@ result is 1.000000
 test/enum.t
 result is 1.000000
 test/error-constructor-not-found.t
-1:  matching constructor not found
+error-constructor-not-found.t:1:  matching constructor not found
 test/error-derefernce.t
-2:  attempt to dereference a non-pointer
+error-derefernce.t:2:  attempt to dereference a non-pointer
 test/error-hex-literal-too-large.t
 result is 0.000000
 test/error-int-literal-too-large.t
 result is -2147483648.000000
 test/error-named-param-missing-one.t
-7:  formal parameter "i" has no default value
+error-named-param-missing-one.t:7:  formal parameter "i" has no default value
 test/error-non-static-method-called-statically.t
-5:  attempt to call non-static method "bar" on class "Foo"
+error-non-static-method-called-statically.t:5:  attempt to call non-static method "bar" on class "Foo"
 test/error-partial-template.t
-6:  cannot allocate partially-specified template class Foo<int>
-7:  cannot allocate partially-specified template class Foo
+error-partial-template.t:6:  cannot allocate partially-specified template class Foo<int>
+error-partial-template.t:7:  cannot allocate partially-specified template class Foo
 test/error-texture-from-buffer-incorrect-format.t
-9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(CommandEncoder*, Buffer<float<4>[]>*, int)
-9:  void Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint)
+error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(CommandEncoder*, Buffer<float<4>[]>*, int)
+error-texture-from-buffer-incorrect-format.t:9:  void Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint)
 test/error-uint-literal-too-large.t
 result is 705032704.000000
 test/error-wrong-named-param.t
-7:  class Bar has no method Foo(b = float, a = int)
-7:  float Bar.Foo(int, float)
+error-wrong-named-param.t:7:  class Bar has no method Foo(b = float, a = int)
+error-wrong-named-param.t:7:  float Bar.Foo(int, float)
 test/fail-allocate-class-with-unsized-array.t
-5:  class with unsized array must be allocated with size
+fail-allocate-class-with-unsized-array.t:5:  class with unsized array must be allocated with size
 test/fail-invalid-storage-types.t
-1:  cannot create storage of type void
-2:  cannot create storage of type int[]
+fail-invalid-storage-types.t:1:  cannot create storage of type void
+fail-invalid-storage-types.t:2:  cannot create storage of type int[]
 test/fail-unsized-array-not-last-in-class.t
-4:  Unsized arrays are only allwed as the last field of a class
+fail-unsized-array-not-last-in-class.t:4:  Unsized arrays are only allwed as the last field of a class
 test/field-access-from-static-method-error.t
-3:  attempt to access non-static field in static method
+field-access-from-static-method-error.t:3:  attempt to access non-static field in static method
 test/field-access.t
 result is 3.000000
 test/field-store.t
@@ -134,8 +134,8 @@ result is 2.700000
 test/forward-field.t
 result is -321.000000
 test/forward-var-error.t
-1:  unknown symbol "a"
-3:  unknown symbol "b"
+forward-var-error.t:1:  unknown symbol "a"
+forward-var-error.t:3:  unknown symbol "b"
 test/gouraud.t
 result is 0.000000
 test/if-stmt.t
@@ -177,7 +177,7 @@ invalid-forward-decl.t:8: syntax error
 test/later-class-field.t
 result is -3.000000
 test/length-store-error.t
-2:  expression is not an assignable value
+length-store-error.t:2:  expression is not an assignable value
 test/local-var-do.t
 result is 10.000000
 test/local-var-while.t
@@ -189,7 +189,7 @@ result is 3.000000
 test/matrix.t
 result is 555.000000
 test/method-assignment-error.t
-8:  expression is not an assignable value
+method-assignment-error.t:8:  expression is not an assignable value
 test/method-chained.t
 result is 3.000000
 test/method.t
@@ -197,9 +197,9 @@ result is 3.000000
 test/missing-class.t
 missing-class.t:3: syntax error
 test/missing-field.t
-5:  field "zzz" not found on class "Foo"
+missing-field.t:5:  field "zzz" not found on class "Foo"
 test/missing-method.t
-5:  class Foo has no method zzz()
+missing-method.t:5:  class Foo has no method zzz()
 test/missing-parent-class.t
 missing-parent-class.t:1: syntax error
 test/mutual-recursion.t
@@ -307,7 +307,7 @@ void-array.t:3: invalid array element type "void"
 test/void-ptr-return.t
 result is 3.000000
 test/void-value-error.t
-4:  implicit void return, in method returning non-void.
+void-value-error.t:4:  implicit void return, in method returning non-void.
 test/vtable.t
 result is 1.000000
 test/window.t

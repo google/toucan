@@ -29,8 +29,6 @@ using namespace Toucan;
 extern Type* FindType(const char* str);
 
 std::unordered_map<std::string, std::string> identifiers_;
-int g_lineno = 1;
-std::string g_filename;
 
 #define YY_NEVER_INTERACTIVE 1
 
@@ -144,7 +142,7 @@ half    { return T_HALF; }
 
 \"([^\"]|\\\"|\\\\)*\" {
   for (const char *s = yytext; *s; s++) {
-    if (*s == '\n') g_lineno++;
+    if (*s == '\n') IncLineNum();
   }
   std::string s(yytext + 1, strlen(yytext) - 2);
   identifiers_[yytext] = s;
@@ -153,9 +151,9 @@ half    { return T_HALF; }
 }
 
 [ \t\r]+        /* eat up whitespace */
-\/\/.*\n        { g_lineno++; }
+\/\/.*\n        { IncLineNum(); }
 
-\n              { g_lineno++; }
+\n              { IncLineNum(); }
 
 \<              { return T_LT; }
 \<=             { return T_LE; }
