@@ -61,6 +61,7 @@ class Expr : public ASTNode {
   virtual Type* GetType(TypeTable* types) = 0;
   virtual bool  IsArrayAccess() const { return false; }
   virtual bool  IsUnresolvedSwizzleExpr() const { return false; }
+  virtual bool  IsUnresolvedListExpr() const { return false; }
   virtual bool  IsIntConstant() const { return false; }
 };
 
@@ -184,6 +185,7 @@ class Arg : public ASTNode {
 class ArgList : public ASTNode {
  public:
   ArgList();
+  ArgList(std::vector<Arg*>&& args);
   Result                   Accept(Visitor* visitor) override;
   void                     Append(Arg* arg) { args_.push_back(arg); }
   const std::vector<Arg*>& GetArgs() { return args_; }
@@ -247,6 +249,18 @@ class ConstructorNode : public Expr {
 
  private:
   Type*    type_;
+  ArgList* arglist_;
+};
+
+class UnresolvedListExpr : public Expr {
+ public:
+  UnresolvedListExpr(ArgList* arglist);
+  Result   Accept(Visitor* visitor) override;
+  Type*    GetType(TypeTable* types) override;
+  ArgList* GetArgList() { return arglist_; }
+  bool  IsUnresolvedListExpr() const override { return true; }
+
+ private:
   ArgList* arglist_;
 };
 
@@ -712,6 +726,7 @@ class Visitor {
   virtual Result Visit(UnaryOp* node) { return Default(node); }
   virtual Result Visit(UnresolvedDot* node) { return Default(node); }
   virtual Result Visit(UnresolvedIdentifier* node) { return Default(node); }
+  virtual Result Visit(UnresolvedListExpr* node) { return Default(node); }
   virtual Result Visit(UnresolvedClassDefinition* node) { return Default(node); }
   virtual Result Visit(UnresolvedNewExpr* node) { return Default(node); }
   virtual Result Visit(UnresolvedMethodCall* node) { return Default(node); }

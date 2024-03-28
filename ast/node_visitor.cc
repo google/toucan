@@ -155,6 +155,10 @@ Result NodeVisitor::Visit(UnresolvedDot* node) {
   return Make<UnresolvedDot>(node, Resolve(node->GetExpr()), node->GetID());
 }
 
+Result NodeVisitor::Visit(UnresolvedListExpr* node) {
+  return Make<UnresolvedListExpr>(node, Resolve(node->GetArgList()));
+}
+
 Result NodeVisitor::Visit(UnresolvedMethodCall* node) {
   return Make<UnresolvedMethodCall>(node, Resolve(node->GetExpr()), node->GetID(),
                                     Resolve(node->GetArgList()));

@@ -213,7 +213,7 @@ int main(int argc, char** argv) {
     fprintf(stderr, "no LLVM function dumping in Release builds\n");
     exit(4);
 #else
-    main->dump();
+//    main->dump();
 #endif
   } else {
     engine->finalizeObject();

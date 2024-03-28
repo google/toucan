@@ -6,9 +6,8 @@ auto encoder = new CommandEncoder(device);
 class Pipeline {
   ColorAttachment<PreferredSwapChainFormat>* color;
 }
-Pipeline p;
-p.color = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store, float<4>(0.0, 1.0, 0.0, 1.0));
-auto renderPass = new RenderPass<Pipeline>(encoder, &p);
+auto fb = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store, float<4>(0.0, 1.0, 0.0, 1.0));
+auto renderPass = new RenderPass<Pipeline>(encoder, { fb });
 renderPass.End();
 device.GetQueue().Submit(encoder.Finish());
 swapChain.Present();

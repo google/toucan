@@ -130,6 +130,8 @@ void GenBindings::GenType(Type* type) {
         file_,
         "types->GetUnresolvedScopedType(static_cast<FormalTemplateArg*>(typeList[%d]), \"%s\")",
         typeMap_[unresolvedScopedType->GetBaseType()], unresolvedScopedType->GetID().c_str());
+  } else if (type->IsList()) {
+    fprintf(file_, "nullptr");
   } else {
     assert(!"unknown type");
     exit(-1);

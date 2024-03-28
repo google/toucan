@@ -460,7 +460,7 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
   fpm_->run(*function);
   builder_->SetInsertPoint(whereWasI);
 #if !defined(NDEBUG)
-  if (debugOutput_) function->dump();
+//  if (debugOutput_) function->dump();
 #endif
 }
 
@@ -1132,7 +1132,6 @@ Result CodeGenLLVM::Visit(AddressOf* node) {
     builder_->CreateStore(expr, allocaInst);
     expr = allocaInst;
   }
-  llvm::Function* f = builder_->GetInsertBlock()->getParent();
   return CreatePointer(expr, CreateControlBlock(type));
 }
 
@@ -1166,12 +1165,24 @@ Result CodeGenLLVM::Visit(ConstructorNode* node) {
       llvm::Value* idx = llvm::ConstantInt::get(intType_, i++, true);
       result = builder_->CreateInsertElement(result, elt, idx);
     }
-  } else if (node->GetType()->IsArray() || node->GetType()->IsMatrix() || node->GetType()->IsClass()) {
+  } else if (node->GetType()->IsArray() || node->GetType()->IsMatrix()) {
     int i = 0;
     for (Arg* const& arg : node->GetArgList()->GetArgs()) {
       llvm::Value* v = GenerateLLVM(arg->GetExpr());
       result = builder_->CreateInsertValue(result, v, i++);
-      AppendTemporary(v, arg->GetExpr()->GetType(types_));
+    }
+  } else if (node->GetType()->IsClass()) {
+    auto classType = static_cast<ClassType*>(node->GetType());
+    auto args = node->GetArgList()->GetArgs();
+    for (; classType != nullptr; classType = classType->GetParent()) {
+      for (auto& field : classType->GetFields()) {
+        auto arg = args[field->index];
+        if (Expr* expr = arg->GetExpr()) {
+          llvm::Value* v = GenerateLLVM(expr);
+          result = builder_->CreateInsertValue(result, v, field->paddedIndex);
+          AppendTemporary(v, expr->GetType(types_));
+        }
+      }
     }
   }
   return result;

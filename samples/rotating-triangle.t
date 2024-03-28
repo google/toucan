@@ -29,15 +29,15 @@ class Bindings {
 class Pipeline {
   float<4> vertexShader(VertexBuiltins vb) vertex {
     auto uniforms = bindings.Get().uniformBuffer.MapReadUniform();
-    auto vtx = vert.Get();
-    auto position = float<4>(vtx.position.x, vtx.position.y, 0.0, 1.0);
+    auto v = vertices.Get();
+    auto position = float<4>(v.position.x, v.position.y, 0.0, 1.0);
     vb.position = uniforms.mvpMatrix * position;
-    return float<4>(vtx.color.r, vtx.color.g, vtx.color.b, 1.0);
+    return float<4>(v.color.r, v.color.g, v.color.b, 1.0);
   }
   void fragmentShader(FragmentBuiltins fb, float<4> varyings) fragment {
     fragColor.Set(varyings * bindings.Get().uniformBuffer.MapReadUniform().alpha);
   }
-  vertex Buffer<Vertex[]>* vert;
+  vertex Buffer<Vertex[]>* vertices;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
   BindGroup<Bindings>* bindings;
 }
@@ -61,11 +61,8 @@ while (System.IsRunning()) {
   }
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
-  Pipeline p;
-  p.vert = vb;
-  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
-  p.bindings = bg;
-  auto renderPass = new RenderPass<Pipeline>(encoder, &p);
+  auto fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  auto renderPass = new RenderPass<Pipeline>(encoder, {vertices = vb, fragColor = fb, bindings = bg});
   renderPass.SetPipeline(pipeline);
   renderPass.Draw(3, 1, 0, 0);
   renderPass.End();

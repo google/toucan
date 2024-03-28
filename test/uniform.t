@@ -23,19 +23,12 @@ class PipelineData {
   BindGroup<Bindings>* bindings;
 }
 auto pipeline = new RenderPipeline<PipelineData>(device, null, TriangleList);
-UniformData* uniforms = new UniformData();
-uniforms.opacity = 0.5;
-auto uniformBuffer = new uniform Buffer<UniformData>(device, uniforms);
-Bindings b;
-b.uniforms = uniformBuffer;
-auto bindGroup = new BindGroup<Bindings>(device, &b);
+auto uniformBuffer = new uniform Buffer<UniformData>(device, { opacity = 0.5 });
+auto bindGroup = new BindGroup<Bindings>(device, { uniformBuffer });
 auto framebuffer = swapChain.GetCurrentTexture();
 auto encoder = new CommandEncoder(device);
-PipelineData p;
-p.vertices = vb;
-p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
-p.bindings = bindGroup;
-auto renderPass = new RenderPass<PipelineData>(encoder, &p);
+auto fb = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+auto renderPass = new RenderPass<PipelineData>(encoder, { vertices = vb, fragColor = fb, bindings = bindGroup});
 renderPass.SetPipeline(pipeline);
 renderPass.Draw(3, 1, 0, 0);
 renderPass.End();

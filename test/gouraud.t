@@ -1,24 +1,22 @@
 class Vertex {
-  float<2> position;
+  float<4> position;
   float<3> color;
 }
 
 Device* device = new Device();
 Window* window = new Window(device, 0, 0, 640, 480);
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
+Vertex[3] verts = {
+  { position = { 0.0,  1.0, 0.0, 1.0 }, color = { 1.0, 0.0, 0.0 } },
+  { position = {-1.0, -1.0, 0.0, 1.0 }, color = { 0.0, 1.0, 0.0 } },
+  { position = { 1.0, -1.0, 0.0, 1.0 }, color = { 0.0, 0.0, 1.0 } }
+};
 
-auto verts = new Vertex[3];
-verts[0].position = float<2>( 0.0,  1.0);
-verts[1].position = float<2>(-1.0, -1.0);
-verts[2].position = float<2>( 1.0, -1.0);
-verts[0].color = float<3>(1.0, 0.0, 0.0);
-verts[1].color = float<3>(0.0, 1.0, 0.0);
-verts[2].color = float<3>(0.0, 0.0, 1.0);
-
+auto vb = new vertex Buffer<Vertex[]>(device, &verts);
 class Pipeline {
   float<3> vertexShader(VertexBuiltins vb) vertex {
     Vertex v = vertices.Get();
-    vb.position = float<4>(v.position.x, v.position.y, 0.0, 1.0);
+    vb.position = v.position;
     return v.color;
   }
   void fragmentShader(FragmentBuiltins fb, float<3> varyings) fragment {
@@ -27,13 +25,10 @@ class Pipeline {
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
   vertex Buffer<Vertex[]>* vertices;
 }
-
 auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 auto encoder = new CommandEncoder(device);
-Pipeline p;
-p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
-p.vertices = new vertex Buffer<Vertex[]>(device, verts);
-auto renderPass = new RenderPass<Pipeline>(encoder, &p);
+auto fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+auto renderPass = new RenderPass<Pipeline>(encoder, { vertices = vb, fragColor = fb });
 renderPass.SetPipeline(pipeline);
 renderPass.Draw(3, 1, 0, 0);
 renderPass.End();

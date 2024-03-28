@@ -17,10 +17,8 @@ class Pipeline {
 
 auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 auto encoder = new CommandEncoder(device);
-Pipeline p;
-p.position = vb;
-p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
-auto renderPass = new RenderPass<Pipeline>(encoder, &p);
+auto fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+auto renderPass = new RenderPass<Pipeline>(encoder, { position = vb, fragColor = fb });
 renderPass.SetPipeline(pipeline);
 renderPass.Draw(3, 1, 0, 0);
 renderPass.End();

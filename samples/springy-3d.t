@@ -195,21 +195,15 @@ while(System.IsRunning()) {
   }
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
-  DrawPipeline p;
-  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
-  p.vert = springVBO;
-  auto renderPass = new RenderPass<DrawPipeline>(encoder, &p);
+  auto colorAttachment = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  auto renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = colorAttachment });
 
   renderPass.SetPipeline(springPipeline);
-  p.vert = springVBO;
-  p.bindings = springBG;
-  renderPass.Set(&p);
+  renderPass.Set({vert = springVBO, bindings = springBG});
   renderPass.Draw(springVerts.length, 1, 0, 0);
 
   renderPass.SetPipeline(bodyPipeline);
-  p.vert = bodyVBO;
-  p.bindings = bodyBG;
-  renderPass.Set(&p);
+  renderPass.Set({vert = bodyVBO, bindings = bodyBG});
   renderPass.Draw(bodyVerts.length, 1, 0, 0);
 
   renderPass.End();

@@ -184,6 +184,22 @@ test/later-class-field.t
 result is -3.000000
 test/length-store-error.t
 length-store-error.t:2:  expression is not an assignable value
+test/list-init-aggregated-class.t
+result is 6.000000
+test/list-init-class-to-ptr.t
+result is 42.000000
+test/list-init-class.t
+result is 8.000000
+test/list-init-inherited-field.t
+result is 8.000000
+test/list-init-matrix.t
+result is 3.000000
+test/list-init-padded-class.t
+result is 1.000000
+test/list-init-vector-arg.t
+result is 3.000000
+test/list-init-vector.t
+result is 10.000000
 test/local-var-do.t
 result is 10.000000
 test/local-var-while.t

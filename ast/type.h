@@ -30,6 +30,7 @@ class Expr;
 class ArgList;
 class TypeTable;
 class ClassType;
+class ListType;
 struct Scope;
 
 enum class MemoryLayout { Default = 0, Storage = 1, Uniform = 2 };
@@ -58,6 +59,7 @@ class Type {
   virtual bool  IsDouble() const { return false; }
   virtual bool  IsEnum() const { return false; }
   virtual bool  IsNull() const { return false; }
+  virtual bool  IsList() const { return false; }
   virtual bool  IsStrongPtr() const { return false; }
   virtual bool  IsWeakPtr() const { return false; }
   virtual bool  IsRawPtr() const { return false; }
@@ -82,6 +84,7 @@ class Type {
   virtual int         GetSizeInBytes(int dynamicArrayLength) const { return GetSizeInBytes(); }
   virtual int         GetAlignmentInBytes() const { return GetSizeInBytes(); }
   virtual bool        CanWidenTo(Type* type) const { return type == this; }
+  virtual bool        CanInitFrom(const ListType* type) const { return false; }
   enum Qualifier {
     Uniform = 0x0001,
     Storage = 0x0002,
@@ -107,10 +110,12 @@ class VectorType : public Type {
   bool         IsFloatVector() const override { return componentType_->IsFloat(); }
   bool         IsPOD() const override { return true; }
   bool         CanWidenTo(Type* type) const override;
+  bool         CanInitFrom(const ListType* type) const override;
   int          GetSizeInBytes() const override;
   std::string  ToString() const override;
   Type*        GetComponentType() { return componentType_; }
   unsigned int GetLength() { return length_; }
+  int          GetSwizzle(const std::string& str) const;
 
  private:
   Type*        componentType_;
@@ -126,6 +131,7 @@ class MatrixType : public Type {
   std::string  ToString() const override;
   VectorType*  GetColumnType() { return columnType_; }
   unsigned int GetNumColumns() { return numColumns_; }
+  bool         CanInitFrom(const ListType* type) const override;
 
  private:
   VectorType*  columnType_;
@@ -239,6 +245,7 @@ class ArrayType : public Type {
   MemoryLayout GetMemoryLayout() const { return memoryLayout_; }
   void         SetMemoryLayout(MemoryLayout memoryLayout) { memoryLayout_ = memoryLayout; }
   bool         CanWidenTo(Type* type) const override;
+  bool         CanInitFrom(const ListType* type) const override;
 
  private:
   Type*        elementType_;
@@ -392,7 +399,7 @@ class ClassType : public Type {
  public:
   ClassType(std::string name);
   Field*              AddField(std::string name, Type* type, Expr* defaultValue);
-  Field*              FindField(std::string name);
+  Field*              FindField(std::string name) const;
   void                AddMethod(Method* method, int vtableIndex);
   size_t              ComputeFieldOffsets();
   Method*             FindMethod(const std::string& name, const TypeList& args);
@@ -401,7 +408,8 @@ class ClassType : public Type {
                                  TypeTable*          types,
                                  std::vector<Expr*>* newArgList);
   void                AddEnum(std::string id, EnumType* enumType);
-  const FieldVector&  GetFields() const { return fields_; }
+  const FieldVector&  GetFields() const { return fields_; }          // local fields only
+  int                 GetTotalFields() const { return numFields_; }  // includes inherited fields
   const MethodVector& GetMethods() { return methods_; }
   ClassTemplate*      GetTemplate() const { return template_; }
   const TypeList&     GetTemplateArgs() const { return templateArgs_; }
@@ -412,6 +420,7 @@ class ClassType : public Type {
   bool                IsClass() const override { return true; }
   bool                IsPOD() const override;
   bool                CanWidenTo(Type* type) const override;
+  bool                CanInitFrom(const ListType* type) const override;
   bool                HasUnsizedArray() const;
   void                SetParent(ClassType* parent);
   void                SetScope(Scope* scope) { scope_ = scope; }
@@ -492,6 +501,7 @@ class WeakPtrType : public PtrType {
   std::string ToString() const override;
   bool        IsWeakPtr() const override { return true; }
   bool        CanWidenTo(Type* type) const override;
+  bool        CanInitFrom(const ListType* type) const override { return GetBaseType()->CanInitFrom(type); }
 };
 
 class RawPtrType : public PtrType {
@@ -514,6 +524,20 @@ class NullType : public PtrType {
     assert(false);
     return 0;
   }
+};
+
+class ListType : public Type {
+ public:
+  ListType(const VarVector& types);
+  bool        IsList() const override { return true; }
+  bool        IsPOD() const override { return false; } // FIXME: true if all types are POD?
+  std::string ToString() const override { return "ListType"; }
+  bool        CanWidenTo(Type* type) const override { return type->CanInitFrom(this); }
+  int         GetSizeInBytes() const override;
+  const VarVector& GetTypes() const { return types_; }
+  bool        IsNamed() const { return !types_.empty() && !types_[0]->name.empty(); }
+ private:
+  VarVector types_;
 };
 
 typedef std::vector<std::unique_ptr<Type>>     TypeStorageVector;
@@ -549,6 +573,7 @@ class TypeTable {
   VoidType*          GetVoid();
   AutoType*          GetAuto();
   NullType*          GetNull();
+  ListType*          GetList(VarVector&& types);
   VectorType*        GetVector(Type* componentType, int size);
   MatrixType*        GetMatrix(VectorType* columnType, int numColumns);
   StrongPtrType*     GetStrongPtrType(Type* type);

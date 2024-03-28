@@ -51,6 +51,7 @@ class NodeVisitor : public Visitor {
   Result        Visit(UnaryOp* node) override;
   Result        Visit(UnresolvedDot* node) override;
   Result        Visit(UnresolvedIdentifier* node) override;
+  Result        Visit(UnresolvedListExpr* node) override;
   Result        Visit(UnresolvedMethodCall* node) override;
   Result        Visit(UnresolvedStaticMethodCall* node) override;
   Result        Visit(VarDeclaration* decl) override;

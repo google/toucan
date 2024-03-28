@@ -83,6 +83,8 @@ Arg::Arg(std::string id, Expr* expr) : id_(id), expr_(expr) {}
 
 ArgList::ArgList() {}
 
+ArgList::ArgList(std::vector<Arg*>&& args) : args_(std::move(args)) {}
+
 bool ArgList::IsNamed() const { return !args_.empty() && !args_.front()->GetID().empty(); }
 
 BinOpNode::BinOpNode(Op op, Expr* lhs, Expr* rhs) : op_(op), lhs_(lhs), rhs_(rhs) {}
@@ -123,6 +125,16 @@ Type* UnaryOp::GetType(TypeTable* types) { return rhs_->GetType(types); }
 
 ConstructorNode::ConstructorNode(Type* type, ArgList* arglist)
     : type_(type), arglist_(arglist) {}
+
+UnresolvedListExpr::UnresolvedListExpr(ArgList* arglist) : arglist_(arglist) {}
+
+Type* UnresolvedListExpr::GetType(TypeTable* types) {
+  VarVector vars;
+  for (auto arg : arglist_->GetArgs()) {
+    vars.push_back(std::make_shared<Var>(arg->GetID(), arg->GetExpr()->GetType(types)));
+  }
+  return types->GetList(std::move(vars));
+}
 
 VarDeclaration::VarDeclaration(std::string id, Type* type, Expr* initExpr)
     : id_(id), type_(type), initExpr_(initExpr) {}
@@ -305,6 +317,7 @@ Result UIntConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnaryOp::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedDot::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedIdentifier::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result UnresolvedListExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedClassDefinition::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedMethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedNewExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }

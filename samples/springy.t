@@ -91,12 +91,12 @@ class Bindings {
 class DrawPipeline {
   void vertexShader(VertexBuiltins vb) vertex {
     auto matrix = bindings.Get().uniforms.MapReadUniform().matrix;
-    vb.position = matrix * Utils.makeFloat4(vert.Get());
+    vb.position = matrix * Utils.makeFloat4(vertices.Get());
   }
   void fragmentShader(FragmentBuiltins fb) fragment {
     fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
   }
-  vertex Buffer<Vector[]>* vert;
+  vertex Buffer<Vector[]>* vertices;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
   BindGroup<Bindings>* bindings;
 }
@@ -195,21 +195,15 @@ while(System.IsRunning()) {
   }
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
-  DrawPipeline p;
-  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
-  p.vert = springVBO;
-  auto renderPass = new RenderPass<DrawPipeline>(encoder, &p);
+  auto colorAttachment = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  auto renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = colorAttachment });
 
   renderPass.SetPipeline(springPipeline);
-  p.vert = springVBO;
-  p.bindings = springBG;
-  renderPass.Set(&p);
+  renderPass.Set({vertices = springVBO, bindings = springBG});
   renderPass.Draw(springVerts.length, 1, 0, 0);
 
   renderPass.SetPipeline(bodyPipeline);
-  p.vert = bodyVBO;
-  p.bindings = bodyBG;
-  renderPass.Set(&p);
+  renderPass.Set({vertices = bodyVBO, bindings = bodyBG});
   renderPass.Draw(bodyVerts.length, 1, 0, 0);
 
   renderPass.End();

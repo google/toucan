@@ -33,16 +33,13 @@ class Pipeline {
   }
   void fragmentShader(FragmentBuiltins fb, Varyings v) fragment { fragColor.Set(v); }
   vertex Buffer<Vertex[]>* vertices;
-  index Buffer<ushort[]>* indexBuffer;
+  index Buffer<ushort[]>* indices;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
 }
 auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 auto encoder = new CommandEncoder(device);
-Pipeline p;
-p.vertices = vb;
-p.indexBuffer = ib;
-p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
-auto renderPass = new RenderPass<Pipeline>(encoder, &p);
+auto fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+auto renderPass = new RenderPass<Pipeline>(encoder, { vertices = vb, indices = ib, fragColor = fb });
 renderPass.SetPipeline(pipeline);
 renderPass.DrawIndexed(6, 1, 0, 0, 0);
 renderPass.End();

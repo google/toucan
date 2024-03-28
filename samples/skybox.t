@@ -4,7 +4,6 @@ include "quaternion.t"
 include "transform.t"
 
 class Vertex {
-  Vertex(float<3> p, float<3> n) { position = p; normal = n; }
   float<3> position;
   float<3> normal;
 }
@@ -53,7 +52,7 @@ class Bindings {
 
 class SkyboxPipeline {
     float<3> vertexShader(VertexBuiltins vb) vertex {
-        auto v = position.Get();
+        auto v = vertices.Get();
         auto uniforms = bindings.Get().uniforms.MapReadUniform();
         auto pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
@@ -65,8 +64,8 @@ class SkyboxPipeline {
       // TODO: figure out why the skybox is X-flipped
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
-    vertex Buffer<float<3>[]>* position;
-    index Buffer<uint[]>* indexBuffer;
+    vertex Buffer<float<3>[]>* vertices;
+    index Buffer<uint[]>* indices;
     ColorAttachment<PreferredSwapChainFormat>* fragColor;
     DepthStencilAttachment<Depth24Plus>* depth;
     BindGroup<Bindings>* bindings;
@@ -100,12 +99,11 @@ while (System.IsRunning()) {
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
   SkyboxPipeline p;
-  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
-  p.depth = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
-  p.position = cubeVB;
-  p.indexBuffer = cubeIB;
-  p.bindings = cubeBindGroup;
-  auto renderPass = new RenderPass<SkyboxPipeline>(encoder, &p);
+  auto fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  auto db = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
+  auto renderPass = new RenderPass<SkyboxPipeline>(encoder,
+    { fragColor = fb, depth = db, vertices = cubeVB, indices = cubeIB, bindings = cubeBindGroup }
+  );
 
   renderPass.SetPipeline(cubePipeline);
   renderPass.DrawIndexed(cubeIndices.length, 1, 0, 0, 0);

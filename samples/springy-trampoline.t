@@ -234,23 +234,21 @@ for (uint i = 0; i < bodies.length; ++i) {
   }
 }
 
-ComputeBindings* computeBindings = new ComputeBindings();
-auto bodyVerts = new Vector[bodies.length * 3];
-auto bodyVBO = new vertex storage Buffer<Vector[]>(device, bodies.length * 3);
-computeBindings.bodyVerts = bodyVBO;
 
-auto springVerts = new Vector[springs.length * 2];
-auto springVBO = new vertex storage Buffer<Vector[]>(device, springs.length * 2);
-computeBindings.springVerts = springVBO;
+int numBodyVerts = bodies.length * 3;
+auto bodyVBO = new vertex storage Buffer<Vector[]>(device, numBodyVerts);
+int numSpringVerts = springs.length * 2;
+auto springVBO = new vertex storage Buffer<Vector[]>(device, numSpringVerts);
 
-computeBindings.uniforms = new uniform Buffer<Uniforms>(device);
+auto computeUBO = new uniform Buffer<Uniforms>(device);
 
-computeBindings.bodyStorage = new storage Buffer<Body[]>(device, bodies.length);
-computeBindings.bodyStorage.SetData(bodies);
-
-computeBindings.springStorage = new storage Buffer<Spring[]>(device, springs.length);
-computeBindings.springStorage.SetData(springs);
-
+auto computeBindGroup = new BindGroup<ComputeBindings>(device, {
+  bodyVerts = bodyVBO,
+  springVerts = springVBO,
+  uniforms = computeUBO,
+  bodyStorage = new storage Buffer<Body[]>(device, bodies),
+  springStorage = new storage Buffer<Spring[]>(device, springs)
+});
 class Shaders {
   vertex Buffer<Vector[]>* vert;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
@@ -278,17 +276,14 @@ Uniforms* u = new Uniforms();
 u.deltaT = 1.0 / frequency;
 u.gravity = Vector(0.0, 0.0);
 u.particleSize = Vector(0.5) / (float) width;
-auto computeBG = new BindGroup<ComputeBindings>(device, computeBindings);
 while(System.IsRunning()) {
   u.wind = Vector(Math.rand() * 0.00, 0.0);
-  computeBindings.uniforms.SetData(u);
+  computeUBO.SetData(u);
 
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
 
-  ComputeBase cb;
-  cb.bindings = computeBG;
-  auto computePass = new ComputePass<ComputeBase>(encoder, &cb);
+  auto computePass = new ComputePass<ComputeBase>(encoder, {bindings = computeBindGroup} );
 
   computePass.SetPipeline(computeForces);
   computePass.Dispatch(springs.length, 1, 1);
@@ -303,23 +298,18 @@ while(System.IsRunning()) {
   computePass.Dispatch(springs.length, 1, 1);
 
   computePass.End();
-  Shaders s;
-  s.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
-  auto renderPass = new RenderPass<Shaders>(encoder, &s);
+  auto colorAttachment = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  auto renderPass = new RenderPass<Shaders>(encoder, { fragColor = colorAttachment });
 
   auto bodyPass = new RenderPass<BodyShaders>(renderPass);
   bodyPass.SetPipeline(bodyPipeline);
-  BodyShaders bodyData;
-  bodyData.vert = bodyVBO;
-  bodyPass.Set(&bodyData);
-  bodyPass.Draw(bodyVerts.length, 1, 0, 0);
+  bodyPass.Set({vert = bodyVBO});
+  bodyPass.Draw(numBodyVerts, 1, 0, 0);
 
   auto springPass = new RenderPass<SpringShaders>(renderPass);
   springPass.SetPipeline(springPipeline);
-  SpringShaders springData;
-  springData.vert = springVBO;
-  springPass.Set(&springData);
-  springPass.Draw(springVerts.length, 1, 0, 0);
+  springPass.Set({vert = springVBO});
+  springPass.Draw(numSpringVerts, 1, 0, 0);
 
   renderPass.End();
   device.GetQueue().Submit(encoder.Finish());

@@ -120,7 +120,7 @@ Type* FindType(const char* str) {
 %type <type> scalar_type type class_header
 %type <type> simple_type qualified_type
 %type <classType> template_class_header
-%type <expr> expr opt_expr assignable arith_expr
+%type <expr> expr opt_expr assignable arith_expr expr_or_list
 %type <arg> argument
 %type <stmt> statement expr_statement for_loop_stmt
 %type <stmt> assignment
@@ -194,7 +194,7 @@ expr_statement:
   ;
 
 assignment:
-    assignable '=' expr                     { $$ = Store($1, $3); }
+    assignable '=' expr_or_list             { $$ = Store($1, $3); }
   | assignable T_ADD_EQUALS expr            { $$ = Store($1, BinOp(BinOpNode::ADD, Load($1), $3)); }
   | assignable T_SUB_EQUALS expr            { $$ = Store($1, BinOp(BinOpNode::SUB, Load($1), $3)); }
   | assignable T_MUL_EQUALS expr            { $$ = Store($1, BinOp(BinOpNode::MUL, Load($1), $3)); }
@@ -397,12 +397,12 @@ non_empty_formal_arguments:
   ;
 formal_argument:
     type T_IDENTIFIER                       { AddFormalArgument($1, $2, nullptr); }
-  | type T_IDENTIFIER '=' expr              { AddFormalArgument($1, $2, $4); }
+  | type T_IDENTIFIER '=' expr_or_list      { AddFormalArgument($1, $2, $4); }
   ;
 
 var_decl:
     T_IDENTIFIER                            { $$ = Make<VarDeclaration>($1, nullptr, nullptr); }
-  | T_IDENTIFIER '=' expr                   { $$ = Make<VarDeclaration>($1, nullptr, $3); }
+  | T_IDENTIFIER '=' expr_or_list           { $$ = Make<VarDeclaration>($1, nullptr, $3); }
   ;
 
 scalar_type:
@@ -428,8 +428,8 @@ non_empty_arguments:
   ;
 
 argument:
-    T_IDENTIFIER '=' expr                   { $$ = Make<Arg>($1, $3); }
-  | expr                                    { $$ = Make<Arg>("", $1); }
+    T_IDENTIFIER '=' expr_or_list           { $$ = Make<Arg>($1, $3); }
+  | expr_or_list                            { $$ = Make<Arg>("", $1); }
   ;
 
 arith_expr:
@@ -479,6 +479,11 @@ expr:
   | T_NEW type '[' arith_expr ']'           { $$ = MakeNewArrayExpr($2, $4); }
   | T_NEW '[' arith_expr ']' type '(' arguments ')' { $$ = MakeNewExpr($5, $3, $7); }
   | T_INLINE '(' T_STRING ')'               { $$ = InlineFile($3); }
+  ;
+
+expr_or_list:
+    expr
+  | '{' arguments '}'                       { $$ = Make<UnresolvedListExpr>($2); }
   ;
 
 types:

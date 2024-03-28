@@ -75,6 +75,16 @@ AutoType::AutoType() {}
 
 NullType::NullType() : PtrType(nullptr) {}
 
+ListType::ListType(const VarVector& types) : types_(types) {}
+
+int ListType::GetSizeInBytes() const {
+  int size = 0;
+  for (auto type : types_) {
+    size += type->type->GetSizeInBytes();
+  }
+  return size;
+}
+
 FormalTemplateArg::FormalTemplateArg(std::string name) : name_(name) {}
 
 std::string FormalTemplateArg::ToString() const { return name_; }
@@ -101,11 +111,43 @@ bool VectorType::CanWidenTo(Type* type) const {
   return false;
 }
 
+bool VectorType::CanInitFrom(const ListType* listType) const {
+  if (listType->IsNamed()) { return false; }
+
+  auto types = listType->GetTypes();
+  if (types.size() != length_) { return false; }
+  for (auto type : types) {
+    if (!type->type->CanWidenTo(componentType_)) { return false; }
+  }
+  return true;
+}
+
+int VectorType::GetSwizzle(const std::string& str) const {
+  if (str[0] == '\0') return -1;
+  if (str[1] != '\0') return -1;
+  char c = str[0];
+  if (c == 'x' || c == 'r') return 0;
+  if (c == 'y' || c == 'g') return 1;
+  if ((c == 'z' || c == 'b') && length_ >= 3) return 2;
+  if ((c == 'w' || c == 'a') && length_ >= 4) return 3;
+  return -1;
+}
+
 MatrixType::MatrixType(VectorType* columnType, unsigned int numColumns)
     : columnType_(columnType), numColumns_(numColumns) {}
 
 std::string MatrixType::ToString() const {
   return columnType_->ToString() + "<" + std::to_string(numColumns_) + ">";
+}
+
+bool MatrixType::CanInitFrom(const ListType* listType) const {
+  if (listType->IsNamed()) { return false; }
+  auto types = listType->GetTypes();
+  if (types.size() != numColumns_) { return false; }
+  for (auto type : types) {
+    if (!type->type->CanWidenTo(columnType_)) { return false; }
+  }
+  return true;
 }
 
 ArrayType::ArrayType(Type* elementType, int numElements, MemoryLayout memoryLayout)
@@ -119,6 +161,16 @@ bool ArrayType::CanWidenTo(Type* type) const {
     if (arrayType->GetNumElements() == GetNumElements()) { return true; }
   }
   return false;
+}
+
+bool ArrayType::CanInitFrom(const ListType* listType) const {
+  if (listType->IsNamed()) { return false; }
+  auto types = listType->GetTypes();
+  if (types.empty()) { return true; }
+  for (auto type : types) {
+    if (!type->type->CanWidenTo(elementType_)) { return false; }
+  }
+  return true;
 }
 
 int ArrayType::GetElementSizeInBytes() const {
@@ -351,7 +403,7 @@ Type* ClassType::FindType(const std::string& id) {
   return parent_ ? parent_->FindType(id) : nullptr;
 }
 
-Field* ClassType::FindField(std::string name) {
+Field* ClassType::FindField(std::string name) const {
   for (const auto& it : fields_) {
     Field* field = it.get();
     if (field->name == name) { return field; }
@@ -390,6 +442,21 @@ bool ClassType::CanWidenTo(Type* type) const {
   }
   if (type->IsClassTemplate() && GetTemplate() == type) { return true; }
   return false;
+}
+
+bool ClassType::CanInitFrom(const ListType* listType) const {
+  auto types = listType->GetTypes();
+  if (types.empty()) { return true; }
+  if (listType->IsNamed()) {
+    for (auto type : types) {
+      Field* field = FindField(type->name);
+      if (!field) { return false; }
+      if (!type->type->CanWidenTo(field->type)) { return false; }
+    }
+  } else {
+    if (types.size() != fields_.size()) { return false; }
+  }
+  return true;
 }
 
 bool ClassType::IsNative() const {
@@ -445,6 +512,35 @@ static bool MatchArgs(ArgList* args, Method* m, TypeTable* types, std::vector<Ex
         return false;
       }
       result[i + offset] = expr;
+    }
+  }
+  *newArgList = result;
+  return true;
+}
+
+static bool MatchFields(ArgList* args, ClassType* c, TypeTable* types, std::vector<Expr*>* newArgList) {
+  std::vector<Expr*> result;
+  for (auto& field : c->GetFields()) {
+    result.push_back(field->defaultValue);
+  }
+  if (args->IsNamed()) {
+    for (auto arg : args->GetArgs()) {
+      Field* field = c->FindField(arg->GetID());
+      if (!field) { return false; }
+      if (!arg->GetExpr()->GetType(types)->CanWidenTo(field->type)) { return false; }
+      result[field->index] = arg->GetExpr();
+    }
+  } else {
+    size_t      numArgs = args->GetArgs().size();
+    Arg* const* a = args->GetArgs().data();
+    auto& fields = c->GetFields();
+    if (numArgs > fields.size()) { return false; }
+    for (int i = 0; i < numArgs; ++i) {
+      Expr* expr = a[i]->GetExpr();
+      if (expr && !expr->GetType(types)->CanWidenTo(fields[i]->type)) {
+        return false;
+      }
+      result[i] = expr;
     }
   }
   *newArgList = result;
@@ -611,6 +707,11 @@ VoidType* TypeTable::GetVoid() { return void_; }
 AutoType* TypeTable::GetAuto() { return auto_; }
 
 NullType* TypeTable::GetNull() { return null_; }
+
+ListType* TypeTable::GetList(VarVector&& types) {
+  // FIXME: implement caching?
+  return Make<ListType>(types);
+}
 
 StrongPtrType* TypeTable::GetStrongPtrType(Type* baseType) {
   StrongPtrType* type = strongPtrTypes_[baseType];

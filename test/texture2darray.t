@@ -44,7 +44,7 @@ class Pipeline {
       fragColor.Set(b.textureView.Sample(b.sampler, varyings.texCoord, 1));
     }
     vertex Buffer<Vertex[]>* vert;
-    index Buffer<uint[]>*    indexBuffer;
+    index Buffer<uint[]>*    indices;
     ColorAttachment<PreferredSwapChainFormat>* fragColor;
     BindGroup<Bindings>*     bindings;
 };
@@ -73,7 +73,7 @@ auto encoder = new CommandEncoder(device);
 Pipeline p;
 p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
 p.vert = new vertex Buffer<Vertex[]>(device, verts);
-p.indexBuffer = new index Buffer<uint[]>(device, indices);
+p.indices = new index Buffer<uint[]>(device, indices);
 p.bindings = bindGroup;
 auto renderPass = new RenderPass<Pipeline>(encoder, &p);
 renderPass.SetPipeline(pipeline);

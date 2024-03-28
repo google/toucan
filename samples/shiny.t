@@ -6,7 +6,6 @@ include "transform.t"
 include "teapot.t"
 
 class Vertex {
-  Vertex(float<3> p, float<3> n) { position = p; normal = n; }
   float<3> position;
   float<3> normal;
 }
@@ -155,7 +154,7 @@ class ReflectionPipeline : Pipeline {
 auto depthState = new DepthStencilState<Depth24Plus>();
 
 auto cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, TriangleList);
-auto cubeBindings = new Bindings();
+Bindings cubeBindings;
 cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
 cubeBindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
 cubeBindings.textureView = texture.CreateSampleableView();
@@ -163,10 +162,10 @@ cubeBindings.textureView = texture.CreateSampleableView();
 SkyboxPipeline cubeData;
 cubeData.position = new vertex Buffer<float<3>[]>(device, &cubeVerts);
 cubeData.indexBuffer = new index Buffer<uint[]>(device, &cubeIndices);
-cubeData.bindings = new BindGroup<Bindings>(device, cubeBindings);
+cubeData.bindings = new BindGroup<Bindings>(device, &cubeBindings);
 
 auto teapotPipeline = new RenderPipeline<ReflectionPipeline>(device, depthState, TriangleList);
-auto teapotBindings = new Bindings();
+Bindings teapotBindings;
 teapotBindings.sampler = cubeBindings.sampler;
 teapotBindings.textureView = cubeBindings.textureView;
 teapotBindings.uniforms = new uniform Buffer<Uniforms>(device);
@@ -174,7 +173,7 @@ teapotBindings.uniforms = new uniform Buffer<Uniforms>(device);
 ReflectionPipeline teapotData;
 teapotData.vert = new vertex Buffer<Vertex[]>(device, tessTeapot.vertices);
 teapotData.indexBuffer = new index Buffer<uint[]>(device, tessTeapot.indices);
-teapotData.bindings = new BindGroup<Bindings>(device, teapotBindings);
+teapotData.bindings = new BindGroup<Bindings>(device, &teapotBindings);
 
 EventHandler handler;
 handler.rotation = float<2>(0.0, 0.0);
@@ -199,10 +198,9 @@ while (System.IsRunning()) {
   teapotBindings.uniforms.SetData(&uniforms);
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
-  Pipeline p;
-  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
-  p.depth = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
-  auto renderPass = new RenderPass<Pipeline>(encoder, &p);
+  auto fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  auto db = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
+  auto renderPass = new RenderPass<Pipeline>(encoder, { fragColor = fb, depth = db });
 
   auto cubePass = new RenderPass<SkyboxPipeline>(renderPass);
   cubePass.SetPipeline(cubePipeline);

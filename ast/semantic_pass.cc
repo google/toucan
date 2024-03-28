@@ -133,7 +133,15 @@ Result SemanticPass::Visit(ConstructorNode* node) {
       return Error(node, "constructor for class \"%s\" with those arguments not found",
                    classType->GetName().c_str());
     }
-    Expr* value = Make<ConstructorNode>(node, node->GetType(), Make<ArgList>(node));
+
+    auto* initializerArgs = Make<ArgList>(node);
+    // For now, use default initialization on all fields
+    for (ClassType* c = classType; c != nullptr; c = c->GetParent()) {
+      for (const auto& field : c->GetFields()) {
+        initializerArgs->Append(Make<Arg>(node, field->name, field->defaultValue));
+      }
+    }
+    Expr* value = Make<ConstructorNode>(node, node->GetType(), initializerArgs);
     newArgList[0] = Make<AddressOf>(node, value);
     WidenArgList(node, newArgList, constructor->formalArgList);
     auto* exprList = Make<ExprList>(node, std::move(newArgList));
@@ -176,6 +184,7 @@ Stmt* SemanticPass::InitializeVar(ASTNode* node, Expr* varExpr, Type* type, Expr
             initExprType->ToString().c_str(), type->ToString().c_str());
       return nullptr;
     }
+    initExpr = Widen(initExpr, type);
     return Make<StoreStmt>(node, varExpr, initExpr);
   } else if (type->IsClass()) {
     return InitializeClass(node, varExpr, static_cast<ClassType*>(type));
@@ -263,6 +272,79 @@ Result SemanticPass::ResolveMethodCall(ASTNode*    node,
   return Make<MethodCall>(node, method, exprList);
 }
 
+Expr* SemanticPass::Widen(Expr* node, Type* dstType) {
+  Type* srcType = node->GetType(types_);
+  if (srcType == dstType) {
+    return node;
+  } else if (node->IsUnresolvedListExpr()) {
+    return ResolveListExpr(static_cast<UnresolvedListExpr*>(node), dstType);
+  } else {
+    return Make<CastExpr>(node, dstType, node);
+  }
+}
+
+Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
+  if (dstType->IsPtr()) {
+    dstType = static_cast<PtrType*>(dstType)->GetBaseType();
+    return Make<AddressOf>(node, ResolveListExpr(node, dstType));
+  }
+  Type* type = dstType;
+  auto argList = node->GetArgList();
+  if (dstType->IsClass()) {
+    auto classType = static_cast<ClassType*>(dstType);
+    auto& fields = classType->GetFields();
+    if (argList->IsNamed()) {
+      std::vector<Arg*> newArgs(classType->GetTotalFields(), nullptr);
+      for (auto arg : argList->GetArgs()) {
+        Field* field = classType->FindField(arg->GetID());
+        newArgs[field->index] = Make<Arg>(node, field->name, Widen(arg->GetExpr(), field->type));
+      }
+      for (ClassType* c = classType; c != nullptr; c = c->GetParent()) {
+        for (auto& field : c->GetFields()) {
+          if (newArgs[field->index] == nullptr) {
+            newArgs[field->index] = Make<Arg>(node, field->name, field->defaultValue);
+          }
+        }
+      }
+      argList = Make<ArgList>(node, std::move(newArgs));
+    } else {
+      auto* result = Make<ArgList>(node);
+      int i = 0;
+      for (auto arg : argList->GetArgs()) {
+        auto newArg = Make<Arg>(node, arg->GetID(), Widen(arg->GetExpr(), fields[i++]->type));
+        result->Append(newArg);
+      }
+      argList = result;
+    }
+  } else {
+    if (argList->IsNamed()) {
+      Error(node, "named list expression are unsupported for %s", dstType->ToString().c_str());
+      return nullptr;
+    }
+    Type* elementType;
+    if (dstType->IsVector()) {
+      elementType = static_cast<VectorType*>(dstType)->GetComponentType();
+    } else if (dstType->IsArray()) {
+      elementType = static_cast<ArrayType*>(dstType)->GetElementType();
+    } else if (dstType->IsMatrix()) {
+      elementType = static_cast<MatrixType*>(dstType)->GetColumnType();
+    } else {
+      assert(!"unexpected type in arglist");
+    }
+    auto* result = Make<ArgList>(node);
+    for (auto arg : argList->GetArgs()) {
+      Expr* argExpr = arg->GetExpr();
+      if (argExpr->IsUnresolvedListExpr()) {
+        argExpr = ResolveListExpr(static_cast<UnresolvedListExpr*>(argExpr), elementType);
+      }
+      auto newArg = Make<Arg>(node, arg->GetID(), argExpr);
+      result->Append(newArg);
+    }
+    argList = result;
+  }
+  return Make<ConstructorNode>(node, type, argList);
+}
+
 Result SemanticPass::Visit(UnresolvedMethodCall* node) {
   std::string id = node->GetID();
   Expr*       expr = Resolve(node->GetExpr());
@@ -334,19 +416,6 @@ Result SemanticPass::Visit(UnresolvedIdentifier* node) {
   }
 }
 
-static int GetSwizzle(Type* type, const std::string& str) {
-  if (!type->IsVector()) { return -1; }
-  VectorType* vtype = static_cast<VectorType*>(type);
-  if (str[0] == '\0') return -1;
-  if (str[1] != '\0') return -1;
-  char c = str[0];
-  if (c == 'x' || c == 'r') return 0;
-  if (c == 'y' || c == 'g') return 1;
-  if ((c == 'z' || c == 'b') && vtype->GetLength() >= 3) return 2;
-  if ((c == 'w' || c == 'a') && vtype->GetLength() >= 4) return 3;
-  return -1;
-}
-
 Result SemanticPass::Visit(UnresolvedDot* node) {
   Expr* expr = Resolve(node->GetExpr());
   if (!expr) return nullptr;
@@ -381,7 +450,7 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
                    classType->ToString().c_str());
     }
   } else if (type->IsVector()) {
-    int index = GetSwizzle(type, id);
+    int index = static_cast<VectorType*>(type)->GetSwizzle(id);
     if (index >= 0 && index <= 3) {
       return Make<UnresolvedSwizzleExpr>(node, expr, index);
     } else {
@@ -422,6 +491,7 @@ Result SemanticPass::Visit(StoreStmt* node) {
     return Error(node, "cannot store a value of type \"%s\" to a location of type \"%s\"",
                  rhsType->ToString().c_str(), lhsType->ToString().c_str());
   } else {
+    rhs = Widen(rhs, lhsType);
     return Make<StoreStmt>(node, lhs, rhs);
   }
 }
@@ -487,10 +557,7 @@ void SemanticPass::WidenArgList(ASTNode*            node,
     if (!argList[i]) continue;
     Type* argType = argList[i]->GetType(types_);
     Type* expectedArgType = formalArgList[i]->type;
-    if (argType != expectedArgType) {
-      assert(argType->CanWidenTo(expectedArgType));
-      argList[i] = Make<CastExpr>(node, expectedArgType, argList[i]);
-    }
+    argList[i] = Widen(argList[i], formalArgList[i]->type);
   }
 }
 
