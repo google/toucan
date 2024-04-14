@@ -25,9 +25,11 @@ struct Device {
 };
 
 struct SwapChain {
-  SwapChain(wgpu::SwapChain sc, void* p) : swapChain(sc), pool(p) {}
-  wgpu::SwapChain swapChain;
-  void*           pool;
+  SwapChain(wgpu::SwapChain sc, wgpu::Extent3D e, wgpu::TextureFormat f, void* p) : swapChain(sc), extent(e), format(f), pool(p) {}
+  wgpu::SwapChain      swapChain;
+  wgpu::Extent3D       extent;
+  wgpu::TextureFormat  format;
+  void*                pool;
 };
 
 struct Event {
@@ -39,6 +41,9 @@ struct Event {
   int32_t  touches[10][2];
   int32_t  numTouches;
 };
+
+wgpu::TextureFormat GetPreferredSwapChainFormat();
+wgpu::TextureFormat ToDawnTextureFormat(Type* type);
 
 }  // namespace Toucan
 #endif  // _APIINTERNAL_H

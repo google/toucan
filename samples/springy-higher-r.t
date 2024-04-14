@@ -159,7 +159,7 @@ class FinalizeSprings {
 
 Device* device = new Device();
 Window* window = new Window(device, 0, 0, 960, 960);
-SwapChain* swapChain = new SwapChain(window);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 auto bodies = new Body[width * height * depth];
 auto springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
 Vector count = Utils.makeVector((float) width, (float) height, (float) depth, Vector(0.0));
@@ -279,7 +279,7 @@ while(System.IsRunning()) {
   u.wind = Vector(Math.rand() * 0.00, 0.0);
   bindings.uniforms.SetData(u);
 
-  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
+  auto framebuffer = swapChain.GetCurrentTexture();
   CommandEncoder* encoder = new CommandEncoder(device);
   ComputePassEncoder* computeEncoder = encoder.BeginComputePass();
 

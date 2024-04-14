@@ -37,7 +37,7 @@ Loader.Load(device, inline("third_party/home-cube/front.jpg"), texture, 4);
 Loader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 
 Window* window = new Window(device, 0, 0, 1024, 1024);
-SwapChain* swapChain = new SwapChain(window);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 
 auto cubeVB = new vertex Buffer<float<3>[]>(device, cubeVerts.length);
 cubeVB.SetData(&cubeVerts);
@@ -188,9 +188,9 @@ while (System.IsRunning()) {
   cubeBindings.uniforms.SetData(&uniforms);
   uniforms.model = teapotRotation * Transform.scale(2.0, 2.0, 2.0);
   teapotBindings.uniforms.SetData(&uniforms);
-  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
+  auto framebuffer = swapChain.GetCurrentTexture();
   CommandEncoder* encoder = new CommandEncoder(device);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer, depthBuffer.CreateRenderableView());
+  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer, depthBuffer);
 
   passEncoder.SetPipeline(cubePipeline);
   passEncoder.SetBindGroup(0, cubeBindGroup);

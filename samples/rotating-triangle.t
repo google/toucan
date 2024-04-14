@@ -10,7 +10,7 @@ class Uniforms {
 
 Device* device = new Device();
 Window* window = new Window(device, 0, 0, 640, 480);
-SwapChain* swapChain = new SwapChain(window);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 
 auto verts = new Vertex[3];
 verts[0].position = float<2>( 0.0,  1.0);
@@ -52,7 +52,7 @@ while (System.IsRunning()) {
   while (System.HasPendingEvents()) {
     System.GetNextEvent();
   }
-  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
+  auto framebuffer = swapChain.GetCurrentTexture();
   CommandEncoder* encoder = new CommandEncoder(device);
   RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
   passEncoder.SetPipeline(pipeline);

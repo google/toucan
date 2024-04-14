@@ -207,7 +207,7 @@ for (int i = 0; i < bodies.length; ++i) {
 
 Device* device = new Device();
 Window* window = new Window(device, 0, 0, 960, 960);
-SwapChain* swapChain = new SwapChain(window);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 
 Bindings* bindings = new Bindings();
 int numBodyVerts = bodies.length * 3;
@@ -263,7 +263,7 @@ while(System.IsRunning()) {
   computeUniforms.wind = Vector(Math.rand() * 0.01, 0.0);
   bindings.uniforms.SetData(computeUniforms);
 
-  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
+  auto framebuffer = swapChain.GetCurrentTexture();
   CommandEncoder* encoder = new CommandEncoder(device);
   ComputePassEncoder* computeEncoder = encoder.BeginComputePass();
 

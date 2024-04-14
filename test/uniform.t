@@ -1,7 +1,7 @@
 Device* device = new Device();
 Window* window = new Window(device, 0, 0, 640, 480);
 Queue* queue = device.GetQueue();
-SwapChain* swapChain = new SwapChain(window);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 float<4>[]* verts = new float<4>[3];
 verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
 verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
@@ -24,7 +24,7 @@ uniforms.opacity = 0.5;
 auto uniformBuffer = new uniform Buffer<UniformData>(device);
 uniformBuffer.SetData(uniforms);
 auto bindGroup = new BindGroup(device, uniformBuffer);
-renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
+auto framebuffer = swapChain.GetCurrentTexture();
 CommandEncoder* encoder = new CommandEncoder(device);
 RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
 passEncoder.SetPipeline(pipeline);

@@ -1,7 +1,7 @@
 using Vertex = float<4>;
 Device* device = new Device();
 Window* window = new Window(device, 0, 0, 640, 480);
-SwapChain* swapChain = new SwapChain(window);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 auto verts = new Vertex[3];
 verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
 verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
@@ -35,7 +35,7 @@ while (System.IsRunning()) {
     s.color = float<4>((float) event.position.x / 640.0, (float) event.position.y / 480.0, 0.0, 1.0);
     stagingBuffer.Unmap();
   }
-  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
+  auto framebuffer = swapChain.GetCurrentTexture();
   CommandEncoder* encoder = new CommandEncoder(device);
   encoder.CopyBufferToBuffer(stagingBuffer, objectData.uniforms);
   RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);

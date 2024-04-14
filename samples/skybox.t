@@ -35,7 +35,7 @@ Loader.Load(device, inline("third_party/home-cube/front.jpg"), texture, 4);
 Loader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 
 Window* window = new Window(device, 0, 0, 1024, 1024);
-SwapChain* swapChain = new SwapChain(window);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 
 auto cubeVB = new vertex Buffer<float<3>[]>(device, cubeVerts.length);
 cubeVB.SetData(&cubeVerts);
@@ -94,9 +94,9 @@ while (System.IsRunning()) {
   uniforms.model = Transform.scale(100.0, 100.0, 100.0);
 //  uniforms.viewInverse = Transform.invert(uniforms.view);
   cubeBindings.uniforms.SetData(&uniforms);
-  auto framebuffer = swapChain.GetCurrentTextureView();
+  auto framebuffer = swapChain.GetCurrentTexture();
   CommandEncoder* encoder = new CommandEncoder(device);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer, depthBuffer.CreateRenderableView());
+  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer, depthBuffer);
 
   passEncoder.SetPipeline(cubePipeline);
   passEncoder.SetBindGroup(0, cubeBindGroup);

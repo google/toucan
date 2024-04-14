@@ -119,7 +119,16 @@ struct ComputePipeline {
   wgpu::ComputePipeline pipeline;
 };
 
-static wgpu::TextureFormat toDawnTextureFormat(Type* format) {
+wgpu::TextureView CreateRenderable2DView(Texture* texture) {
+  wgpu::TextureViewDescriptor desc;
+  desc.format = texture->format;
+  desc.dimension = wgpu::TextureViewDimension::e2D;
+  desc.mipLevelCount = 1;
+  desc.arrayLayerCount = 1;
+  return texture->texture.CreateView(&desc);
+}
+
+wgpu::TextureFormat ToDawnTextureFormat(Type* format) {
   assert(format->IsClass());
   auto classType = static_cast<ClassType*>(format);
   if (classType->GetName() == "RGBA8unorm") {
@@ -130,6 +139,8 @@ static wgpu::TextureFormat toDawnTextureFormat(Type* format) {
     return wgpu::TextureFormat::RGBA8Snorm;
   } else if (classType->GetName() == "Depth24Plus") {
     return wgpu::TextureFormat::Depth24Plus;
+  } else if (classType->GetName() == "PreferredSwapChainFormat") {
+    return GetPreferredSwapChainFormat();
   } else {
     assert(!"unknown Format");
     return wgpu::TextureFormat::RGBA8Unorm;
@@ -541,7 +552,7 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
     ClassType*  classType = static_cast<ClassType*>(type);
     const auto& templateArgs = classType->GetTemplateArgs();
     assert(templateArgs.size() == 1);
-    depthStencilState.format = toDawnTextureFormat(templateArgs[0]);
+    depthStencilState.format = ToDawnTextureFormat(templateArgs[0]);
     depthStencilState.depthWriteEnabled = true;
     depthStencilState.depthCompare = wgpu::CompareFunction::Less;
   }
@@ -619,7 +630,7 @@ Texture1D* Texture1D_Texture1D(int qualifiers, Type* format, Device* device, uin
   wgpu::TextureDescriptor desc;
   desc.usage = toDawnTextureUsage(qualifiers);
   desc.size = wgpu::Extent3D{width, 1, 1};
-  desc.format = toDawnTextureFormat(format);
+  desc.format = ToDawnTextureFormat(format);
   desc.dimension = wgpu::TextureDimension::e1D;
   wgpu::Texture texture = device->device.CreateTexture(&desc);
   return new Texture1D(texture, desc.size, desc.format);
@@ -642,16 +653,12 @@ Texture2D* Texture2D_Texture2D(int      qualifiers,
   wgpu::TextureDescriptor desc;
   desc.usage = toDawnTextureUsage(qualifiers);
   desc.size = wgpu::Extent3D{width, height, depth};
-  desc.format = toDawnTextureFormat(format);
+  desc.format = ToDawnTextureFormat(format);
   wgpu::Texture texture = device->device.CreateTexture(&desc);
   return new Texture2D(texture, desc.size, desc.format);
 }
 
 SampleableTexture2D* Texture2D_CreateSampleableView(Texture2D* This) {
-  return new SampleableTexture2D(This->texture.CreateView());
-}
-
-SampleableTexture2D* Texture2D_CreateRenderableView(Texture2D* This) {
   return new SampleableTexture2D(This->texture.CreateView());
 }
 
@@ -672,7 +679,7 @@ Texture3D* Texture3D_Texture3D(int      qualifiers,
   wgpu::TextureDescriptor desc;
   desc.usage = toDawnTextureUsage(qualifiers);
   desc.size = wgpu::Extent3D{width, height, depth};
-  desc.format = toDawnTextureFormat(format);
+  desc.format = ToDawnTextureFormat(format);
   desc.dimension = wgpu::TextureDimension::e3D;
   wgpu::Texture texture = device->device.CreateTexture(&desc);
   return new Texture3D(texture, desc.size, desc.format);
@@ -954,14 +961,14 @@ void ComputePassEncoder_End(ComputePassEncoder* encoder) { encoder->encoder.End(
 void ComputePassEncoder_Destroy(ComputePassEncoder* This) { delete This; }
 
 RenderPassEncoder* CommandEncoder_BeginRenderPass(CommandEncoder* encoder,
-                                                  SampleableTexture2D*  colorAttachment,
-                                                  SampleableTexture2D*  depthAttachment,
+                                                  Texture2D*      colorAttachment,
+                                                  Texture2D*      depthAttachment,
                                                   float           r,
                                                   float           g,
                                                   float           b,
                                                   float           a) {
   wgpu::RenderPassColorAttachment rpColorAttachment;
-  rpColorAttachment.view = colorAttachment->view;
+  rpColorAttachment.view = CreateRenderable2DView(colorAttachment);
   rpColorAttachment.clearValue = {r, g, b, a};
   rpColorAttachment.loadOp = wgpu::LoadOp::Clear;
   rpColorAttachment.storeOp = wgpu::StoreOp::Store;
@@ -971,7 +978,7 @@ RenderPassEncoder* CommandEncoder_BeginRenderPass(CommandEncoder* encoder,
   desc.colorAttachmentCount = 1;
   desc.colorAttachments = colorAttachments;
   if (depthAttachment) {
-    depthStencilAttachment.view = depthAttachment->view;
+    depthStencilAttachment.view = CreateRenderable2DView(depthAttachment);
     depthStencilAttachment.depthLoadOp = wgpu::LoadOp::Clear;
     depthStencilAttachment.depthStoreOp = wgpu::StoreOp::Store;
     depthStencilAttachment.depthClearValue = 1.0f;
@@ -991,8 +998,8 @@ CommandBuffer* CommandEncoder_Finish(CommandEncoder* encoder) {
 
 void CommandBuffer_Destroy(CommandBuffer* This) { delete This; }
 
-SampleableTexture2D* SwapChain_GetCurrentTextureView(SwapChain* swapChain) {
-  return new SampleableTexture2D(swapChain->swapChain.GetCurrentTextureView());
+Texture2D* SwapChain_GetCurrentTexture(SwapChain* swapChain) {
+  return new Texture2D(swapChain->swapChain.GetCurrentTexture(), swapChain->extent, swapChain->format);
 }
 
 #if !TARGET_IS_MAC

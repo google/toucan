@@ -1,8 +1,8 @@
 Device* device = new Device();
 Queue* queue = device.GetQueue();
 Window* window = new Window(device, 0, 0, 640, 480);
-SwapChain* swapChain = new SwapChain(window);
-renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
+auto framebuffer = swapChain.GetCurrentTexture();
 CommandEncoder* encoder = new CommandEncoder(device);
 RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer, null, 1.0, 0.0, 0.0, 1.0);
 passEncoder.End();

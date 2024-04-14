@@ -176,17 +176,21 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
 
 void Window_Destroy(Window* This) { delete This; }
 
-SwapChain* SwapChain_SwapChain(Window* window) {
+wgpu::TextureFormat GetPreferredSwapChainFormat() {
+  return wgpu::TextureFormat::BGRA8Unorm;
+}
+
+SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
   wgpu::SwapChainDescriptor desc;
-  // FIXME: convert passed-in format, add usage and present mode
+  // FIXME: add usage and present mode
   desc.usage = wgpu::TextureUsage::RenderAttachment;
-  desc.format = wgpu::TextureFormat::BGRA8Unorm;
+  desc.format = ToDawnTextureFormat(format);
   desc.width = window->width;
   desc.height = window->height;
   desc.presentMode = wgpu::PresentMode::Fifo;
   wgpu::SwapChain swapChain = window->device->device.CreateSwapChain(window->surface, &desc);
 
-  return new SwapChain(swapChain, [[NSAutoreleasePool alloc] init]);
+  return new SwapChain(swapChain, {window->width, window->height, 1}, desc.format, [[NSAutoreleasePool alloc] init]);
 }
 
 void SwapChain_Present(SwapChain* swapChain) {

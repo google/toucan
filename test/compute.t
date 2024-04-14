@@ -12,7 +12,7 @@ class BumpCompute {
 
 Device* device = new Device();
 Window* window = new Window(device, 0, 0, 640, 480);
-SwapChain* swapChain = new SwapChain(window);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 auto verts = new Vertex[3];
 verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
 verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
@@ -30,7 +30,7 @@ ComputePipeline* computePipeline = new ComputePipeline<BumpCompute>(device);
 auto storageBG = new BindGroup(device, vb);
 
 while (System.IsRunning()) {
-  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
+  auto framebuffer = swapChain.GetCurrentTexture();
   CommandEncoder* encoder = new CommandEncoder(device);
   ComputePassEncoder* computeEncoder = encoder.BeginComputePass();
   computeEncoder.SetPipeline(computePipeline);

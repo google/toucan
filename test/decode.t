@@ -20,7 +20,7 @@ texture.CopyFromBuffer(copyEncoder, buffer, image.Width(), image.Height(), 1, ui
 device.GetQueue().Submit(copyEncoder.Finish());
 
 Window* window = new Window(device, 0, 0, image.Width(), image.Height());
-SwapChain* swapChain = new SwapChain(window);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 auto verts = new Vertex[4];
 verts[0].position = float<4>(-1.0,  1.0, 0.0, 1.0);
 verts[1].position = float<4>( 1.0,  1.0, 0.0, 1.0);
@@ -59,7 +59,7 @@ auto sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear
 auto samplerBG = new BindGroup(device, sampler);
 auto texView = texture.CreateSampleableView();
 auto texBG = new BindGroup(device, texView);
-renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
+auto framebuffer = swapChain.GetCurrentTexture();
 CommandEncoder* encoder = new CommandEncoder(device);
 RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
 passEncoder.SetPipeline(pipeline);

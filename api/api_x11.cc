@@ -202,7 +202,11 @@ Event* System_GetNextEvent() {
   return result;
 }
 
-SwapChain* SwapChain_SwapChain(Window* window) {
+wgpu::TextureFormat GetPreferredSwapChainFormat() {
+  return wgpu::TextureFormat::BGRA8Unorm;
+}
+
+SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
   Device*                   device = window->device;
   wgpu::SwapChainDescriptor desc;
   desc.usage = wgpu::TextureUsage::RenderAttachment;
@@ -213,7 +217,7 @@ SwapChain* SwapChain_SwapChain(Window* window) {
   desc.height = attributes.height;
   desc.presentMode = wgpu::PresentMode::Immediate;
   wgpu::SwapChain swapChain = device->device.CreateSwapChain(window->surface, &desc);
-  return new SwapChain(swapChain, nullptr);
+  return new SwapChain(swapChain, {desc.width, desc.height, 1}, desc.format, nullptr);
 }
 
 double System_GetCurrentTime() {

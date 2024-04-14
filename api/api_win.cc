@@ -136,18 +136,22 @@ Device* Device_Device() {
   return new Device(device);
 }
 
-SwapChain* SwapChain_SwapChain(Window* window) {
+wgpu::TextureFormat GetPreferredSwapChainFormat() {
+  return wgpu::TextureFormat::BGRA8Unorm;
+}
+
+SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
   RECT rect;
   GetClientRect(window->wnd, &rect);
 
   wgpu::SwapChainDescriptor desc;
   desc.usage = wgpu::TextureUsage::RenderAttachment;
-  desc.format = wgpu::TextureFormat::BGRA8Unorm;
+  desc.format = ToDawnTextureFormat(format);
   desc.width = rect.right - rect.left;
   desc.height = rect.bottom - rect.top;
   desc.presentMode = wgpu::PresentMode::Fifo;
   wgpu::SwapChain swapChain = window->device->device.CreateSwapChain(window->surface, &desc);
-  return new SwapChain(swapChain, nullptr);
+  return new SwapChain(swapChain, {desc.width, desc.height, 1}, desc.format, nullptr);
 }
 
 bool System_IsRunning() { return gNumWindows > 0; }

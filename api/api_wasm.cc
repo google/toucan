@@ -172,16 +172,23 @@ double System_GetCurrentTime() {
   return EM_ASM_DOUBLE({ return Date.now() / 1000.0; });
 }
 
-SwapChain* SwapChain_SwapChain(Window* window) {
+wgpu::TextureFormat GetPreferredSwapChainFormat() {
+  int format = EM_ASM_INT({
+    return WebGPU.Int_PreferredFormat[navigator.gpu.getPreferredCanvasFormat()];
+  });
+  return static_cast<wgpu::TextureFormat>(format);
+}
+
+SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
   Device*                   device = window->device;
   wgpu::SwapChainDescriptor desc;
   desc.usage = wgpu::TextureUsage::RenderAttachment;
-  desc.format = wgpu::TextureFormat::BGRA8Unorm;
+  desc.format = ToDawnTextureFormat(format);
   desc.width = window->width;
   desc.height = window->height;
   desc.presentMode = wgpu::PresentMode::Fifo;
   wgpu::SwapChain swapChain = device->device.CreateSwapChain(window->surface, &desc);
-  return new SwapChain(swapChain, nullptr);
+  return new SwapChain(swapChain, {desc.width, desc.height, 1}, desc.format, nullptr);
 }
 
 EM_ASYNC_JS(void, JSWaitForRAF, (), {

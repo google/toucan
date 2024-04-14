@@ -196,7 +196,7 @@ class Utils {
 
 Device* device = new Device();
 Window* window = new Window(device, 0, 0, 960, 960);
-SwapChain* swapChain = new SwapChain(window);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 auto bodies = new Body[width * height * depth];
 auto springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
 Vector count = Utils.makeVector((float) width, (float) height, (float) depth, Vector(0.0));
@@ -280,7 +280,7 @@ while(System.IsRunning()) {
   springVBO.SetData(springVerts);
 
   physicsSystem.rungeKutta4Step(1.0 / frequency);
-  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
+  auto framebuffer = swapChain.GetCurrentTexture();
   CommandEncoder* encoder = new CommandEncoder(device);
   RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
 

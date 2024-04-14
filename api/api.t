@@ -135,7 +135,7 @@ native class Texture1D<PF> {
   Texture1D(Device* device, uint width);
  ~Texture1D();
   SampleableTexture1D<PF::SampledType>* CreateSampleableView();
-//  StorageTexture1D<PF>* CreateStorageView();
+//  storage Texture1D<PF>* CreateStorageView();
   void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width);
 }
 
@@ -144,12 +144,11 @@ native class Texture2D<PF> {
  ~Texture2D();
   SampleableTexture2D<PF::SampledType>* CreateSampleableView();
   uint MinBufferWidth();
-//  StorageTexture2D<PF>* CreateStorageView();
-  renderable SampleableTexture2D<PF::SampledType>* CreateRenderableView();
+//  storage Texture2D<PF>* CreateStorageView();
   SampleableTextureCubeArray<PF::SampledType>* CreateSampleableCubeArrayView();
   SampleableTexture2DArray<PF::SampledType>* CreateSampleable2DArrayView();
   SampleableTextureCube<PF::SampledType>* CreateSampleableCubeView();
-//  StorageTexture2DArray<ST>* CreateStorage2DArrayView();
+//  storage Texture2DArray<ST>* CreateStorage2DArrayView();
   void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint depth, uint<3> origin);
 }
 
@@ -158,14 +157,14 @@ native class Texture3D<PF> {
  ~Texture3D();
   uint MinBufferWidth();
   SampleableTexture3D<PF::SampledType>* CreateSampleableView();
-//  StorageTexture3D<PF>* CreateStorageView();
+//  storage Texture3D<PF>* CreateStorageView();
   void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint depth);
 }
 
 native class CommandEncoder {
   CommandEncoder(Device* device);
  ~CommandEncoder();
-  RenderPassEncoder* BeginRenderPass(renderable SampleableTexture2D* colorAttachment, renderable SampleableTexture2D* depthAttachment = null, float r = 0.0, float g = 0.0, float b = 0.0, float a = 0.0);
+  RenderPassEncoder* BeginRenderPass(renderable Texture2D* colorAttachment, renderable Texture2D* depthAttachment = null, float r = 0.0, float g = 0.0, float b = 0.0, float a = 0.0);
   ComputePassEncoder* BeginComputePass();
   CommandBuffer* Finish();
   void CopyBufferToBuffer(Buffer^ source, Buffer^ dest);
@@ -176,10 +175,10 @@ native class Window {
  ~Window();
 }
 
-native class SwapChain {
+native class SwapChain<T> {
   SwapChain(Window^ window);
  ~SwapChain();
-  renderable SampleableTexture2D<float>* GetCurrentTextureView();
+  renderable Texture2D<T>* GetCurrentTexture();
   void Present();
 }
 
@@ -301,3 +300,5 @@ class RGB10A2unorm : PixelFormat<float, uint> {}
 class RG11B10ufloat : PixelFormat<float, uint> {}
 
 class Depth24Plus : PixelFormat<float, uint> {}
+
+class PreferredSwapChainFormat : PixelFormat<float, ubyte<4>> {}
