@@ -20,7 +20,7 @@ class PipelineData {
 auto pipeline = new RenderPipeline<PipelineData>(device, null, TriangleList);
 UniformBuffer<UniformData>* uniformBuffer = device.CreateUniformBuffer<UniformData>({ opacity : 0.5 });
 PipelineData* pipelineData = new PipelineData(uniforms : uniformBuffer);
-renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
 CommandEncoder* encoder = new CommandEncoder(device);
 RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
 passEncoder.SetPipeline(pipeline);

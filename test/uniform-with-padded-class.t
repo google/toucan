@@ -31,7 +31,7 @@ uniformBuffer.SetData(uniforms);
 BindGroup* bg = new BindGroup(device, uniformBuffer);
 auto stagingBuffer = new writeonly Buffer<Uniforms>(device);
 RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
-renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
 CommandEncoder* encoder = new CommandEncoder(device);
 RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
 passEncoder.SetPipeline(pipeline);

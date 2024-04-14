@@ -179,7 +179,7 @@ std::string QualifiedType::ToString() const {
   if (qualifiers_ & Qualifier::Storage) { result += "storage "; }
   if (qualifiers_ & Qualifier::Vertex) { result += "vertex "; }
   if (qualifiers_ & Qualifier::Index) { result += "index "; }
-  if (qualifiers_ & Qualifier::Sampled) { result += "sampled "; }
+  if (qualifiers_ & Qualifier::Sampleable) { result += "sampleable "; }
   if (qualifiers_ & Qualifier::Renderable) { result += "renderable "; }
   if (qualifiers_ & Qualifier::ReadOnly) { result += "readonly "; }
   if (qualifiers_ & Qualifier::WriteOnly) { result += "writeonly "; }

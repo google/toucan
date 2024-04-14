@@ -39,34 +39,34 @@ bool isBuffer(ClassType* classType) { return classType->GetTemplate() == NativeC
 
 bool isSampler(ClassType* classType) { return classType == NativeClass::Sampler; }
 
-bool isTexture1DView(ClassType* classType) {
-  return classType->GetTemplate() == NativeClass::Texture1DView;
+bool isSampleableTexture1D(ClassType* classType) {
+  return classType->GetTemplate() == NativeClass::SampleableTexture1D;
 }
 
-bool isTexture2DView(ClassType* classType) {
-  return classType->GetTemplate() == NativeClass::Texture2DView;
+bool isSampleableTexture2D(ClassType* classType) {
+  return classType->GetTemplate() == NativeClass::SampleableTexture2D;
 }
 
-bool isTexture3DView(ClassType* classType) {
-  return classType->GetTemplate() == NativeClass::Texture3DView;
+bool isSampleableTexture3D(ClassType* classType) {
+  return classType->GetTemplate() == NativeClass::SampleableTexture3D;
 }
 
-bool isTexture2DArrayView(ClassType* classType) {
-  return classType->GetTemplate() == NativeClass::Texture2DArrayView;
+bool isSampleableTexture2DArray(ClassType* classType) {
+  return classType->GetTemplate() == NativeClass::SampleableTexture2DArray;
 }
 
-bool isTextureCubeView(ClassType* classType) {
-  return classType->GetTemplate() == NativeClass::TextureCubeView;
+bool isSampleableTextureCube(ClassType* classType) {
+  return classType->GetTemplate() == NativeClass::SampleableTextureCube;
 }
 
-bool isTextureCubeArrayView(ClassType* classType) {
-  return classType->GetTemplate() == NativeClass::TextureCubeArrayView;
+bool isSampleableTextureCubeArray(ClassType* classType) {
+  return classType->GetTemplate() == NativeClass::SampleableTextureCubeArray;
 }
 
 bool isTextureView(ClassType* classType) {
-  return isTexture1DView(classType) || isTexture2DView(classType) || isTexture3DView(classType) ||
-         isTexture2DArrayView(classType) || isTextureCubeView(classType) ||
-         isTextureCubeArrayView(classType);
+  return isSampleableTexture1D(classType) || isSampleableTexture2D(classType) || isSampleableTexture3D(classType) ||
+         isSampleableTexture2DArray(classType) || isSampleableTextureCube(classType) ||
+         isSampleableTextureCubeArray(classType);
 }
 
 bool isMath(ClassType* classType) { return classType == NativeClass::Math; }
@@ -113,35 +113,6 @@ uint32_t builtinNameToID(const std::string& name) {
     assert(false);
     return 0;
   }
-}
-
-uint32_t QualifiersToSampledFlag(int qualifiers) {
-  if (qualifiers & Type::Qualifier::Sampled) {
-    return 1;
-  } else if (qualifiers & Type::Qualifier::Storage) {
-    return 2;
-  } else {
-    assert(!"texture must have sampled or storage qualifier");
-    return 0;
-  }
-}
-
-uint32_t ToImageFormat(int qualifiers, const TypeList& templateArgs) {
-  if (qualifiers & Type::Qualifier::Sampled) {
-    return spv::ImageFormatUnknown;
-  } else if (qualifiers & Type::Qualifier::Storage) {
-    assert(templateArgs.size() == 2);
-    Type* type = templateArgs[1];
-    assert(type->IsClass());
-    ClassType* classType = static_cast<ClassType*>(type);
-    if (classType->GetName() == "RGBA8unorm") {
-      return spv::ImageFormatRgba8;
-    } else {
-      assert(!"unsupported image format in shader");
-      return spv::ImageFormatUnknown;
-    }
-  }
-  return spv::ImageFormatUnknown;
 }
 
 spv::Op binOpToOpcode(BinOpNode::Op op,
@@ -622,8 +593,8 @@ uint32_t CodeGenSPIRV::AppendImageDecl(uint32_t        dim,
   uint32_t depth = 0;  // not depth
   uint32_t arrayed = array ? 1 : 0;
   uint32_t ms = 0;  // not multisampled
-  uint32_t sampled = QualifiersToSampledFlag(qualifiers);
-  uint32_t format = ToImageFormat(qualifiers, templateArgs);
+  uint32_t sampled = 1; // sampled
+  uint32_t format = spv::ImageFormatUnknown; 
   return AppendTypeDecl(spv::Op::OpTypeImage,
                         {sampledType, dim, depth, arrayed, ms, sampled, format});
 }
@@ -660,17 +631,17 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
         resultId = ConvertPointerToType(baseType);
       } else if (isSampler(classType)) {
         resultId = AppendTypeDecl(spv::Op::OpTypeSampler, {});
-      } else if (isTexture1DView(classType)) {
+      } else if (isSampleableTexture1D(classType)) {
         resultId = AppendImageDecl(spv::Dim1D, false, qualifiers, classType->GetTemplateArgs());
-      } else if (isTexture2DView(classType)) {
+      } else if (isSampleableTexture2D(classType)) {
         resultId = AppendImageDecl(spv::Dim2D, false, qualifiers, classType->GetTemplateArgs());
-      } else if (isTexture3DView(classType)) {
+      } else if (isSampleableTexture3D(classType)) {
         resultId = AppendImageDecl(spv::Dim3D, false, qualifiers, classType->GetTemplateArgs());
-      } else if (isTexture2DArrayView(classType)) {
+      } else if (isSampleableTexture2DArray(classType)) {
         resultId = AppendImageDecl(spv::Dim2D, true, qualifiers, classType->GetTemplateArgs());
-      } else if (isTextureCubeView(classType)) {
+      } else if (isSampleableTextureCube(classType)) {
         resultId = AppendImageDecl(spv::DimCube, false, qualifiers, classType->GetTemplateArgs());
-      } else if (isTextureCubeArrayView(classType)) {
+      } else if (isSampleableTextureCubeArray(classType)) {
         resultId = AppendImageDecl(spv::DimCube, true, qualifiers, classType->GetTemplateArgs());
       } else {
         assert(!"unsupported native class type in shader");
@@ -1110,7 +1081,7 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
       uint32_t imageType = GetSampledImageType(textureType);
       uint32_t sampledImage = AppendCode(spv::OpSampledImage, imageType, {texture, sampler});
       uint32_t coord = GenerateSPIRV(args[2]);
-      if (isTexture2DArrayView(method->classType)) {
+      if (isSampleableTexture2DArray(method->classType)) {
         uint32_t layer = GenerateSPIRV(args[3]);
         layer = AppendCode(spv::Op::OpConvertUToF, ConvertType(types_->GetFloat()), {layer});
         uint32_t float3 = ConvertType(types_->GetVector(types_->GetFloat(), 3));
@@ -1118,7 +1089,7 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
         uint32_t x = AppendCode(spv::Op::OpCompositeExtract, floatType, {coord, 0});
         uint32_t y = AppendCode(spv::Op::OpCompositeExtract, floatType, {coord, 1});
         coord = AppendCode(spv::Op::OpCompositeConstruct, float3, {x, y, layer});
-      } else if (isTextureCubeArrayView(method->classType)) {
+      } else if (isSampleableTextureCubeArray(method->classType)) {
         uint32_t layer = GenerateSPIRV(args[3]);
         layer = AppendCode(spv::Op::OpConvertUToF, ConvertType(types_->GetFloat()), {layer});
         uint32_t float4 = ConvertType(types_->GetVector(types_->GetFloat(), 4));

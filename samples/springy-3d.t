@@ -185,7 +185,7 @@ while(System.IsRunning()) {
     physicsSystem.eulerStep(8.0 / frequency);
     stepsDone++;
   }
-  renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
   CommandEncoder* encoder = new CommandEncoder(device);
   RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
 

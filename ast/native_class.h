@@ -37,18 +37,18 @@ class NativeClass {
   static ClassType* Queue;
   static ClassType* RenderPassEncoder;
   static ClassType* RenderPipeline;
+  static ClassType* SampleableTexture1D;
+  static ClassType* SampleableTexture2D;
+  static ClassType* SampleableTexture2DArray;
+  static ClassType* SampleableTexture3D;
+  static ClassType* SampleableTextureCubeArray;
+  static ClassType* SampleableTextureCube;
   static ClassType* Sampler;
   static ClassType* SwapChain;
   static ClassType* System;
   static ClassType* Texture1D;
-  static ClassType* Texture1DView;
   static ClassType* Texture2D;
-  static ClassType* Texture2DView;
-  static ClassType* Texture2DArrayView;
   static ClassType* Texture3D;
-  static ClassType* Texture3DView;
-  static ClassType* TextureCubeArrayView;
-  static ClassType* TextureCubeView;
   static ClassType* Window;
 };
 

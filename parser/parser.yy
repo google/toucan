@@ -147,7 +147,7 @@ Type* FindType(const char* str) {
 %token T_INT T_UINT T_FLOAT T_DOUBLE T_BOOL T_BYTE T_UBYTE T_SHORT T_USHORT
 %token T_HALF
 %token T_STATIC T_VIRTUAL T_NATIVE T_VERTEX T_FRAGMENT T_COMPUTE T_THIS
-%token T_INDEX T_UNIFORM T_STORAGE T_SAMPLED T_RENDERABLE
+%token T_INDEX T_UNIFORM T_STORAGE T_SAMPLEABLE T_RENDERABLE
 %token T_USING T_INLINE
 %right '=' T_ADD_EQUALS T_SUB_EQUALS T_MUL_EQUALS T_DIV_EQUALS
 %left T_LOGICAL_OR
@@ -368,7 +368,7 @@ type_qualifier:
   | T_STORAGE                               { $$ = Type::Qualifier::Storage; }
   | T_VERTEX                                { $$ = Type::Qualifier::Vertex; }
   | T_INDEX                                 { $$ = Type::Qualifier::Index; }
-  | T_SAMPLED                               { $$ = Type::Qualifier::Sampled; }
+  | T_SAMPLEABLE                            { $$ = Type::Qualifier::Sampleable; }
   | T_RENDERABLE                            { $$ = Type::Qualifier::Renderable; }
   | T_READONLY                              { $$ = Type::Qualifier::ReadOnly; }
   | T_WRITEONLY                             { $$ = Type::Qualifier::WriteOnly; }

@@ -106,7 +106,7 @@ fragment { return T_FRAGMENT; }
 compute { return T_COMPUTE; }
 uniform { return T_UNIFORM; }
 storage { return T_STORAGE; }
-sampled { return T_SAMPLED; }
+sampleable { return T_SAMPLEABLE; }
 renderable { return T_RENDERABLE; }
 native  { return T_NATIVE; }
 this    { return T_THIS; }

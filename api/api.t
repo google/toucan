@@ -99,33 +99,33 @@ native class Sampler {
  ~Sampler();
 }
 
-native class Texture1DView<ST> {
- ~Texture1DView();
+native class SampleableTexture1D<ST> {
+ ~SampleableTexture1D();
   ST<4> Sample(Sampler* sampler, float coord);
 }
 
-native class Texture2DView<ST> {
- ~Texture2DView();
+native class SampleableTexture2D<ST> {
+ ~SampleableTexture2D();
   ST<4> Sample(Sampler* sampler, float<2> coords);
 }
 
-native class Texture2DArrayView<ST> {
- ~Texture2DArrayView();
+native class SampleableTexture2DArray<ST> {
+ ~SampleableTexture2DArray();
   ST<4> Sample(Sampler* sampler, float<2> coords, uint layer);
 }
 
-native class Texture3DView<ST> {
- ~Texture3DView();
+native class SampleableTexture3D<ST> {
+ ~SampleableTexture3D();
   ST<4> Sample(Sampler* sampler, float<3> coords);
 }
 
-native class TextureCubeView<ST> {
- ~TextureCubeView();
+native class SampleableTextureCube<ST> {
+ ~SampleableTextureCube();
   ST<4> Sample(Sampler* sampler, float<3> coords);
 }
 
-native class TextureCubeArrayView<ST> {
- ~TextureCubeArrayView();
+native class SampleableTextureCubeArray<ST> {
+ ~SampleableTextureCubeArray();
   ST<4> Sample(Sampler* sampler, float<3> coords, uint layer);
 }
 
@@ -134,22 +134,22 @@ native class CommandEncoder;
 native class Texture1D<PF> {
   Texture1D(Device* device, uint width);
  ~Texture1D();
-  sampled Texture1DView<PF::SampledType>* CreateSampledView();
-//  StorageTexture1DView<PF>* CreateStorageView();
+  SampleableTexture1D<PF::SampledType>* CreateSampleableView();
+//  StorageTexture1D<PF>* CreateStorageView();
   void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width);
 }
 
 native class Texture2D<PF> {
   Texture2D(Device* device, uint width, uint height, uint depth);
  ~Texture2D();
-  sampled Texture2DView<PF::SampledType>* CreateSampledView();
+  SampleableTexture2D<PF::SampledType>* CreateSampleableView();
   uint MinBufferWidth();
-//  StorageTexture2DView<PF>* CreateStorageView();
-  renderable Texture2DView<PF::SampledType>* CreateRenderableView();
-  sampled TextureCubeArrayView<PF::SampledType>* CreateSampledCubeArrayView();
-  sampled Texture2DArrayView<PF::SampledType>* CreateSampled2DArrayView();
-  sampled TextureCubeView<PF::SampledType>* CreateSampledCubeView();
-//  storage Texture2DArrayView<ST>* CreateStorage2DArrayView();
+//  StorageTexture2D<PF>* CreateStorageView();
+  renderable SampleableTexture2D<PF::SampledType>* CreateRenderableView();
+  SampleableTextureCubeArray<PF::SampledType>* CreateSampleableCubeArrayView();
+  SampleableTexture2DArray<PF::SampledType>* CreateSampleable2DArrayView();
+  SampleableTextureCube<PF::SampledType>* CreateSampleableCubeView();
+//  StorageTexture2DArray<ST>* CreateStorage2DArrayView();
   void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint depth, uint<3> origin);
 }
 
@@ -157,15 +157,15 @@ native class Texture3D<PF> {
   Texture3D(Device* device, uint width, uint height, uint depth);
  ~Texture3D();
   uint MinBufferWidth();
-  sampled Texture3DView<PF::SampledType>* CreateSampledView();
-//  storage Texture3DView<PF>* CreateStorageView();
+  SampleableTexture3D<PF::SampledType>* CreateSampleableView();
+//  StorageTexture3D<PF>* CreateStorageView();
   void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint depth);
 }
 
 native class CommandEncoder {
   CommandEncoder(Device* device);
  ~CommandEncoder();
-  RenderPassEncoder* BeginRenderPass(renderable Texture2DView* colorAttachment, renderable Texture2DView* depthAttachment = null, float r = 0.0, float g = 0.0, float b = 0.0, float a = 0.0);
+  RenderPassEncoder* BeginRenderPass(renderable SampleableTexture2D* colorAttachment, renderable SampleableTexture2D* depthAttachment = null, float r = 0.0, float g = 0.0, float b = 0.0, float a = 0.0);
   ComputePassEncoder* BeginComputePass();
   CommandBuffer* Finish();
   void CopyBufferToBuffer(Buffer^ source, Buffer^ dest);
@@ -179,7 +179,7 @@ native class Window {
 native class SwapChain {
   SwapChain(Window^ window);
  ~SwapChain();
-  renderable Texture2DView<float>* GetCurrentTextureView();
+  renderable SampleableTexture2D<float>* GetCurrentTextureView();
   void Present();
 }
 

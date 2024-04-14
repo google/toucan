@@ -24,7 +24,7 @@ uniforms.opacity = 0.5;
 auto uniformBuffer = new uniform Buffer<UniformData>(device);
 uniformBuffer.SetData(uniforms);
 auto bindGroup = new BindGroup(device, uniformBuffer);
-renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
 CommandEncoder* encoder = new CommandEncoder(device);
 RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
 passEncoder.SetPipeline(pipeline);

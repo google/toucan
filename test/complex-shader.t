@@ -30,7 +30,7 @@ class ComplexShader {
       return float<4>(0.0, 1.0, 0.0, 1.0);
     }
     Sampler* sampler;
-    sampled Texture2DView<float>* textureView;
+    SampleableTexture2D<float>* textureView;
     uniform Buffer<Uniforms>* uniforms;
 };
 

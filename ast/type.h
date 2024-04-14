@@ -87,7 +87,7 @@ class Type {
     Storage = 0x0002,
     Vertex = 0x0004,
     Index = 0x0008,
-    Sampled = 0x0010,
+    Sampleable = 0x0010,
     Renderable = 0x0020,
     ReadOnly = 0x0040,
     WriteOnly = 0x0080,

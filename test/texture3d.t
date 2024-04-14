@@ -40,11 +40,11 @@ class Pipeline {
       return textureView.Sample(sampler, varyings.texCoord);
     }
     Sampler* sampler;
-    sampled Texture3DView<float>* textureView;
+    SampleableTexture3D<float>* textureView;
 };
 RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 auto sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
-auto tex = new sampled Texture3D<RGBA8unorm>(device, 2, 2, 2);
+auto tex = new sampleable Texture3D<RGBA8unorm>(device, 2, 2, 2);
 auto buffer = new Buffer<ubyte<4>[]>(device, 64 * 2 * 2);
 auto data = buffer.MapWrite();
 data[0]   =  ubyte<4>(255ub,   0ub,   0ub, 255ub);
@@ -60,9 +60,9 @@ CommandEncoder* copyEncoder = new CommandEncoder(device);
 tex.CopyFromBuffer(copyEncoder, buffer, 2, 2, 2);
 device.GetQueue().Submit(copyEncoder.Finish());
 auto samplerBG = new BindGroup(device, sampler);
-auto texView = tex.CreateSampledView();
+auto texView = tex.CreateSampleableView();
 auto texBG = new BindGroup(device, texView);
-renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
 CommandEncoder* encoder = new CommandEncoder(device);
 RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
 passEncoder.SetPipeline(pipeline);

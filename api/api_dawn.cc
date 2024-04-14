@@ -52,22 +52,22 @@ struct TextureView {
   wgpu::TextureView view;
 };
 
-struct Texture1DView : public TextureView {
+struct SampleableTexture1D : public TextureView {
   using TextureView::TextureView;
 };
-struct Texture2DView : public TextureView {
+struct SampleableTexture2D : public TextureView {
   using TextureView::TextureView;
 };
-struct Texture3DView : public TextureView {
+struct SampleableTexture3D : public TextureView {
   using TextureView::TextureView;
 };
-struct Texture2DArrayView : public TextureView {
+struct SampleableTexture2DArray : public TextureView {
   using TextureView::TextureView;
 };
-struct TextureCubeView : public TextureView {
+struct SampleableTextureCube : public TextureView {
   using TextureView::TextureView;
 };
-struct TextureCubeArrayView : public TextureView {
+struct SampleableTextureCubeArray : public TextureView {
   using TextureView::TextureView;
 };
 
@@ -250,7 +250,7 @@ static wgpu::TextureUsage toDawnTextureUsage(int qualifiers) {
   wgpu::TextureUsage result = wgpu::TextureUsage::CopySrc | wgpu::TextureUsage::CopyDst;
 
   if (qualifiers & Type::Qualifier::Storage) { result |= wgpu::TextureUsage::StorageBinding; }
-  if (qualifiers & Type::Qualifier::Sampled) { result |= wgpu::TextureUsage::TextureBinding; }
+  if (qualifiers & Type::Qualifier::Sampleable) { result |= wgpu::TextureUsage::TextureBinding; }
   if (qualifiers & Type::Qualifier::Renderable) { result |= wgpu::TextureUsage::RenderAttachment; }
   return result;
 }
@@ -329,22 +329,22 @@ static wgpu::BindGroupLayoutEntry CreateBindGroupLayoutEntry(uint32_t binding,
   ClassType* templ = classType->GetTemplate();
   if (templ == NativeClass::Buffer) {
     entry.buffer.type = toDawnBufferBindingType(qualifiers);
-  } else if (templ == NativeClass::Texture1DView) {
+  } else if (templ == NativeClass::SampleableTexture1D) {
     entry.texture.sampleType = ToDawnTextureSampleType(classType);
     entry.texture.viewDimension = wgpu::TextureViewDimension::e1D;
-  } else if (templ == NativeClass::Texture2DView) {
+  } else if (templ == NativeClass::SampleableTexture2D) {
     entry.texture.sampleType = ToDawnTextureSampleType(classType);
     entry.texture.viewDimension = wgpu::TextureViewDimension::e2D;
-  } else if (templ == NativeClass::Texture3DView) {
+  } else if (templ == NativeClass::SampleableTexture3D) {
     entry.texture.sampleType = ToDawnTextureSampleType(classType);
     entry.texture.viewDimension = wgpu::TextureViewDimension::e3D;
-  } else if (templ == NativeClass::Texture2DArrayView) {
+  } else if (templ == NativeClass::SampleableTexture2DArray) {
     entry.texture.sampleType = ToDawnTextureSampleType(classType);
     entry.texture.viewDimension = wgpu::TextureViewDimension::e2DArray;
-  } else if (templ == NativeClass::TextureCubeView) {
+  } else if (templ == NativeClass::SampleableTextureCube) {
     entry.texture.sampleType = ToDawnTextureSampleType(classType);
     entry.texture.viewDimension = wgpu::TextureViewDimension::Cube;
-  } else if (templ == NativeClass::TextureCubeArrayView) {
+  } else if (templ == NativeClass::SampleableTextureCubeArray) {
     entry.texture.sampleType = ToDawnTextureSampleType(classType);
     entry.texture.viewDimension = wgpu::TextureViewDimension::CubeArray;
   } else if (classType == NativeClass::Sampler) {
@@ -405,9 +405,9 @@ wgpu::BindGroupEntry CreateBindGroupEntry(Type* type, int binding, Object* objec
   assert(type->IsClass() && "bind group entry must be of class type");
   ClassType* c = static_cast<ClassType*>(type);
   ClassType* templ = c->GetTemplate();
-  if (templ == NativeClass::Texture1DView || templ == NativeClass::Texture2DView ||
-      templ == NativeClass::Texture3DView || templ == NativeClass::Texture2DArrayView ||
-      templ == NativeClass::TextureCubeView || templ == NativeClass::TextureCubeArrayView) {
+  if (templ == NativeClass::SampleableTexture1D || templ == NativeClass::SampleableTexture2D ||
+      templ == NativeClass::SampleableTexture3D || templ == NativeClass::SampleableTexture2DArray ||
+      templ == NativeClass::SampleableTextureCube || templ == NativeClass::SampleableTextureCubeArray) {
     TextureView* textureView = static_cast<TextureView*>(object->ptr);
     entry.textureView = textureView->view;
   } else if (c == NativeClass::Sampler) {
@@ -625,13 +625,13 @@ Texture1D* Texture1D_Texture1D(int qualifiers, Type* format, Device* device, uin
   return new Texture1D(texture, desc.size, desc.format);
 }
 
-Texture1DView* Texture1D_CreateSampledView(Texture1D* This) {
-  return new Texture1DView(This->texture.CreateView());
+SampleableTexture1D* Texture1D_CreateSampleableView(Texture1D* This) {
+  return new SampleableTexture1D(This->texture.CreateView());
 }
 
 void Texture1D_Destroy(Texture1D* This) { delete This; }
 
-void Texture1DView_Destroy(Texture1DView* This) { delete This; }
+void SampleableTexture1D_Destroy(SampleableTexture1D* This) { delete This; }
 
 Texture2D* Texture2D_Texture2D(int      qualifiers,
                                Type*    format,
@@ -647,12 +647,12 @@ Texture2D* Texture2D_Texture2D(int      qualifiers,
   return new Texture2D(texture, desc.size, desc.format);
 }
 
-Texture2DView* Texture2D_CreateSampledView(Texture2D* This) {
-  return new Texture2DView(This->texture.CreateView());
+SampleableTexture2D* Texture2D_CreateSampleableView(Texture2D* This) {
+  return new SampleableTexture2D(This->texture.CreateView());
 }
 
-Texture2DView* Texture2D_CreateRenderableView(Texture2D* This) {
-  return new Texture2DView(This->texture.CreateView());
+SampleableTexture2D* Texture2D_CreateRenderableView(Texture2D* This) {
+  return new SampleableTexture2D(This->texture.CreateView());
 }
 
 uint32_t Texture2D_MinBufferWidth(Texture2D* This) { return This->MinBufferWidth(); }
@@ -661,7 +661,7 @@ uint32_t Texture3D_MinBufferWidth(Texture3D* This) { return This->MinBufferWidth
 
 void Texture2D_Destroy(Texture2D* This) { delete This; }
 
-void Texture2DView_Destroy(Texture2DView* This) { delete This; }
+void SampleableTexture2D_Destroy(SampleableTexture2D* This) { delete This; }
 
 Texture3D* Texture3D_Texture3D(int      qualifiers,
                                Type*    format,
@@ -678,37 +678,37 @@ Texture3D* Texture3D_Texture3D(int      qualifiers,
   return new Texture3D(texture, desc.size, desc.format);
 }
 
-Texture3DView* Texture3D_CreateSampledView(Texture3D* This) {
-  return new Texture3DView(This->texture.CreateView());
+SampleableTexture3D* Texture3D_CreateSampleableView(Texture3D* This) {
+  return new SampleableTexture3D(This->texture.CreateView());
 }
 
-Texture2DArrayView* Texture2D_CreateSampled2DArrayView(Texture2D* This) {
+SampleableTexture2DArray* Texture2D_CreateSampleable2DArrayView(Texture2D* This) {
   wgpu::TextureViewDescriptor desc;
   desc.dimension = wgpu::TextureViewDimension::e2DArray;
-  return new Texture2DArrayView(This->texture.CreateView(&desc));
+  return new SampleableTexture2DArray(This->texture.CreateView(&desc));
 }
 
-TextureCubeView* Texture2D_CreateSampledCubeView(Texture2D* This) {
+SampleableTextureCube* Texture2D_CreateSampleableCubeView(Texture2D* This) {
   wgpu::TextureViewDescriptor desc;
   desc.dimension = wgpu::TextureViewDimension::Cube;
-  return new TextureCubeView(This->texture.CreateView(&desc));
+  return new SampleableTextureCube(This->texture.CreateView(&desc));
 }
 
-TextureCubeArrayView* Texture2D_CreateSampledCubeArrayView(Texture2D* This) {
+SampleableTextureCubeArray* Texture2D_CreateSampleableCubeArrayView(Texture2D* This) {
   wgpu::TextureViewDescriptor desc;
   desc.dimension = wgpu::TextureViewDimension::CubeArray;
-  return new TextureCubeArrayView(This->texture.CreateView(&desc));
+  return new SampleableTextureCubeArray(This->texture.CreateView(&desc));
 }
 
-void TextureCubeArrayView_Destroy(TextureCubeArrayView* This) { delete This; }
+void SampleableTextureCubeArray_Destroy(SampleableTextureCubeArray* This) { delete This; }
 
 void Texture3D_Destroy(Texture3D* This) { delete This; }
 
-void Texture3DView_Destroy(Texture3DView* This) { delete This; }
+void SampleableTexture3D_Destroy(SampleableTexture3D* This) { delete This; }
 
-void Texture2DArrayView_Destroy(Texture2DArrayView* This) { delete This; }
+void SampleableTexture2DArray_Destroy(SampleableTexture2DArray* This) { delete This; }
 
-void TextureCubeView_Destroy(TextureCubeView* This) { delete This; }
+void SampleableTextureCube_Destroy(SampleableTextureCube* This) { delete This; }
 
 Sampler* Sampler_Sampler(Device*     device,
                          AddressMode addressModeU,
@@ -954,8 +954,8 @@ void ComputePassEncoder_End(ComputePassEncoder* encoder) { encoder->encoder.End(
 void ComputePassEncoder_Destroy(ComputePassEncoder* This) { delete This; }
 
 RenderPassEncoder* CommandEncoder_BeginRenderPass(CommandEncoder* encoder,
-                                                  Texture2DView*  colorAttachment,
-                                                  Texture2DView*  depthAttachment,
+                                                  SampleableTexture2D*  colorAttachment,
+                                                  SampleableTexture2D*  depthAttachment,
                                                   float           r,
                                                   float           g,
                                                   float           b,
@@ -991,8 +991,8 @@ CommandBuffer* CommandEncoder_Finish(CommandEncoder* encoder) {
 
 void CommandBuffer_Destroy(CommandBuffer* This) { delete This; }
 
-Texture2DView* SwapChain_GetCurrentTextureView(SwapChain* swapChain) {
-  return new Texture2DView(swapChain->swapChain.GetCurrentTextureView());
+SampleableTexture2D* SwapChain_GetCurrentTextureView(SwapChain* swapChain) {
+  return new SampleableTexture2D(swapChain->swapChain.GetCurrentTextureView());
 }
 
 #if !TARGET_IS_MAC

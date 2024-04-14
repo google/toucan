@@ -280,7 +280,7 @@ while(System.IsRunning()) {
   springVBO.SetData(springVerts);
 
   physicsSystem.rungeKutta4Step(1.0 / frequency);
-  renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
   CommandEncoder* encoder = new CommandEncoder(device);
   RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
 

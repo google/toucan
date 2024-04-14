@@ -30,7 +30,7 @@ ComputePipeline* computePipeline = new ComputePipeline<BumpCompute>(device);
 auto storageBG = new BindGroup(device, vb);
 
 while (System.IsRunning()) {
-  renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
   CommandEncoder* encoder = new CommandEncoder(device);
   ComputePassEncoder* computeEncoder = encoder.BeginComputePass();
   computeEncoder.SetPipeline(computePipeline);

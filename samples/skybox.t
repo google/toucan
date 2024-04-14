@@ -26,7 +26,7 @@ class Loader {
 
 Device* device = new Device();
 
-auto texture = new sampled Texture2D<RGBA8unorm>(device, 2176, 2176, 6);
+auto texture = new sampleable Texture2D<RGBA8unorm>(device, 2176, 2176, 6);
 Loader.Load(device, inline("third_party/home-cube/right.jpg"), texture, 0);
 Loader.Load(device, inline("third_party/home-cube/left.jpg"), texture, 1);
 Loader.Load(device, inline("third_party/home-cube/top.jpg"), texture, 2);
@@ -49,7 +49,7 @@ class Uniforms {
 
 class Bindings {
   Sampler* sampler;
-  sampled TextureCubeView<float>* textureView;
+  SampleableTextureCube<float>* textureView;
   uniform Buffer<Uniforms>* uniforms;
 }
 
@@ -74,7 +74,7 @@ auto cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, Trian
 auto cubeBindings = new Bindings();
 cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
 cubeBindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
-cubeBindings.textureView = texture.CreateSampledCubeView();
+cubeBindings.textureView = texture.CreateSampleableCubeView();
 auto cubeBindGroup = new BindGroup(device, cubeBindings);
 
 EventHandler handler;

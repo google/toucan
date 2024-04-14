@@ -263,7 +263,7 @@ while(System.IsRunning()) {
   computeUniforms.wind = Vector(Math.rand() * 0.01, 0.0);
   bindings.uniforms.SetData(computeUniforms);
 
-  renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
   CommandEncoder* encoder = new CommandEncoder(device);
   ComputePassEncoder* computeEncoder = encoder.BeginComputePass();
 

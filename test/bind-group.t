@@ -35,7 +35,7 @@ while (System.IsRunning()) {
     s.color = float<4>((float) event.position.x / 640.0, (float) event.position.y / 480.0, 0.0, 1.0);
     stagingBuffer.Unmap();
   }
-  renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+  renderable SampleableTexture2D* framebuffer = swapChain.GetCurrentTextureView();
   CommandEncoder* encoder = new CommandEncoder(device);
   encoder.CopyBufferToBuffer(stagingBuffer, objectData.uniforms);
   RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);

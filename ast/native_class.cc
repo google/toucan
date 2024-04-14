@@ -31,18 +31,18 @@ ClassType* NativeClass::Math;
 ClassType* NativeClass::Queue;
 ClassType* NativeClass::RenderPassEncoder;
 ClassType* NativeClass::RenderPipeline;
+ClassType* NativeClass::SampleableTexture1D;
+ClassType* NativeClass::SampleableTexture2D;
+ClassType* NativeClass::SampleableTexture2DArray;
+ClassType* NativeClass::SampleableTexture3D;
+ClassType* NativeClass::SampleableTextureCube;
+ClassType* NativeClass::SampleableTextureCubeArray;
 ClassType* NativeClass::Sampler;
 ClassType* NativeClass::SwapChain;
 ClassType* NativeClass::System;
 ClassType* NativeClass::Texture1D;
-ClassType* NativeClass::Texture1DView;
 ClassType* NativeClass::Texture2D;
-ClassType* NativeClass::Texture2DView;
-ClassType* NativeClass::Texture2DArrayView;
 ClassType* NativeClass::Texture3D;
-ClassType* NativeClass::Texture3DView;
-ClassType* NativeClass::TextureCubeArrayView;
-ClassType* NativeClass::TextureCubeView;
 ClassType* NativeClass::Window;
 
 }  // namespace Toucan
