@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
   std::string methodname = "method";
   std::string outputFilename = "a.o";
   std::string initTypesFilename = "init_types.cc";
-  std::string includePath = "";
+  std::vector<std::string> includePaths;
 
   while ((opt = getopt(argc, argv, optstring)) > 0) {
     switch (opt) {
@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
       case 'm': methodname = optarg; break;
       case 'o': outputFilename = optarg; break;
       case 't': initTypesFilename = optarg; break;
-      case 'I': includePath = optarg; break;
+      case 'I': includePaths.push_back(optarg); break;
     }
   }
 
@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
   auto*             apiStmts = nodes.Make<Stmts>();
   const TypeVector& apiTypes = types.GetTypes();
   Stmts*            rootStmts;
-  int syntaxErrors = ParseProgram(filename, &symbols, &types, &nodes, includePath, &rootStmts);
+  int syntaxErrors = ParseProgram(filename, &symbols, &types, &nodes, includePaths, &rootStmts);
   if (syntaxErrors > 0) { exit(1); }
   Scope* topScope = symbols.PopScope();
   rootStmts->SetScope(topScope);

@@ -39,7 +39,7 @@ static void PushFile(const char* filename);
 static NodeVector* nodes_;
 static SymbolTable* symbols_;
 static TypeTable* types_;
-static std::string includePath_;
+static std::vector<std::string> includePaths_;
 static Stmts** rootStmts_;
 static std::unordered_set<std::string> includedFiles_;
 static std::stack<FileLocation> fileStack_;
@@ -567,16 +567,16 @@ static Expr* MakeNewArrayExpr(Type* type, Expr* length) {
   return Make<NewArrayExpr>(type, length);
 }
 
-static Expr* InlineFile(const char* filename) {
+static Expr* TryInlineFile(std::string dir, const char* filename) {
   struct stat statbuf;
-  std::string path = !includePath_.empty() ? includePath_ + "/" + filename
-                                           : filename;
+  std::string path = !dir.empty() ? dir + "/" + filename : filename;
   if (stat(path.c_str(), &statbuf) != 0) {
-    yyerrorf("file \"%s\" not found", filename);
+    return nullptr;
   }
   FILE* f = fopen(path.c_str(), "rb");
   if (!f) {
     yyerrorf("file \"%s\" could not be opened for reading", filename);
+    return nullptr;
   }
   off_t size = statbuf.st_size;
   auto buffer = std::make_unique<uint8_t[]>(size);
@@ -585,19 +585,27 @@ static Expr* InlineFile(const char* filename) {
   return Make<Data>(type, std::move(buffer), size);
 }
 
+static Expr* InlineFile(const char* filename) {
+  for (auto path : includePaths_) {
+    if (Expr* e = TryInlineFile(path, filename)) {
+      return e;
+    }
+  }
+  if (Expr* e = TryInlineFile("", filename)) {
+    return e;
+  }
+  yyerrorf("file \"%s\" not found", filename);
+  return nullptr;
+}
+
 static void PushFile(const char* filename) {
   fileStack_.push(FileLocation(std::make_shared<std::string>(filename), 1));
 }
 
-FILE* IncludeFile(const char* filename) {
+static FILE* TryIncludeFile(std::string dir, const char* filename) {
   struct stat statbuf;
-  std::string path = !includePath_.empty() ? includePath_ + "/" + filename
-                                           : filename;
-  if (includedFiles_.find(path) != includedFiles_.end()) {
-    return nullptr;
-  }
+  std::string path = !dir.empty() ? dir + "/" + filename : filename;
   if (stat(path.c_str(), &statbuf) != 0) {
-    yyerrorf("file \"%s\" not found", filename);
     return nullptr;
   }
   FILE* f = fopen(path.c_str(), "r");
@@ -605,9 +613,25 @@ FILE* IncludeFile(const char* filename) {
     yyerrorf("file \"%s\" could not be opened for reading", filename);
     return nullptr;
   }
-  includedFiles_.insert(path);
+  includedFiles_.insert(filename);
   PushFile(filename);
   return f;
+}
+
+FILE* IncludeFile(const char* filename) {
+  if (includedFiles_.find(filename) != includedFiles_.end()) {
+    return nullptr;
+  }
+  for (auto path : includePaths_) {
+    if (FILE* f = TryIncludeFile(path, filename)) {
+      return f;
+    }
+  }
+  if (FILE* f = TryIncludeFile("", filename)) {
+    return f;
+  }
+  yyerrorf("file \"%s\" not found", filename);
+  return nullptr;
 }
 
 void PopFile() {
@@ -926,13 +950,13 @@ int ParseProgram(const char* filename,
                  SymbolTable* symbols,
                  TypeTable* types,
                  NodeVector* nodes,
-                 std::string includePath,
+                 const std::vector<std::string>& includePaths,
                  Stmts** rootStmts) {
   numSyntaxErrors = 0;
   nodes_ = nodes;
   symbols_ = symbols;
   types_ = types;
-  includePath_ = includePath;
+  includePaths_ = includePaths;
   rootStmts_ = rootStmts;
   PushFile(filename);
   yyparse();
