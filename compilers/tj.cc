@@ -80,9 +80,10 @@ int main(int argc, char** argv) {
   bool stubAPI = false;
 
   int         opt;
-  char        optstring[] = "dsgvntc:m:";
+  char        optstring[] = "dsgvntc:m:I:";
   std::string classname = "Class";
   std::string methodname = "method";
+  std::vector<std::string> includePaths;
 
   while ((opt = getopt(argc, argv, optstring)) > 0) {
     switch (opt) {
@@ -93,6 +94,7 @@ int main(int argc, char** argv) {
       case 't': showTime = true; break;
       case 'c': classname = optarg; break;
       case 'm': methodname = optarg; break;
+      case 'I': includePaths.push_back(optarg); break;
     }
   }
 
@@ -111,7 +113,7 @@ int main(int argc, char** argv) {
   InitTypes(&symbols, &types, &nodes);
   const TypeVector& apiTypes = types.GetTypes();
   Stmts*            rootStmts;
-  int               syntaxErrors = ParseProgram(filename, &symbols, &types, &nodes, {}, &rootStmts);
+  int syntaxErrors = ParseProgram(filename, &symbols, &types, &nodes, includePaths, &rootStmts);
   if (syntaxErrors > 0) { exit(1); }
   Scope* topScope = symbols.PopScope();
   rootStmts->SetScope(topScope);
