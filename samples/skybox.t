@@ -1,4 +1,5 @@
 include "cube.t"
+include "event-handler.t"
 include "quaternion.t"
 include "transform.t"
 
@@ -71,32 +72,31 @@ auto depthState = new DepthStencilState<Depth24Plus>();
 
 auto cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, TriangleList);
 auto cubeBindings = new Bindings();
-cubeBindings.uniforms = new uniform Buffer<Uniforms>(device, 1);
+cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
 cubeBindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
 cubeBindings.textureView = texture.CreateSampledCubeView();
 auto cubeBindGroup = new BindGroup(device, cubeBindings);
 
-float theta = 0.0;
-float phi = 0.0;
-float distance = 10.0;
-int<2> anchor;
+EventHandler handler;
+handler.rotation = float<2>(0.0, 0.0);
+handler.distance = 10.0;
+handler.mouseDown = false;
 float<4, 4> projection = Transform.projection(0.5, 200.0, -1.0, 1.0, -1.0, 1.0);
 auto depthBuffer = new renderable Texture2D<Depth24Plus>(device, 1024, 1024, 1);
-bool mouseIsDown = false;
 while (System.IsRunning()) {
-  Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), theta);
-  orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), phi));
+  Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
+  orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
   Uniforms uniforms;
   uniforms.projection = projection;
-  uniforms.view = Transform.translate(0.0, 0.0, -distance);
+  uniforms.view = Transform.translate(0.0, 0.0, -handler.distance);
   uniforms.view *= orientation.toMatrix();
   uniforms.model = Transform.scale(100.0, 100.0, 100.0);
 //  uniforms.viewInverse = Transform.invert(uniforms.view);
   cubeBindings.uniforms.SetData(&uniforms);
-  renderable Texture2DView* framebuffer = swapChain.GetCurrentTextureView();
+  auto framebuffer = swapChain.GetCurrentTextureView();
   CommandEncoder* encoder = new CommandEncoder(device);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer, depthBuffer.CreateRenderableView(), 0.0, 0.0, 0.0, 0.0);
+  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer, depthBuffer.CreateRenderableView());
 
   passEncoder.SetPipeline(cubePipeline);
   passEncoder.SetBindGroup(0, cubeBindGroup);
@@ -109,20 +109,6 @@ while (System.IsRunning()) {
   device.GetQueue().Submit(cb);
   swapChain.Present();
 
-  Event* event = System.GetNextEvent();
-  if (event.type == MouseDown) {
-    mouseIsDown = true;
-  } else if (event.type == MouseUp) {
-    mouseIsDown = false;
-  } else if (event.type == MouseMove) {
-    int<2> diff = event.position - anchor;
-    if (mouseIsDown || (event.modifiers & Control) != 0) {
-      theta += (float) diff.x / 200.0;
-      phi += (float) diff.y / 200.0;
-    } else if ((event.modifiers & Shift) != 0) {
-      distance += (float) diff.y / 100.0;
-    }
-    anchor = event.position;
-  }
+  handler.Handle(System.GetNextEvent());
 }
 return 0.0;
