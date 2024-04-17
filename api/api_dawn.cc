@@ -544,7 +544,7 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   vertexState.buffers = &vbDesc;
   wgpu::RenderPipelineDescriptor rpDesc;
   wgpu::ColorTargetState         colorTargetState;
-  colorTargetState.format = wgpu::TextureFormat::BGRA8Unorm;  // FIXME
+  colorTargetState.format = GetPreferredSwapChainFormat();  // FIXME
   wgpu::DepthStencilState depthStencilState;
   if (depthStencil->ptr) {
     Type* type = depthStencil->controlBlock->type;
