@@ -21,6 +21,10 @@ group("samples") {
   ]
 }
 
+toucan_executable("skybox") {
+  sources = [ "skybox.t" ]
+}
+
 toucan_executable("springy") {
   sources = [ "springy.t" ]
 }

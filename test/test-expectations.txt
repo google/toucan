@@ -110,7 +110,7 @@ error-partial-template.t:6:  cannot allocate partially-specified template class 
 error-partial-template.t:7:  cannot allocate partially-specified template class Foo
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(CommandEncoder*, Buffer<float<4>[]>*, int)
-error-texture-from-buffer-incorrect-format.t:9:  void Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint)
+error-texture-from-buffer-incorrect-format.t:9:  void Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint, uint)
 test/error-uint-literal-too-large.t
 result is 705032704.000000
 test/error-wrong-named-param.t
@@ -254,7 +254,6 @@ test/texture2d.t
 test/texture2darray.t
 test/texture3d.t
 test/texturecube.t
-test/texturecubearray.t
 test/triangle.t
 result is 0.000000
 test/two-windows.t

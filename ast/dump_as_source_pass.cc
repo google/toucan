@@ -62,7 +62,7 @@ Result DumpAsSourcePass::Visit(IntConstant* node) {
 }
 
 Result DumpAsSourcePass::Visit(UIntConstant* node) {
-  Output(node, "Make<UIntConstant>(%u)", node->GetValue());
+  Output(node, "Make<UIntConstant>(%u, %d)", node->GetValue(), node->GetBits());
   return {};
 }
 
@@ -112,8 +112,13 @@ Result DumpAsSourcePass::Visit(Stmts* stmts) {
 Result DumpAsSourcePass::Visit(ArgList* a) {
   int id = Output(a, "Make<ArgList>()");
   for (Arg* const& i : a->GetArgs()) {
-    fprintf(file_, "  argLists[%d]->Append(exprs[%d]);\n", id, Resolve(i));
+    fprintf(file_, "  argLists[%d]->Append(args[%d]);\n", id, Resolve(i));
   }
+  return {};
+}
+
+Result DumpAsSourcePass::Visit(Arg* a) {
+  Output(a, "Make<Arg>(\"%s\", exprs[%d])", a->GetID().c_str(), Resolve(a->GetExpr()));
   return {};
 }
 
@@ -123,7 +128,9 @@ Result DumpAsSourcePass::Visit(ExprStmt* stmt) {
 }
 
 Result DumpAsSourcePass::Visit(ConstructorNode* node) {
-  NOTIMPLEMENTED();
+  int type = (*typeMap_)[node->GetType()];
+  int argList = Resolve(node->GetArgList());
+  Output(node, "Make<ConstructorNode>(typeList[%d], argLists[%d])", type, argList);
   return {};
 }
 

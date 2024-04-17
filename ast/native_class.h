@@ -41,14 +41,15 @@ class NativeClass {
   static ClassType* SampleableTexture2D;
   static ClassType* SampleableTexture2DArray;
   static ClassType* SampleableTexture3D;
-  static ClassType* SampleableTextureCubeArray;
   static ClassType* SampleableTextureCube;
   static ClassType* Sampler;
   static ClassType* SwapChain;
   static ClassType* System;
   static ClassType* Texture1D;
   static ClassType* Texture2D;
+  static ClassType* Texture2DArray;
   static ClassType* Texture3D;
+  static ClassType* TextureCube;
   static ClassType* Window;
 };
 

@@ -45,6 +45,15 @@ uint32_t BytesPerPixel(wgpu::TextureFormat format) {
   }
 }
 
+static wgpu::TextureUsage ToDawnTextureUsage(int qualifiers) {
+  wgpu::TextureUsage result = wgpu::TextureUsage::CopySrc | wgpu::TextureUsage::CopyDst;
+
+  if (qualifiers & Type::Qualifier::Storage) { result |= wgpu::TextureUsage::StorageBinding; }
+  if (qualifiers & Type::Qualifier::Sampleable) { result |= wgpu::TextureUsage::TextureBinding; }
+  if (qualifiers & Type::Qualifier::Renderable) { result |= wgpu::TextureUsage::RenderAttachment; }
+  return result;
+}
+
 }  // namespace
 
 struct TextureView {
@@ -58,29 +67,48 @@ struct SampleableTexture1D : public TextureView {
 struct SampleableTexture2D : public TextureView {
   using TextureView::TextureView;
 };
-struct SampleableTexture3D : public TextureView {
-  using TextureView::TextureView;
-};
 struct SampleableTexture2DArray : public TextureView {
   using TextureView::TextureView;
 };
-struct SampleableTextureCube : public TextureView {
+struct SampleableTexture3D : public TextureView {
   using TextureView::TextureView;
 };
-struct SampleableTextureCubeArray : public TextureView {
+struct SampleableTextureCube : public TextureView {
   using TextureView::TextureView;
 };
 
 struct Texture {
   Texture(wgpu::Texture t, const wgpu::Extent3D& s, wgpu::TextureFormat f)
       : texture(t), size(s), format(f) {}
-  wgpu::Texture       texture;
-  wgpu::Extent3D      size;
-  wgpu::TextureFormat format;
-  uint32_t            MinBufferWidth() {
+  Texture(int qualifiers, Type* pixelFormat, wgpu::Device device, wgpu::TextureDimension d, wgpu::Extent3D s) {
+    wgpu::TextureDescriptor desc;
+    desc.usage = ToDawnTextureUsage(qualifiers);
+    desc.size = size = s;
+    desc.format = format = ToDawnTextureFormat(pixelFormat);
+    desc.dimension = d;
+    texture = device.CreateTexture(&desc);
+  }
+  uint32_t MinBufferWidth() {
     uint32_t bytesPerPixel = BytesPerPixel(format);
     return (((size.width * bytesPerPixel + 255) >> 8) << 8) / bytesPerPixel;
   }
+
+  void CopyFromBuffer(wgpu::CommandEncoder encoder,
+                      wgpu::Buffer         source,
+                      wgpu::Extent3D       extent,
+                      wgpu::Origin3D       origin) {
+    wgpu::ImageCopyBuffer sourceICB;
+    sourceICB.buffer = source;
+    sourceICB.layout.bytesPerRow = MinBufferWidth() * BytesPerPixel(format);
+    sourceICB.layout.rowsPerImage = size.height;
+    wgpu::ImageCopyTexture destICT;
+    destICT.texture = texture;
+    destICT.origin = origin;
+    encoder.CopyBufferToTexture(&sourceICB, &destICT, &extent);
+  }
+  wgpu::Texture       texture;
+  wgpu::Extent3D      size;
+  wgpu::TextureFormat format;
 };
 
 struct Texture1D : public Texture {
@@ -89,7 +117,13 @@ struct Texture1D : public Texture {
 struct Texture2D : public Texture {
   using Texture::Texture;
 };
+struct Texture2DArray : public Texture {
+  using Texture::Texture;
+};
 struct Texture3D : public Texture {
+  using Texture::Texture;
+};
+struct TextureCube : public Texture {
   using Texture::Texture;
 };
 
@@ -257,15 +291,6 @@ static wgpu::BufferUsage toDawnBufferUsage(int qualifiers) {
   return result;
 }
 
-static wgpu::TextureUsage toDawnTextureUsage(int qualifiers) {
-  wgpu::TextureUsage result = wgpu::TextureUsage::CopySrc | wgpu::TextureUsage::CopyDst;
-
-  if (qualifiers & Type::Qualifier::Storage) { result |= wgpu::TextureUsage::StorageBinding; }
-  if (qualifiers & Type::Qualifier::Sampleable) { result |= wgpu::TextureUsage::TextureBinding; }
-  if (qualifiers & Type::Qualifier::Renderable) { result |= wgpu::TextureUsage::RenderAttachment; }
-  return result;
-}
-
 static wgpu::PrimitiveTopology toDawnPrimitiveTopology(PrimitiveTopology type) {
   switch (type) {
     case PointList: return wgpu::PrimitiveTopology::PointList;
@@ -355,9 +380,6 @@ static wgpu::BindGroupLayoutEntry CreateBindGroupLayoutEntry(uint32_t binding,
   } else if (templ == NativeClass::SampleableTextureCube) {
     entry.texture.sampleType = ToDawnTextureSampleType(classType);
     entry.texture.viewDimension = wgpu::TextureViewDimension::Cube;
-  } else if (templ == NativeClass::SampleableTextureCubeArray) {
-    entry.texture.sampleType = ToDawnTextureSampleType(classType);
-    entry.texture.viewDimension = wgpu::TextureViewDimension::CubeArray;
   } else if (classType == NativeClass::Sampler) {
     entry.sampler.type = wgpu::SamplerBindingType::Filtering;
   } else {
@@ -418,7 +440,7 @@ wgpu::BindGroupEntry CreateBindGroupEntry(Type* type, int binding, Object* objec
   ClassType* templ = c->GetTemplate();
   if (templ == NativeClass::SampleableTexture1D || templ == NativeClass::SampleableTexture2D ||
       templ == NativeClass::SampleableTexture3D || templ == NativeClass::SampleableTexture2DArray ||
-      templ == NativeClass::SampleableTextureCube || templ == NativeClass::SampleableTextureCubeArray) {
+      templ == NativeClass::SampleableTextureCube) {
     TextureView* textureView = static_cast<TextureView*>(object->ptr);
     entry.textureView = textureView->view;
   } else if (c == NativeClass::Sampler) {
@@ -626,49 +648,114 @@ BindGroup* BindGroup_BindGroup(Device* device, Object* data) {
 
 void BindGroup_Destroy(BindGroup* This) { delete This; }
 
+void SampleableTexture1D_Destroy(SampleableTexture1D* This) { delete This; }
+
+void SampleableTexture2D_Destroy(SampleableTexture2D* This) { delete This; }
+
+void SampleableTexture2DArray_Destroy(SampleableTexture2DArray* This) { delete This; }
+
+void SampleableTexture3D_Destroy(SampleableTexture3D* This) { delete This; }
+
+void SampleableTextureCube_Destroy(SampleableTextureCube* This) { delete This; }
+
 Texture1D* Texture1D_Texture1D(int qualifiers, Type* format, Device* device, uint32_t width) {
-  wgpu::TextureDescriptor desc;
-  desc.usage = toDawnTextureUsage(qualifiers);
-  desc.size = wgpu::Extent3D{width, 1, 1};
-  desc.format = ToDawnTextureFormat(format);
-  desc.dimension = wgpu::TextureDimension::e1D;
-  wgpu::Texture texture = device->device.CreateTexture(&desc);
-  return new Texture1D(texture, desc.size, desc.format);
+  return new Texture1D(qualifiers, format, device->device, wgpu::TextureDimension::e1D, {width, 1, 1});
 }
+
+void Texture1D_Destroy(Texture1D* This) { delete This; }
 
 SampleableTexture1D* Texture1D_CreateSampleableView(Texture1D* This) {
   return new SampleableTexture1D(This->texture.CreateView());
 }
 
-void Texture1D_Destroy(Texture1D* This) { delete This; }
+Texture1D* Texture1D_CreateStorageView(Texture1D* This) {
+  assert(!"unimplemented");
+  return nullptr;
+}
 
-void SampleableTexture1D_Destroy(SampleableTexture1D* This) { delete This; }
+void Texture1D_CopyFromBuffer(Texture1D*      dest,
+                              CommandEncoder* encoder,
+                              Buffer*         source,
+                              uint32_t        width,
+                              uint32_t        origin) {
+  dest->CopyFromBuffer(encoder->encoder, source->buffer, {width, 1, 1}, {origin, 0, 0});
+}
 
 Texture2D* Texture2D_Texture2D(int      qualifiers,
                                Type*    format,
                                Device*  device,
                                uint32_t width,
-                               uint32_t height,
-                               uint32_t depth) {
-  wgpu::TextureDescriptor desc;
-  desc.usage = toDawnTextureUsage(qualifiers);
-  desc.size = wgpu::Extent3D{width, height, depth};
-  desc.format = ToDawnTextureFormat(format);
-  wgpu::Texture texture = device->device.CreateTexture(&desc);
-  return new Texture2D(texture, desc.size, desc.format);
+                               uint32_t height) {
+  return new Texture2D(qualifiers, format, device->device, wgpu::TextureDimension::e2D, {width, height, 1});
 }
+
+void Texture2D_Destroy(Texture2D* This) { delete This; }
 
 SampleableTexture2D* Texture2D_CreateSampleableView(Texture2D* This) {
   return new SampleableTexture2D(This->texture.CreateView());
 }
 
+Texture2D* Texture2D_CreateRenderableView(Texture2D* This) {
+  assert(!"unimplemented");
+  return nullptr;
+}
+
+Texture2D* Texture2D_CreateStorageView(Texture2D* This) {
+  assert(!"unimplemented");
+  return nullptr;
+}
+
 uint32_t Texture2D_MinBufferWidth(Texture2D* This) { return This->MinBufferWidth(); }
 
-uint32_t Texture3D_MinBufferWidth(Texture3D* This) { return This->MinBufferWidth(); }
+void Texture2D_CopyFromBuffer(Texture2D*      dest,
+                              CommandEncoder* encoder,
+                              Buffer*         source,
+                              uint32_t        width,
+                              uint32_t        height,
+                              uint32_t*       origin) {
+  dest->CopyFromBuffer(encoder->encoder, source->buffer, {width, height, 1},
+                       {origin[0], origin[1], 0});
+}
 
-void Texture2D_Destroy(Texture2D* This) { delete This; }
+Texture2DArray* Texture2DArray_Texture2DArray(int      qualifiers,
+                                              Type*    format,
+                                              Device*  device,
+                                              uint32_t width,
+                                              uint32_t height,
+                                              uint32_t layers) {
+  return new Texture2DArray(qualifiers, format, device->device, wgpu::TextureDimension::e2D, {width, height, layers});
+}
 
-void SampleableTexture2D_Destroy(SampleableTexture2D* This) { delete This; }
+void Texture2DArray_Destroy(Texture2DArray* This) { delete This; }
+
+SampleableTexture2DArray* Texture2DArray_CreateSampleableView(Texture2DArray* This) {
+  wgpu::TextureViewDescriptor desc;
+  desc.dimension = wgpu::TextureViewDimension::e2DArray;
+  return new SampleableTexture2DArray(This->texture.CreateView(&desc));
+}
+
+Texture2DArray* Texture2DArray_CreateRenderableView(Texture2DArray* This) {
+  assert(!"unimplemented");
+  return nullptr;
+}
+
+Texture2DArray* Texture2DArray_CreateStorageView(Texture2DArray* This) {
+  assert(!"unimplemented");
+  return nullptr;
+}
+
+uint32_t Texture2DArray_MinBufferWidth(Texture2DArray* This) { return This->MinBufferWidth(); }
+
+void Texture2DArray_CopyFromBuffer(Texture2DArray* dest,
+                                   CommandEncoder* encoder,
+                                   Buffer*         source,
+                                   uint32_t        width,
+                                   uint32_t        height,
+                                   uint32_t        layers,
+                                   uint32_t*       origin) {
+  dest->CopyFromBuffer(encoder->encoder, source->buffer, {width, height, layers},
+                       {origin[0], origin[1], origin[2]});
+}
 
 Texture3D* Texture3D_Texture3D(int      qualifiers,
                                Type*    format,
@@ -676,46 +763,76 @@ Texture3D* Texture3D_Texture3D(int      qualifiers,
                                uint32_t width,
                                uint32_t height,
                                uint32_t depth) {
-  wgpu::TextureDescriptor desc;
-  desc.usage = toDawnTextureUsage(qualifiers);
-  desc.size = wgpu::Extent3D{width, height, depth};
-  desc.format = ToDawnTextureFormat(format);
-  desc.dimension = wgpu::TextureDimension::e3D;
-  wgpu::Texture texture = device->device.CreateTexture(&desc);
-  return new Texture3D(texture, desc.size, desc.format);
+  return new Texture3D(qualifiers, format, device->device, wgpu::TextureDimension::e3D, {width, height, depth});
 }
+
+void Texture3D_Destroy(Texture3D* This) { delete This; }
 
 SampleableTexture3D* Texture3D_CreateSampleableView(Texture3D* This) {
   return new SampleableTexture3D(This->texture.CreateView());
 }
 
-SampleableTexture2DArray* Texture2D_CreateSampleable2DArrayView(Texture2D* This) {
-  wgpu::TextureViewDescriptor desc;
-  desc.dimension = wgpu::TextureViewDimension::e2DArray;
-  return new SampleableTexture2DArray(This->texture.CreateView(&desc));
+Texture3D* Texture3D_CreateRenderableView(Texture3D* This, uint32_t depth, uint32_t mipLevel) {
+  assert(!"unimplemented");
+  return nullptr;
 }
 
-SampleableTextureCube* Texture2D_CreateSampleableCubeView(Texture2D* This) {
+Texture3D* Texture3D_CreateStorageView(Texture2D* This, uint32_t depth, uint32_t mipLevel) {
+  assert(!"unimplemented");
+  return nullptr;
+}
+
+uint32_t Texture3D_MinBufferWidth(Texture3D* This) { return This->MinBufferWidth(); }
+
+void Texture3D_CopyFromBuffer(Texture3D*      dest,
+                              CommandEncoder* encoder,
+                              Buffer*         source,
+                              uint32_t        width,
+                              uint32_t        height,
+                              uint32_t        depth,
+                              uint32_t*       origin) {
+  dest->CopyFromBuffer(encoder->encoder, source->buffer, {width, height, depth},
+                       {origin[0], origin[1], origin[2]});
+}
+
+TextureCube* TextureCube_TextureCube(int      qualifiers,
+                                     Type*    format,
+                                     Device*  device,
+                                     uint32_t width,
+                                     uint32_t height) {
+  return new TextureCube(qualifiers, format, device->device, wgpu::TextureDimension::e2D, {width, height, 6});
+}
+
+void TextureCube_Destroy(TextureCube* This) { delete This; }
+
+SampleableTextureCube* TextureCube_CreateSampleableView(TextureCube* This) {
   wgpu::TextureViewDescriptor desc;
   desc.dimension = wgpu::TextureViewDimension::Cube;
   return new SampleableTextureCube(This->texture.CreateView(&desc));
 }
 
-SampleableTextureCubeArray* Texture2D_CreateSampleableCubeArrayView(Texture2D* This) {
-  wgpu::TextureViewDescriptor desc;
-  desc.dimension = wgpu::TextureViewDimension::CubeArray;
-  return new SampleableTextureCubeArray(This->texture.CreateView(&desc));
+Texture2D* TextureCube_CreateRenderableView(TextureCube* This, int32_t face, int32_t mipLevel) {
+  assert(!"unimplemented");
+  return nullptr;
 }
 
-void SampleableTextureCubeArray_Destroy(SampleableTextureCubeArray* This) { delete This; }
+Texture2D* TextureCube_CreateStorageView(TextureCube* This, int32_t face, int32_t mipLevel) {
+  assert(!"unimplemented");
+  return nullptr;
+}
 
-void Texture3D_Destroy(Texture3D* This) { delete This; }
+uint32_t TextureCube_MinBufferWidth(TextureCube* This) { return This->MinBufferWidth(); }
 
-void SampleableTexture3D_Destroy(SampleableTexture3D* This) { delete This; }
-
-void SampleableTexture2DArray_Destroy(SampleableTexture2DArray* This) { delete This; }
-
-void SampleableTextureCube_Destroy(SampleableTextureCube* This) { delete This; }
+void TextureCube_CopyFromBuffer(TextureCube*    dest,
+                                CommandEncoder* encoder,
+                                Buffer*         source,
+                                uint32_t        width,
+                                uint32_t        height,
+                                uint32_t        faces,
+                                uint32_t*       origin) {
+  dest->CopyFromBuffer(encoder->encoder, source->buffer, {width, height, faces},
+                       {origin[0], origin[1], origin[2]});
+}
 
 Sampler* Sampler_Sampler(Device*     device,
                          AddressMode addressModeU,
@@ -739,59 +856,6 @@ void Sampler_Destroy(Sampler* This) { delete This; }
 
 void CommandEncoder_CopyBufferToBuffer(CommandEncoder* encoder, Buffer* source, Buffer* dest) {
   encoder->encoder.CopyBufferToBuffer(source->buffer, 0, dest->buffer, 0, source->sizeInBytes);
-}
-
-void Texture1D_CopyFromBuffer(Texture1D*      dest,
-                              CommandEncoder* encoder,
-                              Buffer*         source,
-                              uint32_t        width) {
-  wgpu::ImageCopyBuffer sourceICB;
-  sourceICB.buffer = source->buffer;
-  wgpu::ImageCopyTexture destICT;
-  destICT.texture = dest->texture;
-  wgpu::Extent3D extent;
-  extent.width = width;
-  encoder->encoder.CopyBufferToTexture(&sourceICB, &destICT, &extent);
-}
-
-void Texture2D_CopyFromBuffer(Texture2D*      dest,
-                              CommandEncoder* encoder,
-                              Buffer*         source,
-                              uint32_t        width,
-                              uint32_t        height,
-                              uint32_t        layer,
-                              uint32_t*       origin) {
-  wgpu::ImageCopyBuffer sourceICB;
-  sourceICB.buffer = source->buffer;
-  sourceICB.layout.bytesPerRow = Texture2D_MinBufferWidth(dest) * BytesPerPixel(dest->format);
-  sourceICB.layout.rowsPerImage = dest->size.height;
-  wgpu::ImageCopyTexture destICT;
-  destICT.texture = dest->texture;
-  destICT.origin = {origin[0], origin[1], origin[2]};
-  wgpu::Extent3D extent;
-  extent.width = width;
-  extent.height = height;
-  extent.depthOrArrayLayers = layer;
-  encoder->encoder.CopyBufferToTexture(&sourceICB, &destICT, &extent);
-}
-
-void Texture3D_CopyFromBuffer(Texture3D*      dest,
-                              CommandEncoder* encoder,
-                              Buffer*         source,
-                              uint32_t        width,
-                              uint32_t        height,
-                              uint32_t        depth) {
-  wgpu::ImageCopyBuffer sourceICB;
-  sourceICB.buffer = source->buffer;
-  sourceICB.layout.bytesPerRow = dest->MinBufferWidth() * BytesPerPixel(dest->format);
-  sourceICB.layout.rowsPerImage = dest->size.height;
-  wgpu::ImageCopyTexture destICT;
-  destICT.texture = dest->texture;
-  wgpu::Extent3D extent;
-  extent.width = width;
-  extent.height = height;
-  extent.depthOrArrayLayers = depth;
-  encoder->encoder.CopyBufferToTexture(&sourceICB, &destICT, &extent);
 }
 
 #if TARGET_IS_WASM

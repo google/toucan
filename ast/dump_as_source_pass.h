@@ -33,6 +33,7 @@ class DumpAsSourcePass : public Visitor {
   DumpAsSourcePass(FILE* file, std::unordered_map<Type*, int>* typeMap);
   int    Resolve(ASTNode* node);
   int    Output(ASTNode* node, const char* fmt, ...) CHECK_FORMAT(printf, 3, 4);
+  Result Visit(Arg* node) override;
   Result Visit(ArgList* node) override;
   Result Visit(ArrayAccess* node) override;
   Result Visit(BinOpNode* node) override;

@@ -10,13 +10,13 @@ Device* device = new Device();
 
 using Format = RGBA8unorm;
 auto image = new ImageDecoder<RGBA8unorm>(inline("third_party/libjpeg-turbo/testimages/testorig.jpg"));
-auto texture = new sampleable Texture2D<Format>(device, image.Width(), image.Height(), 1);
+auto texture = new sampleable Texture2D<Format>(device, image.Width(), image.Height());
 auto buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * image.Height());
 writeonly Format::MemoryType[]^ b = buffer.MapWrite();
 image.Decode(b, texture.MinBufferWidth());
 buffer.Unmap();
 CommandEncoder* copyEncoder = new CommandEncoder(device);
-texture.CopyFromBuffer(copyEncoder, buffer, image.Width(), image.Height(), 1, uint<3>(0, 0, 0));
+texture.CopyFromBuffer(copyEncoder, buffer, image.Width(), image.Height());
 device.GetQueue().Submit(copyEncoder.Finish());
 
 Window* window = new Window(device, 0, 0, image.Width(), image.Height());

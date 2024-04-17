@@ -36,13 +36,14 @@ ClassType* NativeClass::SampleableTexture2D;
 ClassType* NativeClass::SampleableTexture2DArray;
 ClassType* NativeClass::SampleableTexture3D;
 ClassType* NativeClass::SampleableTextureCube;
-ClassType* NativeClass::SampleableTextureCubeArray;
 ClassType* NativeClass::Sampler;
 ClassType* NativeClass::SwapChain;
 ClassType* NativeClass::System;
 ClassType* NativeClass::Texture1D;
 ClassType* NativeClass::Texture2D;
+ClassType* NativeClass::Texture2DArray;
 ClassType* NativeClass::Texture3D;
+ClassType* NativeClass::TextureCube;
 ClassType* NativeClass::Window;
 
 }  // namespace Toucan

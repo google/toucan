@@ -44,7 +44,7 @@ class Pipeline {
 };
 RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 auto sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
-auto tex = new sampleable Texture2D<RGBA8unorm>(device, 2, 2, 1);
+auto tex = new sampleable Texture2D<RGBA8unorm>(device, 2, 2);
 auto width = tex.MinBufferWidth();
 auto buffer = new Buffer<ubyte<4>[]>(device, 2 * width);
 auto data = buffer.MapWrite();
@@ -54,7 +54,7 @@ data[width    ] = ubyte<4>(  0ub,   0ub, 255ub, 255ub);
 data[width + 1] = ubyte<4>(  0ub, 255ub, 255ub, 255ub);
 buffer.Unmap();
 CommandEncoder* copyEncoder = new CommandEncoder(device);
-tex.CopyFromBuffer(copyEncoder, buffer, 2, 2, 1, uint<3>(0, 0, 0));
+tex.CopyFromBuffer(copyEncoder, buffer, 2, 2);
 device.GetQueue().Submit(copyEncoder.Finish());
 auto samplerBG = new BindGroup(device, sampler);
 auto texView = tex.CreateSampleableView();

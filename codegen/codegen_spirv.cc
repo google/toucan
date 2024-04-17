@@ -59,14 +59,9 @@ bool isSampleableTextureCube(ClassType* classType) {
   return classType->GetTemplate() == NativeClass::SampleableTextureCube;
 }
 
-bool isSampleableTextureCubeArray(ClassType* classType) {
-  return classType->GetTemplate() == NativeClass::SampleableTextureCubeArray;
-}
-
 bool isTextureView(ClassType* classType) {
   return isSampleableTexture1D(classType) || isSampleableTexture2D(classType) || isSampleableTexture3D(classType) ||
-         isSampleableTexture2DArray(classType) || isSampleableTextureCube(classType) ||
-         isSampleableTextureCubeArray(classType);
+         isSampleableTexture2DArray(classType) || isSampleableTextureCube(classType);
 }
 
 bool isMath(ClassType* classType) { return classType == NativeClass::Math; }
@@ -641,8 +636,6 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
         resultId = AppendImageDecl(spv::Dim2D, true, qualifiers, classType->GetTemplateArgs());
       } else if (isSampleableTextureCube(classType)) {
         resultId = AppendImageDecl(spv::DimCube, false, qualifiers, classType->GetTemplateArgs());
-      } else if (isSampleableTextureCubeArray(classType)) {
-        resultId = AppendImageDecl(spv::DimCube, true, qualifiers, classType->GetTemplateArgs());
       } else {
         assert(!"unsupported native class type in shader");
       }
@@ -1089,15 +1082,6 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
         uint32_t x = AppendCode(spv::Op::OpCompositeExtract, floatType, {coord, 0});
         uint32_t y = AppendCode(spv::Op::OpCompositeExtract, floatType, {coord, 1});
         coord = AppendCode(spv::Op::OpCompositeConstruct, float3, {x, y, layer});
-      } else if (isSampleableTextureCubeArray(method->classType)) {
-        uint32_t layer = GenerateSPIRV(args[3]);
-        layer = AppendCode(spv::Op::OpConvertUToF, ConvertType(types_->GetFloat()), {layer});
-        uint32_t float4 = ConvertType(types_->GetVector(types_->GetFloat(), 4));
-        uint32_t floatType = ConvertType(types_->GetFloat());
-        uint32_t x = AppendCode(spv::Op::OpCompositeExtract, floatType, {coord, 0});
-        uint32_t y = AppendCode(spv::Op::OpCompositeExtract, floatType, {coord, 1});
-        uint32_t z = AppendCode(spv::Op::OpCompositeExtract, floatType, {coord, 2});
-        coord = AppendCode(spv::Op::OpCompositeConstruct, float4, {x, y, z, layer});
       }
       return AppendCode(spv::Op::OpImageSampleImplicitLod, resultType, {sampledImage, coord});
     }

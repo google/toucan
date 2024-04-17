@@ -156,6 +156,7 @@ void GenBindings::Run() {
   fprintf(file_, "  Stmt** stmts = reinterpret_cast<Stmt**>(nodeList);\n");
   fprintf(file_, "  Stmts** stmtss = reinterpret_cast<Stmts**>(nodeList);\n");
   fprintf(file_, "  ArgList** argLists = reinterpret_cast<ArgList**>(nodeList);\n");
+  fprintf(file_, "  Arg** args = reinterpret_cast<Arg**>(nodeList);\n");
   fprintf(file_, "  Scope* scope;\n");
   fprintf(file_, "  std::shared_ptr<Var> v;\n");
   fprintf(file_, "  Type* returnType;\n");
