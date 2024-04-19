@@ -28,8 +28,7 @@ passEncoder.SetPipelineData(pipelineData);
 passEncoder.SetVertexBuffer(0, vb);
 passEncoder.Draw(3, 1, 0, 0);
 passEncoder.End();
-CommandBuffer* cb = encoder.Finish();
-queue.Submit(cb);
+device.GetQueue().Submit(encoder.Finish());
 swapChain.Present();
 
 while (System.IsRunning()) System.GetNextEvent();

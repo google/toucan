@@ -293,8 +293,7 @@ while(System.IsRunning()) {
   passEncoder.Draw(springVerts.length, 1, 0, 0);
 
   passEncoder.End();
-  CommandBuffer* cb = encoder.Finish();
-  device.GetQueue().Submit(cb);
+  device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
 }
 return 0.0;

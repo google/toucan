@@ -2,9 +2,6 @@ class Vertex {
     float<4> position;
     float<2> texCoord;
 };
-class Varyings {
-    float<2> texCoord;
-};
 
 Device* device = new Device();
 
@@ -40,14 +37,12 @@ indices[5] = 3;
 auto vb = new vertex Buffer<Vertex[]>(device, verts);
 auto ib = new index Buffer<int[]>(device, indices);
 class Pipeline {
-    Varyings vertexShader(VertexBuiltins vb, Vertex v) vertex {
+    float<2> vertexShader(VertexBuiltins vb, Vertex v) vertex {
         vb.position = v.position;
-        Varyings varyings;
-        varyings.texCoord = v.texCoord;
-        return varyings;
+        return v.texCoord;
     }
-    float<4> fragmentShader(FragmentBuiltins fb, Varyings varyings) fragment {
-      return textureView.Sample(sampler, varyings.texCoord);
+    float<4> fragmentShader(FragmentBuiltins fb, float<2> texCoord) fragment {
+      return textureView.Sample(sampler, texCoord);
     }
     Sampler* sampler;
     SampleableTexture2D<float>* textureView;
@@ -67,8 +62,7 @@ passEncoder.SetVertexBuffer(0, vb);
 passEncoder.SetIndexBuffer(ib);
 passEncoder.DrawIndexed(6, 1, 0, 0, 0);
 passEncoder.End();
-CommandBuffer* cb = encoder.Finish();
-device.GetQueue().Submit(cb);
+device.GetQueue().Submit(encoder.Finish());
 swapChain.Present();
 
 while (System.IsRunning()) System.GetNextEvent();

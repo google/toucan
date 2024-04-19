@@ -298,8 +298,7 @@ while(System.IsRunning()) {
   passEncoder.Draw(numBodyVerts, 1, 0, 0);
 
   passEncoder.End();
-  CommandBuffer* cb = encoder.Finish();
-  device.GetQueue().Submit(cb);
+  device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
 
   while (System.HasPendingEvents()) {

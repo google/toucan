@@ -38,8 +38,7 @@ passEncoder.SetVertexBuffer(0, vb);
 passEncoder.SetIndexBuffer(ib);
 passEncoder.DrawIndexed(6, 1, 0, 0, 0);
 passEncoder.End();
-CommandBuffer* cb = encoder.Finish();
-queue.Submit(cb);
+device.GetQueue().Submit(encoder.Finish());
 swapChain.Present();
 
 while (System.IsRunning()) System.GetNextEvent();

@@ -44,8 +44,7 @@ while (System.IsRunning()) {
   passEncoder.SetVertexBuffer(0, vb);
   passEncoder.Draw(3, 1, 0, 0);
   passEncoder.End();
-  CommandBuffer* cb = encoder.Finish();
-  device.GetQueue().Submit(cb);
+  device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
   System.GetNextEvent();
 }

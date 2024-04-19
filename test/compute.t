@@ -42,7 +42,7 @@ while (System.IsRunning()) {
   passEncoder.Draw(3, 1, 0, 0);
   passEncoder.End();
   CommandBuffer* cb = encoder.Finish();
-  device.GetQueue().Submit(cb);
+  device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
 
   while (System.HasPendingEvents()) System.GetNextEvent();

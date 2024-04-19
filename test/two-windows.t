@@ -11,8 +11,7 @@ RenderPassEncoder* passEncoder1 = encoder.BeginRenderPass(framebuffer1, null, 0.
 passEncoder1.End();
 RenderPassEncoder* passEncoder2 = encoder.BeginRenderPass(framebuffer2, null, 0.0, 0.0, 1.0, 1.0);
 passEncoder2.End();
-CommandBuffer* cb = encoder.Finish();
-queue.Submit(cb);
+device.GetQueue().Submit(encoder.Finish());
 swapChain1.Present();
 swapChain2.Present();
 
