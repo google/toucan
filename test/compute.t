@@ -17,8 +17,7 @@ auto verts = new Vertex[3];
 verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
 verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
 verts[2] = float<4>( 1.0, -1.0, 0.0, 1.0);
-auto vb = new vertex storage Buffer<Vertex[]>(device, verts.length);
-vb.SetData(verts);
+auto vb = new vertex storage Buffer<Vertex[]>(device, verts);
 class Pipeline {
   void vertexShader(VertexBuiltins vb, Vertex v) vertex { vb.position = v; }
   float<4> fragmentShader(FragmentBuiltins fb) fragment { return float<4>(0.0, 1.0, 0.0, 1.0); }

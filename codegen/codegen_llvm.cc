@@ -387,7 +387,7 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
   llvm::FunctionType* functionType = llvm::FunctionType::get(returnType, params, false);
   llvm::Function*     function =
       llvm::Function::Create(functionType, llvm::GlobalValue::ExternalLinkage,
-                             method->classType->GetName() + "_" + method->name, module_);
+                             method->GetMangledName(), module_);
   function->setCallingConv(llvm::CallingConv::C);
   method->data = function;
   return function;

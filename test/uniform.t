@@ -6,8 +6,7 @@ float<4>[]* verts = new float<4>[3];
 verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
 verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
 verts[2] = float<4>( 1.0, -1.0, 0.0, 1.0);
-auto vb = new vertex Buffer<float<4>[]>(device, verts.length);
-vb.SetData(verts);
+auto vb = new vertex Buffer<float<4>[]>(device, verts);
 class UniformData {
   float opacity;
 }
@@ -21,8 +20,7 @@ class PipelineData {
 auto pipeline = new RenderPipeline<PipelineData>(device, null, TriangleList);
 UniformData* uniforms = new UniformData();
 uniforms.opacity = 0.5;
-auto uniformBuffer = new uniform Buffer<UniformData>(device);
-uniformBuffer.SetData(uniforms);
+auto uniformBuffer = new uniform Buffer<UniformData>(device, uniforms);
 auto bindGroup = new BindGroup(device, uniformBuffer);
 auto framebuffer = swapChain.GetCurrentTexture();
 CommandEncoder* encoder = new CommandEncoder(device);

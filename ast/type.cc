@@ -226,6 +226,29 @@ std::string Method::ToString() const {
   return result;
 }
 
+std::string Method::GetMangledName() const {
+  std::string result = classType->GetName() + "_";
+  if (name[0] == '~') {
+    result += "Destroy";
+  } else {
+    result += name;
+  }
+  for (auto& m : classType->GetMethods()) {
+    if (m.get() != this && m->name == name) {
+      for (auto arg : formalArgList) {
+        result += "_";
+        if (arg->type->IsPtr()) {
+          result += static_cast<PtrType*>(arg->type)->GetBaseType()->ToString();
+        } else {
+          result += arg->type->ToString();
+        }
+      }
+      break;
+    }
+  }
+  return result;
+}
+
 ClassType::ClassType(std::string name)
     : name_(name), parent_(nullptr), template_(nullptr), data_(nullptr), numFields_(0) {
   vtable_.resize(1);

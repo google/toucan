@@ -37,10 +37,8 @@ CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 Window* window = new Window(device, 0, 0, 1024, 1024);
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 
-auto cubeVB = new vertex Buffer<float<3>[]>(device, cubeVerts.length);
-cubeVB.SetData(&cubeVerts);
-auto cubeIB = new index Buffer<uint[]>(device, cubeIndices.length);
-cubeIB.SetData(&cubeIndices);
+auto cubeVB = new vertex Buffer<float<3>[]>(device, &cubeVerts);
+auto cubeIB = new index Buffer<uint[]>(device, &cubeIndices);
 
 class Uniforms {
   float<4,4>  model, view, projection;

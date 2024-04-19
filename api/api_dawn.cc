@@ -910,12 +910,22 @@ static Object* MapSync(wgpu::MapMode mapMode, Buffer* buffer) {
   return &buffer->mappedObject;
 }
 
-Buffer* Buffer_Buffer(int qualifiers, Type* type, Device* device, uint32_t dynamicArraySize) {
+Buffer* Buffer_Buffer_Device_uint(int qualifiers, Type* type, Device* device, uint32_t dynamicArraySize) {
   wgpu::BufferDescriptor desc;
   desc.usage = toDawnBufferUsage(qualifiers);
   desc.size = type->GetSizeInBytes(dynamicArraySize);
   wgpu::Buffer b = device->device.CreateBuffer(&desc);
   return new Buffer(device->device, b, dynamicArraySize, desc.size, type);
+}
+
+Buffer* Buffer_Buffer_Device_T(int qualifiers, Type* type, Device* device, Object* object) {
+  uint32_t size = 1;
+  if (type->IsUnsizedArray()) {
+    size = object->controlBlock->arrayLength;
+  }
+  Buffer* result = Buffer_Buffer_Device_uint(qualifiers, type, device, size);
+  Buffer_SetData(result, object);
+  return result;
 }
 
 Object* Buffer_MapRead(Buffer* buffer) { return MapSync(wgpu::MapMode::Read, buffer); }

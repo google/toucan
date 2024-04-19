@@ -301,6 +301,7 @@ enum class ShaderType {
 struct Method {
   Method(int modifiers, Type* returnType, std::string name, ClassType* classType);
   std::string           ToString() const;
+  std::string           GetMangledName() const;
   void                  AddFormalArg(std::string id, Type* type, Expr* defaultValue);
   int                   modifiers;
   Type*                 returnType;

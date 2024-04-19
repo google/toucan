@@ -33,6 +33,7 @@ native class Device {
 
 native class Buffer<T> {
   Buffer(Device* device, uint size = 1);
+  Buffer(Device* device, T^ t);
  ~Buffer();
   void SetData(T^ data);
   readonly T^ MapRead();

@@ -20,8 +20,7 @@ verts[0].color = float<3>(1.0, 0.0, 0.0);
 verts[1].color = float<3>(0.0, 1.0, 0.0);
 verts[2].color = float<3>(0.0, 0.0, 1.0);
 
-auto vb = new vertex Buffer<Vertex[]>(device, verts.length);
-vb.SetData(verts);
+auto vb = new vertex Buffer<Vertex[]>(device, verts);
 
 class Pipeline {
   float<4> vertexShader(VertexBuiltins vb, Vertex vtx) vertex {

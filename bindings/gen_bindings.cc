@@ -293,7 +293,7 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
       fprintf(header_, "__declspec(dllexport) ");
 #endif
       PrintNativeType(header_, method->returnType);
-      fprintf(header_, " %s_%s(", classType->GetName().c_str(), name.c_str());
+      fprintf(header_, " %s(", method->GetMangledName().c_str());
       if (classType->IsClassTemplate() && method->modifiers & Method::STATIC) {
         fprintf(header_, "int qualifiers, ");
         ClassTemplate* classTemplate = static_cast<ClassTemplate*>(classType);

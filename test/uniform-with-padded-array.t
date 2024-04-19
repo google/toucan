@@ -6,8 +6,7 @@ auto verts = new Vertex[3];
 verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
 verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
 verts[2] = float<4>( 1.0, -1.0, 0.0, 1.0);
-auto vb = new vertex Buffer<Vertex[]>(device, verts.length);
-vb.SetData(verts);
+auto vb = new vertex Buffer<Vertex[]>(device, verts);
 
 class Uniforms {
   float[1] padding;
@@ -21,10 +20,9 @@ class Pipeline {
   }
   uniform Buffer<Uniforms>* uniforms;
 }
-auto uniformBuffer = new uniform Buffer<Uniforms>(device);
 auto uniforms = new Uniforms();
 uniforms.color = float<4>(0.0, 1.0, 0.0, 1.0);
-uniformBuffer.SetData(uniforms);
+auto uniformBuffer = new uniform Buffer<Uniforms>(device, uniforms);
 BindGroup* bg = new BindGroup(device, uniformBuffer);
 auto stagingBuffer = new writeonly Buffer<Uniforms>(device);
 RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);

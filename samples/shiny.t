@@ -39,10 +39,8 @@ CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 Window* window = new Window(device, 0, 0, 1024, 1024);
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 
-auto cubeVB = new vertex Buffer<float<3>[]>(device, cubeVerts.length);
-cubeVB.SetData(&cubeVerts);
-auto cubeIB = new index Buffer<uint[]>(device, cubeIndices.length);
-cubeIB.SetData(&cubeIndices);
+auto cubeVB = new vertex Buffer<float<3>[]>(device, &cubeVerts);
+auto cubeIB = new index Buffer<uint[]>(device, &cubeIndices);
 
 class Tessellator {
   Tessellator(float<3>[]^ controlPoints, uint[]^ controlIndices, int level) {
@@ -96,10 +94,8 @@ class Tessellator {
 
 Tessellator* tessTeapot = new Tessellator(&teapotControlPoints, &teapotIndices, 8);
 
-auto teapotVB = new vertex Buffer<Vertex[]>(device, tessTeapot.vertices.length);
-teapotVB.SetData(tessTeapot.vertices);
-auto teapotIB = new index Buffer<uint[]>(device, tessTeapot.indices.length);
-teapotIB.SetData(tessTeapot.indices);
+auto teapotVB = new vertex Buffer<Vertex[]>(device, tessTeapot.vertices);
+auto teapotIB = new index Buffer<uint[]>(device, tessTeapot.indices);
 
 class Uniforms {
   float<4,4>  model, view, projection;

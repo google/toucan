@@ -25,10 +25,8 @@ indices[2] = 2;
 indices[3] = 1;
 indices[4] = 2;
 indices[5] = 3;
-auto vb = new vertex Buffer<Vertex[]>(device, verts.length);
-vb.SetData(verts);
-auto ib = new index Buffer<int[]>(device, 6);
-ib.SetData(indices);
+auto vb = new vertex Buffer<Vertex[]>(device, verts);
+auto ib = new index Buffer<int[]>(device, indices);
 class Pipeline {
     Varyings vertexShader(VertexBuiltins vb, Vertex v) vertex {
         vb.position = v.position;
