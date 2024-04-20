@@ -149,10 +149,20 @@ native class Texture2DArray<PF> {
   Texture2DArray(Device* device, uint width, uint height, uint layers);
  ~Texture2D();
   SampleableTexture2DArray<PF::SampledType>* CreateSampleableView();
-  renderable Texture2DArray<PF>* CreateRenderableView(uint layer, uint mipLevel = 0);
+  renderable Texture2D<PF>* CreateRenderableView(uint layer, uint mipLevel = 0);
   storage Texture2DArray<PF>* CreateStorageView(uint layer, uint mipLevel = 0);
   uint MinBufferWidth();
   void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint arrayLayers, uint<3> origin = uint<3>(0, 0, 0));
+}
+
+native class Texture3D<PF> {
+  Texture3D(Device* device, uint width, uint height, uint depth);
+ ~Texture3D();
+  SampleableTexture3D<PF::SampledType>* CreateSampleableView();
+  renderable Texture2D<PF>* CreateRenderableView(uint depth, uint mipLevel = 0);
+  storage Texture3D<PF>* CreateStorageView(uint depth, uint mipLevel = 0);
+  uint MinBufferWidth();
+  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint depth, uint<3> origin = uint<3>(0, 0, 0));
 }
 
 native class TextureCube<PF> {
@@ -162,17 +172,7 @@ native class TextureCube<PF> {
   renderable Texture2D<PF>* CreateRenderableView(uint face, uint mipLevel = 0);
   storage Texture2D<PF>* CreateStorageView(uint face, uint mipLevel = 0);
   uint MinBufferWidth();
-  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint face, uint<3> origin = uint<3>(0, 0, 0));
-}
-
-native class Texture3D<PF> {
-  Texture3D(Device* device, uint width, uint height, uint depth);
- ~Texture3D();
-  SampleableTexture3D<PF::SampledType>* CreateSampleableView();
-  renderable Texture3D<PF>* CreateRenderableView(uint depth, uint mipLevel = 0);
-  storage Texture3D<PF>* CreateStorageView(uint depth, uint mipLevel = 0);
-  uint MinBufferWidth();
-  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint depth, uint<3> origin = uint<3>(0, 0, 0));
+  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint faces, uint<3> origin = uint<3>(0, 0, 0));
 }
 
 native class CommandEncoder {

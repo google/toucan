@@ -218,6 +218,8 @@ test/override.t
 result is 2345.000000
 test/really-simple.t
 result is 0.000000
+test/render-to-texture.t
+result is 0.000000
 test/scope-test.t
 result is 6.000000
 test/shader-method-call.t

@@ -78,16 +78,19 @@ struct SampleableTextureCube : public TextureView {
 };
 
 struct Texture {
-  Texture(wgpu::Texture t, const wgpu::Extent3D& s, wgpu::TextureFormat f)
-      : texture(t), size(s), format(f) {}
-  Texture(int qualifiers, Type* pixelFormat, wgpu::Device device, wgpu::TextureDimension d, wgpu::Extent3D s) {
+  Texture(wgpu::Texture t, wgpu::TextureView v, const wgpu::Extent3D& s, wgpu::TextureFormat f)
+      : texture(t), view(v), size(s), format(f) {}
+  Texture(int qualifiers, Type* pixelFormat, wgpu::Device device, wgpu::TextureDimension d, wgpu::Extent3D s) : size(s), format(ToDawnTextureFormat(pixelFormat)) {
     wgpu::TextureDescriptor desc;
     desc.usage = ToDawnTextureUsage(qualifiers);
-    desc.size = size = s;
-    desc.format = format = ToDawnTextureFormat(pixelFormat);
+    desc.size = s;
+    desc.format = format;
     desc.dimension = d;
     texture = device.CreateTexture(&desc);
+    view = texture.CreateView();
   }
+  Texture(Texture* t, wgpu::TextureViewDimension dimension, uint32_t arrayLayer, uint32_t mipLevel)
+      : Texture(t->texture, t->CreateView(dimension, arrayLayer, mipLevel), t->size, t->format) {}
   uint32_t MinBufferWidth() {
     uint32_t bytesPerPixel = BytesPerPixel(format);
     return (((size.width * bytesPerPixel + 255) >> 8) << 8) / bytesPerPixel;
@@ -106,7 +109,18 @@ struct Texture {
     destICT.origin = origin;
     encoder.CopyBufferToTexture(&sourceICB, &destICT, &extent);
   }
+  wgpu::TextureView CreateView(wgpu::TextureViewDimension dimension, uint32_t arrayLayer, uint32_t mipLevel) const {
+    wgpu::TextureViewDescriptor desc;
+    desc.format = format;
+    desc.dimension = dimension;
+    desc.baseMipLevel = mipLevel;
+    desc.mipLevelCount = 1;
+    desc.baseArrayLayer = arrayLayer;
+    desc.arrayLayerCount = 1;
+    return texture.CreateView(&desc);
+  }
   wgpu::Texture       texture;
+  wgpu::TextureView   view;
   wgpu::Extent3D      size;
   wgpu::TextureFormat format;
 };
@@ -152,15 +166,6 @@ struct ComputePipeline {
   ComputePipeline(wgpu::ComputePipeline p) : pipeline(p) {}
   wgpu::ComputePipeline pipeline;
 };
-
-wgpu::TextureView CreateRenderable2DView(Texture* texture) {
-  wgpu::TextureViewDescriptor desc;
-  desc.format = texture->format;
-  desc.dimension = wgpu::TextureViewDimension::e2D;
-  desc.mipLevelCount = 1;
-  desc.arrayLayerCount = 1;
-  return texture->texture.CreateView(&desc);
-}
 
 wgpu::TextureFormat ToDawnTextureFormat(Type* format) {
   assert(format->IsClass());
@@ -668,9 +673,8 @@ SampleableTexture1D* Texture1D_CreateSampleableView(Texture1D* This) {
   return new SampleableTexture1D(This->texture.CreateView());
 }
 
-Texture1D* Texture1D_CreateStorageView(Texture1D* This) {
-  assert(!"unimplemented");
-  return nullptr;
+Texture1D* Texture1D_CreateStorageView(Texture1D* This, uint32_t mipLevel) {
+  return new Texture1D(This, wgpu::TextureViewDimension::e1D, 0, mipLevel);
 }
 
 void Texture1D_CopyFromBuffer(Texture1D*      dest,
@@ -695,14 +699,12 @@ SampleableTexture2D* Texture2D_CreateSampleableView(Texture2D* This) {
   return new SampleableTexture2D(This->texture.CreateView());
 }
 
-Texture2D* Texture2D_CreateRenderableView(Texture2D* This) {
-  assert(!"unimplemented");
-  return nullptr;
+Texture2D* Texture2D_CreateRenderableView(Texture2D* This, uint32_t mipLevel) {
+  return new Texture2D(This, wgpu::TextureViewDimension::e2D, 0, mipLevel);
 }
 
-Texture2D* Texture2D_CreateStorageView(Texture2D* This) {
-  assert(!"unimplemented");
-  return nullptr;
+Texture2D* Texture2D_CreateStorageView(Texture2D* This, uint32_t mipLevel) {
+  return new Texture2D(This, wgpu::TextureViewDimension::e2D, 0, mipLevel);
 }
 
 uint32_t Texture2D_MinBufferWidth(Texture2D* This) { return This->MinBufferWidth(); }
@@ -734,14 +736,12 @@ SampleableTexture2DArray* Texture2DArray_CreateSampleableView(Texture2DArray* Th
   return new SampleableTexture2DArray(This->texture.CreateView(&desc));
 }
 
-Texture2DArray* Texture2DArray_CreateRenderableView(Texture2DArray* This) {
-  assert(!"unimplemented");
-  return nullptr;
+Texture2D* Texture2DArray_CreateRenderableView(Texture2DArray* This, uint32_t layer, uint32_t mipLevel) {
+  return new Texture2D(This, wgpu::TextureViewDimension::e2D, layer, mipLevel);
 }
 
-Texture2DArray* Texture2DArray_CreateStorageView(Texture2DArray* This) {
-  assert(!"unimplemented");
-  return nullptr;
+Texture2DArray* Texture2DArray_CreateStorageView(Texture2DArray* This, uint32_t baseArrayLayer, uint32_t mipLevel) {
+  return new Texture2DArray(This, wgpu::TextureViewDimension::e2DArray, baseArrayLayer, mipLevel);
 }
 
 uint32_t Texture2DArray_MinBufferWidth(Texture2DArray* This) { return This->MinBufferWidth(); }
@@ -772,14 +772,12 @@ SampleableTexture3D* Texture3D_CreateSampleableView(Texture3D* This) {
   return new SampleableTexture3D(This->texture.CreateView());
 }
 
-Texture3D* Texture3D_CreateRenderableView(Texture3D* This, uint32_t depth, uint32_t mipLevel) {
-  assert(!"unimplemented");
-  return nullptr;
+Texture2D* Texture3D_CreateRenderableView(Texture3D* This, uint32_t depth, uint32_t mipLevel) {
+  return new Texture2D(This, wgpu::TextureViewDimension::e2D, depth, mipLevel);
 }
 
-Texture3D* Texture3D_CreateStorageView(Texture2D* This, uint32_t depth, uint32_t mipLevel) {
-  assert(!"unimplemented");
-  return nullptr;
+Texture3D* Texture3D_CreateStorageView(Texture2D* This, uint32_t baseDepth, uint32_t mipLevel) {
+  return new Texture3D(This, wgpu::TextureViewDimension::e3D, baseDepth, mipLevel);
 }
 
 uint32_t Texture3D_MinBufferWidth(Texture3D* This) { return This->MinBufferWidth(); }
@@ -812,8 +810,7 @@ SampleableTextureCube* TextureCube_CreateSampleableView(TextureCube* This) {
 }
 
 Texture2D* TextureCube_CreateRenderableView(TextureCube* This, int32_t face, int32_t mipLevel) {
-  assert(!"unimplemented");
-  return nullptr;
+  return new Texture2D(This, wgpu::TextureViewDimension::e2D, face, mipLevel);
 }
 
 Texture2D* TextureCube_CreateStorageView(TextureCube* This, int32_t face, int32_t mipLevel) {
@@ -1042,7 +1039,7 @@ RenderPassEncoder* CommandEncoder_BeginRenderPass(CommandEncoder* encoder,
                                                   float           b,
                                                   float           a) {
   wgpu::RenderPassColorAttachment rpColorAttachment;
-  rpColorAttachment.view = CreateRenderable2DView(colorAttachment);
+  rpColorAttachment.view = colorAttachment->view;
   rpColorAttachment.clearValue = {r, g, b, a};
   rpColorAttachment.loadOp = wgpu::LoadOp::Clear;
   rpColorAttachment.storeOp = wgpu::StoreOp::Store;
@@ -1052,7 +1049,7 @@ RenderPassEncoder* CommandEncoder_BeginRenderPass(CommandEncoder* encoder,
   desc.colorAttachmentCount = 1;
   desc.colorAttachments = colorAttachments;
   if (depthAttachment) {
-    depthStencilAttachment.view = CreateRenderable2DView(depthAttachment);
+    depthStencilAttachment.view = depthAttachment->view;
     depthStencilAttachment.depthLoadOp = wgpu::LoadOp::Clear;
     depthStencilAttachment.depthStoreOp = wgpu::StoreOp::Store;
     depthStencilAttachment.depthClearValue = 1.0f;
@@ -1073,7 +1070,7 @@ CommandBuffer* CommandEncoder_Finish(CommandEncoder* encoder) {
 void CommandBuffer_Destroy(CommandBuffer* This) { delete This; }
 
 Texture2D* SwapChain_GetCurrentTexture(SwapChain* swapChain) {
-  return new Texture2D(swapChain->swapChain.GetCurrentTexture(), swapChain->extent, swapChain->format);
+  return new Texture2D(swapChain->swapChain.GetCurrentTexture(), swapChain->swapChain.GetCurrentTexture().CreateView(), swapChain->extent, swapChain->format);
 }
 
 #if !TARGET_IS_MAC
