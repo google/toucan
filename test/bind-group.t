@@ -35,14 +35,14 @@ while (System.IsRunning()) {
     stagingBuffer.Unmap();
   }
   auto framebuffer = swapChain.GetCurrentTexture();
-  CommandEncoder* encoder = new CommandEncoder(device);
+  auto encoder = new CommandEncoder(device);
   encoder.CopyBufferToBuffer(stagingBuffer, objectData.uniforms);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-  passEncoder.SetPipeline(pipeline);
-  passEncoder.SetVertexBuffer(0, vb);
-  passEncoder.SetBindGroup(0, bg);
-  passEncoder.Draw(3, 1, 0, 0);
-  passEncoder.End();
+  auto renderPass = new RenderPass(encoder, framebuffer);
+  renderPass.SetPipeline(pipeline);
+  renderPass.SetVertexBuffer(0, vb);
+  renderPass.SetBindGroup(0, bg);
+  renderPass.Draw(3, 1, 0, 0);
+  renderPass.End();
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
 }

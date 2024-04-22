@@ -264,40 +264,40 @@ while(System.IsRunning()) {
   bindings.uniforms.SetData(computeUniforms);
 
   auto framebuffer = swapChain.GetCurrentTexture();
-  CommandEncoder* encoder = new CommandEncoder(device);
-  ComputePassEncoder* computeEncoder = encoder.BeginComputePass();
+  auto encoder = new CommandEncoder(device);
+  auto computePass = new ComputePass(encoder);
 
-  computeEncoder.SetBindGroup(0, bindGroup);
+  computePass.SetBindGroup(0, bindGroup);
   int totalSteps = (int) ((System.GetCurrentTime() - startTime) * frequency);
   for (int i = 0; stepsDone < totalSteps && i < maxStepsPerFrame; i++) {
-    computeEncoder.SetPipeline(computeForces);
-    computeEncoder.Dispatch(springs.length, 1, 1);
+    computePass.SetPipeline(computeForces);
+    computePass.Dispatch(springs.length, 1, 1);
 
-    computeEncoder.SetPipeline(applyForces);
-    computeEncoder.Dispatch(bodies.length, 1, 1);
+    computePass.SetPipeline(applyForces);
+    computePass.Dispatch(bodies.length, 1, 1);
     stepsDone++;
   }
 
-  computeEncoder.SetPipeline(updateBodyVerts);
-  computeEncoder.Dispatch(bodies.length, 1, 1);
+  computePass.SetPipeline(updateBodyVerts);
+  computePass.Dispatch(bodies.length, 1, 1);
 
-  computeEncoder.SetPipeline(updateSpringVerts);
-  computeEncoder.Dispatch(springs.length, 1, 1);
+  computePass.SetPipeline(updateSpringVerts);
+  computePass.Dispatch(springs.length, 1, 1);
 
-  computeEncoder.End();
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
+  computePass.End();
+  auto renderPass = new RenderPass(encoder, framebuffer);
 
-  passEncoder.SetPipeline(springPipeline);
-  passEncoder.SetVertexBuffer(0, springVBO);
-  passEncoder.SetBindGroup(0, springBG);
-  passEncoder.Draw(numSpringVerts, 1, 0, 0);
+  renderPass.SetPipeline(springPipeline);
+  renderPass.SetVertexBuffer(0, springVBO);
+  renderPass.SetBindGroup(0, springBG);
+  renderPass.Draw(numSpringVerts, 1, 0, 0);
 
-  passEncoder.SetPipeline(bodyPipeline);
-  passEncoder.SetVertexBuffer(0, bodyVBO);
-  passEncoder.SetBindGroup(0, bodyBG);
-  passEncoder.Draw(numBodyVerts, 1, 0, 0);
+  renderPass.SetPipeline(bodyPipeline);
+  renderPass.SetVertexBuffer(0, bodyVBO);
+  renderPass.SetBindGroup(0, bodyBG);
+  renderPass.Draw(numBodyVerts, 1, 0, 0);
 
-  passEncoder.End();
+  renderPass.End();
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
 

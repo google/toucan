@@ -50,26 +50,26 @@ auto sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear
 // FIXME: we have to use PreferredSwapChainFormat because color attachments don't exist yet
 auto tex = new sampleable renderable Texture2D<PreferredSwapChainFormat>(device, 640, 480);
 RenderPipeline* triPipeline = new RenderPipeline<GreenPipeline>(device, null, TriangleList);
-CommandEncoder* encoder = new CommandEncoder(device);
-RenderPassEncoder* drawEncoder = encoder.BeginRenderPass(tex);
-drawEncoder.SetPipeline(triPipeline);
-drawEncoder.SetVertexBuffer(0, triVB);
-drawEncoder.Draw(3, 1, 0, 0);
-drawEncoder.End();
+auto encoder = new CommandEncoder(device);
+auto renderPass = new RenderPass(encoder, tex);
+renderPass.SetPipeline(triPipeline);
+renderPass.SetVertexBuffer(0, triVB);
+renderPass.Draw(3, 1, 0, 0);
+renderPass.End();
 
 auto framebuffer = swapChain.GetCurrentTexture().CreateRenderableView();
 RenderPipeline* quadPipeline = new RenderPipeline<TexPipeline>(device, null, TriangleList);
 auto samplerBG = new BindGroup(device, sampler);
 auto texView = tex.CreateSampleableView();
 auto texBG = new BindGroup(device, texView);
-RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-passEncoder.SetPipeline(quadPipeline);
-passEncoder.SetBindGroup(0, samplerBG);
-passEncoder.SetBindGroup(1, texBG);
-passEncoder.SetVertexBuffer(0, quadVB);
-passEncoder.SetIndexBuffer(quadIB);
-passEncoder.DrawIndexed(6, 1, 0, 0, 0);
-passEncoder.End();
+auto drawPass = new RenderPass(encoder, framebuffer);
+drawPass.SetPipeline(quadPipeline);
+drawPass.SetBindGroup(0, samplerBG);
+drawPass.SetBindGroup(1, texBG);
+drawPass.SetVertexBuffer(0, quadVB);
+drawPass.SetIndexBuffer(quadIB);
+drawPass.DrawIndexed(6, 1, 0, 0, 0);
+drawPass.End();
 
 device.GetQueue().Submit(encoder.Finish());
 swapChain.Present();

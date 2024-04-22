@@ -30,17 +30,17 @@ auto storageBG = new BindGroup(device, vb);
 
 while (System.IsRunning()) {
   auto framebuffer = swapChain.GetCurrentTexture();
-  CommandEncoder* encoder = new CommandEncoder(device);
-  ComputePassEncoder* computeEncoder = encoder.BeginComputePass();
-  computeEncoder.SetPipeline(computePipeline);
-  computeEncoder.SetBindGroup(0, storageBG);
-  computeEncoder.Dispatch(verts.length, 1, 1);
-  computeEncoder.End();
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-  passEncoder.SetPipeline(pipeline);
-  passEncoder.SetVertexBuffer(0, vb);
-  passEncoder.Draw(3, 1, 0, 0);
-  passEncoder.End();
+  auto encoder = new CommandEncoder(device);
+  auto computePass = new ComputePass(encoder);
+  computePass.SetPipeline(computePipeline);
+  computePass.SetBindGroup(0, storageBG);
+  computePass.Dispatch(verts.length, 1, 1);
+  computePass.End();
+  auto renderPass = new RenderPass(encoder, framebuffer);
+  renderPass.SetPipeline(pipeline);
+  renderPass.SetVertexBuffer(0, vb);
+  renderPass.Draw(3, 1, 0, 0);
+  renderPass.End();
   CommandBuffer* cb = encoder.Finish();
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();

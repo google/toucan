@@ -12,7 +12,7 @@ auto buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() 
 writeonly Format::MemoryType[]^ b = buffer.MapWrite();
 image.Decode(b, texture.MinBufferWidth());
 buffer.Unmap();
-CommandEncoder* copyEncoder = new CommandEncoder(device);
+auto copyEncoder = new CommandEncoder(device);
 texture.CopyFromBuffer(copyEncoder, buffer, image.Width(), image.Height());
 device.GetQueue().Submit(copyEncoder.Finish());
 
@@ -53,15 +53,15 @@ auto samplerBG = new BindGroup(device, sampler);
 auto texView = texture.CreateSampleableView();
 auto texBG = new BindGroup(device, texView);
 auto framebuffer = swapChain.GetCurrentTexture();
-CommandEncoder* encoder = new CommandEncoder(device);
-RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-passEncoder.SetPipeline(pipeline);
-passEncoder.SetBindGroup(0, samplerBG);
-passEncoder.SetBindGroup(1, texBG);
-passEncoder.SetVertexBuffer(0, vb);
-passEncoder.SetIndexBuffer(ib);
-passEncoder.DrawIndexed(6, 1, 0, 0, 0);
-passEncoder.End();
+auto encoder = new CommandEncoder(device);
+auto renderPass = new RenderPass(encoder, framebuffer);
+renderPass.SetPipeline(pipeline);
+renderPass.SetBindGroup(0, samplerBG);
+renderPass.SetBindGroup(1, texBG);
+renderPass.SetVertexBuffer(0, vb);
+renderPass.SetIndexBuffer(ib);
+renderPass.DrawIndexed(6, 1, 0, 0, 0);
+renderPass.End();
 device.GetQueue().Submit(encoder.Finish());
 swapChain.Present();
 

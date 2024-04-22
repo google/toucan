@@ -186,20 +186,20 @@ while(System.IsRunning()) {
     stepsDone++;
   }
   auto framebuffer = swapChain.GetCurrentTexture();
-  CommandEncoder* encoder = new CommandEncoder(device);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
+  auto encoder = new CommandEncoder(device);
+  auto renderPass = new RenderPass(encoder, framebuffer);
 
-  passEncoder.SetPipeline(springPipeline);
-  passEncoder.SetVertexBuffer(0, springVBO);
-  passEncoder.SetBindGroup(0, springBG);
-  passEncoder.Draw(springVerts.length, 1, 0, 0);
+  renderPass.SetPipeline(springPipeline);
+  renderPass.SetVertexBuffer(0, springVBO);
+  renderPass.SetBindGroup(0, springBG);
+  renderPass.Draw(springVerts.length, 1, 0, 0);
 
-  passEncoder.SetPipeline(bodyPipeline);
-  passEncoder.SetVertexBuffer(0, bodyVBO);
-  passEncoder.SetBindGroup(0, bodyBG);
-  passEncoder.Draw(bodyVerts.length, 1, 0, 0);
+  renderPass.SetPipeline(bodyPipeline);
+  renderPass.SetVertexBuffer(0, bodyVBO);
+  renderPass.SetBindGroup(0, bodyBG);
+  renderPass.Draw(bodyVerts.length, 1, 0, 0);
 
-  passEncoder.End();
+  renderPass.End();
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
 

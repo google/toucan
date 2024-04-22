@@ -72,25 +72,6 @@ native class BindGroup {
  ~BindGroup();
 }
 
-native class RenderPassEncoder {
- ~RenderPassEncoder();
-  void Draw(uint vertexCount, uint instanceCount, uint firstVertex, uint firstInstance);
-  void DrawIndexed(uint indexCount, uint instanceCount, uint firstIndex, uint baseVertex, uint firstIntance);
-  void SetBindGroup(uint groupIndex, BindGroup* bindGroup);
-  void SetPipeline(RenderPipeline* pipeline);
-  void SetIndexBuffer(index Buffer* buffer);
-  void SetVertexBuffer(uint slot, vertex Buffer* buffer);
-  void End();
-}
-
-native class ComputePassEncoder {
- ~ComputePassEncoder();
-  void Dispatch(uint workgroupCountX, uint workgroupCountY, uint workgroupCountZ);
-  void SetBindGroup(uint groupIndex, BindGroup* bindGroup);
-  void SetPipeline(ComputePipeline* pipeline);
-  void End();
-}
-
 enum AddressMode { Repeat, MirrorRepeat, ClampToEdge };
 
 enum FilterMode { Nearest, Linear };
@@ -178,10 +159,29 @@ native class TextureCube<PF> {
 native class CommandEncoder {
   CommandEncoder(Device* device);
  ~CommandEncoder();
-  RenderPassEncoder* BeginRenderPass(renderable Texture2D* colorAttachment, renderable Texture2D* depthAttachment = null, float r = 0.0, float g = 0.0, float b = 0.0, float a = 0.0);
-  ComputePassEncoder* BeginComputePass();
   CommandBuffer* Finish();
   void CopyBufferToBuffer(Buffer^ source, Buffer^ dest);
+}
+
+native class RenderPass {
+  RenderPass(CommandEncoder* encoder, renderable Texture2D* colorAttachment, renderable Texture2D* depthAttachment = null, float r = 0.0, float g = 0.0, float b = 0.0, float a = 0.0);
+ ~RenderPass();
+  void Draw(uint vertexCount, uint instanceCount, uint firstVertex, uint firstInstance);
+  void DrawIndexed(uint indexCount, uint instanceCount, uint firstIndex, uint baseVertex, uint firstIntance);
+  void SetBindGroup(uint groupIndex, BindGroup* bindGroup);
+  void SetPipeline(RenderPipeline* pipeline);
+  void SetIndexBuffer(index Buffer* buffer);
+  void SetVertexBuffer(uint slot, vertex Buffer* buffer);
+  void End();
+}
+
+native class ComputePass {
+  ComputePass(CommandEncoder* encoder);
+ ~ComputePass();
+  void Dispatch(uint workgroupCountX, uint workgroupCountY, uint workgroupCountZ);
+  void SetBindGroup(uint groupIndex, BindGroup* bindGroup);
+  void SetPipeline(ComputePipeline* pipeline);
+  void End();
 }
 
 native class Window {

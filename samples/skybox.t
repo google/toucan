@@ -18,7 +18,7 @@ class CubeLoader {
     writeonly Format::MemoryType[]^ b = buffer.MapWrite();
     image.Decode(b, texture.MinBufferWidth());
     buffer.Unmap();
-    CommandEncoder* encoder = new CommandEncoder(device);
+    auto encoder = new CommandEncoder(device);
     texture.CopyFromBuffer(encoder, buffer, image.Width(), image.Height(), 1, uint<3>(0, 0, face));
     device.GetQueue().Submit(encoder.Finish());
   }
@@ -93,16 +93,16 @@ while (System.IsRunning()) {
 //  uniforms.viewInverse = Transform.invert(uniforms.view);
   cubeBindings.uniforms.SetData(&uniforms);
   auto framebuffer = swapChain.GetCurrentTexture();
-  CommandEncoder* encoder = new CommandEncoder(device);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer, depthBuffer);
+  auto encoder = new CommandEncoder(device);
+  auto renderPass = new RenderPass(encoder, framebuffer, depthBuffer);
 
-  passEncoder.SetPipeline(cubePipeline);
-  passEncoder.SetBindGroup(0, cubeBindGroup);
-  passEncoder.SetVertexBuffer(0, cubeVB);
-  passEncoder.SetIndexBuffer(cubeIB);
-  passEncoder.DrawIndexed(cubeIndices.length, 1, 0, 0, 0);
+  renderPass.SetPipeline(cubePipeline);
+  renderPass.SetBindGroup(0, cubeBindGroup);
+  renderPass.SetVertexBuffer(0, cubeVB);
+  renderPass.SetIndexBuffer(cubeIB);
+  renderPass.DrawIndexed(cubeIndices.length, 1, 0, 0, 0);
 
-  passEncoder.End();
+  renderPass.End();
   CommandBuffer* cb = encoder.Finish();
   device.GetQueue().Submit(cb);
   swapChain.Present();

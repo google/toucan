@@ -469,13 +469,13 @@ struct BindGroupLayout {
   wgpu::BindGroupLayout bindGroupLayout;
 };
 
-struct RenderPassEncoder {
-  RenderPassEncoder(wgpu::RenderPassEncoder e) : encoder(e) {}
+struct RenderPass {
+  RenderPass(wgpu::RenderPassEncoder e) : encoder(e) {}
   wgpu::RenderPassEncoder encoder;
 };
 
-struct ComputePassEncoder {
-  ComputePassEncoder(wgpu::ComputePassEncoder e) : encoder(e) {}
+struct ComputePass {
+  ComputePass(wgpu::ComputePassEncoder e) : encoder(e) {}
   wgpu::ComputePassEncoder encoder;
 };
 
@@ -969,75 +969,13 @@ void Queue_Submit(Queue* queue, CommandBuffer* commandBuffer) {
   queue->queue.Submit(1, &commandBuffer->commandBuffer);
 }
 
-void RenderPassEncoder_SetBindGroup(RenderPassEncoder* encoder,
-                                    uint32_t           groupIndex,
-                                    BindGroup*         bindGroup) {
-  encoder->encoder.SetBindGroup(groupIndex, bindGroup->bindGroup, 0, 0);
-}
-
-void RenderPassEncoder_SetPipeline(RenderPassEncoder* encoder, RenderPipeline* pipeline) {
-  encoder->encoder.SetPipeline(pipeline->pipeline);
-}
-
-void RenderPassEncoder_SetVertexBuffer(RenderPassEncoder* encoder, uint32_t slot, Buffer* buffer) {
-  encoder->encoder.SetVertexBuffer(slot, buffer->buffer, 0, buffer->sizeInBytes);
-}
-
-void RenderPassEncoder_SetIndexBuffer(RenderPassEncoder* encoder, Buffer* buffer) {
-  // FIXME: add support for Uint16
-  encoder->encoder.SetIndexBuffer(buffer->buffer, wgpu::IndexFormat::Uint32, 0,
-                                  buffer->sizeInBytes);
-}
-
-void RenderPassEncoder_Draw(RenderPassEncoder* encoder,
-                            uint32_t           vertexCount,
-                            uint32_t           instanceCount,
-                            uint32_t           firstVertex,
-                            uint32_t           firstInstance) {
-  encoder->encoder.Draw(vertexCount, instanceCount, firstVertex, firstInstance);
-}
-
-void RenderPassEncoder_DrawIndexed(RenderPassEncoder* encoder,
-                                   uint32_t           indexCount,
-                                   uint32_t           instanceCount,
-                                   uint32_t           firstVertex,
-                                   uint32_t           baseVertex,
-                                   uint32_t           firstInstance) {
-  encoder->encoder.DrawIndexed(indexCount, instanceCount, firstVertex, baseVertex, firstInstance);
-}
-
-void RenderPassEncoder_End(RenderPassEncoder* encoder) { encoder->encoder.End(); }
-
-void RenderPassEncoder_Destroy(RenderPassEncoder* This) { delete This; }
-
-void ComputePassEncoder_SetBindGroup(ComputePassEncoder* encoder,
-                                     uint32_t            groupIndex,
-                                     BindGroup*          bindGroup) {
-  encoder->encoder.SetBindGroup(groupIndex, bindGroup->bindGroup, 0, 0);
-}
-
-void ComputePassEncoder_SetPipeline(ComputePassEncoder* encoder, ComputePipeline* pipeline) {
-  encoder->encoder.SetPipeline(pipeline->pipeline);
-}
-
-void ComputePassEncoder_Dispatch(ComputePassEncoder* encoder,
-                                 uint32_t            workgroupCountX,
-                                 uint32_t            workgroupCountY,
-                                 uint32_t            workgroupCountZ) {
-  encoder->encoder.DispatchWorkgroups(workgroupCountX, workgroupCountY, workgroupCountZ);
-}
-
-void ComputePassEncoder_End(ComputePassEncoder* encoder) { encoder->encoder.End(); }
-
-void ComputePassEncoder_Destroy(ComputePassEncoder* This) { delete This; }
-
-RenderPassEncoder* CommandEncoder_BeginRenderPass(CommandEncoder* encoder,
-                                                  Texture2D*      colorAttachment,
-                                                  Texture2D*      depthAttachment,
-                                                  float           r,
-                                                  float           g,
-                                                  float           b,
-                                                  float           a) {
+RenderPass* RenderPass_RenderPass(CommandEncoder* encoder,
+                                  Texture2D*      colorAttachment,
+                                  Texture2D*      depthAttachment,
+                                  float           r,
+                                  float           g,
+                                  float           b,
+                                  float           a) {
   wgpu::RenderPassColorAttachment rpColorAttachment;
   rpColorAttachment.view = colorAttachment->view;
   rpColorAttachment.clearValue = {r, g, b, a};
@@ -1055,13 +993,75 @@ RenderPassEncoder* CommandEncoder_BeginRenderPass(CommandEncoder* encoder,
     depthStencilAttachment.depthClearValue = 1.0f;
     desc.depthStencilAttachment = &depthStencilAttachment;
   }
-  return new RenderPassEncoder(encoder->encoder.BeginRenderPass(&desc));
+  return new RenderPass(encoder->encoder.BeginRenderPass(&desc));
 }
 
-ComputePassEncoder* CommandEncoder_BeginComputePass(CommandEncoder* encoder) {
-  wgpu::ComputePassDescriptor desc;
-  return new ComputePassEncoder(encoder->encoder.BeginComputePass(&desc));
+void RenderPass_SetBindGroup(RenderPass* This,
+                             uint32_t    groupIndex,
+                             BindGroup*  bindGroup) {
+  This->encoder.SetBindGroup(groupIndex, bindGroup->bindGroup, 0, 0);
 }
+
+void RenderPass_SetPipeline(RenderPass* This, RenderPipeline* pipeline) {
+  This->encoder.SetPipeline(pipeline->pipeline);
+}
+
+void RenderPass_SetVertexBuffer(RenderPass* This, uint32_t slot, Buffer* buffer) {
+  This->encoder.SetVertexBuffer(slot, buffer->buffer, 0, buffer->sizeInBytes);
+}
+
+void RenderPass_SetIndexBuffer(RenderPass* This, Buffer* buffer) {
+  // FIXME: add support for Uint16
+  This->encoder.SetIndexBuffer(buffer->buffer, wgpu::IndexFormat::Uint32, 0,
+                               buffer->sizeInBytes);
+}
+
+void RenderPass_Draw(RenderPass* This,
+                     uint32_t    vertexCount,
+                     uint32_t    instanceCount,
+                     uint32_t    firstVertex,
+                     uint32_t    firstInstance) {
+  This->encoder.Draw(vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void RenderPass_DrawIndexed(RenderPass* This,
+                            uint32_t    indexCount,
+                            uint32_t    instanceCount,
+                            uint32_t    firstVertex,
+                            uint32_t    baseVertex,
+                            uint32_t    firstInstance) {
+  This->encoder.DrawIndexed(indexCount, instanceCount, firstVertex, baseVertex, firstInstance);
+}
+
+void RenderPass_End(RenderPass* This) { This->encoder.End(); }
+
+void RenderPass_Destroy(RenderPass* This) { delete This; }
+
+ComputePass* ComputePass_ComputePass(CommandEncoder* encoder) {
+  wgpu::ComputePassDescriptor desc;
+  return new ComputePass(encoder->encoder.BeginComputePass(&desc));
+}
+
+void ComputePass_SetBindGroup(ComputePass* This,
+                              uint32_t     groupIndex,
+                              BindGroup*   bindGroup) {
+  This->encoder.SetBindGroup(groupIndex, bindGroup->bindGroup, 0, 0);
+}
+
+void ComputePass_SetPipeline(ComputePass* This, ComputePipeline* pipeline) {
+  This->encoder.SetPipeline(pipeline->pipeline);
+}
+
+void ComputePass_Dispatch(ComputePass* This,
+                          uint32_t      workgroupCountX,
+                          uint32_t      workgroupCountY,
+                          uint32_t      workgroupCountZ) {
+  This->encoder.DispatchWorkgroups(workgroupCountX, workgroupCountY, workgroupCountZ);
+}
+
+void ComputePass_End(ComputePass* This) { This->encoder.End(); }
+
+void ComputePass_Destroy(ComputePass* This) { delete This; }
 
 CommandBuffer* CommandEncoder_Finish(CommandEncoder* encoder) {
   return new CommandBuffer(encoder->encoder.Finish());

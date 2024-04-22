@@ -27,18 +27,18 @@ for (int i = 0; i < 1000; ++i) {
     System.GetNextEvent();
   }
   auto framebuffer = swapChain.GetCurrentTexture();
-  CommandEncoder* encoder = new CommandEncoder(device);
+  auto encoder = new CommandEncoder(device);
   writeonly Uniforms^ s = stagingBuffer.MapWrite();
   float f = (float) i / 1000.0;
   s.color = float<4>(1.0 - f, f, 0.0, 1.0);
   stagingBuffer.Unmap();
   encoder.CopyBufferToBuffer(stagingBuffer, uniformBuffer);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-  passEncoder.SetPipeline(pipeline);
-  passEncoder.SetVertexBuffer(0, vb);
-  passEncoder.SetBindGroup(0, bg);
-  passEncoder.Draw(3, 1, 0, 0);
-  passEncoder.End();
+  auto renderPass = new RenderPass(encoder, framebuffer);
+  renderPass.SetPipeline(pipeline);
+  renderPass.SetVertexBuffer(0, vb);
+  renderPass.SetBindGroup(0, bg);
+  renderPass.Draw(3, 1, 0, 0);
+  renderPass.End();
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
 }

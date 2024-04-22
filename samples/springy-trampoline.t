@@ -279,35 +279,35 @@ while(System.IsRunning()) {
   bindings.uniforms.SetData(u);
 
   auto framebuffer = swapChain.GetCurrentTexture();
-  CommandEncoder* encoder = new CommandEncoder(device);
-  ComputePassEncoder* computeEncoder = encoder.BeginComputePass();
+  auto encoder = new CommandEncoder(device);
+  auto computePass = new ComputePass(encoder);
 
-  computeEncoder.SetBindGroup(0, bindGroup);
+  computePass.SetBindGroup(0, bindGroup);
 
-  computeEncoder.SetPipeline(computeForces);
-  computeEncoder.Dispatch(springs.length, 1, 1);
+  computePass.SetPipeline(computeForces);
+  computePass.Dispatch(springs.length, 1, 1);
 
-  computeEncoder.SetPipeline(applyForces);
-  computeEncoder.Dispatch(bodies.length, 1, 1);
+  computePass.SetPipeline(applyForces);
+  computePass.Dispatch(bodies.length, 1, 1);
 
-  computeEncoder.SetPipeline(finalizeBodies);
-  computeEncoder.Dispatch(bodies.length, 1, 1);
+  computePass.SetPipeline(finalizeBodies);
+  computePass.Dispatch(bodies.length, 1, 1);
 
-  computeEncoder.SetPipeline(finalizeSprings);
-  computeEncoder.Dispatch(springs.length, 1, 1);
+  computePass.SetPipeline(finalizeSprings);
+  computePass.Dispatch(springs.length, 1, 1);
 
-  computeEncoder.End();
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
+  computePass.End();
+  auto renderPass = new RenderPass(encoder, framebuffer);
 
-  passEncoder.SetPipeline(bodyPipeline);
-  passEncoder.SetVertexBuffer(0, bodyVBO);
-  passEncoder.Draw(bodyVerts.length, 1, 0, 0);
+  renderPass.SetPipeline(bodyPipeline);
+  renderPass.SetVertexBuffer(0, bodyVBO);
+  renderPass.Draw(bodyVerts.length, 1, 0, 0);
 
-  passEncoder.SetPipeline(springPipeline);
-  passEncoder.SetVertexBuffer(0, springVBO);
-  passEncoder.Draw(springVerts.length, 1, 0, 0);
+  renderPass.SetPipeline(springPipeline);
+  renderPass.SetVertexBuffer(0, springVBO);
+  renderPass.Draw(springVerts.length, 1, 0, 0);
 
-  passEncoder.End();
+  renderPass.End();
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
 }

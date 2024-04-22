@@ -13,12 +13,12 @@ class Pipeline {
 }
 RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 auto framebuffer = swapChain.GetCurrentTexture();
-CommandEncoder* encoder = new CommandEncoder(device);
-RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-passEncoder.SetPipeline(pipeline);
-passEncoder.SetVertexBuffer(0, vb);
-passEncoder.Draw(3, 1, 0, 0);
-passEncoder.End();
+auto encoder = new CommandEncoder(device);
+auto renderPass = new RenderPass(encoder, framebuffer);
+renderPass.SetPipeline(pipeline);
+renderPass.SetVertexBuffer(0, vb);
+renderPass.Draw(3, 1, 0, 0);
+renderPass.End();
 device.GetQueue().Submit(encoder.Finish());
 swapChain.Present();
 while (System.IsRunning()) System.GetNextEvent();

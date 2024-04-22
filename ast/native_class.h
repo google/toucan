@@ -28,14 +28,14 @@ class NativeClass {
   static ClassType* Buffer;
   static ClassType* CommandBuffer;
   static ClassType* CommandEncoder;
-  static ClassType* ComputePassEncoder;
+  static ClassType* ComputePass;
   static ClassType* ComputePipeline;
   static ClassType* Device;
   static ClassType* Event;
   static ClassType* ImageDecoder;
   static ClassType* Math;
   static ClassType* Queue;
-  static ClassType* RenderPassEncoder;
+  static ClassType* RenderPass;
   static ClassType* RenderPipeline;
   static ClassType* SampleableTexture1D;
   static ClassType* SampleableTexture2D;

@@ -281,18 +281,18 @@ while(System.IsRunning()) {
 
   physicsSystem.rungeKutta4Step(1.0 / frequency);
   auto framebuffer = swapChain.GetCurrentTexture();
-  CommandEncoder* encoder = new CommandEncoder(device);
-  RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
+  auto encoder = new CommandEncoder(device);
+  auto renderPass = new RenderPass(encoder, framebuffer);
 
-  passEncoder.SetPipeline(bodyPipeline);
-  passEncoder.SetVertexBuffer(0, bodyVBO);
-  passEncoder.Draw(bodyVerts.length, 1, 0, 0);
+  renderPass.SetPipeline(bodyPipeline);
+  renderPass.SetVertexBuffer(0, bodyVBO);
+  renderPass.Draw(bodyVerts.length, 1, 0, 0);
 
-  passEncoder.SetPipeline(springPipeline);
-  passEncoder.SetVertexBuffer(0, springVBO);
-  passEncoder.Draw(springVerts.length, 1, 0, 0);
+  renderPass.SetPipeline(springPipeline);
+  renderPass.SetVertexBuffer(0, springVBO);
+  renderPass.Draw(springVerts.length, 1, 0, 0);
 
-  passEncoder.End();
+  renderPass.End();
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
 }

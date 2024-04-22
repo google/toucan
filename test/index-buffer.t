@@ -31,13 +31,13 @@ class Pipeline {
 }
 auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 auto framebuffer = swapChain.GetCurrentTexture();
-CommandEncoder* encoder = new CommandEncoder(device);
-RenderPassEncoder* passEncoder = encoder.BeginRenderPass(framebuffer);
-passEncoder.SetPipeline(pipeline);
-passEncoder.SetVertexBuffer(0, vb);
-passEncoder.SetIndexBuffer(ib);
-passEncoder.DrawIndexed(6, 1, 0, 0, 0);
-passEncoder.End();
+auto encoder = new CommandEncoder(device);
+auto renderPass = new RenderPass(encoder, framebuffer);
+renderPass.SetPipeline(pipeline);
+renderPass.SetVertexBuffer(0, vb);
+renderPass.SetIndexBuffer(ib);
+renderPass.DrawIndexed(6, 1, 0, 0, 0);
+renderPass.End();
 device.GetQueue().Submit(encoder.Finish());
 swapChain.Present();
 
