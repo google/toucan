@@ -29,10 +29,10 @@ class Pipeline {
     vb.position = uniforms.mvpMatrix * position;
     return float<4>(vtx.color.r, vtx.color.g, vtx.color.b, 1.0);
   }
-  float<4> fragmentShader(FragmentBuiltins fb, float<4> varyings) fragment {
-    return varyings * uniformBuffer.MapReadUniform().alpha;
+  void fragmentShader(FragmentBuiltins fb, float<4> varyings) fragment {
+    fragColor.Set(varyings * uniformBuffer.MapReadUniform().alpha);
   }
-
+  ColorAttachment<PreferredSwapChainFormat>* fragColor;
   uniform Buffer<Uniforms>* uniformBuffer;
 }
 
@@ -53,7 +53,9 @@ while (System.IsRunning()) {
   }
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
-  auto renderPass = new RenderPass(encoder, framebuffer);
+  Pipeline p;
+  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  auto renderPass = new RenderPass<Pipeline>(encoder, &p);
   renderPass.SetPipeline(pipeline);
   renderPass.SetVertexBuffer(0, vb);
   renderPass.SetBindGroup(0, bg);

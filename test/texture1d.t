@@ -34,11 +34,12 @@ class Pipeline {
         varyings.texCoord = v.texCoord;
         return varyings;
     }
-    float<4> fragmentShader(FragmentBuiltins fb, Varyings varyings) fragment {
-      return textureView.Sample(sampler, varyings.texCoord);
+    void fragmentShader(FragmentBuiltins fb, Varyings varyings) fragment {
+      fragColor.Set(textureView.Sample(sampler, varyings.texCoord));
     }
     Sampler* sampler;
     SampleableTexture1D<float>* textureView;
+    ColorAttachment<PreferredSwapChainFormat>* fragColor;
 };
 RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 auto sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
@@ -55,9 +56,10 @@ auto samplerBG = new BindGroup(device, sampler);
 auto texView = tex.CreateSampleableView();
 auto texBG = new BindGroup(device, texView);
 
-auto framebuffer = swapChain.GetCurrentTexture();
 auto encoder = new CommandEncoder(device);
-auto renderPass = new RenderPass(encoder, framebuffer);
+Pipeline p;
+p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+auto renderPass = new RenderPass<Pipeline>(encoder, &p);
 renderPass.SetPipeline(pipeline);
 renderPass.SetBindGroup(0, samplerBG);
 renderPass.SetBindGroup(1, texBG);

@@ -12,10 +12,11 @@ class UniformData {
 }
 class PipelineData {
   void vertexShader(VertexBuiltins vb, float<4> v) vertex { vb.position = v; }
-  float<4> fragmentShader(FragmentBuiltins fb) fragment {
-    return float<4>(0.0, 1.0, 0.0, 1.0) * uniforms.MapReadUniform().opacity;
+  void fragmentShader(FragmentBuiltins fb) fragment {
+    fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0) * uniforms.MapReadUniform().opacity);
   }
   uniform Buffer<UniformData>* uniforms;
+  ColorAttachment<PreferredSwapChainFormat>* fragColor;
 }
 auto pipeline = new RenderPipeline<PipelineData>(device, null, TriangleList);
 UniformData* uniforms = new UniformData();
@@ -24,7 +25,9 @@ auto uniformBuffer = new uniform Buffer<UniformData>(device, uniforms);
 auto bindGroup = new BindGroup(device, uniformBuffer);
 auto framebuffer = swapChain.GetCurrentTexture();
 auto encoder = new CommandEncoder(device);
-auto renderPass = new RenderPass(encoder, framebuffer);
+PipelineData p;
+p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+auto renderPass = new RenderPass<PipelineData>(encoder, &p);
 renderPass.SetPipeline(pipeline);
 renderPass.SetBindGroup(0, bindGroup);
 renderPass.SetVertexBuffer(0, vb);

@@ -163,8 +163,31 @@ native class CommandEncoder {
   void CopyBufferToBuffer(Buffer^ source, Buffer^ dest);
 }
 
-native class RenderPass {
-  RenderPass(CommandEncoder* encoder, renderable Texture2D* colorAttachment, renderable Texture2D* depthAttachment = null, float r = 0.0, float g = 0.0, float b = 0.0, float a = 0.0);
+enum LoadOp {
+  LoadUndefined,
+  Clear,
+  Load
+}
+
+enum StoreOp {
+  StoreUndefined,
+  Store,
+  Discard
+}
+
+native class ColorAttachment<PF> {
+  ColorAttachment(renderable Texture2D<PF>* texture, LoadOp loadOp, StoreOp storeOp, float<4> clearValue = float<4>(0.0, 0.0, 0.0, 0.0));
+  void Set(PF::SampledType<4> value);
+ ~ColorAttachment();
+}
+
+native class DepthStencilAttachment<PF> {
+  DepthStencilAttachment(renderable Texture2D<PF>* texture, LoadOp depthLoadOp, StoreOp depthStoreOp, float depthClearValue = 0.0, LoadOp stencilLoadOp, StoreOp stencilStoreOp, int stencilClearValue);
+ ~DepthStencilAttachment();
+}
+
+native class RenderPass<T> {
+  RenderPass(CommandEncoder* encoder, T^ data);
  ~RenderPass();
   void Draw(uint vertexCount, uint instanceCount, uint firstVertex, uint firstInstance);
   void DrawIndexed(uint indexCount, uint instanceCount, uint firstIndex, uint baseVertex, uint firstIntance);
@@ -175,8 +198,8 @@ native class RenderPass {
   void End();
 }
 
-native class ComputePass {
-  ComputePass(CommandEncoder* encoder);
+native class ComputePass<T> {
+  ComputePass(CommandEncoder* encoder, T^ data);
  ~ComputePass();
   void Dispatch(uint workgroupCountX, uint workgroupCountY, uint workgroupCountZ);
   void SetBindGroup(uint groupIndex, BindGroup* bindGroup);

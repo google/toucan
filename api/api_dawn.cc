@@ -45,13 +45,31 @@ uint32_t BytesPerPixel(wgpu::TextureFormat format) {
   }
 }
 
-static wgpu::TextureUsage ToDawnTextureUsage(int qualifiers) {
+wgpu::TextureUsage ToDawnTextureUsage(int qualifiers) {
   wgpu::TextureUsage result = wgpu::TextureUsage::CopySrc | wgpu::TextureUsage::CopyDst;
 
   if (qualifiers & Type::Qualifier::Storage) { result |= wgpu::TextureUsage::StorageBinding; }
   if (qualifiers & Type::Qualifier::Sampleable) { result |= wgpu::TextureUsage::TextureBinding; }
   if (qualifiers & Type::Qualifier::Renderable) { result |= wgpu::TextureUsage::RenderAttachment; }
   return result;
+}
+
+wgpu::LoadOp ToDawnLoadOp(LoadOp loadOp) {
+  switch (loadOp) {
+    case LoadUndefined: return wgpu::LoadOp::Undefined;
+    case Load: return wgpu::LoadOp::Load;
+    case Clear: return wgpu::LoadOp::Clear;
+    default: assert(!"unknown LoadOp"); return wgpu::LoadOp::Load;
+  }
+}
+
+wgpu::StoreOp ToDawnStoreOp(StoreOp loadOp) {
+  switch (loadOp) {
+    case StoreUndefined: return wgpu::StoreOp::Undefined;
+    case Store: return wgpu::StoreOp::Store;
+    case Discard: return wgpu::StoreOp::Discard;
+    default: assert(!"unknown StoreOp"); return wgpu::StoreOp::Store;
+  }
 }
 
 }  // namespace
@@ -469,6 +487,16 @@ struct BindGroupLayout {
   wgpu::BindGroupLayout bindGroupLayout;
 };
 
+struct ColorAttachment {
+  ColorAttachment(const wgpu::RenderPassColorAttachment& a) : attachment(a) {}
+  wgpu::RenderPassColorAttachment attachment;
+};
+
+struct DepthStencilAttachment {
+  DepthStencilAttachment(const wgpu::RenderPassDepthStencilAttachment& a) : attachment(a) {}
+  wgpu::RenderPassDepthStencilAttachment attachment;
+};
+
 struct RenderPass {
   RenderPass(wgpu::RenderPassEncoder e) : encoder(e) {}
   wgpu::RenderPassEncoder encoder;
@@ -515,25 +543,36 @@ wgpu::ShaderModule createShaderModule(Device* device, Method* m) {
   return device->device.CreateShaderModule(&desc);
 }
 
-static void CreatePipelineLayout(ClassType*                          classType,
-                                 Device*                             device,
-                                 std::vector<wgpu::BindGroupLayout>* layouts) {
-  if (classType->GetParent()) { CreatePipelineLayout(classType->GetParent(), device, layouts); }
+static void ExtractPipelineData(ClassType*                           classType,
+                                Device*                              device,
+                                std::vector<wgpu::BindGroupLayout>*  layouts,
+                                std::vector<wgpu::ColorTargetState>* colorTargets,
+                                wgpu::DepthStencilState*             depthStencilTarget) {
+  if (classType->GetParent()) { ExtractPipelineData(classType->GetParent(), device, layouts, colorTargets, depthStencilTarget); }
   for (const auto& field : classType->GetFields()) {
     Type* type = field->type;
-    if (type->IsPtr()) { type = static_cast<PtrType*>(type)->GetBaseType(); }
-    wgpu::BindGroupLayout layout = GetOrCreateBindGroupLayout(device, type);
-    layouts->push_back(layout);
-  }
-}
 
-wgpu::PipelineLayout CreatePipelineLayout(ClassType* classType, Device* device) {
-  wgpu::PipelineLayoutDescriptor     desc;
-  std::vector<wgpu::BindGroupLayout> layouts;
-  CreatePipelineLayout(classType, device, &layouts);
-  desc.bindGroupLayoutCount = layouts.size();
-  desc.bindGroupLayouts = layouts.data();
-  return device->device.CreatePipelineLayout(&desc);
+    // FIXME: once bind groups are pointers, this line and the unqualified check can go
+    if (type->IsPtr()) { type = static_cast<PtrType*>(type)->GetBaseType(); }
+    Type* unqualifiedType = type->GetUnqualifiedType();
+    assert(unqualifiedType->IsClass());
+
+    ClassType* classType = static_cast<ClassType*>(unqualifiedType);
+    if (classType->GetTemplate() == NativeClass::ColorAttachment) {
+      wgpu::ColorTargetState         colorTargetState;
+      const auto& templateArgs = classType->GetTemplateArgs();
+      assert(templateArgs.size() == 1);
+      colorTargetState.format = ToDawnTextureFormat(templateArgs[0]);
+      colorTargets->push_back(colorTargetState);
+    } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment) {
+      const auto& templateArgs = classType->GetTemplateArgs();
+      assert(templateArgs.size() == 1);
+      depthStencilTarget->format = ToDawnTextureFormat(templateArgs[0]);
+    } else {
+      wgpu::BindGroupLayout layout = GetOrCreateBindGroupLayout(device, type);
+      layouts->push_back(layout);
+    }
+  }
 }
 
 RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
@@ -564,14 +603,17 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   }
   std::vector<wgpu::VertexAttribute> vaDescs;
   wgpu::VertexBufferLayout           vbDesc = toDawnVertexBufferLayout(vertexInput, &vaDescs);
+  std::vector<wgpu::BindGroupLayout> bindGroupLayouts;
+  std::vector<wgpu::ColorTargetState> colorTargets;
+  wgpu::DepthStencilState            depthStencilTarget;
+  ExtractPipelineData(classType, device, &bindGroupLayouts, &colorTargets, &depthStencilTarget);
+
   wgpu::VertexState                  vertexState;
   vertexState.module = vertexShader;
   vertexState.entryPoint = "main";
   vertexState.bufferCount = 1;
   vertexState.buffers = &vbDesc;
   wgpu::RenderPipelineDescriptor rpDesc;
-  wgpu::ColorTargetState         colorTargetState;
-  colorTargetState.format = GetPreferredSwapChainFormat();  // FIXME
   wgpu::DepthStencilState depthStencilState;
   if (depthStencil->ptr) {
     Type* type = depthStencil->controlBlock->type;
@@ -587,10 +629,13 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   fragmentState.module = fragmentShader;
   fragmentState.entryPoint = "main";
   fragmentState.constants = nullptr;
-  fragmentState.targetCount = 1;
-  fragmentState.targets = &colorTargetState;
+  fragmentState.targetCount = colorTargets.size();
+  fragmentState.targets = colorTargets.data();
   wgpu::PrimitiveState primitiveState;
-  rpDesc.layout = CreatePipelineLayout(classType, device);
+  wgpu::PipelineLayoutDescriptor     desc;
+  desc.bindGroupLayoutCount = bindGroupLayouts.size();
+  desc.bindGroupLayouts = bindGroupLayouts.data();
+  rpDesc.layout = device->device.CreatePipelineLayout(&desc);
   rpDesc.vertex = vertexState;
   rpDesc.fragment = &fragmentState;
   rpDesc.primitive.topology = toDawnPrimitiveTopology(primitiveTopology);
@@ -620,7 +665,12 @@ ComputePipeline* ComputePipeline_ComputePipeline(int     qualifiers,
   computeState.module = computeShader;
   computeState.entryPoint = "main";
   wgpu::ComputePipelineDescriptor cpDesc;
-  cpDesc.layout = CreatePipelineLayout(classType, device);
+  std::vector<wgpu::BindGroupLayout> bindGroupLayouts;
+  ExtractPipelineData(classType, device, &bindGroupLayouts, nullptr, nullptr);
+  wgpu::PipelineLayoutDescriptor     desc;
+  desc.bindGroupLayoutCount = bindGroupLayouts.size();
+  desc.bindGroupLayouts = bindGroupLayouts.data();
+  cpDesc.layout = device->device.CreatePipelineLayout(&desc);
   cpDesc.compute = computeState;
   return new ComputePipeline(device->device.CreateComputePipeline(&cpDesc));
 }
@@ -969,28 +1019,72 @@ void Queue_Submit(Queue* queue, CommandBuffer* commandBuffer) {
   queue->queue.Submit(1, &commandBuffer->commandBuffer);
 }
 
-RenderPass* RenderPass_RenderPass(CommandEncoder* encoder,
-                                  Texture2D*      colorAttachment,
-                                  Texture2D*      depthAttachment,
-                                  float           r,
-                                  float           g,
-                                  float           b,
-                                  float           a) {
-  wgpu::RenderPassColorAttachment rpColorAttachment;
-  rpColorAttachment.view = colorAttachment->view;
-  rpColorAttachment.clearValue = {r, g, b, a};
-  rpColorAttachment.loadOp = wgpu::LoadOp::Clear;
-  rpColorAttachment.storeOp = wgpu::StoreOp::Store;
-  wgpu::RenderPassColorAttachment*       colorAttachments = {&rpColorAttachment};
+ColorAttachment* ColorAttachment_ColorAttachment(int qualifiers,
+                                                 Type* type,
+                                                 Texture2D* texture,
+                                                 LoadOp loadOp,
+                                                 StoreOp storeOp,
+                                                 float* clearValue) {
+  wgpu::RenderPassColorAttachment attachment;
+  attachment.clearValue = {clearValue[0], clearValue[1], clearValue[2], clearValue[3]};
+  attachment.loadOp = ToDawnLoadOp(loadOp);
+  attachment.storeOp = ToDawnStoreOp(storeOp);
+  attachment.view = texture->view;
+  return new ColorAttachment(attachment);
+}
+
+void ColorAttachment_Destroy(ColorAttachment* This) { delete This; }
+
+DepthStencilAttachment* DepthStencilAttachment_DepthStencilAttachment(int qualifiers,
+                                                                      Type* type,
+                                                                      Texture2D* texture,
+                                                                      LoadOp depthLoadOp,
+                                                                      StoreOp depthStoreOp,
+                                                                      float depthClearValue,
+                                                                      LoadOp stencilLoadOp,
+                                                                      StoreOp stencilStoreOp,
+                                                                      int stencilClearValue) {
+  wgpu::RenderPassDepthStencilAttachment attachment;
+  attachment.view = texture->view;
+  attachment.depthLoadOp = ToDawnLoadOp(depthLoadOp);
+  attachment.depthStoreOp = ToDawnStoreOp(depthStoreOp);
+  attachment.depthClearValue = depthClearValue;
+  attachment.stencilLoadOp = ToDawnLoadOp(stencilLoadOp);
+  attachment.stencilStoreOp = ToDawnStoreOp(stencilStoreOp);
+  attachment.stencilClearValue = stencilClearValue;
+  return new DepthStencilAttachment(attachment);
+}
+
+void DepthStencilAttachment_Destroy(DepthStencilAttachment* This) { delete This; }
+
+RenderPass* RenderPass_RenderPass(int             qualifiers,
+                                  Type*           type,
+                                  CommandEncoder* encoder,
+                                  Object*         data) {
+  std::vector<wgpu::RenderPassColorAttachment> colorAttachments;
   wgpu::RenderPassDepthStencilAttachment depthStencilAttachment;
+  assert(type->IsClass());
+  Type* objectType = data->controlBlock->type;
+  assert(objectType->IsClass());
+  assert(objectType == type);
+  for (const auto& field : static_cast<ClassType*>(type)->GetFields()) {
+    Type* fieldType = field->type;
+    if (!fieldType->IsPtr()) { continue; } // FIXME: bind groups should be ptrs too
+    fieldType = static_cast<PtrType*>(fieldType)->GetBaseType();
+    fieldType = fieldType->GetUnqualifiedType();
+    Object object = *reinterpret_cast<Object*>((uint8_t*)data->ptr + field->offset);
+    assert(fieldType->IsClass());
+    auto classType = static_cast<ClassType*>(fieldType);
+    if (classType->GetTemplate() == NativeClass::ColorAttachment && object.ptr) {
+      colorAttachments.push_back(static_cast<ColorAttachment*>(object.ptr)->attachment);
+    } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment && object.ptr) {
+      depthStencilAttachment = static_cast<DepthStencilAttachment*>(object.ptr)->attachment;
+    }
+  }
   wgpu::RenderPassDescriptor             desc;
-  desc.colorAttachmentCount = 1;
-  desc.colorAttachments = colorAttachments;
-  if (depthAttachment) {
-    depthStencilAttachment.view = depthAttachment->view;
-    depthStencilAttachment.depthLoadOp = wgpu::LoadOp::Clear;
-    depthStencilAttachment.depthStoreOp = wgpu::StoreOp::Store;
-    depthStencilAttachment.depthClearValue = 1.0f;
+  desc.colorAttachmentCount = colorAttachments.size();
+  desc.colorAttachments = colorAttachments.data();
+  if (depthStencilAttachment.view != nullptr) {
     desc.depthStencilAttachment = &depthStencilAttachment;
   }
   return new RenderPass(encoder->encoder.BeginRenderPass(&desc));
@@ -1037,7 +1131,7 @@ void RenderPass_End(RenderPass* This) { This->encoder.End(); }
 
 void RenderPass_Destroy(RenderPass* This) { delete This; }
 
-ComputePass* ComputePass_ComputePass(CommandEncoder* encoder) {
+ComputePass* ComputePass_ComputePass(int qualifiers, Type* type, CommandEncoder* encoder, Object* data) {
   wgpu::ComputePassDescriptor desc;
   return new ComputePass(encoder->encoder.BeginComputePass(&desc));
 }

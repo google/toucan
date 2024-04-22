@@ -108,22 +108,27 @@ class Bindings {
   uniform Buffer<Uniforms>* uniforms;
 }
 
-class SkyboxPipeline {
+class Pipeline {
+  ColorAttachment<PreferredSwapChainFormat>* fragColor;
+  DepthStencilAttachment<Depth24Plus>* depth;
+  Bindings bindings;
+}
+
+class SkyboxPipeline : Pipeline {
     float<3> vertexShader(VertexBuiltins vb, float<3> v) vertex {
         auto uniforms = bindings.uniforms.MapReadUniform();
         auto pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
-    float<4> fragmentShader(FragmentBuiltins fb, float<3> position) fragment {
+    void fragmentShader(FragmentBuiltins fb, float<3> position) fragment {
       float<3> p = Math.normalize(position);
       // TODO: figure out why the skybox is X-flipped
-      return bindings.textureView.Sample(bindings.sampler, float<3>(-p.x, p.y, p.z));
+      fragColor.Set(bindings.textureView.Sample(bindings.sampler, float<3>(-p.x, p.y, p.z)));
     }
-    Bindings bindings;
 };
 
-class ReflectionPipeline {
+class ReflectionPipeline : Pipeline {
     Vertex vertexShader(VertexBuiltins vb, Vertex v) vertex {
         auto n = Math.normalize(v.normal);
         auto uniforms = bindings.uniforms.MapReadUniform();
@@ -136,15 +141,14 @@ class ReflectionPipeline {
         varyings.normal = float<3>(normal.x, normal.y, normal.z);
         return varyings;
     }
-    float<4> fragmentShader(FragmentBuiltins fb, Vertex varyings) fragment {
+    void fragmentShader(FragmentBuiltins fb, Vertex varyings) fragment {
       auto uniforms = bindings.uniforms.MapReadUniform();
       float<3> p = Math.normalize(varyings.position);
       float<3> n = Math.normalize(varyings.normal);
       float<3> r = Math.reflect(-p, n);
       auto r4 = Math.inverse(uniforms.view) * float<4>(r.x, r.y, r.z, 0.0);
-      return bindings.textureView.Sample(bindings.sampler, float<3>(-r4.x, r4.y, r4.z));
+      fragColor.Set(bindings.textureView.Sample(bindings.sampler, float<3>(-r4.x, r4.y, r4.z)));
     }
-    Bindings bindings;
 };
 
 auto depthState = new DepthStencilState<Depth24Plus>();
@@ -186,7 +190,10 @@ while (System.IsRunning()) {
   teapotBindings.uniforms.SetData(&uniforms);
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
-  auto renderPass = new RenderPass(encoder, framebuffer, depthBuffer);
+  Pipeline p;
+  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  p.depth = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
+  auto renderPass = new RenderPass<Pipeline>(encoder, &p);
 
   renderPass.SetPipeline(cubePipeline);
   renderPass.SetBindGroup(0, cubeBindGroup);

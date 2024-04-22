@@ -58,11 +58,13 @@ class SkyboxPipeline {
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
-    float<4> fragmentShader(FragmentBuiltins fb, float<3> position) fragment {
+    void fragmentShader(FragmentBuiltins fb, float<3> position) fragment {
       float<3> p = Math.normalize(position);
       // TODO: figure out why the skybox is X-flipped
-      return bindings.textureView.Sample(bindings.sampler, float<3>(-p.x, p.y, p.z));
+      fragColor.Set(bindings.textureView.Sample(bindings.sampler, float<3>(-p.x, p.y, p.z)));
     }
+    ColorAttachment<PreferredSwapChainFormat>* fragColor;
+    DepthStencilAttachment<Depth24Plus>* depth;
     Bindings bindings;
 };
 
@@ -94,7 +96,10 @@ while (System.IsRunning()) {
   cubeBindings.uniforms.SetData(&uniforms);
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
-  auto renderPass = new RenderPass(encoder, framebuffer, depthBuffer);
+  SkyboxPipeline p;
+  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  p.depth = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
+  auto renderPass = new RenderPass<SkyboxPipeline>(encoder, &p);
 
   renderPass.SetPipeline(cubePipeline);
   renderPass.SetBindGroup(0, cubeBindGroup);

@@ -249,15 +249,18 @@ auto bodyVBO = new vertex Buffer<Vector[]>(device, bodyVerts.length);
 
 auto springVerts = new Vector[springs.length * 2];
 auto springVBO = new vertex Buffer<Vector[]>(device, springVerts.length);
-
-class BodyShaders {
-  void vertexShader(VertexBuiltins vb, Vector v) vertex { vb.position = Utils.makeFloat4(v); }
-  float<4> fragmentShader(FragmentBuiltins fb) fragment { return float<4>(0.0, 1.0, 0.0, 1.0); }
+class Shaders {
+  ColorAttachment<PreferredSwapChainFormat>* fragColor;
 }
 
-class SpringShaders {
+class BodyShaders : Shaders {
   void vertexShader(VertexBuiltins vb, Vector v) vertex { vb.position = Utils.makeFloat4(v); }
-  float<4> fragmentShader(FragmentBuiltins fb) fragment { return float<4>(1.0, 1.0, 1.0, 1.0); }
+  void fragmentShader(FragmentBuiltins fb) fragment { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
+}
+
+class SpringShaders : Shaders {
+  void vertexShader(VertexBuiltins vb, Vector v) vertex { vb.position = Utils.makeFloat4(v); }
+  void fragmentShader(FragmentBuiltins fb) fragment { fragColor.Set(float<4>(1.0, 1.0, 1.0, 1.0)); }
 }
 
 RenderPipeline* bodyPipeline = new RenderPipeline<BodyShaders>(device, null, TriangleList);
@@ -282,7 +285,9 @@ while(System.IsRunning()) {
   physicsSystem.rungeKutta4Step(1.0 / frequency);
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
-  auto renderPass = new RenderPass(encoder, framebuffer);
+  Shaders s;
+  s.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  auto renderPass = new RenderPass<Shaders>(encoder, &s);
 
   renderPass.SetPipeline(bodyPipeline);
   renderPass.SetVertexBuffer(0, bodyVBO);

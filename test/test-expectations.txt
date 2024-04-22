@@ -232,7 +232,6 @@ test/short.t
 result is 3.000000
 test/simple.t
 result is 6.000000
-test/springy-templated.t
 test/stack-method-call.t
 result is 3.000000
 test/static-method-with-args.t
@@ -257,6 +256,8 @@ test/texture2darray.t
 test/texture3d.t
 test/texturecube.t
 test/triangle.t
+result is 0.000000
+test/two-color-attachments.t
 result is 0.000000
 test/two-windows.t
 result is 0.000000

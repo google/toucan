@@ -26,9 +26,10 @@ class ComplexShader {
         varyings.texCoord = v.texCoord;
         return varyings;
     }
-    float<4> fragmentShader(FragmentBuiltins fb, Varyings varyings) fragment {
-      return float<4>(0.0, 1.0, 0.0, 1.0);
+    void fragmentShader(FragmentBuiltins fb, Varyings varyings) fragment {
+        fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0));
     }
+    ColorAttachment<PreferredSwapChainFormat>* fragColor;
     Sampler* sampler;
     SampleableTexture2D<float>* textureView;
     uniform Buffer<Uniforms>* uniforms;

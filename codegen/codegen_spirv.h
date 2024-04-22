@@ -58,6 +58,7 @@ class CodeGenSPIRV : public Visitor {
   uint32_t AppendExtInst(uint32_t extInst, uint32_t resultType, ExprList* argList);
   uint32_t DeclareVar(Var* var);
   void     DeclareBuiltInVars(Type* type, Code* interface);
+  Type*    GetSampledType(ClassType* colorAttachment);
   uint32_t GetStorageClass(Type* type);
   uint32_t DeclareAndLoadInputVar(Type*      type,
                                   ShaderType shaderType,
@@ -125,8 +126,8 @@ class CodeGenSPIRV : public Visitor {
 
  private:
   Type*    GetAndQualifyUnderlyingType(Type* type);
-  void     ExtractBindGroups(Method* entryPoint);
-  void     ExtractBindGroups(ClassType* classType);
+  void     ExtractPipelineVars(Method* entryPoint, Code* interface);
+  void     ExtractPipelineVars(ClassType* classType, ShaderType shaderType, Code* interface);
   uint32_t CreateVectorSplat(uint32_t value, VectorType* type);
   uint32_t CreateCast(Type* srcType, Type* dstType, uint32_t resultType, uint32_t valueId);
   uint32_t GetSampledImageType(Type* imageType);
@@ -149,6 +150,7 @@ class CodeGenSPIRV : public Visitor {
   std::unordered_map<Method*, uint32_t>         functions_;
   PtrType*                                      thisPtrType_ = nullptr;
   BindGroupList                                 bindGroups_;
+  std::vector<uint32_t>                         pipelineVars_;
   VarVector                                     builtInVars_;
 };
 

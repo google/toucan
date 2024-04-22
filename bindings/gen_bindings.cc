@@ -254,7 +254,11 @@ void PrintNativeType(FILE* file, Type* type) {
     PrintNativeType(file, static_cast<MatrixType*>(type)->GetColumnType()->GetComponentType());
     fprintf(file, "*");
   } else if (type->IsFormalTemplateArg()) {
+    // FIXME: remove this once we have "deviceonly" methods
     fprintf(file, "void");
+  } else if (type->IsUnresolvedScopedType()) {
+    // FIXME: remove this once we have "deviceonly" methods
+    fprintf(file, "void*");
   } else if (type->IsQualified()) {
     PrintNativeType(file, static_cast<QualifiedType*>(type)->GetBaseType());
   } else {

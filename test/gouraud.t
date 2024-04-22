@@ -22,15 +22,17 @@ class Pipeline {
     vb.position = float<4>(vtx.position.x, vtx.position.y, 0.0, 1.0);
     return vtx.color;
   }
-  float<4> fragmentShader(FragmentBuiltins fb, float<3> varyings) fragment {
-    return float<4>(varyings.r, varyings.g, varyings.b, 1.0);
+  void fragmentShader(FragmentBuiltins fb, float<3> varyings) fragment {
+    fragColor.Set(float<4>(varyings.r, varyings.g, varyings.b, 1.0));
   }
+  ColorAttachment<PreferredSwapChainFormat>* fragColor;
 }
 
 RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
-auto framebuffer = swapChain.GetCurrentTexture();
 auto encoder = new CommandEncoder(device);
-auto renderPass = new RenderPass(encoder, framebuffer);
+Pipeline p;
+p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+auto renderPass = new RenderPass<Pipeline>(encoder, &p);
 renderPass.SetPipeline(pipeline);
 renderPass.SetVertexBuffer(0, vb);
 renderPass.Draw(3, 1, 0, 0);

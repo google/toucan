@@ -92,7 +92,11 @@ class Bindings {
   uniform Buffer<Uniforms>* uniforms;
 }
 
-class ComputeForces {
+class ComputeBase {
+  Bindings bindings;
+}
+
+class ComputeForces : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
     float placeholder1 = Utils.dot(Vector(0.0), Vector(0.0));
     float placeholder2 = Utils.length(Vector(0.0));
@@ -105,10 +109,9 @@ class ComputeForces {
     Body b2 = bodies[spring.body2];
     springs[i].force = spring.computeForce(b1, b2);
   }
-  Bindings bindings;
 }
 
-class ApplyForces {
+class ApplyForces : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
     auto bodies = bindings.bodyStorage.MapReadWriteStorage();
     auto springs = bindings.springStorage.MapReadWriteStorage();
@@ -122,10 +125,9 @@ class ApplyForces {
     }
     bodies[i].force = force;
   }
-  Bindings bindings;
 }
 
-class FinalizeBodies {
+class FinalizeBodies : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
     auto bodies = bindings.bodyStorage.MapReadWriteStorage();
     auto u = bindings.uniforms.MapReadUniform();
@@ -142,10 +144,9 @@ class FinalizeBodies {
     bv[i*3+1] = p + Vector(-u.particleSize.x * 0.5,  0.0);
     bv[i*3+2] = p + Vector( 0.0,           -u.particleSize.y);
   }
-  Bindings bindings;
 }
 
-class FinalizeSprings {
+class FinalizeSprings : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
     auto bodies = bindings.bodyStorage.MapReadWriteStorage();
     auto springs = bindings.springStorage.MapReadWriteStorage();
@@ -154,7 +155,6 @@ class FinalizeSprings {
     sv[i*2] = bodies[springs[i].body1].position;
     sv[i*2+1] = bodies[springs[i].body2].position;
   }
-  Bindings bindings;
 }
 
 Device* device = new Device();
@@ -252,14 +252,18 @@ bindings.bodyStorage.SetData(bodies);
 bindings.springStorage = new storage Buffer<Spring[]>(device, springs.length);
 bindings.springStorage.SetData(springs);
 
-class BodyShaders {
-  void vertexShader(VertexBuiltins vb, Vector v) vertex { vb.position = Utils.makeFloat4(v); }
-  float<4> fragmentShader(FragmentBuiltins fb) fragment { return float<4>(0.0, 1.0, 0.0, 1.0); }
+class Shaders {
+  ColorAttachment<PreferredSwapChainFormat>* fragColor;
 }
 
-class SpringShaders {
+class BodyShaders : Shaders {
   void vertexShader(VertexBuiltins vb, Vector v) vertex { vb.position = Utils.makeFloat4(v); }
-  float<4> fragmentShader(FragmentBuiltins fb) fragment { return float<4>(1.0, 1.0, 1.0, 1.0); }
+  void fragmentShader(FragmentBuiltins fb) fragment { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
+}
+
+class SpringShaders : Shaders {
+  void vertexShader(VertexBuiltins vb, Vector v) vertex { vb.position = Utils.makeFloat4(v); }
+  void fragmentShader(FragmentBuiltins fb) fragment { fragColor.Set(float<4>(1.0, 1.0, 1.0, 1.0)); }
 }
 
 auto bodyPipeline = new RenderPipeline<BodyShaders>(device, null, TriangleList);
@@ -281,7 +285,7 @@ while(System.IsRunning()) {
 
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
-  auto computePass = new ComputePass(encoder);
+  auto computePass = new ComputePass<ComputeBase>(encoder, null);
 
   computePass.SetBindGroup(0, bindGroup);
 
@@ -298,7 +302,9 @@ while(System.IsRunning()) {
   computePass.Dispatch(springs.length, 1, 1);
 
   computePass.End();
-  auto renderPass = new RenderPass(encoder, framebuffer);
+  Shaders s;
+  s.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  auto renderPass = new RenderPass<Shaders>(encoder, &s);
 
   renderPass.SetPipeline(bodyPipeline);
   renderPass.SetVertexBuffer(0, bodyVBO);

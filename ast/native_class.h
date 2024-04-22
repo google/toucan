@@ -26,10 +26,12 @@ class NativeClass {
  public:
   static ClassType* BindGroup;
   static ClassType* Buffer;
+  static ClassType* ColorAttachment;
   static ClassType* CommandBuffer;
   static ClassType* CommandEncoder;
   static ClassType* ComputePass;
   static ClassType* ComputePipeline;
+  static ClassType* DepthStencilAttachment;
   static ClassType* Device;
   static ClassType* Event;
   static ClassType* ImageDecoder;

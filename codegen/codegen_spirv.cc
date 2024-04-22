@@ -37,6 +37,8 @@ namespace Toucan {
 
 bool isBuffer(ClassType* classType) { return classType->GetTemplate() == NativeClass::Buffer; }
 
+bool isColorAttachment(ClassType* classType) { return classType->GetTemplate() == NativeClass::ColorAttachment; }
+
 bool isSampler(ClassType* classType) { return classType == NativeClass::Sampler; }
 
 bool isSampleableTexture1D(ClassType* classType) {
@@ -332,6 +334,12 @@ Type* CodeGenSPIRV::GetAndQualifyUnderlyingType(Type* type) {
   return type;
 }
 
+Type* CodeGenSPIRV::GetSampledType(ClassType* colorAttachment) {
+  Type* argType = colorAttachment->GetTemplateArgs()[0];
+  Type* sampledType = static_cast<ClassType*>(argType)->FindType("SampledType");
+  return types_->GetVector(sampledType, 4);
+}
+
 uint32_t CodeGenSPIRV::GetSampledImageType(Type* type) {
   auto t = sampledImageTypes_.find(type);
   if (t != sampledImageTypes_.end()) { return t->second; }
@@ -340,35 +348,58 @@ uint32_t CodeGenSPIRV::GetSampledImageType(Type* type) {
   return sampledImageType;
 }
 
-void CodeGenSPIRV::ExtractBindGroups(Method* entryPoint) {
+void CodeGenSPIRV::ExtractPipelineVars(Method* entryPoint, Code* interface) {
   if (entryPoint->modifiers & Method::STATIC) { return; }
   assert(entryPoint->formalArgList.size() > 0);
   thisPtrType_ = static_cast<PtrType*>(entryPoint->formalArgList[0]->type);
   assert(thisPtrType_->IsPtr());
-  ExtractBindGroups(entryPoint->classType);
+  ExtractPipelineVars(entryPoint->classType, entryPoint->shaderType, interface);
   assert(bindGroups_.size() <= kMaxBindGroups);
   // Remove this "this" pointer.
   entryPoint->formalArgList.erase(entryPoint->formalArgList.begin());
   entryPoint->modifiers |= Method::STATIC;
 }
 
-void CodeGenSPIRV::ExtractBindGroups(ClassType* classType) {
-  if (classType->GetParent()) { ExtractBindGroups(classType->GetParent()); }
+void CodeGenSPIRV::ExtractPipelineVars(ClassType* classType, ShaderType shaderType, Code* interface) {
+  if (classType->GetParent()) { ExtractPipelineVars(classType->GetParent(), shaderType, interface); }
+  uint32_t outputLocation = 0;
   for (const auto& field : classType->GetFields()) {
-    VarVector bindGroup;
-    if (field->type->IsClass()) {
-      auto* bindGroupClass = static_cast<ClassType*>(field->type);
-      for (auto& subField : bindGroupClass->GetFields()) {
-        Type* type = GetAndQualifyUnderlyingType(subField->type);
+    Type* type = field->type;
+    uint32_t pipelineVar = 0;
+
+    // TODO: eventually, everything should be ptrs
+    if (type->IsPtr()) { type = static_cast<PtrType*>(type)->GetBaseType(); }
+    Type* unqualifiedType = type->GetUnqualifiedType();
+    assert(unqualifiedType->IsClass());
+    ClassType* classType = static_cast<ClassType*>(unqualifiedType);
+    if (classType->GetTemplate() == NativeClass::ColorAttachment) {
+      if (shaderType == ShaderType::Fragment) {
+        Type*    sampledType = GetSampledType(classType);
+        uint32_t ptrToType = ConvertPointerToType(sampledType, spv::StorageClassOutput);
+        uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {spv::StorageClassOutput});
+        interface->push_back(ptrId);
+        Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, outputLocation++}, &annotations_);
+        pipelineVar = ptrId;
+      }
+    } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment) {
+    } else {
+      VarVector bindGroup;
+      if (field->type->IsClass()) {
+        auto* bindGroupClass = static_cast<ClassType*>(field->type);
+        for (auto& subField : bindGroupClass->GetFields()) {
+          Type* type = GetAndQualifyUnderlyingType(subField->type);
+          auto  var = std::make_shared<Var>(field->name, type);
+          bindGroup.push_back(var);
+        }
+      } else {
+        Type* type = GetAndQualifyUnderlyingType(field->type);
         auto  var = std::make_shared<Var>(field->name, type);
         bindGroup.push_back(var);
       }
-    } else {
-      Type* type = GetAndQualifyUnderlyingType(field->type);
-      auto  var = std::make_shared<Var>(field->name, type);
-      bindGroup.push_back(var);
+      pipelineVar = kBindGroupsStart + bindGroups_.size();
+      bindGroups_.push_back(bindGroup);
     }
-    bindGroups_.push_back(bindGroup);
+    pipelineVars_.push_back(pipelineVar);
   }
 }
 
@@ -379,7 +410,8 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
   // the duration of this method.
   auto argsBackup = entryPoint->formalArgList;
 
-  ExtractBindGroups(entryPoint);
+  Code        interface;
+  ExtractPipelineVars(entryPoint, &interface);
   uint32_t group = 0;
   for (auto& bindGroup : bindGroups_) {
     uint32_t binding = 0;
@@ -396,7 +428,6 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
     }
     group++;
   }
-  Code        interface;
   const auto& args = entryPoint->formalArgList;
   assert(args.size() >= 1 && args.size() <= 2);
   Var* builtins = args[0].get();
@@ -624,6 +655,8 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
         assert(classType->GetTemplateArgs().size() == 1);
         Type* baseType = classType->GetTemplateArgs()[0];
         resultId = ConvertPointerToType(baseType);
+      } else if (isColorAttachment(classType)) {
+        resultId = ConvertPointerToType(GetSampledType(classType));
       } else if (isSampler(classType)) {
         resultId = AppendTypeDecl(spv::Op::OpTypeSampler, {});
       } else if (isSampleableTexture1D(classType)) {
@@ -925,8 +958,8 @@ Result CodeGenSPIRV::Visit(FieldAccess* expr) {
   Field*   field = expr->GetField();
 
   if (base == kThis) {
-    // Base node is "this" pointer. The result is a bind group.
-    return kBindGroupsStart + field->index;
+    // Base node is "this" pointer. The result is a pipeline var.
+    return pipelineVars_[field->index];
   } else if (base >= kBindGroupsStart && base <= kBindGroupsEnd) {
     // Base node is a bind group. Result is an interface variable.
     int group = base - kBindGroupsStart;
@@ -935,14 +968,7 @@ Result CodeGenSPIRV::Visit(FieldAccess* expr) {
     Var* var = bindGroups_[group][field->index].get();
     return var->spirv;
   } else if (base == kBuiltIns) {
-    uint32_t resultId = builtInVars_[field->index]->spirv;
-    uint32_t storageClass;
-    if (field->type->IsReadable()) {
-      storageClass = spv::StorageClassInput;
-    } else if (field->type->IsWriteable()) {
-      storageClass = spv::StorageClassOutput;
-    }
-    return resultId;
+    return builtInVars_[field->index]->spirv;
   }
 
   uint32_t storageClass = GetStorageClass(expr->GetType(types_));
@@ -1084,6 +1110,15 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
         coord = AppendCode(spv::Op::OpCompositeConstruct, float3, {x, y, layer});
       }
       return AppendCode(spv::Op::OpImageSampleImplicitLod, resultType, {sampledImage, coord});
+    }
+  } else if (isColorAttachment(method->classType)) {
+    if (method->name == "Set") {
+      const std::vector<Expr*>& args = expr->GetArgList()->Get();
+      assert(args.size() == 2);
+      uint32_t colorAttachment = GenerateSPIRV(args[0]);
+      uint32_t valueId = GenerateSPIRV(args[1]);
+      AppendCode(spv::Op::OpStore, {colorAttachment, valueId});
+      return {};
     }
   } else if (isMath(method->classType)) {
     if (method->name == "sqrt") {

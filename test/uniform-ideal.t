@@ -12,8 +12,8 @@ class UniformData {
 }
 class PipelineData {
   void vertexShader(VertexBuiltins vb, float<4> v) vertex { vb.position = v; }
-  float<4> fragmentShader(FragmentBuiltins fb, float<4> v) fragment {
-    return float<4>(0.0, 1.0, 0.0, 1.0) * uniforms.opacity;
+  void fragmentShader(FragmentBuiltins fb, float<4> v) fragment {
+    fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0) * uniforms.opacity);
   }
   uniform UniformData* uniforms;
 }
@@ -22,7 +22,7 @@ UniformBuffer<UniformData>* uniformBuffer = device.CreateUniformBuffer<UniformDa
 PipelineData* pipelineData = new PipelineData(uniforms : uniformBuffer);
 auto framebuffer = swapChain.GetCurrentTexture();
 auto encoder = new CommandEncoder(device);
-auto renderPass = new RenderPass(encoder, framebuffer);
+auto renderPass = new RenderPass<PipelineData>(encoder, framebuffer);
 renderPass.SetPipeline(pipeline);
 renderPass.SetPipelineData(pipelineData);
 renderPass.SetVertexBuffer(0, vb);

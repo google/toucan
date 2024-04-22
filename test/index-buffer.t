@@ -27,12 +27,14 @@ auto vb = new vertex Buffer<Vertex[]>(device, verts);
 auto ib = new index Buffer<int[]>(device, indices);
 class Pipeline {
   Varyings vertexShader(VertexBuiltins vb, Vertex v) vertex { vb.position = v.position; return v.color; }
-  float<4> fragmentShader(FragmentBuiltins fb, Varyings v) fragment { return v; }
+  void fragmentShader(FragmentBuiltins fb, Varyings v) fragment { fragColor.Set(v); }
+  ColorAttachment<PreferredSwapChainFormat>* fragColor;
 }
 auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
-auto framebuffer = swapChain.GetCurrentTexture();
 auto encoder = new CommandEncoder(device);
-auto renderPass = new RenderPass(encoder, framebuffer);
+Pipeline p;
+p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+auto renderPass = new RenderPass<Pipeline>(encoder, &p);
 renderPass.SetPipeline(pipeline);
 renderPass.SetVertexBuffer(0, vb);
 renderPass.SetIndexBuffer(ib);

@@ -89,10 +89,11 @@ class DrawPipeline {
     auto matrix = uniforms.MapReadUniform().matrix;
     vb.position = matrix * Utils.makeFloat4(v);
   }
-  float<4> fragmentShader(FragmentBuiltins fb) fragment {
-    return uniforms.MapReadUniform().color;
+  void fragmentShader(FragmentBuiltins fb) fragment {
+    fragColor.Set(uniforms.MapReadUniform().color);
   }
   uniform Buffer<DrawUniforms>* uniforms;
+  ColorAttachment<PreferredSwapChainFormat>* fragColor;
 }
 
 auto bodies = new Body[width * height * depth];
@@ -187,7 +188,9 @@ while(System.IsRunning()) {
   }
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
-  auto renderPass = new RenderPass(encoder, framebuffer);
+  DrawPipeline p;
+  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  auto renderPass = new RenderPass<DrawPipeline>(encoder, &p);
 
   renderPass.SetPipeline(springPipeline);
   renderPass.SetVertexBuffer(0, springVBO);
