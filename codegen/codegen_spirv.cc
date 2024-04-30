@@ -1246,6 +1246,11 @@ class AliasVisitor : public Visitor {
   uint32_t reg_;
 };
 
+Result CodeGenSPIRV::Visit(ZeroInitStmt* stmt) {
+  // All variables are zero-initialized already
+  return 0u;
+}
+
 Result CodeGenSPIRV::Visit(StoreStmt* stmt) {
   uint32_t objectId = GenerateSPIRV(stmt->GetRHS());
   if (stmt->GetRHS()->GetType(types_)->IsPtr()) {

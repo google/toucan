@@ -127,6 +127,7 @@ class CodeGenLLVM : public Visitor {
   Result                Visit(VarExpr* expr) override;
   Result                Visit(IncDecExpr* expr) override;
   Result                Visit(StoreStmt* expr) override;
+  Result                Visit(ZeroInitStmt* expr) override;
   Result                Visit(UIntConstant* expr) override;
   Result                Visit(UnaryOp* expr) override;
   Result                Visit(WhileStatement* stmt) override;

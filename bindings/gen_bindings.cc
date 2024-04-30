@@ -358,8 +358,15 @@ void GenBindings::GenBindingsForClass(ClassType* classType) {
   }
   for (const auto& i : classType->GetFields()) {
     Field* field = i.get();
-    fprintf(file_, "  c->AddField(\"%s\", typeList[%d]);\n", field->name.c_str(),
+    int   defaultValueId = field->defaultValue ? sourcePass_.Resolve(field->defaultValue) : 0;
+    fprintf(file_, "  c->AddField(\"%s\", typeList[%d], ", field->name.c_str(),
             typeMap_[field->type]);
+    if (field->defaultValue) {
+      fprintf(file_, "exprs[%d]", defaultValueId);
+    } else {
+      fprintf(file_, "nullptr");
+    }
+    fprintf(file_, ");\n");
   }
   for (const auto& m : classType->GetMethods()) {
     Method* method = m.get();

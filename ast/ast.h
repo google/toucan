@@ -504,6 +504,16 @@ class IncDecExpr : public Expr {
   bool  returnOrigValue_;
 };
 
+class ZeroInitStmt : public Stmt {
+ public:
+  ZeroInitStmt(Expr* lhs);
+  Result Accept(Visitor* visitor) override;
+  Expr*  GetLHS() { return lhs_; }
+
+ private:
+  Expr* lhs_;
+};
+
 class VarDeclaration : public Stmt {
  public:
   VarDeclaration(std::string id, Type* type, Expr* initExpr);
@@ -713,6 +723,7 @@ class Visitor {
   virtual Result Visit(VarExpr* node) { return Default(node); }
   virtual Result Visit(LoadExpr* node) { return Default(node); }
   virtual Result Visit(StoreStmt* node) { return Default(node); }
+  virtual Result Visit(ZeroInitStmt* node) { return Default(node); }
   virtual Result Visit(IncDecExpr* node) { return Default(node); }
   virtual Result Visit(WhileStatement* node) { return Default(node); }
   virtual Result Default(ASTNode* node) = 0;

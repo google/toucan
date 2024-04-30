@@ -61,7 +61,7 @@ void TypeReplacementPass::ResolveClassInstance(ClassTemplate* classTemplate, Cla
   }
   for (const auto& i : classTemplate->GetFields()) {
     Field* field = i.get();
-    instance->AddField(field->name, ResolveType(field->type));
+    instance->AddField(field->name, ResolveType(field->type), Resolve(field->defaultValue));
   }
   symbols_->PopScope();
 }

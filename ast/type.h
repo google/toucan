@@ -266,11 +266,12 @@ class QualifiedType : public Type {
 };
 
 struct Field {
-  Field(std::string n, Type* t, int i, ClassType* c) : name(n), type(t), index(i), classType(c) {}
+  Field(std::string n, Type* t, int i, ClassType* c, Expr* d) : name(n), type(t), index(i), classType(c), defaultValue(d) {}
   std::string name;
   Type*       type;
   int         index;
   ClassType*  classType;
+  Expr*       defaultValue;
   size_t      offset = 0;
   size_t      padding = 0;
   int         paddedIndex = -1;
@@ -390,7 +391,7 @@ class ClassTemplate;
 class ClassType : public Type {
  public:
   ClassType(std::string name);
-  Field*              AddField(std::string name, Type* type);
+  Field*              AddField(std::string name, Type* type, Expr* defaultValue);
   Field*              FindField(std::string name);
   void                AddMethod(Method* method, int vtableIndex);
   void                ComputeFieldOffsets();

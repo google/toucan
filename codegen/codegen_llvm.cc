@@ -1039,6 +1039,15 @@ Result CodeGenLLVM::Visit(IncDecExpr* node) {
   return node->returnOrigValue() ? value : result;
 }
 
+Result CodeGenLLVM::Visit(ZeroInitStmt* node) {
+  llvm::Value* lhs = GenerateLLVM(node->GetLHS());
+  Type* type = node->GetLHS()->GetType(types_);
+  assert(type->IsPtr());
+  type = static_cast<PtrType*>(type)->GetBaseType();
+  llvm::Value* zero = llvm::Constant::getNullValue(ConvertType(type));
+  return builder_->CreateStore(zero, lhs);
+}
+
 Result CodeGenLLVM::Visit(StoreStmt* stmt) {
   llvm::Value* rhs = GenerateLLVM(stmt->GetRHS());
   llvm::Value* lhs = GenerateLLVM(stmt->GetLHS());

@@ -281,8 +281,8 @@ void ClassType::SetParent(ClassType* parent) {
   parent_ = parent;
 }
 
-Field* ClassType::AddField(std::string name, Type* type) {
-  fields_.push_back(std::make_unique<Field>(name, type, numFields_, this));
+Field* ClassType::AddField(std::string name, Type* type, Expr* defaultValue) {
+  fields_.push_back(std::make_unique<Field>(name, type, numFields_, this, defaultValue));
   numFields_++;
   return fields_.back().get();
 }
@@ -689,7 +689,7 @@ ClassType* TypeTable::GetWrapperClass(Type* type) {
 
   std::string name = "{" + type->ToString() + "}";
   ClassType*  wrapper = Make<ClassType>(name);
-  wrapper->AddField("_", type);
+  wrapper->AddField("_", type, nullptr);
   return wrapper;
 }
 

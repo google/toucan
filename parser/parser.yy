@@ -827,11 +827,7 @@ static void MakeVarDeclList(Type* type, Stmts* stmts) {
     ClassType* classType = scope->classType;
     for (Stmt* const& it : stmts->GetStmts()) {
       VarDeclaration* v = static_cast<VarDeclaration*>(it);
-      Field* field = classType->AddField(v->GetID(), v->GetType());
-      if (v->GetInitExpr()) {
-        Expr* fieldExpr = Make<UnresolvedDot>(ThisExpr(), v->GetID());
-        stmts->Append(Make<StoreStmt>(fieldExpr, v->GetInitExpr()));
-      }
+      classType->AddField(v->GetID(), v->GetType(), v->GetInitExpr());
     }
   }
 }

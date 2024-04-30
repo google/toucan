@@ -127,6 +127,8 @@ test/field-access-from-static-method-error.t
 field-access-from-static-method-error.t:3:  attempt to access non-static field in static method
 test/field-access.t
 result is 3.000000
+test/field-default-value.t
+result is 42.000000
 test/field-store.t
 result is 2.000000
 test/for-stmt.t
@@ -242,12 +244,16 @@ test/store-null.t
 result is 0.000000
 test/swizzle-store.t
 result is 432.000000
+test/templated-class-initializer.t
+result is 5.000000
 test/templated-class-on-primitive-type.t
 result is 3.000000
 test/templated-class.t
 result is 3.000000
 test/templated-matrix.t
 result is 3.000000
+test/templated-on-class-and-primitive-type.t
+result is 8.000000
 test/templated-vector.t
 result is 2.000000
 test/test.t

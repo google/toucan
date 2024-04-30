@@ -59,6 +59,8 @@ class SemanticPass : public NodeVisitor {
                            std::string id,
                            ArgList*    arglist);
   void   WidenArgList(ASTNode* node, std::vector<Expr*>& argList, const VarVector& formalArgList);
+  Stmt*  InitializeVar(ASTNode* node, Expr* varExpr, Type* type, Expr* initExpr);
+  Stmts* InitializeClass(ASTNode* node, Expr* thisExpr, ClassType* classType);
   SymbolTable* symbols_;
   TypeTable*   types_;
   int          numErrors_;

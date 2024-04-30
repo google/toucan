@@ -164,6 +164,34 @@ Result SemanticPass::Visit(ConstructorNode* node) {
   return Make<ConstructorNode>(node, node->GetType(), argList, constructor);
 }
 
+Stmt* SemanticPass::InitializeVar(ASTNode* node, Expr* varExpr, Type* type, Expr* initExpr) {
+  if (initExpr) {
+    Type* initExprType = initExpr->GetType(types_);
+    if (!initExprType->CanWidenTo(type)) {
+      Error(node, "cannot store a value of type \"%s\" to a location of type \"%s\"",
+            initExprType->ToString().c_str(), type->ToString().c_str());
+      return nullptr;
+    }
+    return Make<StoreStmt>(node, varExpr, initExpr);
+  } else if (type->IsClass()) {
+    return InitializeClass(node, varExpr, static_cast<ClassType*>(type));
+  } else {
+    return Make<ZeroInitStmt>(node, varExpr);
+  }
+}
+
+Stmts* SemanticPass::InitializeClass(ASTNode* node, Expr* thisExpr, ClassType* classType) {
+  Stmts* stmts = Make<Stmts>(node);
+  if (classType->GetParent()) {
+    stmts->Append(InitializeClass(node, thisExpr, classType->GetParent()));
+  }
+  for (const auto& field : classType->GetFields()) {
+    Expr* fieldExpr = Make<FieldAccess>(node, thisExpr, field.get());
+    stmts->Append(InitializeVar(node, fieldExpr, field->type, Resolve(field->defaultValue)));
+  }
+  return stmts;
+}
+
 Result SemanticPass::Visit(VarDeclaration* decl) {
   std::string id = decl->GetID();
   Type*       type = decl->GetType();
@@ -185,16 +213,8 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
     return Error(decl, errorMsg.c_str());
   }
   Var* var = symbols_->DefineVar(id, type);
-  if (initExpr) {
-    Type* initExprType = initExpr->GetType(types_);
-    if (!initExprType->CanWidenTo(type)) {
-      return Error(decl, "cannot store a value of type \"%s\" to a location of type \"%s\"",
-                   initExprType->ToString().c_str(), type->ToString().c_str());
-    }
-    Expr* varExpr = Make<VarExpr>(decl, var);
-    return Make<StoreStmt>(decl, varExpr, initExpr);
-  }
-  return nullptr;
+  Expr* varExpr = Make<VarExpr>(decl, var);
+  return InitializeVar(decl, varExpr, type, initExpr);
 }
 
 Result SemanticPass::ResolveMethodCall(ASTNode*    node,

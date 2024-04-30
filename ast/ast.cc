@@ -148,6 +148,8 @@ StoreStmt::StoreStmt(Expr* lhs, Expr* rhs) : lhs_(lhs), rhs_(rhs) {}
 IncDecExpr::IncDecExpr(Op op, Expr* expr, bool returnOrigValue)
     : op_(op), expr_(expr), returnOrigValue_(returnOrigValue) {}
 
+ZeroInitStmt::ZeroInitStmt(Expr* lhs) : lhs_(lhs) {}
+
 UnresolvedDot::UnresolvedDot(Expr* expr, std::string id) : expr_(expr), id_(id) {}
 
 AddressOf::AddressOf(Expr* expr) : expr_(expr) {}
@@ -312,6 +314,7 @@ Result VarDeclaration::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result VarExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result LoadExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result IncDecExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ZeroInitStmt::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result StoreStmt::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result WhileStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
 };  // namespace Toucan
