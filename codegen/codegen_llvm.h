@@ -74,6 +74,7 @@ class CodeGenLLVM : public Visitor {
   llvm::Value*    GetArrayLengthAddress(llvm::Value* controlBlock);
   llvm::Value*    GetClassTypeAddress(llvm::Value* controlBlock);
   llvm::Value*    GetVTableAddress(llvm::Value* controlBlock);
+  llvm::BasicBlock* NullControlBlockCheck(llvm::Value* controlBlock);
   void            RefStrongPtr(llvm::Value* ptr);
   void            UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type);
   void            RefWeakPtr(llvm::Value* ptr);

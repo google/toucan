@@ -270,29 +270,41 @@ llvm::Value* CodeGenLLVM::GetVTableAddress(llvm::Value* controlBlock) {
   return builder_->CreateGEP(controlBlockType_, controlBlock, {Int(0), Int(4)});
 }
 
+llvm::BasicBlock* CodeGenLLVM::NullControlBlockCheck(llvm::Value* controlBlock) {
+  llvm::Value*      nullControlBlock = llvm::ConstantPointerNull::get(controlBlockPtrType_);
+  llvm::Value*      nonNull = builder_->CreateICmpNE(controlBlock, nullControlBlock);
+  llvm::Function*   f = builder_->GetInsertBlock()->getParent();
+  llvm::BasicBlock* nonNullBlock = llvm::BasicBlock::Create(*context_, "nonNull", f);
+  llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context_, "after", f);
+  builder_->CreateCondBr(nonNull, nonNullBlock, afterBlock);
+  builder_->SetInsertPoint(nonNullBlock);
+  return afterBlock;
+}
+
 void CodeGenLLVM::RefStrongPtr(llvm::Value* ptr) {
-  llvm::Value* controlBlock = builder_->CreateExtractValue(ptr, {1});
+  llvm::Value*      controlBlock = builder_->CreateExtractValue(ptr, {1});
+  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock);
+
   llvm::Value* address = GetStrongRefCountAddress(controlBlock);
   llvm::Value* refCount = builder_->CreateLoad(intType_, address);
   refCount = builder_->CreateAdd(refCount, Int(1));
   builder_->CreateStore(refCount, address);
+
+  builder_->CreateBr(afterBlock);
+  builder_->SetInsertPoint(afterBlock);
   RefWeakPtr(ptr);
 }
 
 void CodeGenLLVM::UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type) {
   llvm::Value*      controlBlock = builder_->CreateExtractValue(ptr, {1});
-  llvm::Value*      nullControlBlock = llvm::ConstantPointerNull::get(controlBlockPtrType_);
-  llvm::Value*      nonNull = builder_->CreateICmpNE(controlBlock, nullControlBlock);
-  llvm::Function*   f = builder_->GetInsertBlock()->getParent();
-  llvm::BasicBlock* nonNullBlock = llvm::BasicBlock::Create(*context_, "nonNull", f);
-  llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context_, "afterBlock", f);
-  builder_->CreateCondBr(nonNull, nonNullBlock, afterBlock);
-  builder_->SetInsertPoint(nonNullBlock);
+  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock);
+
   llvm::Value* address = GetStrongRefCountAddress(controlBlock);
   llvm::Value* refCount = builder_->CreateLoad(intType_, address);
   refCount = builder_->CreateSub(refCount, Int(1));
   builder_->CreateStore(refCount, address);
   llvm::Value*      isZero = builder_->CreateICmpEQ(refCount, Int(0));
+  llvm::Function*   f = builder_->GetInsertBlock()->getParent();
   llvm::BasicBlock* trueBlock = llvm::BasicBlock::Create(*context_, "trueBlock", f);
   builder_->CreateCondBr(isZero, trueBlock, afterBlock);
   builder_->SetInsertPoint(trueBlock);
@@ -328,31 +340,33 @@ void CodeGenLLVM::CreateEntryBlockAlloca(llvm::Function* function, Var* var) {
 }
 
 void CodeGenLLVM::RefWeakPtr(llvm::Value* ptr) {
-  llvm::Value* controlBlock = builder_->CreateExtractValue(ptr, {1});
+  llvm::Value*      controlBlock = builder_->CreateExtractValue(ptr, {1});
+  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock);
+
   llvm::Value* address = GetWeakRefCountAddress(controlBlock);
   llvm::Value* refCount = builder_->CreateLoad(intType_, address);
   refCount = builder_->CreateAdd(refCount, Int(1));
   builder_->CreateStore(refCount, address);
+
+  builder_->CreateBr(afterBlock);
+  builder_->SetInsertPoint(afterBlock);
 }
 
 void CodeGenLLVM::UnrefWeakPtr(llvm::Value* ptr) {
   llvm::Value*      controlBlock = builder_->CreateExtractValue(ptr, {1});
-  llvm::Value*      nullControlBlock = llvm::ConstantPointerNull::get(controlBlockPtrType_);
-  llvm::Value*      nonNull = builder_->CreateICmpNE(controlBlock, nullControlBlock);
-  llvm::Function*   f = builder_->GetInsertBlock()->getParent();
-  llvm::BasicBlock* nonNullBlock = llvm::BasicBlock::Create(*context_, "nonNull", f);
-  llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context_, "afterBlock", f);
-  builder_->CreateCondBr(nonNull, nonNullBlock, afterBlock);
-  builder_->SetInsertPoint(nonNullBlock);
+  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock);
+
   llvm::Value* address = GetWeakRefCountAddress(controlBlock);
   llvm::Value* refCount = builder_->CreateLoad(intType_, address);
   refCount = builder_->CreateSub(refCount, Int(1));
   builder_->CreateStore(refCount, address);
   llvm::Value*      isZero = builder_->CreateICmpEQ(refCount, Int(0));
+  llvm::Function*   f = builder_->GetInsertBlock()->getParent();
   llvm::BasicBlock* trueBlock = llvm::BasicBlock::Create(*context_, "trueBlock", f);
   builder_->CreateCondBr(isZero, trueBlock, afterBlock);
   builder_->SetInsertPoint(trueBlock);
   GenerateFree(controlBlock);
+
   builder_->CreateBr(afterBlock);
   builder_->SetInsertPoint(afterBlock);
 }
