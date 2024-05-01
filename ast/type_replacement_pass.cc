@@ -128,15 +128,6 @@ Type* TypeReplacementPass::ResolveType(Type* type) {
   return type;
 }
 
-Scope* TypeReplacementPass::PushNewScopeAndResolve(Scope* scope) {
-  Scope* result = symbols_->PushNewScope();
-  for (const auto& it : scope->vars) {
-    Var* var = it.second.get();
-    symbols_->DefineVar(var->name, ResolveType(var->type));
-  }
-  return result;
-}
-
 TypeList* TypeReplacementPass::ResolveTypes(TypeList* typeList) {
   if (!typeList) { return nullptr; }
   TypeList* list = new TypeList();  // FIXME: who owns this?
@@ -149,7 +140,7 @@ TypeList* TypeReplacementPass::ResolveTypes(TypeList* typeList) {
 Result TypeReplacementPass::Visit(Stmts* stmts) {
   Stmts* newStmts = Make<Stmts>(stmts);
   newStmts->SetFileLocation(stmts->GetFileLocation());
-  if (stmts->GetScope()) { newStmts->SetScope(PushNewScopeAndResolve(stmts->GetScope())); }
+  if (stmts->GetScope()) { newStmts->SetScope(symbols_->PushNewScope()); }
 
   for (Stmt* const& it : stmts->GetStmts()) {
     Stmt* stmt = Resolve(it);

@@ -31,7 +31,6 @@ class TypeReplacementPass : public NodeVisitor {
   Result    Error(const char* fmt, ...);
   Type*     ResolveType(Type* type) override;
   TypeList* ResolveTypes(TypeList* typeList);
-  Scope*    PushNewScopeAndResolve(Scope* scope);
   Method*   ResolveMethod(Method* method);
   void      ResolveClassInstance(ClassTemplate* classTemplate, ClassType* instance);
   Result    Visit(Stmts* stmts) override;

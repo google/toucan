@@ -95,11 +95,6 @@ Result DumpAsSourcePass::Visit(Stmts* stmts) {
   int id = Output(stmts, "Make<Stmts>()");
   if (stmts->GetScope()) {
     fprintf(file_, "  stmtss[%d]->SetScope(symbols->PushNewScope());\n", id);
-    for (const auto& it : stmts->GetScope()->vars) {
-      Var* var = it.second.get();
-      fprintf(file_, "  symbols->DefineVar(\"%s\", typeList[%d]);\n", var->name.c_str(),
-              (*typeMap_)[var->type]);
-    }
   }
   // FIXME: create an actual Stmts from elements
   for (Stmt* const& it : stmts->GetStmts()) {
