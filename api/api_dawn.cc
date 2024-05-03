@@ -251,6 +251,16 @@ static wgpu::VertexFormat toDawnVertexFormat(Type* type) {
   return wgpu::VertexFormat::Uint8x2;
 }
 
+static wgpu::IndexFormat toDawnIndexFormat(Type* type) {
+  if (type->IsUInt()) {
+    return wgpu::IndexFormat::Uint32;
+  } else if (type->IsUShort()) {
+    return wgpu::IndexFormat::Uint16;
+  }
+  assert(!"invalid index format");
+  return wgpu::IndexFormat::Undefined;
+}
+
 static wgpu::AddressMode ToDawnAddressMode(AddressMode mode) {
   switch (mode) {
     case AddressMode::Repeat: return wgpu::AddressMode::Repeat;
@@ -325,29 +335,32 @@ static wgpu::PrimitiveTopology toDawnPrimitiveTopology(PrimitiveTopology type) {
   }
 }
 
-wgpu::VertexBufferLayout toDawnVertexBufferLayout(Type*                               vertexInput,
-                                                  std::vector<wgpu::VertexAttribute>* vaDescs) {
+wgpu::VertexBufferLayout toDawnVertexBufferLayout(Type* vertexInput, std::vector<wgpu::VertexAttribute>* vaDescs) {
+  size_t start = vaDescs->size();
   if (vertexInput->IsClass()) {
     auto               classType = static_cast<ClassType*>(vertexInput);
     const FieldVector& fields = classType->GetFields();
     for (int i = 0; i < fields.size(); i++) {
       wgpu::VertexAttribute vaDesc;
-      vaDesc.shaderLocation = i;
+      vaDesc.shaderLocation = vaDescs->size();
       vaDesc.offset = fields[i]->offset;
       vaDesc.format = toDawnVertexFormat(fields[i]->type);
       vaDescs->push_back(vaDesc);
     }
   } else {
     wgpu::VertexAttribute vaDesc;
-    vaDesc.shaderLocation = 0;
+    vaDesc.shaderLocation = vaDescs->size();
     vaDesc.offset = 0;
     vaDesc.format = toDawnVertexFormat(vertexInput);
     vaDescs->push_back(vaDesc);
   }
   wgpu::VertexBufferLayout input;
   input.arrayStride = vertexInput->GetSizeInBytes();
-  input.attributeCount = vaDescs->size();
-  input.attributes = vaDescs->data();
+  input.attributeCount = vaDescs->size() - start;
+  // Cast the start offset to pointer; this will be added to the vaDesc pointer
+  // in FinalizeVertexLayouts. This is necessary to accommodate reallocation
+  // of the vertex attribute vector.
+  input.attributes = reinterpret_cast<wgpu::VertexAttribute*>(start);
   return input;
 }
 
@@ -543,18 +556,35 @@ wgpu::ShaderModule createShaderModule(Device* device, Method* m) {
   return device->device.CreateShaderModule(&desc);
 }
 
-static void ExtractPipelineData(ClassType*                           classType,
-                                Device*                              device,
-                                std::vector<wgpu::BindGroupLayout>*  layouts,
-                                std::vector<wgpu::ColorTargetState>* colorTargets,
-                                wgpu::DepthStencilState*             depthStencilTarget) {
-  if (classType->GetParent()) { ExtractPipelineData(classType->GetParent(), device, layouts, colorTargets, depthStencilTarget); }
+struct PipelineLayout {
+  std::vector<wgpu::BindGroupLayout>    bindGroupLayouts;
+  std::vector<wgpu::ColorTargetState>   colorTargets;
+  wgpu::DepthStencilState               depthStencilTarget;
+  std::vector<wgpu::VertexAttribute>    vertexAttributes;
+  std::vector<wgpu::VertexBufferLayout> vertexBufferLayouts;
+  wgpu::IndexFormat                     indexFormat = wgpu::IndexFormat::Undefined;
+
+  void FinalizeVertexLayouts() {
+    // Convert each vertexLayout's "attributes" pointers back to an offset,
+    // and add it to the vertexAttributes base.
+    auto base = vertexAttributes.data();
+    for (auto& vertexLayout : vertexBufferLayouts) {
+      vertexLayout.attributes = base + reinterpret_cast<size_t>(vertexLayout.attributes);
+    }
+  }
+};
+
+static void ExtractPipelineLayout(ClassType*                             classType,
+                                  Device*                                device,
+                                  PipelineLayout*                        out) {
+  if (classType->GetParent()) { ExtractPipelineLayout(classType->GetParent(), device, out); }
   for (const auto& field : classType->GetFields()) {
     Type* type = field->type;
 
-    // FIXME: once bind groups are pointers, this line and the unqualified check can go
-    if (type->IsPtr()) { type = static_cast<PtrType*>(type)->GetBaseType(); }
-    Type* unqualifiedType = type->GetUnqualifiedType();
+    assert (type->IsPtr());
+    type = static_cast<PtrType*>(type)->GetBaseType();
+    int qualifiers;
+    Type* unqualifiedType = type->GetUnqualifiedType(&qualifiers);
     assert(unqualifiedType->IsClass());
 
     ClassType* classType = static_cast<ClassType*>(unqualifiedType);
@@ -563,27 +593,98 @@ static void ExtractPipelineData(ClassType*                           classType,
       const auto& templateArgs = classType->GetTemplateArgs();
       assert(templateArgs.size() == 1);
       colorTargetState.format = ToDawnTextureFormat(templateArgs[0]);
-      colorTargets->push_back(colorTargetState);
+      out->colorTargets.push_back(colorTargetState);
     } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment) {
       const auto& templateArgs = classType->GetTemplateArgs();
       assert(templateArgs.size() == 1);
-      depthStencilTarget->format = ToDawnTextureFormat(templateArgs[0]);
+      out->depthStencilTarget.format = ToDawnTextureFormat(templateArgs[0]);
+    } else if (classType->GetTemplate() == NativeClass::Buffer) {
+      const auto& templateArgs = classType->GetTemplateArgs();
+      assert(templateArgs.size() == 1);
+      assert(templateArgs[0]->IsUnsizedArray());
+      Type* elementType = static_cast<ArrayType*>(templateArgs[0])->GetElementType();
+      if (qualifiers == Type::Qualifier::Vertex) {
+        auto layout = toDawnVertexBufferLayout(elementType, &out->vertexAttributes);
+        out->vertexBufferLayouts.push_back(layout);
+      } else if (qualifiers == Type::Qualifier::Index) {
+        out->indexFormat = toDawnIndexFormat(elementType);
+      }
+    } else if (classType->GetTemplate() == NativeClass::BindGroup) {
+      const auto& templateArgs = classType->GetTemplateArgs();
+      assert(templateArgs.size() == 1);
+      wgpu::BindGroupLayout layout = GetOrCreateBindGroupLayout(device, templateArgs[0]);
+      out->bindGroupLayouts.push_back(layout);
     } else {
-      wgpu::BindGroupLayout layout = GetOrCreateBindGroupLayout(device, type);
-      layouts->push_back(layout);
+      assert("!invalid type for pipeline variable");
+    }
+  }
+}
+
+struct PipelineData {
+  std::vector<wgpu::BindGroup>                 bindGroups;
+  std::vector<wgpu::RenderPassColorAttachment> colorAttachments;
+  wgpu::RenderPassDepthStencilAttachment       depthStencilAttachment;
+  std::vector<wgpu::Buffer>                    vertexBuffers;
+  wgpu::Buffer                                 indexBuffer;
+  wgpu::IndexFormat                            indexFormat;
+
+  void Set(wgpu::RenderPassEncoder encoder) {
+    for (int i = 0; i < bindGroups.size(); i++) {
+      if (bindGroups[i]) { encoder.SetBindGroup(i, bindGroups[i]); }
+    }
+    for (int i = 0; i < vertexBuffers.size(); i++) {
+      if (vertexBuffers[i]) { encoder.SetVertexBuffer(i, vertexBuffers[i]); }
+    }
+    if (indexBuffer) { encoder.SetIndexBuffer(indexBuffer, indexFormat); }
+  }
+
+  void Set(wgpu::ComputePassEncoder encoder) {
+    for (int i = 0; i < bindGroups.size(); i++) {
+      if (bindGroups[i]) { encoder.SetBindGroup(i, bindGroups[i]); }
+    }
+  }
+};
+
+static void ExtractPipelineData(ClassType* classType, void* data, PipelineData* out) {
+  if (classType->GetParent()) { ExtractPipelineData(classType->GetParent(), data, out); }
+  for (const auto& field : classType->GetFields()) {
+    Type* fieldType = field->type;
+    assert(fieldType->IsPtr());
+    fieldType = static_cast<PtrType*>(fieldType)->GetBaseType();
+    int qualifiers;
+    fieldType = fieldType->GetUnqualifiedType(&qualifiers);
+    Object object = *reinterpret_cast<Object*>((uint8_t*)data + field->offset);
+    assert(fieldType->IsClass());
+    auto classType = static_cast<ClassType*>(fieldType);
+    if (classType->GetTemplate() == NativeClass::ColorAttachment && object.ptr) {
+      out->colorAttachments.push_back(static_cast<ColorAttachment*>(object.ptr)->attachment);
+    } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment && object.ptr) {
+      out->depthStencilAttachment = static_cast<DepthStencilAttachment*>(object.ptr)->attachment;
+    } else if (classType->GetTemplate() == NativeClass::Buffer &&
+               qualifiers == Type::Qualifier::Vertex) {
+      out->vertexBuffers.push_back(object.ptr ? static_cast<Buffer*>(object.ptr)->buffer : nullptr);
+    } else if (classType->GetTemplate() == NativeClass::Buffer &&
+               qualifiers == Type::Qualifier::Index) {
+      if (auto buffer = static_cast<Buffer*>(object.ptr)) {
+        out->indexBuffer = buffer ? buffer->buffer : nullptr;
+        out->indexFormat =
+            toDawnIndexFormat(static_cast<ArrayType*>(buffer->type)->GetElementType());
+      }
+    } else if (classType->GetTemplate() == NativeClass::BindGroup) {
+      out->bindGroups.push_back(object.ptr ? static_cast<BindGroup*>(object.ptr)->bindGroup
+                                           : nullptr);
     }
   }
 }
 
 RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
-                                              Type*             pipelineLayout,
+                                              Type*             type,
                                               Device*           device,
                                               Object*           depthStencil,
                                               PrimitiveTopology primitiveTopology) {
-  if (!pipelineLayout->IsClass()) { return nullptr; }
-  ClassType*         classType = static_cast<ClassType*>(pipelineLayout);
+  if (!type->IsClass()) { return nullptr; }
+  ClassType*         classType = static_cast<ClassType*>(type);
   wgpu::ShaderModule vertexShader, fragmentShader;
-  ClassType*         vertexInput;
   for (auto& method : classType->GetMethods()) {
     if (method->shaderType == ShaderType::Vertex) {
       if (vertexShader) {
@@ -591,8 +692,6 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
         return nullptr;
       }
       vertexShader = createShaderModule(device, method.get());
-      assert(method->formalArgList.size() == 1);
-      vertexInput = static_cast<ClassType*>(method->formalArgList[0]->type);
     } else if (method->shaderType == ShaderType::Fragment) {
       if (fragmentShader) {
         assert(!"more than one fragment shader specified");
@@ -601,18 +700,15 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
       fragmentShader = createShaderModule(device, method.get());
     }
   }
-  std::vector<wgpu::VertexAttribute> vaDescs;
-  wgpu::VertexBufferLayout           vbDesc = toDawnVertexBufferLayout(vertexInput, &vaDescs);
-  std::vector<wgpu::BindGroupLayout> bindGroupLayouts;
-  std::vector<wgpu::ColorTargetState> colorTargets;
-  wgpu::DepthStencilState            depthStencilTarget;
-  ExtractPipelineData(classType, device, &bindGroupLayouts, &colorTargets, &depthStencilTarget);
+  PipelineLayout pipelineLayout;
+  ExtractPipelineLayout(classType, device, &pipelineLayout);
+  pipelineLayout.FinalizeVertexLayouts();
 
   wgpu::VertexState                  vertexState;
   vertexState.module = vertexShader;
   vertexState.entryPoint = "main";
-  vertexState.bufferCount = 1;
-  vertexState.buffers = &vbDesc;
+  vertexState.bufferCount = pipelineLayout.vertexBufferLayouts.size();
+  vertexState.buffers = pipelineLayout.vertexBufferLayouts.data();
   wgpu::RenderPipelineDescriptor rpDesc;
   wgpu::DepthStencilState depthStencilState;
   if (depthStencil->ptr) {
@@ -629,16 +725,19 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   fragmentState.module = fragmentShader;
   fragmentState.entryPoint = "main";
   fragmentState.constants = nullptr;
-  fragmentState.targetCount = colorTargets.size();
-  fragmentState.targets = colorTargets.data();
+  fragmentState.targetCount = pipelineLayout.colorTargets.size();
+  fragmentState.targets = pipelineLayout.colorTargets.data();
   wgpu::PrimitiveState primitiveState;
   wgpu::PipelineLayoutDescriptor     desc;
-  desc.bindGroupLayoutCount = bindGroupLayouts.size();
-  desc.bindGroupLayouts = bindGroupLayouts.data();
+  desc.bindGroupLayoutCount = pipelineLayout.bindGroupLayouts.size();
+  desc.bindGroupLayouts = pipelineLayout.bindGroupLayouts.data();
   rpDesc.layout = device->device.CreatePipelineLayout(&desc);
   rpDesc.vertex = vertexState;
   rpDesc.fragment = &fragmentState;
   rpDesc.primitive.topology = toDawnPrimitiveTopology(primitiveTopology);
+  if (primitiveTopology == LineStrip || primitiveTopology == TriangleStrip) {
+    rpDesc.primitive.stripIndexFormat = pipelineLayout.indexFormat;
+  }
   if (depthStencil->ptr) { rpDesc.depthStencil = &depthStencilState; }
   return new RenderPipeline(device->device.CreateRenderPipeline(&rpDesc));
 }
@@ -651,7 +750,6 @@ ComputePipeline* ComputePipeline_ComputePipeline(int     qualifiers,
   if (!computeLayout->IsClass()) { return nullptr; }
   ClassType*         classType = static_cast<ClassType*>(computeLayout);
   wgpu::ShaderModule computeShader;
-  ClassType*         vertexInput;
   for (auto& method : classType->GetMethods()) {
     if (method->shaderType == ShaderType::Compute) {
       if (computeShader) {
@@ -665,11 +763,11 @@ ComputePipeline* ComputePipeline_ComputePipeline(int     qualifiers,
   computeState.module = computeShader;
   computeState.entryPoint = "main";
   wgpu::ComputePipelineDescriptor cpDesc;
-  std::vector<wgpu::BindGroupLayout> bindGroupLayouts;
-  ExtractPipelineData(classType, device, &bindGroupLayouts, nullptr, nullptr);
+  PipelineLayout pipelineLayout;
+  ExtractPipelineLayout(classType, device, &pipelineLayout);
   wgpu::PipelineLayoutDescriptor     desc;
-  desc.bindGroupLayoutCount = bindGroupLayouts.size();
-  desc.bindGroupLayouts = bindGroupLayouts.data();
+  desc.bindGroupLayoutCount = pipelineLayout.bindGroupLayouts.size();
+  desc.bindGroupLayouts = pipelineLayout.bindGroupLayouts.data();
   cpDesc.layout = device->device.CreatePipelineLayout(&desc);
   cpDesc.compute = computeState;
   return new ComputePipeline(device->device.CreateComputePipeline(&cpDesc));
@@ -677,8 +775,7 @@ ComputePipeline* ComputePipeline_ComputePipeline(int     qualifiers,
 
 void ComputePipeline_Destroy(ComputePipeline* This) { delete This; }
 
-BindGroup* BindGroup_BindGroup(Device* device, Object* data) {
-  Type* type = data->controlBlock->type->GetUnqualifiedType();
+BindGroup* BindGroup_BindGroup(int qualifiers, Type* type, Device* device, Object* data) {
   assert(type->IsClass() && "bind group argument must be a class type");
   ClassType*                        classType = static_cast<ClassType*>(type);
   wgpu::BindGroupDescriptor         desc;
@@ -1057,57 +1154,42 @@ DepthStencilAttachment* DepthStencilAttachment_DepthStencilAttachment(int qualif
 
 void DepthStencilAttachment_Destroy(DepthStencilAttachment* This) { delete This; }
 
-RenderPass* RenderPass_RenderPass(int             qualifiers,
-                                  Type*           type,
-                                  CommandEncoder* encoder,
-                                  Object*         data) {
-  std::vector<wgpu::RenderPassColorAttachment> colorAttachments;
-  wgpu::RenderPassDepthStencilAttachment depthStencilAttachment;
-  assert(type->IsClass());
+RenderPass* RenderPass_RenderPass_CommandEncoder_T(int             qualifiers,
+                                                   Type*           type,
+                                                   CommandEncoder* encoder,
+                                                   Object*         data) {
   Type* objectType = data->controlBlock->type;
   assert(objectType->IsClass());
-  assert(objectType == type);
-  for (const auto& field : static_cast<ClassType*>(type)->GetFields()) {
-    Type* fieldType = field->type;
-    if (!fieldType->IsPtr()) { continue; } // FIXME: bind groups should be ptrs too
-    fieldType = static_cast<PtrType*>(fieldType)->GetBaseType();
-    fieldType = fieldType->GetUnqualifiedType();
-    Object object = *reinterpret_cast<Object*>((uint8_t*)data->ptr + field->offset);
-    assert(fieldType->IsClass());
-    auto classType = static_cast<ClassType*>(fieldType);
-    if (classType->GetTemplate() == NativeClass::ColorAttachment && object.ptr) {
-      colorAttachments.push_back(static_cast<ColorAttachment*>(object.ptr)->attachment);
-    } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment && object.ptr) {
-      depthStencilAttachment = static_cast<DepthStencilAttachment*>(object.ptr)->attachment;
-    }
-  }
+  ClassType* classType = static_cast<ClassType*>(objectType);
+  PipelineData pipelineData;
+  ExtractPipelineData(classType, data->ptr, &pipelineData);
+
   wgpu::RenderPassDescriptor             desc;
-  desc.colorAttachmentCount = colorAttachments.size();
-  desc.colorAttachments = colorAttachments.data();
-  if (depthStencilAttachment.view != nullptr) {
-    desc.depthStencilAttachment = &depthStencilAttachment;
+  desc.colorAttachmentCount = pipelineData.colorAttachments.size();
+  desc.colorAttachments = pipelineData.colorAttachments.data();
+  if (pipelineData.depthStencilAttachment.view != nullptr) {
+    desc.depthStencilAttachment = &pipelineData.depthStencilAttachment;
   }
-  return new RenderPass(encoder->encoder.BeginRenderPass(&desc));
+  auto result = encoder->encoder.BeginRenderPass(&desc);
+  pipelineData.Set(result);
+  return new RenderPass(result);
 }
 
-void RenderPass_SetBindGroup(RenderPass* This,
-                             uint32_t    groupIndex,
-                             BindGroup*  bindGroup) {
-  This->encoder.SetBindGroup(groupIndex, bindGroup->bindGroup, 0, 0);
+RenderPass* RenderPass_RenderPass_RenderPass(int qualifiers, Type* type, RenderPass* parent) {
+  return new RenderPass(parent->encoder);
+}
+
+void RenderPass_Set(RenderPass* This, Object* data) {
+  PipelineData pipelineData;
+  Type* objectType = data->controlBlock->type;
+  assert(objectType->IsClass());
+  ClassType* classType = static_cast<ClassType*>(objectType);
+  ExtractPipelineData(classType, data->ptr, &pipelineData);
+  pipelineData.Set(This->encoder);
 }
 
 void RenderPass_SetPipeline(RenderPass* This, RenderPipeline* pipeline) {
   This->encoder.SetPipeline(pipeline->pipeline);
-}
-
-void RenderPass_SetVertexBuffer(RenderPass* This, uint32_t slot, Buffer* buffer) {
-  This->encoder.SetVertexBuffer(slot, buffer->buffer, 0, buffer->sizeInBytes);
-}
-
-void RenderPass_SetIndexBuffer(RenderPass* This, Buffer* buffer) {
-  // FIXME: add support for Uint16
-  This->encoder.SetIndexBuffer(buffer->buffer, wgpu::IndexFormat::Uint32, 0,
-                               buffer->sizeInBytes);
 }
 
 void RenderPass_Draw(RenderPass* This,
@@ -1132,18 +1214,30 @@ void RenderPass_End(RenderPass* This) { This->encoder.End(); }
 void RenderPass_Destroy(RenderPass* This) { delete This; }
 
 ComputePass* ComputePass_ComputePass(int qualifiers, Type* type, CommandEncoder* encoder, Object* data) {
+  PipelineData pipelineData;
+  if (data && data->controlBlock) {
+    Type* objectType = data->controlBlock->type;
+    assert(objectType->IsClass());
+    ClassType* classType = static_cast<ClassType*>(objectType);
+    ExtractPipelineData(classType, data->ptr, &pipelineData);
+  }
   wgpu::ComputePassDescriptor desc;
-  return new ComputePass(encoder->encoder.BeginComputePass(&desc));
-}
-
-void ComputePass_SetBindGroup(ComputePass* This,
-                              uint32_t     groupIndex,
-                              BindGroup*   bindGroup) {
-  This->encoder.SetBindGroup(groupIndex, bindGroup->bindGroup, 0, 0);
+  auto passEncoder = encoder->encoder.BeginComputePass(&desc);
+  pipelineData.Set(passEncoder);
+  return new ComputePass(passEncoder);
 }
 
 void ComputePass_SetPipeline(ComputePass* This, ComputePipeline* pipeline) {
   This->encoder.SetPipeline(pipeline->pipeline);
+}
+
+void ComputePass_Set(ComputePass* This, Object* data) {
+  PipelineData pipelineData;
+  Type* objectType = data->controlBlock->type;
+  assert(objectType->IsClass());
+  ClassType* classType = static_cast<ClassType*>(objectType);
+  ExtractPipelineData(classType, data->ptr, &pipelineData);
+  pipelineData.Set(This->encoder);
 }
 
 void ComputePass_Dispatch(ComputePass* This,

@@ -100,9 +100,9 @@ Type* TypeReplacementPass::ResolveType(Type* type) {
   } else if (type->IsWeakPtr()) {
     return types_->GetWeakPtrType(ResolveType(static_cast<PtrType*>(type)->GetBaseType()));
   } else if (type->IsQualified()) {
-    auto  qualifiedType = static_cast<QualifiedType*>(type);
-    Type* result = ResolveType(qualifiedType->GetBaseType());
-    result = PushQualifiers(result, qualifiedType->GetQualifiers());
+    int qualifiers;
+    Type* result = ResolveType(type->GetUnqualifiedType(&qualifiers));
+    result = PushQualifiers(result, qualifiers);
     return result;
   } else if (type->IsClass() && static_cast<ClassType*>(type)->GetTemplate()) {
     ClassType* instance = static_cast<ClassType*>(type);
@@ -113,15 +113,27 @@ Type* TypeReplacementPass::ResolveType(Type* type) {
     return types_->GetClassTemplateInstance(instance->GetTemplate(), newArgs);
   } else if (type->IsUnresolvedScopedType()) {
     auto  ust = static_cast<UnresolvedScopedType*>(type);
-    Type* newBase = ResolveType(ust->GetBaseType());
-    if (!newBase->IsClass()) {
-      Error("\"%s\" is not a class", newBase->ToString().c_str());
-      return nullptr;
-    }
-    Type* newType = static_cast<ClassType*>(newBase)->FindType(ust->GetID());
-    if (!newType) {
-      Error("Type \"%s\" not found in \"%s\"", ust->GetID().c_str(), newBase->ToString().c_str());
-      return nullptr;
+    Type* newType = ResolveType(ust->GetBaseType());
+    if (ust->GetID() == "ElementType") {
+      if (newType->IsArray()) {
+        newType = static_cast<ArrayType*>(newType)->GetElementType();
+      } else {
+        newType = types_->GetVoid();
+      }
+    } else if (newType->IsClass()) {
+      auto classType = static_cast<ClassType*>(newType);
+      if (ust->GetID() == "BaseClass") {
+        if (auto parent = classType->GetParent()) {
+          newType = parent;
+        }
+      } else {
+        newType = static_cast<ClassType*>(newType)->FindType(ust->GetID());
+        if (!newType) {
+          Error("Type \"%s\" not found in \"%s\"", ust->GetID().c_str(), newType->ToString().c_str());
+        }
+      }
+    } else {
+      Error("\"%s\" is not a class", newType->ToString().c_str());
     }
     return newType;
   }

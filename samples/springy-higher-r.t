@@ -1,37 +1,42 @@
+include "event-handler.t"
+include "quaternion.t"
+include "transform.t"
+include "utils.t"
+
 using Vector = float<2>;
 
-class Utils;
-
-uint width =  10;
-uint height = 10;
-uint depth =   1;
+int width =  10;
+int height = 10;
+int depth =   1;
 
 class Body {
-  void computeAcceleration() {
-    acceleration = force / mass;
-  }
-
-  void applyForce(Vector deltaForce) {
-    force += deltaForce;
-  }
   Vector   position;
   Vector   velocity;
   Vector   force;
   Vector   acceleration;
-  uint[6]  spring;
-  float[6] springWeight;
   float    mass;
-  float    nailed;
+  float    movable;
+  int[6]   spring;
+  float[6] springWeight;
+
+  void computeAcceleration() {
+    acceleration = force / mass;
+  }
+
+  void eulerStep(float deltaT) {
+    position += velocity * deltaT * movable;
+    velocity += acceleration * deltaT * movable;
+  }
 }
 
 class Spring {
-  Spring(uint b1, uint b2) {
-    body1 = b1;
-    body2 = b2;
-    ks = 1.0;
-    kd = 0.4;
-    r = 0.3;
-  }
+  int    body1;
+  int    body2;
+  float  ks;
+  float  kd;
+  float  r;
+  Vector force;
+
   Vector computeForce(Body b1, Body b2) {
     Vector dp = b1.position - b2.position;
     Vector dv = b1.velocity - b2.velocity;
@@ -39,70 +44,46 @@ class Spring {
     float f = ks * (dplen - r) + kd * Utils.dot(dv, dp) / dplen;
     return -dp / dplen * f;
   }
-  uint   body1;
-  uint   body2;
-  Vector force;
-  float  ks;
-  float  kd;
-  float  r;
-  float  placeholder;
-}
 
-class Utils {
-  static float dot(float<2> v1, float<2> v2) {
-    float<2> r = v1 * v2;
-    return r.x + r.y;
-  }
-  static float length(float<2> v) {
-    return Math.sqrt(Utils.dot(v, v));
-  }
-  static float dot(float<3> v1, float<3> v2) {
-    float<3> r = v1 * v2;
-    return r.x + r.y + r.z;
-  }
-  static float length(float<3> v) {
-    return Math.sqrt(Utils.dot(v, v));
-  }
-  static float<4> makeFloat4(float<2> v) {
-    return float<4>(v.x, v.y, 0.0, 1.0);
-  }
-  static float<4> makeFloat4(float<3> v) {
-    return float<4>(v.x, v.y, v.z, 1.0);
-  }
-  static float<2> makeVector(float x, float y, float z, float<2> placeholder) {
-    return float<2>(x, y);
-  }
-  static float<3> makeVector(float x, float y, float z, float<3> placeholder) {
-    return float<3>(x, y, z);
+  Spring(int b1, int b2) {
+    body1 = b1;
+    body2 = b2;
+    ks = 1.0;
+    kd = 0.4;
+    r = 0.3;
   }
 }
 
-class Uniforms {
-  Vector   gravity;
-  Vector   wind;
-  Vector   particleSize;
-  float    deltaT;
+class ComputeUniforms {
+  Vector       gravity;
+  Vector       wind;
+  float        deltaT;
 }
 
-class Bindings {
+class DrawUniforms {
+  float<4,4>   matrix;
+  float<4>     color;
+}
+
+class ComputeBindings {
   storage Buffer<Body[]>* bodyStorage;
   storage Buffer<Spring[]>* springStorage;
   storage Buffer<Vector[]>* bodyVerts;
   storage Buffer<Vector[]>* springVerts;
-  uniform Buffer<Uniforms>* uniforms;
+  uniform Buffer<ComputeUniforms>* uniforms;
 }
 
 class ComputeBase {
-  Bindings bindings;
+  BindGroup<ComputeBindings>* bindings;
 }
 
 class ComputeForces : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
     float placeholder1 = Utils.dot(Vector(0.0), Vector(0.0));
     float placeholder2 = Utils.length(Vector(0.0));
-    auto bodies = bindings.bodyStorage.MapReadWriteStorage();
-    auto springs = bindings.springStorage.MapReadWriteStorage();
-    auto u = bindings.uniforms.MapReadUniform();
+    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    auto springs = bindings.Get().springStorage.MapReadWriteStorage();
+    auto u = bindings.Get().uniforms.MapReadUniform();
     uint i = cb.globalInvocationId.x;
     Spring spring = springs[i];
     Body b1 = bodies[spring.body1];
@@ -113,60 +94,66 @@ class ComputeForces : ComputeBase {
 
 class ApplyForces : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
-    auto bodies = bindings.bodyStorage.MapReadWriteStorage();
-    auto springs = bindings.springStorage.MapReadWriteStorage();
-    auto u = bindings.uniforms.MapReadUniform();
-    uint<3> pos = cb.globalInvocationId;
+    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    auto springs = bindings.Get().springStorage.MapReadWriteStorage();
+    auto u = bindings.Get().uniforms.MapReadUniform();
     uint i = cb.globalInvocationId.x;
     Body body = bodies[i];
-    Vector force = u.gravity + u.wind;
+    body.force = u.gravity + u.wind;
     for (int i = 0; i < 6; ++i) {
-      force += springs[body.spring[i]].force * body.springWeight[i];
+      body.force += springs[body.spring[i]].force * body.springWeight[i];
     }
-    bodies[i].force = force;
-  }
-}
-
-class FinalizeBodies : ComputeBase {
-  void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
-    auto bodies = bindings.bodyStorage.MapReadWriteStorage();
-    auto u = bindings.uniforms.MapReadUniform();
-    float deltaT = u.deltaT;
-    uint i = cb.globalInvocationId.x;
-    Body body = bodies[i];
     body.computeAcceleration();
-    body.position += body.velocity * deltaT * (1.0 - body.nailed);
-    body.velocity += body.acceleration * deltaT * (1.0 - body.nailed);
-    auto p = bodies[i].position;
-    auto bv = bindings.bodyVerts.MapReadWriteStorage();
+    body.eulerStep(u.deltaT);
     bodies[i] = body;
-    bv[i*3]   = p + Vector( u.particleSize.x * 0.5,  0.0);
-    bv[i*3+1] = p + Vector(-u.particleSize.x * 0.5,  0.0);
-    bv[i*3+2] = p + Vector( 0.0,           -u.particleSize.y);
   }
 }
 
-class FinalizeSprings : ComputeBase {
+class UpdateBodyVerts : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
-    auto bodies = bindings.bodyStorage.MapReadWriteStorage();
-    auto springs = bindings.springStorage.MapReadWriteStorage();
-    auto sv = bindings.springVerts.MapReadWriteStorage();
+    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    uint i = cb.globalInvocationId.x;
+    auto p = bodies[i].position;
+    auto bv = bindings.Get().bodyVerts.MapReadWriteStorage();
+    bv[i*3]   = p + Vector( 0.1,  0.0);
+    bv[i*3+1] = p + Vector(-0.1,  0.0);
+    bv[i*3+2] = p + Vector( 0.0, -0.2);
+  }
+}
+
+class UpdateSpringVerts : ComputeBase {
+  void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
+    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    auto springs = bindings.Get().springStorage.MapReadWriteStorage();
+    auto sv = bindings.Get().springVerts.MapReadWriteStorage();
     uint i = cb.globalInvocationId.x;
     sv[i*2] = bodies[springs[i].body1].position;
     sv[i*2+1] = bodies[springs[i].body2].position;
   }
 }
 
-Device* device = new Device();
-Window* window = new Window(device, 0, 0, 960, 960);
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
+class DrawBindings {
+  uniform Buffer<DrawUniforms>* uniforms;
+}
+
+class DrawPipeline {
+  void vertexShader(VertexBuiltins vb) vertex {
+    auto matrix = bindings.Get().uniforms.MapReadUniform().matrix;
+    vb.position = matrix * Utils.makeFloat4(vert.Get());
+  }
+  void fragmentShader(FragmentBuiltins fb) fragment {
+    fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
+  }
+  vertex Buffer<Vector[]>* vert;
+  ColorAttachment<PreferredSwapChainFormat>* fragColor;
+  BindGroup<DrawBindings>* bindings;
+}
+
 auto bodies = new Body[width * height * depth];
 auto springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
-Vector count = Utils.makeVector((float) width, (float) height, (float) depth, Vector(0.0));
-Vector pSpacing = Vector(2.0) / count;
 int spring = 0;
 
-for (uint i = 0; i < bodies.length; ++i) {
+for (int i = 0; i < bodies.length; ++i) {
   bodies[i].springWeight[0] = 0.0;
   bodies[i].springWeight[1] = 0.0;
   bodies[i].springWeight[2] = 0.0;
@@ -175,37 +162,26 @@ for (uint i = 0; i < bodies.length; ++i) {
   bodies[i].springWeight[5] = 0.0;
 }
 
-for (uint i = 0; i < bodies.length; ++i) {
-  uint x = i % width;
-  uint y = i % (width * height) / width;
-  uint z = i / (width * height);
-  Vector pos = Utils.makeVector((float) x, (float) y, (float) z, Vector(0.0));
-  bodies[i].position = Vector(-1.0) + pSpacing * (pos + Vector(0.5));
-  bodies[i].mass = Math.rand() * 0.5 + 0.25;
+for (int i = 0; i < bodies.length; ++i) {
+  int x = i % width;
+  int y = i % (width * height) / width;
+  int z = i / (width * height);
+  Vector pos = Utils.makeVector((float) (x - width / 2) + 0.5,
+                                (float) (y - height / 2) + 0.5,
+                                (float) (z - depth / 2) + 0.5, Vector(0.0));
+  bodies[i].position = pos;
+  bodies[i].mass = Math.rand() * 2.5 + 1.25;
   bodies[i].velocity = Vector(0.0);
   bodies[i].acceleration = Vector(0.0);
-  bodies[i].nailed = 0.0;
-
-  if (y == 0) {
-    if (x == 0) {
-      bodies[i].nailed = 1.0;
-    }
-    if (x == width - 1) {
-      bodies[i].nailed = 1.0;
-    }
-  }
-  if (y == width - 1) {
-    if (x == 0) {
-      bodies[i].nailed = 1.0;
-    }
-    if (x == width - 1) {
-      bodies[i].nailed = 1.0;
-    }
+  if (y == height - 1) {
+    bodies[i].movable = 0.0;
+  } else {
+    bodies[i].movable = 1.0;
   }
 
-  uint body1 = i;
-  uint body2 = i + 1;
+  int body1 = i;
   if (x < width - 1) {
+    int body2 = i + 1;
     springs[spring] = Spring(body1, body2);
     bodies[body1].spring[0] = spring;
     bodies[body2].spring[3] = spring;
@@ -214,8 +190,8 @@ for (uint i = 0; i < bodies.length; ++i) {
     ++spring;
   }
 
-  body2 = i + width;
   if (y < height - 1) {
+    int body2 = i + width;
     springs[spring] = Spring(body1, body2);
     bodies[body1].spring[1] = spring;
     bodies[body2].spring[4] = spring;
@@ -224,8 +200,8 @@ for (uint i = 0; i < bodies.length; ++i) {
     ++spring;
   }
 
-  body2 = i + width * height;
   if (z < depth - 1) {
+    int body2 = i + width * height;
     springs[spring] = Spring(body1, body2);
     bodies[body1].spring[2] = spring;
     bodies[body2].spring[5] = spring;
@@ -235,87 +211,113 @@ for (uint i = 0; i < bodies.length; ++i) {
   }
 }
 
-Bindings* bindings = new Bindings();
-auto bodyVerts = new Vector[bodies.length * 3];
-auto bodyVBO = new vertex storage Buffer<Vector[]>(device, bodies.length * 3);
-bindings.bodyVerts = bodyVBO;
+Device* device = new Device();
+Window* window = new Window(device, 0, 0, 960, 960);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 
-auto springVerts = new Vector[springs.length * 2];
-auto springVBO = new vertex storage Buffer<Vector[]>(device, springs.length * 2);
-bindings.springVerts = springVBO;
+ComputeBindings computeBindings;
+int numBodyVerts = bodies.length * 3;
+auto bodyVBO = new vertex storage Buffer<Vector[]>(device, numBodyVerts);
+computeBindings.bodyVerts = bodyVBO;
 
-bindings.uniforms = new uniform Buffer<Uniforms>(device);
+int numSpringVerts = springs.length * 2;
+auto springVBO = new vertex storage Buffer<Vector[]>(device, numSpringVerts);
+computeBindings.springVerts = springVBO;
 
-bindings.bodyStorage = new storage Buffer<Body[]>(device, bodies.length);
-bindings.bodyStorage.SetData(bodies);
+computeBindings.uniforms = new uniform Buffer<ComputeUniforms>(device);
 
-bindings.springStorage = new storage Buffer<Spring[]>(device, springs.length);
-bindings.springStorage.SetData(springs);
+computeBindings.bodyStorage = new storage Buffer<Body[]>(device, bodies.length);
+computeBindings.bodyStorage.SetData(bodies);
 
-class Shaders {
-  ColorAttachment<PreferredSwapChainFormat>* fragColor;
-}
+computeBindings.springStorage = new storage Buffer<Spring[]>(device, springs.length);
+computeBindings.springStorage.SetData(springs);
 
-class BodyShaders : Shaders {
-  void vertexShader(VertexBuiltins vb, Vector v) vertex { vb.position = Utils.makeFloat4(v); }
-  void fragmentShader(FragmentBuiltins fb) fragment { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
-}
-
-class SpringShaders : Shaders {
-  void vertexShader(VertexBuiltins vb, Vector v) vertex { vb.position = Utils.makeFloat4(v); }
-  void fragmentShader(FragmentBuiltins fb) fragment { fragColor.Set(float<4>(1.0, 1.0, 1.0, 1.0)); }
-}
-
-auto bodyPipeline = new RenderPipeline<BodyShaders>(device, null, TriangleList);
-auto springPipeline = new RenderPipeline<SpringShaders>(device, null, LineList);
+auto bodyPipeline = new RenderPipeline<DrawPipeline>(device, null, TriangleList);
+auto springPipeline = new RenderPipeline<DrawPipeline>(device, null, LineList);
 auto computeForces = new ComputePipeline<ComputeForces>(device);
 auto applyForces = new ComputePipeline<ApplyForces>(device);
-auto finalizeBodies = new ComputePipeline<FinalizeBodies>(device);
-auto finalizeSprings = new ComputePipeline<FinalizeSprings>(device);
-float frequency = 240.0; // physics sim at 240Hz
-System.GetNextEvent();
-Uniforms* u = new Uniforms();
-u.deltaT = 1.0 / frequency;
-u.gravity = Vector(0.0, 0.0);
-u.particleSize = Vector(0.5) / (float) width;
-auto bindGroup = new BindGroup(device, bindings);
+auto updateBodyVerts = new ComputePipeline<UpdateBodyVerts>(device);
+auto updateSpringVerts = new ComputePipeline<UpdateSpringVerts>(device);
+float frequency = 480.0;
+int maxStepsPerFrame = 32;
+int stepsDone = 0;
+auto bodyUBO = new uniform Buffer<DrawUniforms>(device);
+DrawBindings bodyBindings;
+bodyBindings.uniforms = bodyUBO;
+auto bodyBG = new BindGroup<DrawBindings>(device, &bodyBindings);
+auto springUBO = new uniform Buffer<DrawUniforms>(device);
+DrawBindings springBindings;
+springBindings.uniforms = springUBO;
+auto springBG = new BindGroup<DrawBindings>(device, &springBindings);
+EventHandler handler;
+handler.rotation = float<2>(0.0, 0.0);
+handler.distance = 0.5 * (float) width;
+auto drawUniforms = new DrawUniforms();
+auto computeUniforms = new ComputeUniforms();
+float<4,4> projection = Transform.projection(1.0, 100.0, -1.0, 1.0, -1.0, 1.0);
+computeUniforms.deltaT = 8.0 / frequency;
+computeUniforms.gravity = Vector(0.0, -0.25);
+auto computeBindGroup = new BindGroup<ComputeBindings>(device, &computeBindings);
+double startTime = System.GetCurrentTime();
 while(System.IsRunning()) {
-  u.wind = Vector(Math.rand() * 0.00, 0.0);
-  bindings.uniforms.SetData(u);
+  Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
+  orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
+  orientation.normalize();
+  drawUniforms.matrix = projection;
+  drawUniforms.matrix *= Transform.translate(0.0, 0.0, -handler.distance);
+  drawUniforms.matrix *= orientation.toMatrix();
+  drawUniforms.color = float<4>(1.0, 1.0, 1.0, 1.0);
+  springUBO.SetData(drawUniforms);
+  drawUniforms.color = float<4>(0.0, 1.0, 0.0, 1.0);
+  bodyBindings.uniforms.SetData(drawUniforms);
+  computeUniforms.wind = Vector(Math.rand() * 0.01, 0.0);
+  computeBindings.uniforms.SetData(computeUniforms);
 
-  auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
-  auto computePass = new ComputePass<ComputeBase>(encoder, null);
+  ComputeBase cb;
+  cb.bindings = computeBindGroup;
+  auto computePass = new ComputePass<ComputeBase>(encoder, &cb);
 
-  computePass.SetBindGroup(0, bindGroup);
+  int totalSteps = (int) ((System.GetCurrentTime() - startTime) * frequency);
+  for (int i = 0; stepsDone < totalSteps && i < maxStepsPerFrame; i++) {
+    computePass.SetPipeline(computeForces);
+    computePass.Dispatch(springs.length, 1, 1);
 
-  computePass.SetPipeline(computeForces);
-  computePass.Dispatch(springs.length, 1, 1);
+    computePass.SetPipeline(applyForces);
+    computePass.Dispatch(bodies.length, 1, 1);
+    stepsDone++;
+  }
 
-  computePass.SetPipeline(applyForces);
+  computePass.SetPipeline(updateBodyVerts);
   computePass.Dispatch(bodies.length, 1, 1);
 
-  computePass.SetPipeline(finalizeBodies);
-  computePass.Dispatch(bodies.length, 1, 1);
-
-  computePass.SetPipeline(finalizeSprings);
+  computePass.SetPipeline(updateSpringVerts);
   computePass.Dispatch(springs.length, 1, 1);
 
   computePass.End();
-  Shaders s;
-  s.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
-  auto renderPass = new RenderPass<Shaders>(encoder, &s);
-
-  renderPass.SetPipeline(bodyPipeline);
-  renderPass.SetVertexBuffer(0, bodyVBO);
-  renderPass.Draw(bodyVerts.length, 1, 0, 0);
+  auto framebuffer = swapChain.GetCurrentTexture();
+  DrawPipeline p;
+  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  auto renderPass = new RenderPass<DrawPipeline>(encoder, &p);
 
   renderPass.SetPipeline(springPipeline);
-  renderPass.SetVertexBuffer(0, springVBO);
-  renderPass.Draw(springVerts.length, 1, 0, 0);
+  p.vert = springVBO;
+  p.bindings = springBG;
+  renderPass.Set(&p);
+  renderPass.Draw(numSpringVerts, 1, 0, 0);
+
+  renderPass.SetPipeline(bodyPipeline);
+  p.vert = bodyVBO;
+  p.bindings = bodyBG;
+  renderPass.Set(&p);
+  renderPass.Draw(numBodyVerts, 1, 0, 0);
 
   renderPass.End();
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
+
+  while (System.HasPendingEvents()) {
+    handler.Handle(System.GetNextEvent());
+  }
 }
 return 0.0;

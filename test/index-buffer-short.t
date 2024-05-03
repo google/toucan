@@ -16,15 +16,15 @@ verts[0].color = float<4>(1.0, 1.0, 1.0, 1.0);
 verts[1].color = float<4>(1.0, 0.0, 0.0, 1.0);
 verts[2].color = float<4>(0.0, 1.0, 0.0, 1.0);
 verts[3].color = float<4>(0.0, 0.0, 1.0, 1.0);
-auto indices = new uint[6];
-indices[0] = 0;
-indices[1] = 1;
-indices[2] = 2;
-indices[3] = 1;
-indices[4] = 2;
-indices[5] = 3;
+auto indices = new ushort[6];
+indices[0] = 0s;
+indices[1] = 1s;
+indices[2] = 2s;
+indices[3] = 1s;
+indices[4] = 2s;
+indices[5] = 3s;
 auto vb = new vertex Buffer<Vertex[]>(device, verts);
-auto ib = new index Buffer<uint[]>(device, indices);
+auto ib = new index Buffer<ushort[]>(device, indices);
 class Pipeline {
   Varyings vertexShader(VertexBuiltins vb) vertex {
     auto v = vertices.Get();
@@ -33,7 +33,7 @@ class Pipeline {
   }
   void fragmentShader(FragmentBuiltins fb, Varyings v) fragment { fragColor.Set(v); }
   vertex Buffer<Vertex[]>* vertices;
-  index Buffer<uint[]>* indexBuffer;
+  index Buffer<ushort[]>* indexBuffer;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
 }
 auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);

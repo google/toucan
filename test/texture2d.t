@@ -18,31 +18,37 @@ verts[0].texCoord = float<2>(0.0, 0.0);
 verts[1].texCoord = float<2>(1.0, 0.0);
 verts[2].texCoord = float<2>(0.0, 1.0);
 verts[3].texCoord = float<2>(1.0, 1.0);
-auto indices = new int[6];
+auto indices = new uint[6];
 indices[0] = 0;
 indices[1] = 1;
 indices[2] = 2;
 indices[3] = 1;
 indices[4] = 2;
 indices[5] = 3;
-auto vb = new vertex Buffer<Vertex[]>(device, verts);
-auto ib = new index Buffer<int[]>(device, indices);
+
+class Bindings {
+  Sampler* sampler;
+  SampleableTexture2D<float>* textureView;
+}
+
 class Pipeline {
-    Varyings vertexShader(VertexBuiltins vb, Vertex v) vertex {
+    Varyings vertexShader(VertexBuiltins vb) vertex {
+        Vertex v = vert.Get();
         vb.position = v.position;
         Varyings varyings;
         varyings.texCoord = v.texCoord;
         return varyings;
     }
     void fragmentShader(FragmentBuiltins fb, Varyings varyings) fragment {
-      fragColor.Set(textureView.Sample(sampler, varyings.texCoord));
+      auto b = bindings.Get();
+      fragColor.Set(b.textureView.Sample(b.sampler, varyings.texCoord));
     }
-    Sampler* sampler;
-    SampleableTexture2D<float>* textureView;
+    vertex Buffer<Vertex[]>* vert;
+    index Buffer<uint[]>*    indexBuffer;
     ColorAttachment<PreferredSwapChainFormat>* fragColor;
+    BindGroup<Bindings>*     bindings;
 };
-RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
-auto sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
+auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 auto tex = new sampleable Texture2D<RGBA8unorm>(device, 2, 2);
 auto width = tex.MinBufferWidth();
 auto buffer = new Buffer<ubyte<4>[]>(device, 2 * width);
@@ -55,19 +61,19 @@ buffer.Unmap();
 auto copyEncoder = new CommandEncoder(device);
 tex.CopyFromBuffer(copyEncoder, buffer, 2, 2);
 device.GetQueue().Submit(copyEncoder.Finish());
-auto samplerBG = new BindGroup(device, sampler);
-auto texView = tex.CreateSampleableView();
-auto texBG = new BindGroup(device, texView);
+Bindings bindings;
+bindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
+bindings.textureView = tex.CreateSampleableView();
+auto bindGroup = new BindGroup<Bindings>(device, &bindings);
 
 auto encoder = new CommandEncoder(device);
 Pipeline p;
 p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+p.vert = new vertex Buffer<Vertex[]>(device, verts);
+p.indexBuffer = new index Buffer<uint[]>(device, indices);
+p.bindings = bindGroup;
 auto renderPass = new RenderPass<Pipeline>(encoder, &p);
 renderPass.SetPipeline(pipeline);
-renderPass.SetBindGroup(0, samplerBG);
-renderPass.SetBindGroup(1, texBG);
-renderPass.SetVertexBuffer(0, vb);
-renderPass.SetIndexBuffer(ib);
 renderPass.DrawIndexed(6, 1, 0, 0, 0);
 renderPass.End();
 device.GetQueue().Submit(encoder.Finish());

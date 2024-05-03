@@ -39,9 +39,6 @@ CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 Window* window = new Window(device, 0, 0, 1024, 1024);
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 
-auto cubeVB = new vertex Buffer<float<3>[]>(device, &cubeVerts);
-auto cubeIB = new index Buffer<uint[]>(device, &cubeIndices);
-
 class Tessellator {
   Tessellator(float<3>[]^ controlPoints, uint[]^ controlIndices, int level) {
     int numPatches = controlIndices.length / 16;
@@ -94,9 +91,6 @@ class Tessellator {
 
 Tessellator* tessTeapot = new Tessellator(&teapotControlPoints, &teapotIndices, 8);
 
-auto teapotVB = new vertex Buffer<Vertex[]>(device, tessTeapot.vertices);
-auto teapotIB = new index Buffer<uint[]>(device, tessTeapot.indices);
-
 class Uniforms {
   float<4,4>  model, view, projection;
 //  float<4,4>  viewInverse;
@@ -109,29 +103,34 @@ class Bindings {
 }
 
 class Pipeline {
+  index Buffer<uint[]>* indexBuffer;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
   DepthStencilAttachment<Depth24Plus>* depth;
-  Bindings bindings;
+  BindGroup<Bindings>* bindings;
 }
 
 class SkyboxPipeline : Pipeline {
-    float<3> vertexShader(VertexBuiltins vb, float<3> v) vertex {
-        auto uniforms = bindings.uniforms.MapReadUniform();
+    float<3> vertexShader(VertexBuiltins vb) vertex {
+        auto v = position.Get();
+        auto uniforms = bindings.Get().uniforms.MapReadUniform();
         auto pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
     void fragmentShader(FragmentBuiltins fb, float<3> position) fragment {
       float<3> p = Math.normalize(position);
+      auto b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped
-      fragColor.Set(bindings.textureView.Sample(bindings.sampler, float<3>(-p.x, p.y, p.z)));
+      fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
+    vertex Buffer<float<3>[]>* position;
 };
 
 class ReflectionPipeline : Pipeline {
-    Vertex vertexShader(VertexBuiltins vb, Vertex v) vertex {
+    Vertex vertexShader(VertexBuiltins vb) vertex {
+        auto v = vert.Get();
         auto n = Math.normalize(v.normal);
-        auto uniforms = bindings.uniforms.MapReadUniform();
+        auto uniforms = bindings.Get().uniforms.MapReadUniform();
         auto viewModel = uniforms.view * uniforms.model;
         auto pos = viewModel * float<4>(v.position.x, v.position.y, v.position.z, 1.0);
         auto normal = viewModel * float<4>(n.x, n.y, n.z, 0.0);
@@ -142,13 +141,15 @@ class ReflectionPipeline : Pipeline {
         return varyings;
     }
     void fragmentShader(FragmentBuiltins fb, Vertex varyings) fragment {
-      auto uniforms = bindings.uniforms.MapReadUniform();
+      auto b = bindings.Get();
+      auto uniforms = b.uniforms.MapReadUniform();
       float<3> p = Math.normalize(varyings.position);
       float<3> n = Math.normalize(varyings.normal);
       float<3> r = Math.reflect(-p, n);
       auto r4 = Math.inverse(uniforms.view) * float<4>(r.x, r.y, r.z, 0.0);
-      fragColor.Set(bindings.textureView.Sample(bindings.sampler, float<3>(-r4.x, r4.y, r4.z)));
+      fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-r4.x, r4.y, r4.z)));
     }
+    vertex Buffer<Vertex[]>* vert;
 };
 
 auto depthState = new DepthStencilState<Depth24Plus>();
@@ -158,14 +159,22 @@ auto cubeBindings = new Bindings();
 cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
 cubeBindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
 cubeBindings.textureView = texture.CreateSampleableView();
-auto cubeBindGroup = new BindGroup(device, cubeBindings);
+
+SkyboxPipeline cubeData;
+cubeData.position = new vertex Buffer<float<3>[]>(device, &cubeVerts);
+cubeData.indexBuffer = new index Buffer<uint[]>(device, &cubeIndices);
+cubeData.bindings = new BindGroup<Bindings>(device, cubeBindings);
 
 auto teapotPipeline = new RenderPipeline<ReflectionPipeline>(device, depthState, TriangleList);
 auto teapotBindings = new Bindings();
 teapotBindings.sampler = cubeBindings.sampler;
 teapotBindings.textureView = cubeBindings.textureView;
 teapotBindings.uniforms = new uniform Buffer<Uniforms>(device);
-auto teapotBindGroup = new BindGroup(device, teapotBindings);
+
+ReflectionPipeline teapotData;
+teapotData.vert = new vertex Buffer<Vertex[]>(device, tessTeapot.vertices);
+teapotData.indexBuffer = new index Buffer<uint[]>(device, tessTeapot.indices);
+teapotData.bindings = new BindGroup<Bindings>(device, teapotBindings);
 
 EventHandler handler;
 handler.rotation = float<2>(0.0, 0.0);
@@ -195,17 +204,15 @@ while (System.IsRunning()) {
   p.depth = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
   auto renderPass = new RenderPass<Pipeline>(encoder, &p);
 
-  renderPass.SetPipeline(cubePipeline);
-  renderPass.SetBindGroup(0, cubeBindGroup);
-  renderPass.SetVertexBuffer(0, cubeVB);
-  renderPass.SetIndexBuffer(cubeIB);
-  renderPass.DrawIndexed(cubeIndices.length, 1, 0, 0, 0);
+  auto cubePass = new RenderPass<SkyboxPipeline>(renderPass);
+  cubePass.SetPipeline(cubePipeline);
+  cubePass.Set(&cubeData);
+  cubePass.DrawIndexed(cubeIndices.length, 1, 0, 0, 0);
 
-  renderPass.SetPipeline(teapotPipeline);
-  renderPass.SetBindGroup(0, teapotBindGroup);
-  renderPass.SetVertexBuffer(0, teapotVB);
-  renderPass.SetIndexBuffer(teapotIB);
-  renderPass.DrawIndexed(tessTeapot.indices.length, 1, 0, 0, 0);
+  auto teapotPass = new RenderPass<ReflectionPipeline>(renderPass);
+  teapotPass.SetPipeline(teapotPipeline);
+  teapotPass.Set(&teapotData);
+  teapotPass.DrawIndexed(tessTeapot.indices.length, 1, 0, 0, 0);
 
   renderPass.End();
   CommandBuffer* cb = encoder.Finish();

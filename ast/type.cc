@@ -238,7 +238,14 @@ std::string Method::GetMangledName() const {
       for (auto arg : formalArgList) {
         result += "_";
         if (arg->type->IsPtr()) {
-          result += static_cast<PtrType*>(arg->type)->GetBaseType()->ToString();
+          auto baseType = static_cast<PtrType*>(arg->type)->GetBaseType();
+          if (baseType->IsClass()) {
+            result += static_cast<ClassType*>(baseType)->GetName();
+          } else {
+            result += baseType->ToString();
+          }
+        } else if (arg->type->IsClass()) {
+          result += static_cast<ClassType*>(arg->type)->GetName();
         } else {
           result += arg->type->ToString();
         }
@@ -301,8 +308,11 @@ void ClassType::SetMemoryLayout(MemoryLayout memoryLayout, TypeTable* types) {
   }
 }
 
-void ClassType::ComputeFieldOffsets() {
+size_t ClassType::ComputeFieldOffsets() {
   size_t offset = 0;
+  if (parent_) {
+    offset = parent_->ComputeFieldOffsets();
+  }
   Field* prevField = nullptr;
   for (const auto& field : GetFields()) {
     size_t size = field->type->GetSizeInBytes();
@@ -316,6 +326,7 @@ void ClassType::ComputeFieldOffsets() {
     prevField = field.get();
   }
   padding_ = GetSizeInBytes(0) - offset;
+  return offset;
 }
 
 void ClassType::AddMethod(Method* method, int vtableIndex) {

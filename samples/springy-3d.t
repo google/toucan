@@ -84,16 +84,21 @@ class DrawUniforms {
   float<4>    color;
 }
 
+class Bindings {
+  uniform Buffer<DrawUniforms>* uniforms;
+}
+
 class DrawPipeline {
-  void vertexShader(VertexBuiltins vb, Vector v) vertex {
-    auto matrix = uniforms.MapReadUniform().matrix;
-    vb.position = matrix * Utils.makeFloat4(v);
+  void vertexShader(VertexBuiltins vb) vertex {
+    auto matrix = bindings.Get().uniforms.MapReadUniform().matrix;
+    vb.position = matrix * Utils.makeFloat4(vert.Get());
   }
   void fragmentShader(FragmentBuiltins fb) fragment {
-    fragColor.Set(uniforms.MapReadUniform().color);
+    fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
   }
-  uniform Buffer<DrawUniforms>* uniforms;
+  vertex Buffer<Vector[]>* vert;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
+  BindGroup<Bindings>* bindings;
 }
 
 auto bodies = new Body[width * height * depth];
@@ -142,10 +147,12 @@ auto springVBO = new vertex Buffer<Vector[]>(device, springVerts.length);
 
 auto bodyPipeline = new RenderPipeline<DrawPipeline>(device, null, TriangleList);
 auto springPipeline = new RenderPipeline<DrawPipeline>(device, null, LineList);
-auto bodyUBO = new uniform Buffer<DrawUniforms>(device);
-auto bodyBG = new BindGroup(device, bodyUBO);
-auto springUBO = new uniform Buffer<DrawUniforms>(device);
-auto springBG = new BindGroup(device, springUBO);
+Bindings bodyBindings;
+bodyBindings.uniforms = new uniform Buffer<DrawUniforms>(device);
+auto bodyBG = new BindGroup<Bindings>(device, &bodyBindings);
+Bindings springBindings;
+springBindings.uniforms = new uniform Buffer<DrawUniforms>(device);
+auto springBG = new BindGroup<Bindings>(device, &springBindings);
 EventHandler handler;
 handler.rotation = float<2>(0.0, 0.0);
 handler.distance = 0.5 * (float) width;
@@ -163,9 +170,9 @@ while(System.IsRunning()) {
   drawUniforms.matrix *= Transform.translate(0.0, 0.0, -handler.distance);
   drawUniforms.matrix *= orientation.toMatrix();
   drawUniforms.color = float<4>(1.0, 1.0, 1.0, 1.0);
-  springUBO.SetData(drawUniforms);
+  springBindings.uniforms.SetData(drawUniforms);
   drawUniforms.color = float<4>(0.0, 1.0, 0.0, 1.0);
-  bodyUBO.SetData(drawUniforms);
+  bodyBindings.uniforms.SetData(drawUniforms);
   for (int i = 0; i < bodies.length; ++i) {
     auto p = bodies[i].position;
     bodyVerts[i*3  ] = p + Vector( 0.1,  0.0);
@@ -190,16 +197,19 @@ while(System.IsRunning()) {
   auto encoder = new CommandEncoder(device);
   DrawPipeline p;
   p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  p.vert = springVBO;
   auto renderPass = new RenderPass<DrawPipeline>(encoder, &p);
 
   renderPass.SetPipeline(springPipeline);
-  renderPass.SetVertexBuffer(0, springVBO);
-  renderPass.SetBindGroup(0, springBG);
+  p.vert = springVBO;
+  p.bindings = springBG;
+  renderPass.Set(&p);
   renderPass.Draw(springVerts.length, 1, 0, 0);
 
   renderPass.SetPipeline(bodyPipeline);
-  renderPass.SetVertexBuffer(0, bodyVBO);
-  renderPass.SetBindGroup(0, bodyBG);
+  p.vert = bodyVBO;
+  p.bindings = bodyBG;
+  renderPass.Set(&p);
   renderPass.Draw(bodyVerts.length, 1, 0, 0);
 
   renderPass.End();

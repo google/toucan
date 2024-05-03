@@ -52,20 +52,24 @@ class Bindings {
 }
 
 class SkyboxPipeline {
-    float<3> vertexShader(VertexBuiltins vb, float<3> v) vertex {
-        auto uniforms = bindings.uniforms.MapReadUniform();
+    float<3> vertexShader(VertexBuiltins vb) vertex {
+        auto v = position.Get();
+        auto uniforms = bindings.Get().uniforms.MapReadUniform();
         auto pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
     void fragmentShader(FragmentBuiltins fb, float<3> position) fragment {
       float<3> p = Math.normalize(position);
+      auto b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped
-      fragColor.Set(bindings.textureView.Sample(bindings.sampler, float<3>(-p.x, p.y, p.z)));
+      fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
+    vertex Buffer<float<3>[]>* position;
+    index Buffer<uint[]>* indexBuffer;
     ColorAttachment<PreferredSwapChainFormat>* fragColor;
     DepthStencilAttachment<Depth24Plus>* depth;
-    Bindings bindings;
+    BindGroup<Bindings>* bindings;
 };
 
 auto depthState = new DepthStencilState<Depth24Plus>();
@@ -75,12 +79,11 @@ auto cubeBindings = new Bindings();
 cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
 cubeBindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
 cubeBindings.textureView = texture.CreateSampleableView();
-auto cubeBindGroup = new BindGroup(device, cubeBindings);
+auto cubeBindGroup = new BindGroup<Bindings>(device, cubeBindings);
 
 EventHandler handler;
 handler.rotation = float<2>(0.0, 0.0);
 handler.distance = 10.0;
-handler.mouseDown = false;
 float<4, 4> projection = Transform.projection(0.5, 200.0, -1.0, 1.0, -1.0, 1.0);
 auto depthBuffer = new renderable Texture2D<Depth24Plus>(device, 1024, 1024);
 while (System.IsRunning()) {
@@ -99,12 +102,12 @@ while (System.IsRunning()) {
   SkyboxPipeline p;
   p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
   p.depth = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
+  p.position = cubeVB;
+  p.indexBuffer = cubeIB;
+  p.bindings = cubeBindGroup;
   auto renderPass = new RenderPass<SkyboxPipeline>(encoder, &p);
 
   renderPass.SetPipeline(cubePipeline);
-  renderPass.SetBindGroup(0, cubeBindGroup);
-  renderPass.SetVertexBuffer(0, cubeVB);
-  renderPass.SetIndexBuffer(cubeIB);
   renderPass.DrawIndexed(cubeIndices.length, 1, 0, 0, 0);
 
   renderPass.End();

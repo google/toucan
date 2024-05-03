@@ -65,7 +65,7 @@ class DrawUniforms {
   float<4>     color;
 }
 
-class Bindings {
+class ComputeBindings {
   storage Buffer<Body[]>* bodyStorage;
   storage Buffer<Spring[]>* springStorage;
   storage Buffer<Vector[]>* bodyVerts;
@@ -74,16 +74,16 @@ class Bindings {
 }
 
 class ComputeBase {
-  Bindings bindings;
+  BindGroup<ComputeBindings>* bindings;
 }
 
 class ComputeForces : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
     float placeholder1 = Utils.dot(Vector(0.0), Vector(0.0));
     float placeholder2 = Utils.length(Vector(0.0));
-    auto bodies = bindings.bodyStorage.MapReadWriteStorage();
-    auto springs = bindings.springStorage.MapReadWriteStorage();
-    auto u = bindings.uniforms.MapReadUniform();
+    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    auto springs = bindings.Get().springStorage.MapReadWriteStorage();
+    auto u = bindings.Get().uniforms.MapReadUniform();
     uint i = cb.globalInvocationId.x;
     Spring spring = springs[i];
     Body b1 = bodies[spring.body1];
@@ -94,9 +94,9 @@ class ComputeForces : ComputeBase {
 
 class ApplyForces : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
-    auto bodies = bindings.bodyStorage.MapReadWriteStorage();
-    auto springs = bindings.springStorage.MapReadWriteStorage();
-    auto u = bindings.uniforms.MapReadUniform();
+    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    auto springs = bindings.Get().springStorage.MapReadWriteStorage();
+    auto u = bindings.Get().uniforms.MapReadUniform();
     uint i = cb.globalInvocationId.x;
     Body body = bodies[i];
     body.force = u.gravity + u.wind;
@@ -111,10 +111,10 @@ class ApplyForces : ComputeBase {
 
 class UpdateBodyVerts : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
-    auto bodies = bindings.bodyStorage.MapReadWriteStorage();
+    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     uint i = cb.globalInvocationId.x;
     auto p = bodies[i].position;
-    auto bv = bindings.bodyVerts.MapReadWriteStorage();
+    auto bv = bindings.Get().bodyVerts.MapReadWriteStorage();
     bv[i*3]   = p + Vector( 0.1,  0.0);
     bv[i*3+1] = p + Vector(-0.1,  0.0);
     bv[i*3+2] = p + Vector( 0.0, -0.2);
@@ -123,25 +123,30 @@ class UpdateBodyVerts : ComputeBase {
 
 class UpdateSpringVerts : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
-    auto bodies = bindings.bodyStorage.MapReadWriteStorage();
-    auto springs = bindings.springStorage.MapReadWriteStorage();
-    auto sv = bindings.springVerts.MapReadWriteStorage();
+    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    auto springs = bindings.Get().springStorage.MapReadWriteStorage();
+    auto sv = bindings.Get().springVerts.MapReadWriteStorage();
     uint i = cb.globalInvocationId.x;
     sv[i*2] = bodies[springs[i].body1].position;
     sv[i*2+1] = bodies[springs[i].body2].position;
   }
 }
 
+class DrawBindings {
+  uniform Buffer<DrawUniforms>* uniforms;
+}
+
 class DrawPipeline {
-  void vertexShader(VertexBuiltins vb, Vector v) vertex {
-    auto matrix = uniforms.MapReadUniform().matrix;
-    vb.position = matrix * Utils.makeFloat4(v);
+  void vertexShader(VertexBuiltins vb) vertex {
+    auto matrix = bindings.Get().uniforms.MapReadUniform().matrix;
+    vb.position = matrix * Utils.makeFloat4(vert.Get());
   }
   void fragmentShader(FragmentBuiltins fb) fragment {
-    fragColor.Set(uniforms.MapReadUniform().color);
+    fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
   }
-  uniform Buffer<DrawUniforms>* uniforms;
+  vertex Buffer<Vector[]>* vert;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
+  BindGroup<DrawBindings>* bindings;
 }
 
 auto bodies = new Body[width * height * depth];
@@ -210,22 +215,22 @@ Device* device = new Device();
 Window* window = new Window(device, 0, 0, 960, 960);
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
 
-Bindings* bindings = new Bindings();
+ComputeBindings computeBindings;
 int numBodyVerts = bodies.length * 3;
 auto bodyVBO = new vertex storage Buffer<Vector[]>(device, numBodyVerts);
-bindings.bodyVerts = bodyVBO;
+computeBindings.bodyVerts = bodyVBO;
 
 int numSpringVerts = springs.length * 2;
 auto springVBO = new vertex storage Buffer<Vector[]>(device, numSpringVerts);
-bindings.springVerts = springVBO;
+computeBindings.springVerts = springVBO;
 
-bindings.uniforms = new uniform Buffer<ComputeUniforms>(device);
+computeBindings.uniforms = new uniform Buffer<ComputeUniforms>(device);
 
-bindings.bodyStorage = new storage Buffer<Body[]>(device, bodies.length);
-bindings.bodyStorage.SetData(bodies);
+computeBindings.bodyStorage = new storage Buffer<Body[]>(device, bodies.length);
+computeBindings.bodyStorage.SetData(bodies);
 
-bindings.springStorage = new storage Buffer<Spring[]>(device, springs.length);
-bindings.springStorage.SetData(springs);
+computeBindings.springStorage = new storage Buffer<Spring[]>(device, springs.length);
+computeBindings.springStorage.SetData(springs);
 
 auto bodyPipeline = new RenderPipeline<DrawPipeline>(device, null, TriangleList);
 auto springPipeline = new RenderPipeline<DrawPipeline>(device, null, LineList);
@@ -237,9 +242,13 @@ float frequency = 480.0;
 int maxStepsPerFrame = 32;
 int stepsDone = 0;
 auto bodyUBO = new uniform Buffer<DrawUniforms>(device);
-auto bodyBG = new BindGroup(device, bodyUBO);
+DrawBindings bodyBindings;
+bodyBindings.uniforms = bodyUBO;
+auto bodyBG = new BindGroup<DrawBindings>(device, &bodyBindings);
 auto springUBO = new uniform Buffer<DrawUniforms>(device);
-auto springBG = new BindGroup(device, springUBO);
+DrawBindings springBindings;
+springBindings.uniforms = springUBO;
+auto springBG = new BindGroup<DrawBindings>(device, &springBindings);
 EventHandler handler;
 handler.rotation = float<2>(0.0, 0.0);
 handler.distance = 0.5 * (float) width;
@@ -248,7 +257,7 @@ auto computeUniforms = new ComputeUniforms();
 float<4,4> projection = Transform.projection(1.0, 100.0, -1.0, 1.0, -1.0, 1.0);
 computeUniforms.deltaT = 8.0 / frequency;
 computeUniforms.gravity = Vector(0.0, -0.25);
-auto bindGroup = new BindGroup(device, bindings);
+auto computeBindGroup = new BindGroup<ComputeBindings>(device, &computeBindings);
 double startTime = System.GetCurrentTime();
 while(System.IsRunning()) {
   Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
@@ -260,14 +269,15 @@ while(System.IsRunning()) {
   drawUniforms.color = float<4>(1.0, 1.0, 1.0, 1.0);
   springUBO.SetData(drawUniforms);
   drawUniforms.color = float<4>(0.0, 1.0, 0.0, 1.0);
-  bodyUBO.SetData(drawUniforms);
+  bodyBindings.uniforms.SetData(drawUniforms);
   computeUniforms.wind = Vector(Math.rand() * 0.01, 0.0);
-  bindings.uniforms.SetData(computeUniforms);
+  computeBindings.uniforms.SetData(computeUniforms);
 
   auto encoder = new CommandEncoder(device);
-  auto computePass = new ComputePass<ComputeBase>(encoder, null);
+  ComputeBase cb;
+  cb.bindings = computeBindGroup;
+  auto computePass = new ComputePass<ComputeBase>(encoder, &cb);
 
-  computePass.SetBindGroup(0, bindGroup);
   int totalSteps = (int) ((System.GetCurrentTime() - startTime) * frequency);
   for (int i = 0; stepsDone < totalSteps && i < maxStepsPerFrame; i++) {
     computePass.SetPipeline(computeForces);
@@ -291,13 +301,15 @@ while(System.IsRunning()) {
   auto renderPass = new RenderPass<DrawPipeline>(encoder, &p);
 
   renderPass.SetPipeline(springPipeline);
-  renderPass.SetVertexBuffer(0, springVBO);
-  renderPass.SetBindGroup(0, springBG);
+  p.vert = springVBO;
+  p.bindings = springBG;
+  renderPass.Set(&p);
   renderPass.Draw(numSpringVerts, 1, 0, 0);
 
   renderPass.SetPipeline(bodyPipeline);
-  renderPass.SetVertexBuffer(0, bodyVBO);
-  renderPass.SetBindGroup(0, bodyBG);
+  p.vert = bodyVBO;
+  p.bindings = bodyBG;
+  renderPass.Set(&p);
   renderPass.Draw(numBodyVerts, 1, 0, 0);
 
   renderPass.End();

@@ -10,19 +10,24 @@ auto vb = new vertex Buffer<Vertex[]>(device, verts);
 class Uniforms {
   float<4> color;
 }
-class Pipeline {
-  void vertexShader(VertexBuiltins vb, Vertex v) vertex { vb.position = v; }
-  void fragmentShader(FragmentBuiltins fb) fragment {
-    fragColor.Set(uniforms.MapReadUniform().color);
-  }
+class Bindings {
   uniform Buffer<Uniforms>* uniforms;
-
+}
+class Pipeline {
+  void vertexShader(VertexBuiltins vb) vertex { vb.position = position.Get(); }
+  void fragmentShader(FragmentBuiltins fb) fragment {
+    fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
+  }
+  vertex Buffer<Vertex[]>* position;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
+  BindGroup<Bindings>* bindings;
 }
 auto uniformBuffer = new uniform Buffer<Uniforms>(device);
-BindGroup* bg = new BindGroup(device, uniformBuffer);
+Bindings bindings;
+bindings.uniforms = uniformBuffer;
+auto bg = new BindGroup<Bindings>(device, &bindings);
 auto stagingBuffer = new writeonly Buffer<Uniforms>(device);
-RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
+auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 for (int i = 0; i < 1000; ++i) {
   while (System.HasPendingEvents()) {
     System.GetNextEvent();
@@ -35,11 +40,11 @@ for (int i = 0; i < 1000; ++i) {
   stagingBuffer.Unmap();
   encoder.CopyBufferToBuffer(stagingBuffer, uniformBuffer);
   Pipeline p;
+  p.position = vb;
   p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  p.bindings = bg;
   auto renderPass = new RenderPass<Pipeline>(encoder, &p);
   renderPass.SetPipeline(pipeline);
-  renderPass.SetVertexBuffer(0, vb);
-  renderPass.SetBindGroup(0, bg);
   renderPass.Draw(3, 1, 0, 0);
   renderPass.End();
   device.GetQueue().Submit(encoder.Finish());

@@ -27,7 +27,7 @@ verts[0].texCoord = float<2>(0.0, 0.0);
 verts[1].texCoord = float<2>(1.0, 0.0);
 verts[2].texCoord = float<2>(0.0, 1.0);
 verts[3].texCoord = float<2>(1.0, 1.0);
-auto indices = new int[6];
+auto indices = new uint[6];
 indices[0] = 0;
 indices[1] = 1;
 indices[2] = 2;
@@ -35,34 +35,42 @@ indices[3] = 1;
 indices[4] = 2;
 indices[5] = 3;
 auto vb = new vertex Buffer<Vertex[]>(device, verts);
-auto ib = new index Buffer<int[]>(device, indices);
+auto ib = new index Buffer<uint[]>(device, indices);
+class Bindings {
+  Sampler* sampler;
+  SampleableTexture2D<float>* textureView;
+}
+
 class Pipeline {
-    float<2> vertexShader(VertexBuiltins vb, Vertex v) vertex {
+    float<2> vertexShader(VertexBuiltins vb) vertex {
+        Vertex v = vert.Get();
         vb.position = v.position;
         return v.texCoord;
     }
     void fragmentShader(FragmentBuiltins fb, float<2> texCoord) fragment {
-      fragColor.Set(textureView.Sample(sampler, texCoord));
+      fragColor.Set(bindings.Get().textureView.Sample(bindings.Get().sampler, texCoord));
     }
-    Sampler* sampler;
-    SampleableTexture2D<float>* textureView;
+    vertex Buffer<Vertex[]>* vert;
+    index Buffer<uint[]>* indexBuffer;
     ColorAttachment<PreferredSwapChainFormat>* fragColor;
+    BindGroup<Bindings>* bindings;
 };
-RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
+auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 auto sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
-auto samplerBG = new BindGroup(device, sampler);
 auto texView = texture.CreateSampleableView();
-auto texBG = new BindGroup(device, texView);
+Bindings bindings;
+bindings.sampler = sampler;
+bindings.textureView = texView;
+auto bindGroup = new BindGroup<Bindings>(device, &bindings);
 auto framebuffer = swapChain.GetCurrentTexture();
 auto encoder = new CommandEncoder(device);
 Pipeline p;
+p.vert = vb;
+p.indexBuffer = ib;
 p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+p.bindings = bindGroup;
 auto renderPass = new RenderPass<Pipeline>(encoder, &p);
 renderPass.SetPipeline(pipeline);
-renderPass.SetBindGroup(0, samplerBG);
-renderPass.SetBindGroup(1, texBG);
-renderPass.SetVertexBuffer(0, vb);
-renderPass.SetIndexBuffer(ib);
 renderPass.DrawIndexed(6, 1, 0, 0, 0);
 renderPass.End();
 device.GetQueue().Submit(encoder.Finish());

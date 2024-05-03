@@ -3,14 +3,17 @@ class Vertex {
   float    pad;
 }
 
+class ComputeBindings {
+  storage Buffer<Vertex[]>* vertStorage;
+}
+
 class BumpCompute {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
-    auto verts = vertStorage.MapReadWriteStorage();
+    auto verts = bindings.Get().vertStorage.MapReadWriteStorage();
     uint pos = cb.globalInvocationId.x;
     verts[pos].position += float<4>( 0.005,  0.0, 0.0, 0.0);
   }
-
-  storage Buffer<Vertex[]>* vertStorage;
+  BindGroup<ComputeBindings>* bindings;
 }
 
 Device* device = new Device();
@@ -22,34 +25,37 @@ verts[1].position = float<4>(-1.0, -1.0, 0.0, 1.0);
 verts[2].position = float<4>( 1.0, -1.0, 0.0, 1.0);
 auto vb = new vertex storage Buffer<Vertex[]>(device, verts);
 class Pipeline {
-  void vertexShader(VertexBuiltins vb, Vertex v) vertex { vb.position = v.position; }
+  void vertexShader(VertexBuiltins vb) vertex { auto v = vert.Get(); vb.position = v.position; }
   void fragmentShader(FragmentBuiltins fb) fragment { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
+  vertex Buffer<Vertex[]>* vert;
 }
 
-RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
+auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 ComputePipeline* computePipeline = new ComputePipeline<BumpCompute>(device);
 
-auto storageBG = new BindGroup(device, vb);
+ComputeBindings cb;
+cb.vertStorage = vb;
+auto storageBG = new BindGroup<ComputeBindings>(device, &cb);
 
 while (System.IsRunning()) {
-  auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
   BumpCompute bc;
+  bc.bindings = storageBG;
   auto computePass = new ComputePass<BumpCompute>(encoder, &bc);
   computePass.SetPipeline(computePipeline);
-  computePass.SetBindGroup(0, storageBG);
   computePass.Dispatch(verts.length, 1, 1);
   computePass.End();
   Pipeline p;
+  p.vert = vb;
   p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
   auto renderPass = new RenderPass<Pipeline>(encoder, &p);
   renderPass.SetPipeline(pipeline);
-  renderPass.SetVertexBuffer(0, vb);
   renderPass.Draw(3, 1, 0, 0);
   renderPass.End();
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
-  System.GetNextEvent();
+
+  while (System.HasPendingEvents()) System.GetNextEvent();
 }
 return 0.0;

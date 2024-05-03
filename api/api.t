@@ -36,6 +36,7 @@ native class Buffer<T> {
   Buffer(Device* device, T^ t);
  ~Buffer();
   void SetData(T^ data);
+  deviceonly T::ElementType Get();
   readonly T^ MapRead();
   writeonly T^ MapWrite();
   readwrite T^ MapReadWrite();
@@ -67,9 +68,10 @@ native class ComputePipeline<T> {
  ~ComputePipeline();
 }
 
-native class BindGroup {
-  BindGroup(Device* device, void^ data);
+native class BindGroup<T> {
+  BindGroup(Device* device, T^ data);
  ~BindGroup();
+  deviceonly T^ Get();
 }
 
 enum AddressMode { Repeat, MirrorRepeat, ClampToEdge };
@@ -188,13 +190,12 @@ native class DepthStencilAttachment<PF> {
 
 native class RenderPass<T> {
   RenderPass(CommandEncoder* encoder, T^ data);
+  RenderPass(RenderPass<T::BaseClass>^ base);
  ~RenderPass();
   void Draw(uint vertexCount, uint instanceCount, uint firstVertex, uint firstInstance);
   void DrawIndexed(uint indexCount, uint instanceCount, uint firstIndex, uint baseVertex, uint firstIntance);
-  void SetBindGroup(uint groupIndex, BindGroup* bindGroup);
-  void SetPipeline(RenderPipeline* pipeline);
-  void SetIndexBuffer(index Buffer* buffer);
-  void SetVertexBuffer(uint slot, vertex Buffer* buffer);
+  void SetPipeline(RenderPipeline<T>* pipeline);
+  void Set(T^ data);
   void End();
 }
 
@@ -202,8 +203,8 @@ native class ComputePass<T> {
   ComputePass(CommandEncoder* encoder, T^ data);
  ~ComputePass();
   void Dispatch(uint workgroupCountX, uint workgroupCountY, uint workgroupCountZ);
-  void SetBindGroup(uint groupIndex, BindGroup* bindGroup);
   void SetPipeline(ComputePipeline* pipeline);
+  void Set(T^ data);
   void End();
 }
 

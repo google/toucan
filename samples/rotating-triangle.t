@@ -22,18 +22,24 @@ verts[2].color = float<3>(0.0, 0.0, 1.0);
 
 auto vb = new vertex Buffer<Vertex[]>(device, verts);
 
+class Bindings {
+  uniform Buffer<Uniforms>* uniformBuffer;
+}
+
 class Pipeline {
-  float<4> vertexShader(VertexBuiltins vb, Vertex vtx) vertex {
-    auto uniforms = uniformBuffer.MapReadUniform();
+  float<4> vertexShader(VertexBuiltins vb) vertex {
+    auto uniforms = bindings.Get().uniformBuffer.MapReadUniform();
+    auto vtx = vert.Get();
     auto position = float<4>(vtx.position.x, vtx.position.y, 0.0, 1.0);
     vb.position = uniforms.mvpMatrix * position;
     return float<4>(vtx.color.r, vtx.color.g, vtx.color.b, 1.0);
   }
   void fragmentShader(FragmentBuiltins fb, float<4> varyings) fragment {
-    fragColor.Set(varyings * uniformBuffer.MapReadUniform().alpha);
+    fragColor.Set(varyings * bindings.Get().uniformBuffer.MapReadUniform().alpha);
   }
+  vertex Buffer<Vertex[]>* vert;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
-  uniform Buffer<Uniforms>* uniformBuffer;
+  BindGroup<Bindings>* bindings;
 }
 
 auto uniformBuffer = new uniform Buffer<Uniforms>(device);
@@ -43,8 +49,10 @@ uniformData.mvpMatrix = float<4, 4>(float<4>(1.0, 0.0, 0.0, 0.0),
                                     float<4>(0.0, 0.0, 1.0, 0.0),
                                     float<4>(0.0, 0.0, 0.0, 1.0));
 uniformData.alpha = 0.5;
-auto bg = new BindGroup(device, uniformBuffer);
-RenderPipeline* pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
+Bindings bindings;
+bindings.uniformBuffer = uniformBuffer;
+auto bg = new BindGroup<Bindings>(device, &bindings);
+auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 float theta = 0.0;
 while (System.IsRunning()) {
   uniformBuffer.SetData(&uniformData);
@@ -54,11 +62,11 @@ while (System.IsRunning()) {
   auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
   Pipeline p;
+  p.vert = vb;
   p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  p.bindings = bg;
   auto renderPass = new RenderPass<Pipeline>(encoder, &p);
   renderPass.SetPipeline(pipeline);
-  renderPass.SetVertexBuffer(0, vb);
-  renderPass.SetBindGroup(0, bg);
   renderPass.Draw(3, 1, 0, 0);
   renderPass.End();
   device.GetQueue().Submit(encoder.Finish());

@@ -128,7 +128,7 @@ class CodeGenSPIRV : public Visitor {
  private:
   Type*    GetAndQualifyUnderlyingType(Type* type);
   void     ExtractPipelineVars(Method* entryPoint, Code* interface);
-  void     ExtractPipelineVars(ClassType* classType, ShaderType shaderType, Code* interface);
+  void     ExtractPipelineVars(ClassType* classType, ShaderType shaderType, Code* interface, uint32_t* inputCount, uint32_t* outputCount);
   uint32_t CreateVectorSplat(uint32_t value, VectorType* type);
   uint32_t CreateCast(Type* srcType, Type* dstType, uint32_t resultType, uint32_t valueId);
   uint32_t GetSampledImageType(Type* imageType);

@@ -394,14 +394,14 @@ class ClassType : public Type {
   Field*              AddField(std::string name, Type* type, Expr* defaultValue);
   Field*              FindField(std::string name);
   void                AddMethod(Method* method, int vtableIndex);
-  void                ComputeFieldOffsets();
+  size_t              ComputeFieldOffsets();
   Method*             FindMethod(const std::string& name, const TypeList& args);
   Method*             FindMethod(const std::string&  name,
                                  ArgList*            args,
                                  TypeTable*          types,
                                  std::vector<Expr*>* newArgList);
   void                AddEnum(std::string id, EnumType* enumType);
-  const FieldVector&  GetFields() { return fields_; }
+  const FieldVector&  GetFields() const { return fields_; }
   const MethodVector& GetMethods() { return methods_; }
   ClassTemplate*      GetTemplate() const { return template_; }
   const TypeList&     GetTemplateArgs() const { return templateArgs_; }
