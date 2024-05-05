@@ -39,9 +39,9 @@ native class Buffer<T> {
   readonly T^ MapRead();
   writeonly T^ MapWrite();
   readwrite T^ MapReadWrite();
-  readonly uniform T^ MapReadUniform();
-  writeonly storage T^ MapWriteStorage();
-  readwrite storage T^ MapReadWriteStorage();
+  deviceonly readonly uniform T^ MapReadUniform();
+  deviceonly writeonly storage T^ MapWriteStorage();
+  deviceonly readwrite storage T^ MapReadWriteStorage();
   void Unmap();
 }
 
@@ -83,27 +83,27 @@ native class Sampler {
 
 native class SampleableTexture1D<ST> {
  ~SampleableTexture1D();
-  ST<4> Sample(Sampler* sampler, float coord);
+  deviceonly ST<4> Sample(Sampler* sampler, float coord);
 }
 
 native class SampleableTexture2D<ST> {
  ~SampleableTexture2D();
-  ST<4> Sample(Sampler* sampler, float<2> coords);
+  deviceonly ST<4> Sample(Sampler* sampler, float<2> coords);
 }
 
 native class SampleableTexture2DArray<ST> {
  ~SampleableTexture2DArray();
-  ST<4> Sample(Sampler* sampler, float<2> coords, uint layer);
+  deviceonly ST<4> Sample(Sampler* sampler, float<2> coords, uint layer);
 }
 
 native class SampleableTexture3D<ST> {
  ~SampleableTexture3D();
-  ST<4> Sample(Sampler* sampler, float<3> coords);
+  deviceonly ST<4> Sample(Sampler* sampler, float<3> coords);
 }
 
 native class SampleableTextureCube<ST> {
  ~SampleableTextureCube();
-  ST<4> Sample(Sampler* sampler, float<3> coords);
+  deviceonly ST<4> Sample(Sampler* sampler, float<3> coords);
 }
 
 native class CommandEncoder;
@@ -177,7 +177,7 @@ enum StoreOp {
 
 native class ColorAttachment<PF> {
   ColorAttachment(renderable Texture2D<PF>* texture, LoadOp loadOp, StoreOp storeOp, float<4> clearValue = float<4>(0.0, 0.0, 0.0, 0.0));
-  void Set(PF::SampledType<4> value);
+  deviceonly void Set(PF::SampledType<4> value);
  ~ColorAttachment();
 }
 

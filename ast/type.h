@@ -318,7 +318,7 @@ struct Method {
   std::vector<uint32_t> spirv;
   std::string           wgsl;
   int                   index = -1;
-  enum { STATIC = 0x01, VIRTUAL = 0x02 } Modifiers;
+  enum { STATIC = 0x01, VIRTUAL = 0x02, DEVICEONLY = 0x04 } Modifiers;
 };
 
 typedef std::vector<std::unique_ptr<Method>> MethodVector;

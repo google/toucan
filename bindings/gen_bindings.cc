@@ -253,12 +253,6 @@ void PrintNativeType(FILE* file, Type* type) {
   } else if (type->IsMatrix()) {
     PrintNativeType(file, static_cast<MatrixType*>(type)->GetColumnType()->GetComponentType());
     fprintf(file, "*");
-  } else if (type->IsFormalTemplateArg()) {
-    // FIXME: remove this once we have "deviceonly" methods
-    fprintf(file, "void");
-  } else if (type->IsUnresolvedScopedType()) {
-    // FIXME: remove this once we have "deviceonly" methods
-    fprintf(file, "void*");
   } else if (type->IsQualified()) {
     PrintNativeType(file, static_cast<QualifiedType*>(type)->GetBaseType());
   } else {
@@ -272,6 +266,7 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
   fprintf(file_, "  m = new Method(0");
   if (method->modifiers & Method::STATIC) { fprintf(file_, " | Method::STATIC"); }
   if (method->modifiers & Method::VIRTUAL) { fprintf(file_, " | Method::VIRTUAL"); }
+  if (method->modifiers & Method::DEVICEONLY) { fprintf(file_, " | Method::DEVICEONLY"); }
   std::string name = method->name;
   if (name[0] == '~') { name = "Destroy"; }
   fprintf(file_, ", returnType, \"%s\", static_cast<ClassType*>(typeList[%d]));\n", name.c_str(),
@@ -292,7 +287,7 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
   }
   fprintf(file_, "  c->AddMethod(m, %d);\n", method->index);
   if (classType->IsNative()) {
-    if (header_) {
+    if (header_ && !(method->modifiers & Method::DEVICEONLY)) {
 #if defined(_WIN32) && !TARGET_IS_WASM
       fprintf(header_, "__declspec(dllexport) ");
 #endif

@@ -437,6 +437,9 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
 #endif
     return;
   }
+  if (method->modifiers & Method::DEVICEONLY) {
+    return;
+  }
   llvm::Function* function = GetOrCreateMethodStub(method);
   if (method->classType->IsNative()) return;
   llvm::BasicBlock* whereWasI = builder_->GetInsertBlock();
