@@ -1166,31 +1166,12 @@ Result CodeGenLLVM::Visit(ConstructorNode* node) {
       llvm::Value* idx = llvm::ConstantInt::get(intType_, i++, true);
       result = builder_->CreateInsertElement(result, elt, idx);
     }
-  } else if (node->GetType()->IsArray() || node->GetType()->IsMatrix()) {
+  } else if (node->GetType()->IsArray() || node->GetType()->IsMatrix() || node->GetType()->IsClass()) {
     int i = 0;
-    result = llvm::ConstantAggregateZero::get(type);
     for (Arg* const& arg : node->GetArgList()->GetArgs()) {
-      llvm::Value* elt = GenerateLLVM(arg->GetExpr());
-      result = builder_->CreateInsertValue(result, elt, i);
-      i++;
-    }
-  } else if (node->GetType()->IsClass()) {
-    result = builder_->CreateAlloca(type, 0, "ptr");
-    if (Method* constructor = node->GetConstructor()) {
-      std::vector<llvm::Value*> args;
-      result = CreatePointer(result, CreateControlBlock(node->GetType()));
-      args.push_back(result);
-      AppendTemporary(result, types_->GetWeakPtrType(node->GetType()));
-      for (Arg* const& arg : node->GetArgList()->GetArgs()) {
-        llvm::Value* v = GenerateLLVM(arg->GetExpr());
-        args.push_back(v);
-        AppendTemporary(v, arg->GetExpr()->GetType(types_));
-      }
-      llvm::Function* function = GetOrCreateMethodStub(constructor);
-      result = builder_->CreateCall(function, args);
-      AppendTemporary(result, types_->GetWeakPtrType(node->GetType()));
-      result = builder_->CreateExtractValue(result, {0});
-      result = builder_->CreateLoad(type, result, "ptr");
+      llvm::Value* v = GenerateLLVM(arg->GetExpr());
+      result = builder_->CreateInsertValue(result, v, i++);
+      AppendTemporary(v, arg->GetExpr()->GetType(types_));
     }
   }
   return result;

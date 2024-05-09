@@ -794,7 +794,7 @@ static void BeginConstructor(int modifiers, Type* type) {
     return;
   }
   ClassType* classType = static_cast<ClassType*>(type);
-  Type* returnType = types_->GetStrongPtrType(classType);
+  Type* returnType = types_->GetWeakPtrType(classType);
   if (classType->IsNative()) {
     modifiers |= Method::STATIC;
   }

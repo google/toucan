@@ -121,8 +121,8 @@ UnaryOp::UnaryOp(Op op, Expr* rhs) : op_(op), rhs_(rhs) {}
 
 Type* UnaryOp::GetType(TypeTable* types) { return rhs_->GetType(types); }
 
-ConstructorNode::ConstructorNode(Type* type, ArgList* arglist, Method* constructor)
-    : type_(type), arglist_(arglist), constructor_(constructor) {}
+ConstructorNode::ConstructorNode(Type* type, ArgList* arglist)
+    : type_(type), arglist_(arglist) {}
 
 VarDeclaration::VarDeclaration(std::string id, Type* type, Expr* initExpr)
     : id_(id), type_(type), initExpr_(initExpr) {}

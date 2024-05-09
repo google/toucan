@@ -76,7 +76,7 @@ Result NodeVisitor::Visit(ExprStmt* stmt) { return Make<ExprStmt>(stmt, Resolve(
 Result NodeVisitor::Visit(ConstructorNode* node) {
   Type*    type = ResolveType(node->GetType());
   ArgList* argList = Resolve(node->GetArgList());
-  return Make<ConstructorNode>(node, type, argList, node->GetConstructor());
+  return Make<ConstructorNode>(node, type, argList);
 }
 
 Result NodeVisitor::Visit(VarDeclaration* decl) {

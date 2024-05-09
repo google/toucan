@@ -239,17 +239,15 @@ class BinOpNode : public Expr {
 
 class ConstructorNode : public Expr {
  public:
-  ConstructorNode(Type* type, ArgList* arglist, Method* constructor = nullptr);
+  ConstructorNode(Type* type, ArgList* arglist);
   Result   Accept(Visitor* visitor) override;
   Type*    GetType(TypeTable* types) override { return type_; }
   Type*    GetType() { return type_; }
   ArgList* GetArgList() { return arglist_; }
-  Method*  GetConstructor() { return constructor_; }
 
  private:
   Type*    type_;
   ArgList* arglist_;
-  Method*  constructor_;
 };
 
 class ArrayAccess : public Expr {

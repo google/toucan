@@ -45,7 +45,6 @@ Result SemanticPass::Visit(SmartToRawPtr* node) {
 Result SemanticPass::Visit(AddressOf* node) {
   Expr* expr = Resolve(node->GetExpr());
   if (!expr) return nullptr;
-  Type* exprType = expr->GetType(types_);
   return Make<AddressOf>(node, expr);
 }
 
@@ -125,8 +124,23 @@ Result SemanticPass::Visit(ConstructorNode* node) {
   Type*    type = node->GetType();
   ArgList* argList = Resolve(node->GetArgList());
   auto     args = argList->GetArgs();
-  Method*  constructor;
-  if (type->IsVector()) {
+  if (type->IsClass()) {
+    ClassType*         classType = static_cast<ClassType*>(type);
+    TypeList           types;
+    std::vector<Expr*> newArgList;
+    Method* constructor = classType->FindMethod(classType->GetName(), argList, types_, &newArgList);
+    if (!constructor) {
+      return Error(node, "constructor for class \"%s\" with those arguments not found",
+                   classType->GetName().c_str());
+    }
+    Expr* value = Make<ConstructorNode>(node, node->GetType(), Make<ArgList>(node));
+    newArgList[0] = Make<AddressOf>(node, value);
+    WidenArgList(node, newArgList, constructor->formalArgList);
+    auto* exprList = Make<ExprList>(node, std::move(newArgList));
+    Expr* result = Make<MethodCall>(node, constructor, exprList);
+    result = Make<SmartToRawPtr>(node, result);
+    return Make<LoadExpr>(node, result);
+  } else if (type->IsVector()) {
     auto vectorType = static_cast<VectorType*>(type);
     if (args.size() > vectorType->GetLength()) {
       return Error(node, "incorrect number of arguments to vector constructor");
@@ -150,18 +164,8 @@ Result SemanticPass::Visit(ConstructorNode* node) {
                      columnType->ToString().c_str(), argType->ToString().c_str());
       }
     }
-  } else if (type->IsClass()) {
-    ClassType*         classType = static_cast<ClassType*>(type);
-    TypeList           types;
-    std::vector<Expr*> exprList;
-    constructor = classType->FindMethod(classType->GetName(), argList, types_, &exprList);
-    if (!constructor) {
-      return Error(node, "constructor for class \"%s\" with those arguments not found",
-                   classType->GetName().c_str());
-    }
-    WidenArgList(node, exprList, constructor->formalArgList);
   }
-  return Make<ConstructorNode>(node, node->GetType(), argList, constructor);
+  return Make<ConstructorNode>(node, node->GetType(), argList);
 }
 
 Stmt* SemanticPass::InitializeVar(ASTNode* node, Expr* varExpr, Type* type, Expr* initExpr) {
