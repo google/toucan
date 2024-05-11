@@ -457,8 +457,8 @@ arith_expr:
   | assignable T_MINUSMINUS                 { $$ = IncDec(IncDecExpr::Op::Dec, false, $1); }
   | '(' arith_expr ')'                      { $$ = $2; }
   | '(' type ')' arith_expr %prec UNARYMINUS      { $$ = Make<CastExpr>($2, $4); }
-  | simple_type '(' arguments ')'           { $$ = Make<ConstructorNode>($1, $3); }
-  | type '[' arith_expr ']' '(' arguments ')'     { $$ = Make<ConstructorNode>(GetArrayType($1, AsIntConstant($3)), $6); }
+  | simple_type '(' arguments ')'           { $$ = Make<UnresolvedConstructor>($1, $3); }
+  | type '[' arith_expr ']' '(' arguments ')'     { $$ = Make<UnresolvedConstructor>(GetArrayType($1, AsIntConstant($3)), $6); }
   | T_INT_LITERAL                           { $$ = Make<IntConstant>($1, 32); }
   | T_UINT_LITERAL                          { $$ = Make<UIntConstant>($1, 32); }
   | T_BYTE_LITERAL                          { $$ = Make<IntConstant>($1, 8); }
@@ -732,10 +732,13 @@ static Stmt* EndClass() {
     destructor->AddFormalArg("this", types_->GetWeakPtrType(classType), nullptr);
     classType->AddMethod(destructor, 0);
   }
-  if (classType->IsClassTemplate()) {
+  // Native classes always need semantic analysis, in order for default args
+  // to be resolved before bindings generation. Non-native template classes don't.
+  if (classType->IsNative() || !classType->IsClassTemplate()) {
+    return Make<UnresolvedClassDefinition>(scope);
+  } else {
     return nullptr;
   }
-  return Make<UnresolvedClassDefinition>(scope);
 }
 
 static void BeginEnum(const char *id) {

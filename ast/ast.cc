@@ -122,7 +122,10 @@ UnaryOp::UnaryOp(Op op, Expr* rhs) : op_(op), rhs_(rhs) {}
 
 Type* UnaryOp::GetType(TypeTable* types) { return rhs_->GetType(types); }
 
-ConstructorNode::ConstructorNode(Type* type, ArgList* arglist)
+UnresolvedConstructor::UnresolvedConstructor(Type* type, ArgList* arglist)
+    : type_(type), arglist_(arglist) {}
+
+Initializer::Initializer(Type* type, ExprList* arglist)
     : type_(type), arglist_(arglist) {}
 
 UnresolvedListExpr::UnresolvedListExpr(ArgList* arglist) : arglist_(arglist) {}
@@ -248,7 +251,9 @@ bool Stmts::ContainsReturn() const {
   return false;
 }
 
-ExprList::ExprList(std::vector<Expr*> exprs) : exprs_(std::move(exprs)) {}
+ExprList::ExprList() {}
+
+ExprList::ExprList(std::vector<Expr*>&& exprs) : exprs_(std::move(exprs)) {}
 
 ExprStmt::ExprStmt(Expr* expr) : expr_(expr) {}
 
@@ -294,7 +299,6 @@ Result CastExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Data::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result EnumConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprList::Accept(Visitor* visitor) { return visitor->Visit(this); }
-Result ConstructorNode::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result SmartToRawPtr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result DoStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result DoubleConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
@@ -304,6 +308,7 @@ Result FieldAccess::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result FloatConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ForStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result IfStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result Initializer::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result InsertElementExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result IntConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result LengthExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
@@ -321,6 +326,7 @@ Result UnresolvedDot::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedIdentifier::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedListExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedClassDefinition::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result UnresolvedConstructor::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedMethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedNewExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedStaticMethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }

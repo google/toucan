@@ -102,7 +102,6 @@ class CodeGenLLVM : public Visitor {
   Result                Visit(BoolConstant* node) override;
   Result                Visit(CastExpr* expr) override;
   Result                Visit(Data* expr) override;
-  Result                Visit(ConstructorNode* node) override;
   Result                Visit(SmartToRawPtr* stmt) override;
   Result                Visit(DoStatement* stmt) override;
   Result                Visit(DoubleConstant* stmt) override;
@@ -113,6 +112,7 @@ class CodeGenLLVM : public Visitor {
   Result                Visit(FloatConstant* node) override;
   Result                Visit(ForStatement* forStmt) override;
   Result                Visit(IfStatement* stmt) override;
+  Result                Visit(Initializer* node) override;
   Result                Visit(InsertElementExpr* expr) override;
   Result                Visit(IntConstant* node) override;
   Result                Visit(LengthExpr* expr) override;

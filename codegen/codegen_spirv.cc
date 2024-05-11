@@ -908,19 +908,11 @@ Result CodeGenSPIRV::Visit(CastExpr* expr) {
   return CreateCast(srcType, dstType, resultType, valueId);
 }
 
-Result CodeGenSPIRV::Visit(ConstructorNode* node) {
-  const std::vector<Arg*>& args = node->GetArgList()->GetArgs();
+Result CodeGenSPIRV::Visit(Initializer* node) {
   Code                     resultArgs;
   uint32_t                 resultType = ConvertType(node->GetType());
-  for (Arg* const& arg : args) {
-    resultArgs.push_back(GenerateSPIRV(arg->GetExpr()));
-  }
-  if (node->GetType()->IsVector()) {
-    auto     vectorType = static_cast<VectorType*>(node->GetType());
-    uint32_t zero = GetZeroConstant(vectorType->GetComponentType());
-    for (int i = args.size(); i < vectorType->GetLength(); ++i) {
-      resultArgs.push_back(zero);
-    }
+  for (auto arg : node->GetArgList()->Get()) {
+    resultArgs.push_back(GenerateSPIRV(arg));
   }
   uint32_t resultId = AppendCode(spv::Op::OpCompositeConstruct, resultType, {resultArgs});
   return resultId;

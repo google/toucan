@@ -30,14 +30,15 @@ class NodeVisitor : public Visitor {
   Result        Visit(BoolConstant* constant) override;
   Result        Visit(CastExpr* expr) override;
   Result        Visit(UnresolvedClassDefinition* defn) override;
-  Result        Visit(ConstructorNode* node) override;
   Result        Visit(DoStatement* stmt) override;
   Result        Visit(DoubleConstant* constant) override;
   Result        Visit(EnumConstant* node) override;
+  Result        Visit(ExprList* node) override;
   Result        Visit(ExprStmt* exprStmt) override;
   Result        Visit(FloatConstant* constant) override;
   Result        Visit(ForStatement* forStmt) override;
   Result        Visit(IfStatement* stmt) override;
+  Result        Visit(Initializer* node) override;
   Result        Visit(IntConstant* constant) override;
   Result        Visit(NewArrayExpr* expr) override;
   Result        Visit(NewExpr* node) override;
@@ -51,6 +52,7 @@ class NodeVisitor : public Visitor {
   Result        Visit(StoreStmt* node) override;
   Result        Visit(UIntConstant* constant) override;
   Result        Visit(UnaryOp* node) override;
+  Result        Visit(UnresolvedConstructor* node) override;
   Result        Visit(UnresolvedDot* node) override;
   Result        Visit(UnresolvedIdentifier* node) override;
   Result        Visit(UnresolvedListExpr* node) override;

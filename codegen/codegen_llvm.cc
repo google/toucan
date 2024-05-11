@@ -1158,32 +1158,32 @@ Result CodeGenLLVM::Visit(FieldAccess* node) {
   return builder_->CreateGEP(ConvertType(type), expr, {Int(0), Int(field->paddedIndex)});
 }
 
-Result CodeGenLLVM::Visit(ConstructorNode* node) {
+Result CodeGenLLVM::Visit(Initializer* node) {
   llvm::Type*  type = ConvertType(node->GetType());
   llvm::Value* result = llvm::ConstantAggregateZero::get(type);
   if (node->GetType()->IsVector()) {
     int i = 0;
-    for (Arg* const& arg : node->GetArgList()->GetArgs()) {
-      llvm::Value* elt = GenerateLLVM(arg->GetExpr());
+    for (auto arg : node->GetArgList()->Get()) {
+      llvm::Value* elt = GenerateLLVM(arg);
       llvm::Value* idx = llvm::ConstantInt::get(intType_, i++, true);
       result = builder_->CreateInsertElement(result, elt, idx);
     }
   } else if (node->GetType()->IsArray() || node->GetType()->IsMatrix()) {
     int i = 0;
-    for (Arg* const& arg : node->GetArgList()->GetArgs()) {
-      llvm::Value* v = GenerateLLVM(arg->GetExpr());
+    for (auto arg : node->GetArgList()->Get()) {
+      llvm::Value* v = GenerateLLVM(arg);
       result = builder_->CreateInsertValue(result, v, i++);
     }
   } else if (node->GetType()->IsClass()) {
     auto classType = static_cast<ClassType*>(node->GetType());
-    auto args = node->GetArgList()->GetArgs();
+    auto args = node->GetArgList()->Get();
     for (; classType != nullptr; classType = classType->GetParent()) {
       for (auto& field : classType->GetFields()) {
         auto arg = args[field->index];
-        if (Expr* expr = arg->GetExpr()) {
-          llvm::Value* v = GenerateLLVM(expr);
+        if (arg) {
+          llvm::Value* v = GenerateLLVM(arg);
           result = builder_->CreateInsertValue(result, v, field->paddedIndex);
-          AppendTemporary(v, expr->GetType(types_));
+          AppendTemporary(v, arg->GetType(types_));
         }
       }
     }

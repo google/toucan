@@ -114,32 +114,33 @@ Result SemanticPass::Visit(ArgList* node) {
   return NodeVisitor::Visit(node);
 }
 
-Result SemanticPass::Visit(ConstructorNode* node) {
+Result SemanticPass::Visit(UnresolvedConstructor* node) {
   Type*    type = node->GetType();
   ArgList* argList = Resolve(node->GetArgList());
   auto     args = argList->GetArgs();
+  std::vector<Expr*> exprs;
   if (type->IsClass()) {
     ClassType*         classType = static_cast<ClassType*>(type);
     TypeList           types;
-    std::vector<Expr*> newArgList;
-    Method* constructor = classType->FindMethod(classType->GetName(), argList, types_, &newArgList);
+    std::vector<Expr*> constructorArgs;
+    Method* constructor = classType->FindMethod(classType->GetName(), argList, types_, &constructorArgs);
     if (!constructor) {
       return Error(node, "constructor for class \"%s\" with those arguments not found",
                    classType->GetName().c_str());
     }
 
-    auto* initializerArgs = Make<ArgList>(node);
     // For now, use default initialization on all fields
     for (ClassType* c = classType; c != nullptr; c = c->GetParent()) {
       for (const auto& field : c->GetFields()) {
-        initializerArgs->Append(Make<Arg>(node, field->name, field->defaultValue));
+        exprs.push_back(Resolve(field->defaultValue));
       }
     }
-    Expr* value = Make<ConstructorNode>(node, node->GetType(), initializerArgs);
+    auto initializerArgs = Make<ExprList>(node, std::move(exprs));
+    Expr* value = Make<Initializer>(node, node->GetType(), initializerArgs);
     value = Make<TempVarExpr>(node, node->GetType(), value);
-    newArgList[0] = Make<RawToWeakPtr>(node, value);
-    WidenArgList(node, newArgList, constructor->formalArgList);
-    auto* exprList = Make<ExprList>(node, std::move(newArgList));
+    constructorArgs[0] = Make<RawToWeakPtr>(node, value);
+    WidenArgList(node, constructorArgs, constructor->formalArgList);
+    auto* exprList = Make<ExprList>(node, std::move(constructorArgs));
     Expr* result = Make<MethodCall>(node, constructor, exprList);
     result = Make<SmartToRawPtr>(node, result);
     return Make<LoadExpr>(node, result);
@@ -148,11 +149,13 @@ Result SemanticPass::Visit(ConstructorNode* node) {
     if (args.size() > vectorType->GetLength()) {
       return Error(node, "incorrect number of arguments to vector constructor");
     } else if (args.size() == 1) {
-      auto* newArgs = Make<ArgList>(node);
       for (int i = 0; i < vectorType->GetLength(); ++i) {
-        newArgs->Append(args[0]);
+        exprs.push_back(args[0]->GetExpr());
       }
-      argList = newArgs;
+    } else {
+      for (auto arg : args) {
+        exprs.push_back(arg->GetExpr());
+      }
     }
   } else if (type->IsMatrix()) {
     auto  matrixType = static_cast<MatrixType*>(type);
@@ -166,9 +169,15 @@ Result SemanticPass::Visit(ConstructorNode* node) {
         return Error(node, "expected type %s in matrix constructor, got %s",
                      columnType->ToString().c_str(), argType->ToString().c_str());
       }
+      exprs.push_back(arg->GetExpr());
+    }
+  } else {
+    for (auto arg : args) {
+      exprs.push_back(arg->GetExpr());
     }
   }
-  return Make<ConstructorNode>(node, node->GetType(), argList);
+  auto exprList = Make<ExprList>(node, std::move(exprs));
+  return Make<Initializer>(node, node->GetType(), exprList);
 }
 
 Stmt* SemanticPass::InitializeVar(ASTNode* node, Expr* varExpr, Type* type, Expr* initExpr) {
@@ -286,31 +295,28 @@ Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
   }
   Type* type = dstType;
   auto argList = node->GetArgList();
+  std::vector<Expr*> exprs;
   if (dstType->IsClass()) {
     auto classType = static_cast<ClassType*>(dstType);
     auto& fields = classType->GetFields();
     if (argList->IsNamed()) {
-      std::vector<Arg*> newArgs(classType->GetTotalFields(), nullptr);
+      exprs.resize(classType->GetTotalFields(), nullptr);
       for (auto arg : argList->GetArgs()) {
         Field* field = classType->FindField(arg->GetID());
-        newArgs[field->index] = Make<Arg>(node, field->name, Widen(arg->GetExpr(), field->type));
+        exprs[field->index] = Widen(arg->GetExpr(), field->type);
       }
       for (ClassType* c = classType; c != nullptr; c = c->GetParent()) {
         for (auto& field : c->GetFields()) {
-          if (newArgs[field->index] == nullptr) {
-            newArgs[field->index] = Make<Arg>(node, field->name, field->defaultValue);
+          if (exprs[field->index] == nullptr) {
+            exprs[field->index] = Resolve(field->defaultValue);
           }
         }
       }
-      argList = Make<ArgList>(node, std::move(newArgs));
     } else {
-      auto* result = Make<ArgList>(node);
       int i = 0;
       for (auto arg : argList->GetArgs()) {
-        auto newArg = Make<Arg>(node, arg->GetID(), Widen(arg->GetExpr(), fields[i++]->type));
-        result->Append(newArg);
+        exprs.push_back(Widen(arg->GetExpr(), fields[i++]->type));
       }
-      argList = result;
     }
   } else {
     if (argList->IsNamed()) {
@@ -327,18 +333,16 @@ Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
     } else {
       assert(!"unexpected type in arglist");
     }
-    auto* result = Make<ArgList>(node);
     for (auto arg : argList->GetArgs()) {
       Expr* argExpr = arg->GetExpr();
       if (argExpr->IsUnresolvedListExpr()) {
         argExpr = ResolveListExpr(static_cast<UnresolvedListExpr*>(argExpr), elementType);
       }
-      auto newArg = Make<Arg>(node, arg->GetID(), argExpr);
-      result->Append(newArg);
+      exprs.push_back(argExpr);
     }
-    argList = result;
   }
-  return Make<ConstructorNode>(node, type, argList);
+  auto exprList = Make<ExprList>(node, std::move(exprs));
+  return Make<Initializer>(node, type, exprList);
 }
 
 Result SemanticPass::Visit(UnresolvedMethodCall* node) {
@@ -589,7 +593,7 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
         }
       }
       WidenArgList(node, exprList, constructor->formalArgList);
-      args = Make<ExprList>(node, exprList);
+      args = Make<ExprList>(node, std::move(exprList));
     } else if (classType->IsNative()) {
       return Error(node->GetArgList(), "matching constructor not found");
     }
@@ -650,7 +654,6 @@ Result SemanticPass::Visit(NewArrayExpr* expr) {
 Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   Scope*     scope = defn->GetScope();
   ClassType* classType = scope->classType;
-  assert(!classType->IsClassTemplate());
   symbols_->PushScope(scope);
   for (const auto& mit : classType->GetMethods()) {
     Method* method = mit.get();
@@ -665,6 +668,9 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
           method->stmts->Append(last);
         }
       }
+    }
+    for (int i = 0; i < method->defaultArgs.size(); ++i) {
+      method->defaultArgs[i] = Resolve(method->defaultArgs[i]);
     }
   }
   Method* destructor = classType->GetVTable()[0];

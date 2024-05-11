@@ -29,7 +29,6 @@ class SemanticPass : public NodeVisitor {
   Result Visit(BinOpNode* node) override;
   Result Visit(CastExpr* expr) override;
   Result Visit(UnresolvedClassDefinition* defn) override;
-  Result Visit(ConstructorNode* node) override;
   Result Visit(Data* expr) override;
   Result Visit(DoStatement* stmt) override;
   Result Visit(ForStatement* forStmt) override;
@@ -40,6 +39,7 @@ class SemanticPass : public NodeVisitor {
   Result Visit(Stmts* stmts) override;
   Result Visit(IncDecExpr* node) override;
   Result Visit(StoreStmt* node) override;
+  Result Visit(UnresolvedConstructor* node) override;
   Result Visit(UnresolvedDot* node) override;
   Result Visit(UnresolvedIdentifier* node) override;
   Result Visit(UnresolvedMethodCall* node) override;

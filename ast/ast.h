@@ -197,8 +197,10 @@ class ArgList : public ASTNode {
 
 class ExprList : public ASTNode {
  public:
-  explicit ExprList(std::vector<Expr*> exprs);
+  ExprList();
+  explicit ExprList(std::vector<Expr*>&& exprs);
   Result                    Accept(Visitor* visitor) override;
+  void                      Append(Expr* expr) { exprs_.push_back(expr); }
   const std::vector<Expr*>& Get() const { return exprs_; }
 
  private:
@@ -239,9 +241,22 @@ class BinOpNode : public Expr {
   Expr* rhs_;
 };
 
-class ConstructorNode : public Expr {
+class Initializer : public Expr {
  public:
-  ConstructorNode(Type* type, ArgList* arglist);
+  Initializer(Type* type, ExprList* arglist);
+  Result     Accept(Visitor* visitor) override;
+  Type*      GetType(TypeTable* types) override { return type_; }
+  Type*      GetType() { return type_; }
+  ExprList*  GetArgList() { return arglist_; }
+
+ private:
+  Type*      type_;
+  ExprList*  arglist_;
+};
+
+class UnresolvedConstructor : public Expr {
+ public:
+  UnresolvedConstructor(Type* type, ArgList* arglist);
   Result   Accept(Visitor* visitor) override;
   Type*    GetType(TypeTable* types) override { return type_; }
   Type*    GetType() { return type_; }
@@ -714,7 +729,6 @@ class Visitor {
   virtual Result Visit(CastExpr* node) { return Default(node); }
   virtual Result Visit(Data* node) { return Default(node); }
   virtual Result Visit(EnumConstant* node) { return Default(node); }
-  virtual Result Visit(ConstructorNode* node) { return Default(node); }
   virtual Result Visit(SmartToRawPtr* node) { return Default(node); }
   virtual Result Visit(DoStatement* node) { return Default(node); }
   virtual Result Visit(DoubleConstant* node) { return Default(node); }
@@ -725,6 +739,7 @@ class Visitor {
   virtual Result Visit(FloatConstant* node) { return Default(node); }
   virtual Result Visit(ForStatement* node) { return Default(node); }
   virtual Result Visit(IfStatement* node) { return Default(node); }
+  virtual Result Visit(Initializer* node) { return Default(node); }
   virtual Result Visit(InsertElementExpr* node) { return Default(node); }
   virtual Result Visit(IntConstant* node) { return Default(node); }
   virtual Result Visit(UIntConstant* node) { return Default(node); }
@@ -738,6 +753,7 @@ class Visitor {
   virtual Result Visit(Stmts* node) { return Default(node); }
   virtual Result Visit(TempVarExpr* node) { return Default(node); }
   virtual Result Visit(UnaryOp* node) { return Default(node); }
+  virtual Result Visit(UnresolvedConstructor* node) { return Default(node); }
   virtual Result Visit(UnresolvedDot* node) { return Default(node); }
   virtual Result Visit(UnresolvedIdentifier* node) { return Default(node); }
   virtual Result Visit(UnresolvedListExpr* node) { return Default(node); }

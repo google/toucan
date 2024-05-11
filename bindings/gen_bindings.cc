@@ -155,9 +155,9 @@ void GenBindings::Run() {
   fprintf(file_, "  Type** typeList = new Type*[%d];\n", numTypes);
   fprintf(file_, "  ASTNode** nodeList = new ASTNode*[%d];\n", 1000 /* FIXME num_nodes */);
   fprintf(file_, "  Expr** exprs = reinterpret_cast<Expr**>(nodeList);\n");
+  fprintf(file_, "  ExprList** exprLists = reinterpret_cast<ExprList**>(nodeList);\n");
   fprintf(file_, "  Stmt** stmts = reinterpret_cast<Stmt**>(nodeList);\n");
   fprintf(file_, "  Stmts** stmtss = reinterpret_cast<Stmts**>(nodeList);\n");
-  fprintf(file_, "  ArgList** argLists = reinterpret_cast<ArgList**>(nodeList);\n");
   fprintf(file_, "  Arg** args = reinterpret_cast<Arg**>(nodeList);\n");
   fprintf(file_, "  Scope* scope;\n");
   fprintf(file_, "  std::shared_ptr<Var> v;\n");
@@ -277,6 +277,7 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
   for (int i = 0; i < argList.size(); ++i) {
     Var*  var = argList[i].get();
     Expr* defaultValue = method->defaultArgs[i];
+    assert(!defaultValue || !defaultValue->GetType(types_)->IsList());
     int   defaultValueId = defaultValue ? sourcePass_.Resolve(defaultValue) : 0;
     fprintf(file_, "  m->AddFormalArg(\"%s\", typeList[%d], ", var->name.c_str(),
             typeMap_[var->type]);

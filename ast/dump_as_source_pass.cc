@@ -104,16 +104,11 @@ Result DumpAsSourcePass::Visit(Stmts* stmts) {
   return {};
 }
 
-Result DumpAsSourcePass::Visit(ArgList* a) {
-  int id = Output(a, "Make<ArgList>()");
-  for (Arg* const& i : a->GetArgs()) {
-    fprintf(file_, "  argLists[%d]->Append(args[%d]);\n", id, Resolve(i));
+Result DumpAsSourcePass::Visit(ExprList* a) {
+  int id = Output(a, "Make<ExprList>()");
+  for (auto expr : a->Get()) {
+    fprintf(file_, "  exprLists[%d]->Append(exprs[%d]);\n", id, Resolve(expr));
   }
-  return {};
-}
-
-Result DumpAsSourcePass::Visit(Arg* a) {
-  Output(a, "Make<Arg>(\"%s\", exprs[%d])", a->GetID().c_str(), Resolve(a->GetExpr()));
   return {};
 }
 
@@ -122,10 +117,10 @@ Result DumpAsSourcePass::Visit(ExprStmt* stmt) {
   return {};
 }
 
-Result DumpAsSourcePass::Visit(ConstructorNode* node) {
+Result DumpAsSourcePass::Visit(Initializer* node) {
   int type = (*typeMap_)[node->GetType()];
   int argList = Resolve(node->GetArgList());
-  Output(node, "Make<ConstructorNode>(typeList[%d], argLists[%d])", type, argList);
+  Output(node, "Make<Initializer>(typeList[%d], exprLists[%d])", type, argList);
   return {};
 }
 
@@ -137,33 +132,9 @@ Result DumpAsSourcePass::Visit(VarDeclaration* decl) {
   return {};
 }
 
-Result DumpAsSourcePass::Visit(UnresolvedMethodCall* node) {
-  int expr = Resolve(node->GetExpr());
-  int arglist = Resolve(node->GetArgList());
-  Output(node, "Make<UnresolvedMethodCall>(exprs[%d], \"%s\", nullptr, argLists[%d])", expr,
-         node->GetID().c_str(), arglist);  // FIXME: nullptr -> typelist
-  return {};
-}
-
-Result DumpAsSourcePass::Visit(UnresolvedStaticMethodCall* node) {
-  NOTIMPLEMENTED();
-  return {};
-}
-
 Result DumpAsSourcePass::Visit(LoadExpr* node) {
   int expr = Resolve(node->GetExpr());
   Output(node, "Make<LoadExpr>(exprs[%d])", expr);
-  return {};
-}
-
-Result DumpAsSourcePass::Visit(UnresolvedIdentifier* node) {
-  Output(node, "Make<UnresolvedIdentifier>(\"%s\")", node->GetID().c_str());
-  return {};
-}
-
-Result DumpAsSourcePass::Visit(UnresolvedDot* node) {
-  int expr = Resolve(node->GetExpr());
-  Output(node, "Make<UnresolvedDot>(exprs[%d], \"%s\")", expr, node->GetID().c_str());
   return {};
 }
 
@@ -219,11 +190,6 @@ Result DumpAsSourcePass::Visit(NewExpr* expr) {
   return {};
 }
 
-Result DumpAsSourcePass::Visit(UnresolvedNewExpr* expr) {
-  NOTIMPLEMENTED();
-  return {};
-}
-
 Result DumpAsSourcePass::Visit(IfStatement* s) {
   NOTIMPLEMENTED();
   return {};
@@ -249,13 +215,8 @@ Result DumpAsSourcePass::Visit(NewArrayExpr* expr) {
   return {};
 }
 
-Result DumpAsSourcePass::Visit(UnresolvedClassDefinition* defn) {
-  NOTIMPLEMENTED();
-  return {};
-}
-
 Result DumpAsSourcePass::Default(ASTNode* node) {
-  assert(false);
+  NOTIMPLEMENTED();
   return {};
 }
 

@@ -30,7 +30,6 @@ class ShaderValidationPass : public Visitor {
   Result            Visit(BoolConstant* constant) override;
   Result            Visit(CastExpr* expr) override;
   Result            Visit(UnresolvedClassDefinition* defn) override;
-  Result            Visit(ConstructorNode* node) override;
   Result            Visit(DoStatement* stmt) override;
   Result            Visit(DoubleConstant* constant) override;
   Result            Visit(EnumConstant* node) override;
@@ -49,6 +48,7 @@ class ShaderValidationPass : public Visitor {
   Result            Visit(StoreStmt* node) override;
   Result            Visit(UIntConstant* constant) override;
   Result            Visit(UnaryOp* node) override;
+  Result            Visit(UnresolvedConstructor* node) override;
   Result            Visit(UnresolvedDot* node) override;
   Result            Visit(UnresolvedIdentifier* node) override;
   Result            Visit(UnresolvedMethodCall* node) override;

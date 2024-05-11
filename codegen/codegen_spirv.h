@@ -87,7 +87,6 @@ class CodeGenSPIRV : public Visitor {
   Result   Visit(BinOpNode* node) override;
   Result   Visit(BoolConstant* expr) override;
   Result   Visit(CastExpr* expr) override;
-  Result   Visit(ConstructorNode* node) override;
   Result   Visit(SmartToRawPtr* node) override;
   Result   Visit(DoStatement* stmt) override;
   Result   Visit(ExprStmt* exprStmt) override;
@@ -95,6 +94,7 @@ class CodeGenSPIRV : public Visitor {
   Result   Visit(FloatConstant* expr) override;
   Result   Visit(ForStatement* stmt) override;
   Result   Visit(IfStatement* stmt) override;
+  Result   Visit(Initializer* node) override;
   Result   Visit(IntConstant* intConstant) override;
   Result   Visit(LengthExpr* expr) override;
   Result   Visit(NewArrayExpr* expr) override;

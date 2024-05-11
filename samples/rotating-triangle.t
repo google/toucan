@@ -49,9 +49,7 @@ uniformData.mvpMatrix = float<4, 4>(float<4>(1.0, 0.0, 0.0, 0.0),
                                     float<4>(0.0, 0.0, 1.0, 0.0),
                                     float<4>(0.0, 0.0, 0.0, 1.0));
 uniformData.alpha = 0.5;
-Bindings bindings;
-bindings.uniformBuffer = uniformBuffer;
-auto bg = new BindGroup<Bindings>(device, &bindings);
+auto bg = new BindGroup<Bindings>(device, { uniformBuffer } );
 auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 float theta = 0.0;
 while (System.IsRunning()) {

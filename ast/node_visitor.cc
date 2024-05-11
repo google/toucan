@@ -34,6 +34,12 @@ Result NodeVisitor::Visit(CastExpr* node) {
   return Make<CastExpr>(node, type, expr);
 }
 
+Result NodeVisitor::Visit(Initializer* node) {
+  Type*     type = ResolveType(node->GetType());
+  ExprList* argList = Resolve(node->GetArgList());
+  return Make<Initializer>(node, type, argList);
+}
+
 Result NodeVisitor::Visit(IntConstant* node) {
   return Make<IntConstant>(node, node->GetValue(), node->GetBits());
 }
@@ -71,12 +77,20 @@ Result NodeVisitor::Visit(ArgList* a) {
   return arglist;
 }
 
+Result NodeVisitor::Visit(ExprList* node) {
+  auto* exprList = Make<ExprList>(node);
+  for (auto expr : node->Get()) {
+    exprList->Append(Resolve(expr));
+  }
+  return exprList;
+}
+
 Result NodeVisitor::Visit(ExprStmt* stmt) { return Make<ExprStmt>(stmt, Resolve(stmt->GetExpr())); }
 
-Result NodeVisitor::Visit(ConstructorNode* node) {
+Result NodeVisitor::Visit(UnresolvedConstructor* node) {
   Type*    type = ResolveType(node->GetType());
   ArgList* argList = Resolve(node->GetArgList());
-  return Make<ConstructorNode>(node, type, argList);
+  return Make<UnresolvedConstructor>(node, type, argList);
 }
 
 Result NodeVisitor::Visit(VarDeclaration* decl) {

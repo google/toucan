@@ -77,7 +77,7 @@ Result ShaderValidationPass::Visit(ExprStmt* stmt) {
   return {};
 }
 
-Result ShaderValidationPass::Visit(ConstructorNode* node) {
+Result ShaderValidationPass::Visit(UnresolvedConstructor* node) {
   Resolve(node->GetArgList());
   return {};
 }
