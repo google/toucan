@@ -39,9 +39,9 @@ class SemanticPass : public NodeVisitor {
   Result Visit(Stmts* stmts) override;
   Result Visit(IncDecExpr* node) override;
   Result Visit(StoreStmt* node) override;
-  Result Visit(UnresolvedConstructor* node) override;
   Result Visit(UnresolvedDot* node) override;
   Result Visit(UnresolvedIdentifier* node) override;
+  Result Visit(UnresolvedInitializer* node) override;
   Result Visit(UnresolvedMethodCall* node) override;
   Result Visit(UnresolvedNewExpr* node) override;
   Result Visit(UnresolvedStaticMethodCall* node) override;

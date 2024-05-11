@@ -122,8 +122,8 @@ UnaryOp::UnaryOp(Op op, Expr* rhs) : op_(op), rhs_(rhs) {}
 
 Type* UnaryOp::GetType(TypeTable* types) { return rhs_->GetType(types); }
 
-UnresolvedConstructor::UnresolvedConstructor(Type* type, ArgList* arglist)
-    : type_(type), arglist_(arglist) {}
+UnresolvedInitializer::UnresolvedInitializer(Type* type, ArgList* arglist, bool constructor)
+    : type_(type), arglist_(arglist), constructor_(constructor) {}
 
 Initializer::Initializer(Type* type, ExprList* arglist)
     : type_(type), arglist_(arglist) {}
@@ -326,7 +326,7 @@ Result UnresolvedDot::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedIdentifier::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedListExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedClassDefinition::Accept(Visitor* visitor) { return visitor->Visit(this); }
-Result UnresolvedConstructor::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result UnresolvedInitializer::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedMethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedNewExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedStaticMethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }

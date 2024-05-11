@@ -909,10 +909,18 @@ Result CodeGenSPIRV::Visit(CastExpr* expr) {
 }
 
 Result CodeGenSPIRV::Visit(Initializer* node) {
+  auto                     args = node->GetArgList()->Get();
   Code                     resultArgs;
   uint32_t                 resultType = ConvertType(node->GetType());
-  for (auto arg : node->GetArgList()->Get()) {
+  for (auto arg : args) {
     resultArgs.push_back(GenerateSPIRV(arg));
+  }
+  if (node->GetType()->IsVector()) {
+    auto     vectorType = static_cast<VectorType*>(node->GetType());
+    uint32_t zero = GetZeroConstant(vectorType->GetComponentType());
+    for (int i = args.size(); i < vectorType->GetLength(); ++i) {
+      resultArgs.push_back(zero);
+    }
   }
   uint32_t resultId = AppendCode(spv::Op::OpCompositeConstruct, resultType, {resultArgs});
   return resultId;

@@ -66,7 +66,7 @@ static void BeginConstructor(int modifiers, Type* type);
 static void BeginDestructor(int modifiers, Type* type);
 static void AddFormalArgument(Type* type, const char* id, Expr* defaultValue);
 static Method* EndMethod(ShaderType shaderType, ArgList* workgroupSize, Stmts* stmts, int index = -1);
-static Method* EndConstructor(Stmts* stmts);
+static Method* EndConstructor(Expr* initializer, Stmts* stmts);
 static Method* EndDestructor(Stmts* stmts);
 static void BeginBlock();
 static void EndBlock(Stmts* stmts);
@@ -120,7 +120,7 @@ Type* FindType(const char* str) {
 %type <type> scalar_type type class_header
 %type <type> simple_type qualified_type
 %type <classType> template_class_header
-%type <expr> expr opt_expr assignable arith_expr expr_or_list
+%type <expr> expr opt_expr assignable arith_expr expr_or_list opt_initializer
 %type <arg> argument
 %type <stmt> statement expr_statement for_loop_stmt
 %type <stmt> assignment
@@ -325,7 +325,7 @@ class_body_decl:
                                             { EndMethod($8, $9, $10); }
   | method_modifiers T_TYPENAME
                                             { BeginConstructor($1, $2); }
-    '(' formal_arguments ')' method_body    { EndConstructor($7); }
+    '(' formal_arguments ')' opt_initializer method_body    { EndConstructor($7, $8); }
   | method_modifiers '~' T_TYPENAME '(' ')' { BeginDestructor($1, $3); }
     method_body                             { EndDestructor($7); }
   | method_modifiers type var_decl_list ';' { ErrorIfMethodModifiers($1);
@@ -457,8 +457,9 @@ arith_expr:
   | assignable T_MINUSMINUS                 { $$ = IncDec(IncDecExpr::Op::Dec, false, $1); }
   | '(' arith_expr ')'                      { $$ = $2; }
   | '(' type ')' arith_expr %prec UNARYMINUS      { $$ = Make<CastExpr>($2, $4); }
-  | simple_type '(' arguments ')'           { $$ = Make<UnresolvedConstructor>($1, $3); }
-  | type '[' arith_expr ']' '(' arguments ')'     { $$ = Make<UnresolvedConstructor>(GetArrayType($1, AsIntConstant($3)), $6); }
+  | simple_type '(' arguments ')'           { $$ = Make<UnresolvedInitializer>($1, $3, true); }
+  | simple_type '{' arguments '}'           { $$ = Make<UnresolvedInitializer>($1, $3, false); }
+  | type '[' arith_expr ']' '(' arguments ')'     { $$ = Make<UnresolvedInitializer>(GetArrayType($1, AsIntConstant($3)), $6, true); }
   | T_INT_LITERAL                           { $$ = Make<IntConstant>($1, 32); }
   | T_UINT_LITERAL                          { $$ = Make<UIntConstant>($1, 32); }
   | T_BYTE_LITERAL                          { $$ = Make<IntConstant>($1, 8); }
@@ -484,6 +485,11 @@ expr:
 expr_or_list:
     expr
   | '{' arguments '}'                       { $$ = Make<UnresolvedListExpr>($2); }
+  ;
+
+opt_initializer:
+    ':' expr_or_list                        { $$ = $2; }
+  | /* nothing */                           { $$ = nullptr; }
   ;
 
 types:
@@ -877,11 +883,19 @@ static void CheckMethodMatch(Method* method, Method* match) {
   }
 }
 
-static Method* EndConstructor(Stmts* stmts) {
+static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
   if (stmts) {
     stmts->Append(Make<ReturnStatement>(Load(ThisExpr()), symbols_->PeekScope()));
   }
-  return EndMethod(ShaderType::None, nullptr, stmts);
+  Method* method = EndMethod(ShaderType::None, nullptr, stmts);
+  if (method->stmts) {
+    if (!initializer) {
+      initializer = Make<UnresolvedListExpr>(Make<ArgList>());
+    }
+    Expr* rawPtrThis = Make<SmartToRawPtr>(Load(ThisExpr()));
+    method->stmts->Prepend(Make<StoreStmt>(rawPtrThis, initializer));
+  }
+  return method;
 }
 
 static Method* EndDestructor(Stmts* stmts) {

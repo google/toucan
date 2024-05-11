@@ -87,10 +87,10 @@ Result NodeVisitor::Visit(ExprList* node) {
 
 Result NodeVisitor::Visit(ExprStmt* stmt) { return Make<ExprStmt>(stmt, Resolve(stmt->GetExpr())); }
 
-Result NodeVisitor::Visit(UnresolvedConstructor* node) {
+Result NodeVisitor::Visit(UnresolvedInitializer* node) {
   Type*    type = ResolveType(node->GetType());
   ArgList* argList = Resolve(node->GetArgList());
-  return Make<UnresolvedConstructor>(node, type, argList);
+  return Make<UnresolvedInitializer>(node, type, argList, node->IsConstructor());
 }
 
 Result NodeVisitor::Visit(VarDeclaration* decl) {

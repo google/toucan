@@ -508,10 +508,11 @@ static bool MatchArgs(ArgList* args, Method* m, TypeTable* types, std::vector<Ex
     int offset = m->modifiers & Method::STATIC ? 0 : 1;
     for (int i = 0; i < numArgs; ++i) {
       Expr* expr = a[i]->GetExpr();
-      if (expr && !expr->GetType(types)->CanWidenTo(m->formalArgList[i + offset]->type)) {
-        return false;
-      }
+      if (expr && !expr->GetType(types)->CanWidenTo(m->formalArgList[i + offset]->type)) { return false; }
       result[i + offset] = expr;
+    }
+    for (int i = offset; i < result.size(); ++i) {
+      if (!result[i]) { return false; }
     }
   }
   *newArgList = result;

@@ -1179,11 +1179,13 @@ Result CodeGenLLVM::Visit(Initializer* node) {
     auto args = node->GetArgList()->Get();
     for (; classType != nullptr; classType = classType->GetParent()) {
       for (auto& field : classType->GetFields()) {
-        auto arg = args[field->index];
-        if (arg) {
-          llvm::Value* v = GenerateLLVM(arg);
-          result = builder_->CreateInsertValue(result, v, field->paddedIndex);
-          AppendTemporary(v, arg->GetType(types_));
+        if (field->index < args.size()) {
+          auto arg = args[field->index];
+          if (arg) {
+            llvm::Value* v = GenerateLLVM(arg);
+            result = builder_->CreateInsertValue(result, v, field->paddedIndex);
+            AppendTemporary(v, arg->GetType(types_));
+          }
         }
       }
     }

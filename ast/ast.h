@@ -254,17 +254,19 @@ class Initializer : public Expr {
   ExprList*  arglist_;
 };
 
-class UnresolvedConstructor : public Expr {
+class UnresolvedInitializer : public Expr {
  public:
-  UnresolvedConstructor(Type* type, ArgList* arglist);
+  UnresolvedInitializer(Type* type, ArgList* arglist, bool constructor);
   Result   Accept(Visitor* visitor) override;
   Type*    GetType(TypeTable* types) override { return type_; }
   Type*    GetType() { return type_; }
   ArgList* GetArgList() { return arglist_; }
+  bool     IsConstructor() { return constructor_; }
 
  private:
   Type*    type_;
   ArgList* arglist_;
+  bool     constructor_;
 };
 
 class UnresolvedListExpr : public Expr {
@@ -493,6 +495,7 @@ class Stmts : public Stmt {
   Stmts();
   Result                    Accept(Visitor* visitor) override;
   void                      Append(Stmt* stmt) { stmts_.push_back(stmt); }
+  void                      Prepend(Stmt* stmt) { stmts_.insert(stmts_.begin(), stmt); }
   Scope*                    GetScope() { return scope_; }
   void                      SetScope(Scope* scope) { scope_ = scope; }
   const std::vector<Stmt*>& GetStmts() { return stmts_; }
@@ -753,7 +756,7 @@ class Visitor {
   virtual Result Visit(Stmts* node) { return Default(node); }
   virtual Result Visit(TempVarExpr* node) { return Default(node); }
   virtual Result Visit(UnaryOp* node) { return Default(node); }
-  virtual Result Visit(UnresolvedConstructor* node) { return Default(node); }
+  virtual Result Visit(UnresolvedInitializer* node) { return Default(node); }
   virtual Result Visit(UnresolvedDot* node) { return Default(node); }
   virtual Result Visit(UnresolvedIdentifier* node) { return Default(node); }
   virtual Result Visit(UnresolvedListExpr* node) { return Default(node); }

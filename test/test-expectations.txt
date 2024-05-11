@@ -54,8 +54,12 @@ test/cast-uint-vector-to-float-vector.t
 result is 3000000000.000000
 test/chained-method-call.t
 result is 1.000000
-test/class-type-constructor.t
-result is 63.000000
+test/class-constructor-calls-constructor.t
+result is 42.000000
+test/class-constructor.t
+result is 21.000000
+test/class-initializer.t
+result is -21.000000
 test/complex-method.t
 result is 10.000000
 test/compute-with-trailing-padding.t
@@ -64,6 +68,8 @@ test/compute.t
 result is 0.000000
 test/constructor-with-default-arg.t
 result is 3.000000
+test/constructor-with-explicit-initializer.t
+result is 2.000000
 test/constructor.t
 result is 3.141590
 test/control-flow.t
@@ -208,6 +214,8 @@ test/loop.t
 result is inf
 test/matrix-constructor.t
 result is 3.000000
+test/matrix-initializer.t
+result is 3.000000
 test/matrix.t
 result is 555.000000
 test/method-assignment-error.t
@@ -320,6 +328,8 @@ test/vector-constructors3.t
 result is 23.000000
 test/vector-constructors4.t
 result is 58.000000
+test/vector-initializer.t
+result is 7.000000
 test/vector-scalar-mul-div.t
 result is 5.500000
 test/vector-store-by-index.t

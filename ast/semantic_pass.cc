@@ -114,12 +114,12 @@ Result SemanticPass::Visit(ArgList* node) {
   return NodeVisitor::Visit(node);
 }
 
-Result SemanticPass::Visit(UnresolvedConstructor* node) {
+Result SemanticPass::Visit(UnresolvedInitializer* node) {
   Type*    type = node->GetType();
   ArgList* argList = Resolve(node->GetArgList());
   auto     args = argList->GetArgs();
   std::vector<Expr*> exprs;
-  if (type->IsClass()) {
+  if (type->IsClass() && node->IsConstructor()) {
     ClassType*         classType = static_cast<ClassType*>(type);
     TypeList           types;
     std::vector<Expr*> constructorArgs;
@@ -128,48 +128,17 @@ Result SemanticPass::Visit(UnresolvedConstructor* node) {
       return Error(node, "constructor for class \"%s\" with those arguments not found",
                    classType->GetName().c_str());
     }
-
-    // For now, use default initialization on all fields
-    for (ClassType* c = classType; c != nullptr; c = c->GetParent()) {
-      for (const auto& field : c->GetFields()) {
-        exprs.push_back(Resolve(field->defaultValue));
-      }
-    }
-    auto initializerArgs = Make<ExprList>(node, std::move(exprs));
-    Expr* value = Make<Initializer>(node, node->GetType(), initializerArgs);
-    value = Make<TempVarExpr>(node, node->GetType(), value);
-    constructorArgs[0] = Make<RawToWeakPtr>(node, value);
+    auto* tempVar = Make<TempVarExpr>(node, node->GetType());
+    constructorArgs[0] = Make<RawToWeakPtr>(node, tempVar);
     WidenArgList(node, constructorArgs, constructor->formalArgList);
     auto* exprList = Make<ExprList>(node, std::move(constructorArgs));
     Expr* result = Make<MethodCall>(node, constructor, exprList);
     result = Make<SmartToRawPtr>(node, result);
     return Make<LoadExpr>(node, result);
-  } else if (type->IsVector()) {
-    auto vectorType = static_cast<VectorType*>(type);
-    if (args.size() > vectorType->GetLength()) {
-      return Error(node, "incorrect number of arguments to vector constructor");
-    } else if (args.size() == 1) {
-      for (int i = 0; i < vectorType->GetLength(); ++i) {
-        exprs.push_back(args[0]->GetExpr());
-      }
-    } else {
-      for (auto arg : args) {
-        exprs.push_back(arg->GetExpr());
-      }
-    }
-  } else if (type->IsMatrix()) {
-    auto  matrixType = static_cast<MatrixType*>(type);
-    Type* columnType = matrixType->GetColumnType();
-    if (args.size() != matrixType->GetNumColumns()) {
-      return Error(node, "incorrect number of arguments to matrix constructor");
-    }
-    for (auto arg : args) {
-      Type* argType = arg->GetExpr()->GetType(types_);
-      if (argType != columnType) {
-        return Error(node, "expected type %s in matrix constructor, got %s",
-                     columnType->ToString().c_str(), argType->ToString().c_str());
-      }
-      exprs.push_back(arg->GetExpr());
+  } else if (type->IsVector() && args.size() == 1) {
+    unsigned int length = static_cast<VectorType*>(type)->GetLength();
+    for (int i = 0; i < length; ++i) {
+      exprs.push_back(args[0]->GetExpr());
     }
   } else {
     for (auto arg : args) {
