@@ -82,7 +82,6 @@ class CodeGenSPIRV : public Visitor {
   uint32_t GetIntConstant(int32_t value);
   uint32_t GetFloatConstant(float value);
   uint32_t GetZeroConstant(Type* type);
-  Result   Visit(AddressOf* expr) override;
   Result   Visit(ArgList* list) override;
   Result   Visit(ArrayAccess* node) override;
   Result   Visit(BinOpNode* node) override;
@@ -108,6 +107,7 @@ class CodeGenSPIRV : public Visitor {
   Result   Visit(InsertElementExpr* expr) override;
   Result   Visit(ExtractElementExpr* expr) override;
   Result   Visit(LoadExpr* expr) override;
+  Result   Visit(RawToWeakPtr* node) override;
   Result   Visit(StoreStmt* stmt) override;
   Result   Visit(ZeroInitStmt* node) override;
   Result   Visit(UIntConstant* node) override;

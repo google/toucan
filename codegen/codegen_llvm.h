@@ -97,7 +97,6 @@ class CodeGenLLVM : public Visitor {
                                                llvm::Value* rhs,
                                                MatrixType*  lhsType,
                                                MatrixType*  rhsType);
-  Result                Visit(AddressOf* expr) override;
   Result                Visit(ArrayAccess* expr) override;
   Result                Visit(BinOpNode* node) override;
   Result                Visit(BoolConstant* node) override;
@@ -121,9 +120,11 @@ class CodeGenLLVM : public Visitor {
   Result                Visit(NewArrayExpr* expr) override;
   Result                Visit(NewExpr* newExpr) override;
   Result                Visit(NullConstant* node) override;
+  Result                Visit(RawToWeakPtr* node) override;
   Result                Visit(ReturnStatement* stmt) override;
   Result                Visit(MethodCall* node) override;
   Result                Visit(Stmts* stmts) override;
+  Result                Visit(TempVarExpr* expr) override;
   Result                Visit(VarExpr* expr) override;
   Result                Visit(IncDecExpr* expr) override;
   Result                Visit(StoreStmt* expr) override;

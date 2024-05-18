@@ -367,6 +367,19 @@ class VarExpr : public Expr {
   Var* var_;
 };
 
+class TempVarExpr : public Expr {
+ public:
+  TempVarExpr(Type* type, Expr* initExpr = nullptr);
+  Result Accept(Visitor* visitor) override;
+  Type*  GetType(TypeTable* types) override;
+  Type*  GetType() const { return type_; }
+  Expr*  GetInitExpr() const { return initExpr_; }
+
+ private:
+  Type* type_;
+  Expr* initExpr_;
+};
+
 class SmartToRawPtr : public Expr {
  public:
   SmartToRawPtr(Expr* expr);
@@ -378,9 +391,9 @@ class SmartToRawPtr : public Expr {
   Expr* expr_;
 };
 
-class AddressOf : public Expr {
+class RawToWeakPtr : public Expr {
  public:
-  AddressOf(Expr* expr);
+  RawToWeakPtr(Expr* expr);
   Result Accept(Visitor* visitor) override;
   Type*  GetType(TypeTable* types) override;
   Expr*  GetExpr() { return expr_; }
@@ -693,7 +706,6 @@ class NodeVector {
 
 class Visitor {
  public:
-  virtual Result Visit(AddressOf* node) { return Default(node); }
   virtual Result Visit(Arg* node) { return Default(node); }
   virtual Result Visit(ArgList* node) { return Default(node); }
   virtual Result Visit(ArrayAccess* node) { return Default(node); }
@@ -720,9 +732,11 @@ class Visitor {
   virtual Result Visit(NewArrayExpr* node) { return Default(node); }
   virtual Result Visit(NewExpr* node) { return Default(node); }
   virtual Result Visit(NullConstant* node) { return Default(node); }
+  virtual Result Visit(RawToWeakPtr* node) { return Default(node); }
   virtual Result Visit(ReturnStatement* node) { return Default(node); }
   virtual Result Visit(MethodCall* node) { return Default(node); }
   virtual Result Visit(Stmts* node) { return Default(node); }
+  virtual Result Visit(TempVarExpr* node) { return Default(node); }
   virtual Result Visit(UnaryOp* node) { return Default(node); }
   virtual Result Visit(UnresolvedDot* node) { return Default(node); }
   virtual Result Visit(UnresolvedIdentifier* node) { return Default(node); }

@@ -87,6 +87,8 @@ Result NodeVisitor::Visit(VarDeclaration* decl) {
 
 Result NodeVisitor::Visit(LoadExpr* node) { return Make<LoadExpr>(node, Resolve(node->GetExpr())); }
 
+Result NodeVisitor::Visit(SmartToRawPtr* node) { return Make<SmartToRawPtr>(node, Resolve(node->GetExpr())); }
+
 Result NodeVisitor::Visit(StoreStmt* node) {
   return Make<StoreStmt>(node, Resolve(node->GetLHS()), Resolve(node->GetRHS()));
 }
@@ -102,6 +104,8 @@ Result NodeVisitor::Visit(UnaryOp* node) {
   if (!rhs) return nullptr;
   return Make<UnaryOp>(node, node->GetOp(), rhs);
 }
+
+Result NodeVisitor::Visit(RawToWeakPtr* node) { return Make<RawToWeakPtr>(node, Resolve(node->GetExpr())); }
 
 Result NodeVisitor::Visit(ReturnStatement* stmt) {
   return Make<ReturnStatement>(stmt, Resolve(stmt->GetExpr()), stmt->GetScope());

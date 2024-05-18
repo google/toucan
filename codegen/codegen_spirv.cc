@@ -926,9 +926,9 @@ Result CodeGenSPIRV::Visit(ConstructorNode* node) {
   return resultId;
 }
 
-Result CodeGenSPIRV::Visit(AddressOf* node) { return GenerateSPIRV(node->GetExpr()); }
-
 Result CodeGenSPIRV::Visit(SmartToRawPtr* node) { return GenerateSPIRV(node->GetExpr()); }
+
+Result CodeGenSPIRV::Visit(RawToWeakPtr* node) { return GenerateSPIRV(node->GetExpr()); }
 
 Result CodeGenSPIRV::Visit(DoStatement* doStmt) {
   uint32_t loopBody = NextId();

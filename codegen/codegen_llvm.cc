@@ -1005,6 +1005,15 @@ Result CodeGenLLVM::Visit(VarExpr* expr) {
   return inst;
 }
 
+Result CodeGenLLVM::Visit(TempVarExpr* node) {
+  llvm::Type*       type = ConvertType(node->GetType());
+  auto* tempVar = builder_->CreateAlloca(type);
+  if (Expr* initExpr = node->GetInitExpr()) {
+    builder_->CreateStore(GenerateLLVM(initExpr), tempVar);
+  }
+  return tempVar;
+}
+
 Result CodeGenLLVM::Visit(LoadExpr* expr) {
   llvm::Value* e = GenerateLLVM(expr->GetExpr());
   Type*        type = expr->GetType(types_);
@@ -1122,16 +1131,10 @@ Result CodeGenLLVM::Visit(ArrayAccess* node) {
   }
 }
 
-Result CodeGenLLVM::Visit(AddressOf* node) {
+Result CodeGenLLVM::Visit(RawToWeakPtr* node) {
   llvm::Value* expr = GenerateLLVM(node->GetExpr());
   Type*        type = node->GetExpr()->GetType(types_);
-  if (type->IsRawPtr()) {
-    type = static_cast<RawPtrType*>(type)->GetBaseType();
-  } else {
-    llvm::AllocaInst* allocaInst = builder_->CreateAlloca(ConvertType(type));
-    builder_->CreateStore(expr, allocaInst);
-    expr = allocaInst;
-  }
+  type = static_cast<RawPtrType*>(type)->GetBaseType();
   return CreatePointer(expr, CreateControlBlock(type));
 }
 

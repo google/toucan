@@ -501,7 +501,7 @@ assignable:
   | simple_type '.' T_IDENTIFIER '(' arguments ')'
                                             { $$ = MakeStaticMethodCall($1, $3, $5); }
   | '*' assignable %prec UNARYMINUS         { $$ = Make<SmartToRawPtr>(Make<LoadExpr>($2)); }
-  | '&' assignable %prec UNARYMINUS         { $$ = Make<AddressOf>($2); }
+  | '&' assignable %prec UNARYMINUS         { $$ = Make<RawToWeakPtr>($2); }
   ;
 
 %%

@@ -42,12 +42,6 @@ Result SemanticPass::Visit(SmartToRawPtr* node) {
   return Make<SmartToRawPtr>(node, expr);
 }
 
-Result SemanticPass::Visit(AddressOf* node) {
-  Expr* expr = Resolve(node->GetExpr());
-  if (!expr) return nullptr;
-  return Make<AddressOf>(node, expr);
-}
-
 Result SemanticPass::Visit(ArrayAccess* node) {
   if (!node->GetIndex()) { return Error(node, "variable-sized array type used as expression"); }
   Expr* expr = Resolve(node->GetExpr());
@@ -142,7 +136,8 @@ Result SemanticPass::Visit(ConstructorNode* node) {
       }
     }
     Expr* value = Make<ConstructorNode>(node, node->GetType(), initializerArgs);
-    newArgList[0] = Make<AddressOf>(node, value);
+    value = Make<TempVarExpr>(node, node->GetType(), value);
+    newArgList[0] = Make<RawToWeakPtr>(node, value);
     WidenArgList(node, newArgList, constructor->formalArgList);
     auto* exprList = Make<ExprList>(node, std::move(newArgList));
     Expr* result = Make<MethodCall>(node, constructor, exprList);
@@ -286,7 +281,8 @@ Expr* SemanticPass::Widen(Expr* node, Type* dstType) {
 Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
   if (dstType->IsPtr()) {
     dstType = static_cast<PtrType*>(dstType)->GetBaseType();
-    return Make<AddressOf>(node, ResolveListExpr(node, dstType));
+    auto* tempVar = Make<TempVarExpr>(node, dstType, ResolveListExpr(node, dstType));
+    return Make<RawToWeakPtr>(node, tempVar);
   }
   Type* type = dstType;
   auto argList = node->GetArgList();
@@ -359,7 +355,10 @@ Result SemanticPass::Visit(UnresolvedMethodCall* node) {
     type = static_cast<PtrType*>(type)->GetBaseType();
     if (expr->GetType(types_)->IsRawPtr()) { expr = Make<LoadExpr>(node, expr); }
   } else {
-    expr = Make<AddressOf>(node, expr);
+    if (!expr->GetType(types_)->IsRawPtr()) {
+      expr = Make<TempVarExpr>(node, expr->GetType(types_), expr);
+    }
+    expr = Make<RawToWeakPtr>(node, expr);
     thisPtrType = expr->GetType(types_);
   }
   if (!type) { return Error(node, "calling method on void pointer?"); }

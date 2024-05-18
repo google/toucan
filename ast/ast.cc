@@ -36,13 +36,12 @@ Type* IncDecExpr::GetType(TypeTable* types) {
 
 Type* VarExpr::GetType(TypeTable* types) { return types->GetRawPtrType(var_->type); }
 
-Type* AddressOf::GetType(TypeTable* types) {
+Type* TempVarExpr::GetType(TypeTable* types) { return types->GetRawPtrType(type_); }
+
+Type* RawToWeakPtr::GetType(TypeTable* types) {
   Type* type = expr_->GetType(types);
-  if (type->IsRawPtr()) {
-    return types->GetWeakPtrType(static_cast<RawPtrType*>(type)->GetBaseType());
-  } else {
-    return types->GetWeakPtrType(type);
-  }
+  assert(type->IsRawPtr());
+  return types->GetWeakPtrType(static_cast<RawPtrType*>(type)->GetBaseType());
 }
 
 Type* SmartToRawPtr::GetType(TypeTable* types) {
@@ -153,6 +152,8 @@ MethodCall::MethodCall(Method* method, ExprList* arglist) : method_(method), arg
 
 VarExpr::VarExpr(Var* var) : var_(var) {}
 
+TempVarExpr::TempVarExpr(Type* type, Expr* initExpr) : type_(type), initExpr_(initExpr) {}
+
 LoadExpr::LoadExpr(Expr* expr) : expr_(expr) {}
 
 StoreStmt::StoreStmt(Expr* lhs, Expr* rhs) : lhs_(lhs), rhs_(rhs) {}
@@ -164,7 +165,7 @@ ZeroInitStmt::ZeroInitStmt(Expr* lhs) : lhs_(lhs) {}
 
 UnresolvedDot::UnresolvedDot(Expr* expr, std::string id) : expr_(expr), id_(id) {}
 
-AddressOf::AddressOf(Expr* expr) : expr_(expr) {}
+RawToWeakPtr::RawToWeakPtr(Expr* expr) : expr_(expr) {}
 
 SmartToRawPtr::SmartToRawPtr(Expr* expr) : expr_(expr) {}
 
@@ -284,7 +285,6 @@ UnresolvedClassDefinition::UnresolvedClassDefinition(Scope* scope) : scope_(scop
 
 NodeVector::NodeVector() {}
 
-Result AddressOf::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Arg::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ArgList::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ArrayAccess::Accept(Visitor* visitor) { return visitor->Visit(this); }
@@ -312,7 +312,9 @@ Result NewExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result NullConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ReturnStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result MethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result RawToWeakPtr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Stmts::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result TempVarExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UIntConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnaryOp::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedDot::Accept(Visitor* visitor) { return visitor->Visit(this); }

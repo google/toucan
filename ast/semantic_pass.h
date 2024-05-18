@@ -37,7 +37,6 @@ class SemanticPass : public NodeVisitor {
   Result Visit(NewArrayExpr* expr) override;
   Result Visit(LoadExpr* node) override;
   Result Visit(SmartToRawPtr* expr) override;
-  Result Visit(AddressOf* expr) override;
   Result Visit(Stmts* stmts) override;
   Result Visit(IncDecExpr* node) override;
   Result Visit(StoreStmt* node) override;
