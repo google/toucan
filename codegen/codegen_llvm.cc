@@ -425,7 +425,7 @@ llvm::Intrinsic::ID CodeGenLLVM::FindIntrinsic(Method* method) {
       "Math", "sqrt",  llvm::Intrinsic::sqrt,
       "Math", "sin",   llvm::Intrinsic::sin,
       "Math", "cos",   llvm::Intrinsic::cos,
-      "Math", "abs",   llvm::Intrinsic::abs,
+      "Math", "fabs",  llvm::Intrinsic::fabs,
   };
 
   for (auto intrinsic : intrinsics) {

@@ -120,6 +120,8 @@ result is 705032704.000000
 test/error-wrong-named-param.t
 error-wrong-named-param.t:7:  class Bar has no method Foo(b = float, a = int)
 error-wrong-named-param.t:7:  float Bar.Foo(int, float)
+test/fabs.t
+result is 3.000000
 test/fail-allocate-class-with-unsized-array.t
 fail-allocate-class-with-unsized-array.t:5:  class with unsized array must be allocated with size
 test/fail-invalid-storage-types.t

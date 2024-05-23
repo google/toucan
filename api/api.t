@@ -234,10 +234,10 @@ native class Math {
   static float<2> cos(float<2> v);
   static float<3> cos(float<3> v);
   static float<4> cos(float<4> v);
-  static float    abs(float v);
-  static float<2> abs(float<2> v);
-  static float<3> abs(float<3> v);
-  static float<4> abs(float<4> v);
+  static float    fabs(float v);
+  static float<2> fabs(float<2> v);
+  static float<3> fabs(float<3> v);
+  static float<4> fabs(float<4> v);
   static float    rand();
   static float<3> normalize(float<3> v);
   static float<3> reflect(float<3> incident, float<3> normal);

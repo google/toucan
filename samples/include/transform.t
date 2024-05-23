@@ -49,7 +49,7 @@ class Transform {
     for (j = 0; j < 4; ++j) {
       i1 = j;
       for (i = j + 1; i < 4; ++i)
-        if (Math.abs(a[j][i]) > Math.abs(a[j][i1]))
+        if (Math.fabs(a[j][i]) > Math.fabs(a[j][i1]))
           i1 = i;
 
       if (i1 != j) {

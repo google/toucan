@@ -1160,7 +1160,7 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
       return AppendExtInst(GLSLstd450Sin, resultType, expr->GetArgList());
     } else if (method->name == "cos") {
       return AppendExtInst(GLSLstd450Cos, resultType, expr->GetArgList());
-    } else if (method->name == "abs") {
+    } else if (method->name == "fabs") {
       return AppendExtInst(GLSLstd450FAbs, resultType, expr->GetArgList());
     } else if (method->name == "reflect") {
       return AppendExtInst(GLSLstd450Reflect, resultType, expr->GetArgList());
