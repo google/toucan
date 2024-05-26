@@ -19,6 +19,7 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 
+#include <cstring>
 #include <filesystem>
 #include <optional>
 #include <stack>
@@ -80,6 +81,7 @@ static Expr* MakeArrayAccess(Expr* lhs, Expr* expr);
 static Expr* MakeNewExpr(Type* type, Expr* length, ArgList* arguments);
 static Expr* MakeNewArrayExpr(Type* type, Expr* length);
 static Expr* InlineFile(const char* filename);
+static Expr* StringLiteral(const char* str);
 static void MakeVarDeclList(Type* type, Stmts* stmts);
 static void ErrorIfMethodModifiers(int methodModifiers);
 static Type* GetArrayType(Type* elementType, int numElements);
@@ -136,7 +138,7 @@ Type* FindType(const char* str) {
 %type <i> method_modifier method_modifiers class_or_native_class
 %type <shaderType> opt_shader_type
 %type <type> opt_parent_class
-%token <identifier> T_IDENTIFIER T_STRING
+%token <identifier> T_IDENTIFIER T_STRING_LITERAL
 %token <type> T_TYPENAME
 %token <i> T_BYTE_LITERAL T_UBYTE_LITERAL T_SHORT_LITERAL T_USHORT_LITERAL
 %token <i> T_INT_LITERAL T_UINT_LITERAL
@@ -480,7 +482,8 @@ expr:
   | T_NEW type '(' arguments ')'            { $$ = MakeNewExpr($2, nullptr, $4); }
   | T_NEW type '[' arith_expr ']'           { $$ = MakeNewArrayExpr($2, $4); }
   | T_NEW '[' arith_expr ']' type '(' arguments ')' { $$ = MakeNewExpr($5, $3, $7); }
-  | T_INLINE '(' T_STRING ')'               { $$ = InlineFile($3); }
+  | T_INLINE '(' T_STRING_LITERAL ')'       { $$ = InlineFile($3); }
+  | T_STRING_LITERAL                        { $$ = StringLiteral($1); }
   ;
 
 expr_or_list:
@@ -609,6 +612,14 @@ static Expr* InlineFile(const char* filename) {
   }
   yyerrorf("file \"%s\" not found", filename);
   return nullptr;
+}
+
+static Expr* StringLiteral(const char* str) {
+  size_t length = strlen(str);
+  auto buffer = std::make_unique<uint8_t[]>(length);
+  memcpy(buffer.get(), str, length);
+  Type* type = types_->GetArrayType(types_->GetUByte(), 0, MemoryLayout::Default);
+  return Make<Data>(type, std::move(buffer), length);
 }
 
 static void PushFile(const char* filename) {

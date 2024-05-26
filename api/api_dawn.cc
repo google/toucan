@@ -1294,6 +1294,15 @@ float Math_rand() { return (float)(rand() % 100) / 100.0f; }
 
 void Math_Destroy(Math* This) {}
 
+void System_Print(Object* buffer) {
+  fwrite(buffer->ptr, 1, buffer->controlBlock->arrayLength, stdout);
+}
+
+void System_PrintLine(Object* buffer) {
+  fwrite(buffer->ptr, 1, buffer->controlBlock->arrayLength, stdout);
+  fwrite("\n", 1, 1, stdout);
+}
+
 void System_Destroy(System* This) {}
 
 void Event_Destroy(Event* This) { delete This; }

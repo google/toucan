@@ -150,6 +150,10 @@ test/gouraud-separate-vertex-buffers.t
 result is 0.000000
 test/gouraud.t
 result is 0.000000
+test/hello-split.t
+result is 0.000000
+test/hello.t
+result is 0.000000
 test/if-stmt.t
 result is 3.000000
 test/implicit-return.t

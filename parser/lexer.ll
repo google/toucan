@@ -148,7 +148,7 @@ half    { return T_HALF; }
   std::string s(yytext + 1, strlen(yytext) - 2);
   identifiers_[yytext] = s;
   yylval.identifier = identifiers_[yytext].c_str();
-  return T_STRING;
+  return T_STRING_LITERAL;
 }
 
 [ \t\r]+        /* eat up whitespace */

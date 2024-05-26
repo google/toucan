@@ -275,6 +275,8 @@ native class System {
   static Event* GetNextEvent();
   static int    StorageBarrier();   // FIXME should be void return
   static double GetCurrentTime();
+  static void   Print(ubyte[]^ str);
+  static void   PrintLine(ubyte[]^ str);
 }
 
 class VertexBuiltins {

@@ -43,3 +43,7 @@ toucan_executable("gouraud") {
 toucan_executable("decode") {
   sources = [ "decode.t" ]
 }
+
+toucan_executable("hello") {
+  sources = [ "hello.t" ]
+}
