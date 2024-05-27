@@ -1,3 +1,5 @@
+test/abort.t
+result is 0.000000
 test/aggregate-return.t
 result is 1.000000
 test/allocate-unsized-array.t
@@ -26,6 +28,8 @@ array-new.t:4: array size is not an integer constant
 array-new.t:5: array size is not an integer constant
 test/arrays.t
 result is 1242.000000
+test/assert-failed.t
+result is 0.000000
 test/bind-group.t
 result is 0.000000
 test/binop-widen.t
@@ -106,7 +110,8 @@ result is 0.000000
 test/error-int-literal-too-large.t
 result is -2147483648.000000
 test/error-named-param-missing-one.t
-error-named-param-missing-one.t:7:  formal parameter "i" has no default value
+error-named-param-missing-one.t:7:  class Bar has no method Foo(f = float)
+error-named-param-missing-one.t:7:  float Bar.Foo(int, float)
 test/error-non-static-method-called-statically.t
 error-non-static-method-called-statically.t:5:  attempt to call non-static method "bar" on class "Foo"
 test/error-partial-template.t
@@ -120,6 +125,8 @@ result is 705032704.000000
 test/error-wrong-named-param.t
 error-wrong-named-param.t:7:  class Bar has no method Foo(b = float, a = int)
 error-wrong-named-param.t:7:  float Bar.Foo(int, float)
+test/expectation-failed.t
+result is 0.000000
 test/fabs.t
 result is 3.000000
 test/fail-allocate-class-with-unsized-array.t
@@ -137,6 +144,10 @@ test/field-default-value.t
 result is 42.000000
 test/field-store.t
 result is 2.000000
+test/file-location-default-arg.t
+result is 0.000000
+test/file-location.t
+result is 0.000000
 test/for-stmt.t
 result is 2.700000
 test/forward-field.t

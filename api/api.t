@@ -271,13 +271,16 @@ native class Event {
 
 native class System {
  ~System();
-  static bool   IsRunning();
-  static bool   HasPendingEvents();
-  static Event* GetNextEvent();
-  static int    StorageBarrier();   // FIXME should be void return
-  static double GetCurrentTime();
-  static void   Print(ubyte[]^ str);
-  static void   PrintLine(ubyte[]^ str);
+  static bool     IsRunning();
+  static bool     HasPendingEvents();
+  static Event*   GetNextEvent();
+  static int      StorageBarrier();   // FIXME should be void return
+  static double   GetCurrentTime();
+  static void     Print(ubyte[]^ str);
+  static void     PrintLine(ubyte[]^ str);
+  static ubyte[]* GetSourceFile();
+  static int      GetSourceLine();
+  static void     Abort();
 }
 
 class VertexBuiltins {

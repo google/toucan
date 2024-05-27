@@ -39,6 +39,8 @@ class LLVMContext;
 
 namespace Toucan {
 
+class CodeGenLLVM;
+
 typedef llvm::IRBuilder<> LLVMBuilder;
 
 struct ValueTypePair {
@@ -50,6 +52,7 @@ struct ValueTypePair {
 using DataVars = std::unordered_map<const void*, llvm::GlobalValue*>;
 using IntrinsicMap = std::unordered_map<Method*, llvm::Intrinsic::ID>;
 using DerefList = std::vector<ValueTypePair>;
+using BuiltinCall = llvm::Value* (CodeGenLLVM::*)(const FileLocation& location);
 
 class CodeGenLLVM : public Visitor {
  public:
@@ -84,6 +87,9 @@ class CodeGenLLVM : public Visitor {
   llvm::Value*          ConvertToNative(Type* type, llvm::Value* value);
   llvm::Value*          ConvertFromNative(Type* type, llvm::Value* value);
   llvm::Intrinsic::ID   FindIntrinsic(Method* method);
+  BuiltinCall           FindBuiltin(Method* method);
+  llvm::Value*          GetSourceFile(const FileLocation& location);
+  llvm::Value*          GetSourceLine(const FileLocation& location);
   llvm::GlobalVariable* GetOrCreateVTable(ClassType* classType);
   void                  FillVTable(ClassType* classType);
   void                  InitializeObject(llvm::Value* objPtr, ClassType* classType);
@@ -147,7 +153,12 @@ class CodeGenLLVM : public Visitor {
                           Type*        dstType,
                           llvm::Value* value,
                           llvm::Type*  dstLLVMType);
-  llvm::Value* GenerateMethodCall(Method* method, ExprList* args, int qualifiers, Type* returnType);
+  llvm::Value* GenerateMethodCall(Method*             method,
+                                  ExprList*           args,
+                                  int                 qualifiers,
+                                  Type*               returnType,
+                                  const FileLocation& location);
+  llvm::Value* GenerateGlobalData(const void* data, size_t size, Type* type);
   void         AppendTemporary(llvm::Value* value, Type* type);
   void         DestroyTemporaries();
   llvm::Value* CreateTypePtr(Type* type);

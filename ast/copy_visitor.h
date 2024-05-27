@@ -40,6 +40,7 @@ class CopyVisitor : public Visitor {
   Result        Visit(IfStatement* stmt) override;
   Result        Visit(Initializer* node) override;
   Result        Visit(IntConstant* constant) override;
+  Result        Visit(MethodCall* node) override;
   Result        Visit(NewArrayExpr* expr) override;
   Result        Visit(NewExpr* node) override;
   Result        Visit(UnresolvedNewExpr* node) override;
@@ -64,8 +65,12 @@ class CopyVisitor : public Visitor {
   template <typename T>
   T* Resolve(T* t) {
     if (t) {
-      ScopedFileLocation scopedFile(&fileLocation_, t->GetFileLocation());
-      return static_cast<T*>(t->Accept(this).p);
+      if (copyFileLocation_) {
+        ScopedFileLocation scopedFile(&fileLocation_, t->GetFileLocation());
+        return static_cast<T*>(t->Accept(this).p);
+      } else {
+        return static_cast<T*>(t->Accept(this).p);
+      }
     } else {
       return nullptr;
     }
@@ -79,9 +84,8 @@ class CopyVisitor : public Visitor {
     return node;
   }
   FileLocation fileLocation_;
-
- private:
-  NodeVector* nodes_;
+  bool         copyFileLocation_ = true;
+  NodeVector*  nodes_;
 };
 
 };  // namespace Toucan

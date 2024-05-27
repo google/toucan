@@ -435,6 +435,34 @@ llvm::Intrinsic::ID CodeGenLLVM::FindIntrinsic(Method* method) {
   return llvm::Intrinsic::not_intrinsic;
 }
 
+llvm::Value* CodeGenLLVM::GetSourceFile(const FileLocation& location) {
+  const std::string* filename = location.filename.get();
+  Type*              type = types_->GetArrayType(types_->GetUByte(), 0, MemoryLayout::Default);
+  return GenerateGlobalData(filename->c_str(), filename->length(), type);
+}
+
+llvm::Value* CodeGenLLVM::GetSourceLine(const FileLocation& location) {
+  return llvm::ConstantInt::get(intType_, location.lineNum, true);
+}
+
+BuiltinCall CodeGenLLVM::FindBuiltin(Method* method) {
+  constexpr struct {
+    const char* className;
+    const char* methodName;
+    BuiltinCall call;
+  } builtins[] = {
+      "System", "GetSourceFile", &CodeGenLLVM::GetSourceFile,
+      "System", "GetSourceLine", &CodeGenLLVM::GetSourceLine,
+  };
+
+  for (auto builtin : builtins) {
+    if (method->name == builtin.methodName && method->classType->GetName() == builtin.className) {
+      return builtin.call;
+    }
+  }
+  return nullptr;
+}
+
 void CodeGenLLVM::GenCodeForMethod(Method* method) {
   if (method->shaderType != ShaderType::None) {
     CodeGenSPIRV codeGenSPIRV(types_);
@@ -845,23 +873,25 @@ Result CodeGenLLVM::Visit(CastExpr* expr) {
   return CreateCast(srcType, dstType, value, ConvertType(dstType));
 }
 
-Result CodeGenLLVM::Visit(Data* expr) {
-  const void*        data = expr->GetData();
+llvm::Value* CodeGenLLVM::GenerateGlobalData(const void* data, size_t size, Type* type) {
   llvm::GlobalValue* var = dataVars_[data];
   if (!var) {
-    llvm::StringRef stringRef(static_cast<const char*>(data), expr->GetSize());
-    llvm::Constant* initializer =
-        llvm::ConstantDataArray::getRaw(stringRef, expr->GetSize(), byteType_);
+    llvm::StringRef stringRef(static_cast<const char*>(data), size);
+    llvm::Constant* initializer = llvm::ConstantDataArray::getRaw(stringRef, size, byteType_);
     var = new llvm::GlobalVariable(*module_, initializer->getType(), true,
                                    llvm::GlobalVariable::InternalLinkage, initializer, "data");
     dataVars_[data] = var;
   }
-  llvm::Value* controlBlock = CreateControlBlock(expr->GetType(types_));
-  builder_->CreateStore(Int(expr->GetSize()), GetArrayLengthAddress(controlBlock));
+  llvm::Value* controlBlock = CreateControlBlock(type);
+  builder_->CreateStore(Int(size), GetArrayLengthAddress(controlBlock));
   llvm::Value* result = CreatePointer(var, controlBlock);
   // Add a ref so it can't actually be freed.
   RefStrongPtr(result);
   return result;
+}
+
+Result CodeGenLLVM::Visit(Data* expr) {
+  return GenerateGlobalData(expr->GetData(), expr->GetSize(), expr->GetType(types_));
 }
 
 Result CodeGenLLVM::Visit(Stmts* stmts) {
@@ -1104,8 +1134,8 @@ Result CodeGenLLVM::Visit(NewExpr* newExpr) {
     // Note that the return type is the type of the "new" expression, including
     // template type and qualifiers, not the return type of the method, which is native and
     // untemplated.
-    expr =
-        GenerateMethodCall(constructor, newExpr->GetArgs(), qualifiers, newExpr->GetType(types_));
+    expr = GenerateMethodCall(constructor, newExpr->GetArgs(), qualifiers, newExpr->GetType(types_),
+                              newExpr->GetFileLocation());
   } else {
     expr = CreateMalloc(llvmType, length);
     llvm::Value* controlBlock = CreateControlBlock(type);
@@ -1269,11 +1299,13 @@ Result CodeGenLLVM::Visit(IfStatement* ifStmt) {
   return nullptr;
 }
 
-llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*   method,
-                                             ExprList* argList,
-                                             int       qualifiers,
-                                             Type*     returnType) {
+llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
+                                             ExprList*           argList,
+                                             int                 qualifiers,
+                                             Type*               returnType,
+                                             const FileLocation& location) {
   std::vector<llvm::Value*> args;
+  if (auto builtin = FindBuiltin(method)) { return std::invoke(builtin, this, location); }
   if (method->classType->IsNative() && (method->modifiers & Method::STATIC)) {
     if (method->classType->GetTemplate()) {
       // Prefix the args with the qualifiers
@@ -1315,8 +1347,8 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*   method,
 }
 
 Result CodeGenLLVM::Visit(MethodCall* node) {
-  return GenerateMethodCall(node->GetMethod(), node->GetArgList(), 0,
-                            node->GetMethod()->returnType);
+  return GenerateMethodCall(node->GetMethod(), node->GetArgList(), 0, node->GetMethod()->returnType,
+                            node->GetFileLocation());
 }
 
 Result CodeGenLLVM::Visit(NullConstant* node) {

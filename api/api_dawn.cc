@@ -1303,6 +1303,8 @@ void System_PrintLine(Object* buffer) {
   fwrite("\n", 1, 1, stdout);
 }
 
+void System_Abort() { abort(); }
+
 void System_Destroy(System* This) {}
 
 void Event_Destroy(Event* This) { delete This; }

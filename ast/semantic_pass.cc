@@ -672,7 +672,8 @@ bool SemanticPass::MatchArgs(ArgList*            args,
                              Method*             m,
                              TypeTable*          types,
                              std::vector<Expr*>* newArgList) {
-  std::vector<Expr*> result = m->defaultArgs;
+  std::vector<Expr*> result(m->formalArgList.size());
+  int                offset = m->modifiers & Method::STATIC ? 0 : 1;
   if (args->IsNamed()) {
     for (auto arg : args->GetArgs()) {
       int index = FindFormalArg(arg, m, types);
@@ -683,7 +684,6 @@ bool SemanticPass::MatchArgs(ArgList*            args,
     size_t      numArgs = args->GetArgs().size();
     Arg* const* a = args->GetArgs().data();
     if (numArgs > m->formalArgList.size()) { return false; }
-    int offset = m->modifiers & Method::STATIC ? 0 : 1;
     for (int i = 0; i < numArgs; ++i) {
       Expr* expr = a[i]->GetExpr();
       if (expr && !expr->GetType(types)->CanWidenTo(m->formalArgList[i + offset]->type)) {
@@ -691,8 +691,14 @@ bool SemanticPass::MatchArgs(ArgList*            args,
       }
       result[i + offset] = expr;
     }
-    for (int i = offset; i < result.size(); ++i) {
-      if (!result[i]) { return false; }
+  }
+  for (int i = offset; i < result.size(); ++i) {
+    if (!result[i]) {
+      if (!m->defaultArgs[i]) { return false; }
+      copyFileLocation_ = false;
+      // Override the file location by resolving the default args (again).
+      result[i] = Resolve(m->defaultArgs[i]);
+      copyFileLocation_ = true;
     }
   }
   *newArgList = result;

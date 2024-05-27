@@ -161,6 +161,10 @@ Result CopyVisitor::Visit(ForStatement* node) {
   return Make<ForStatement>(initStmt, cond, loopStmt, body);
 }
 
+Result CopyVisitor::Visit(MethodCall* node) {
+  return Make<MethodCall>(node->GetMethod(), node->GetArgList());
+}
+
 Result CopyVisitor::Visit(NewArrayExpr* expr) {
   Type* type = ResolveType(expr->GetElementType());
   Expr* sizeExpr = Resolve(expr->GetSizeExpr());
