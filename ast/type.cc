@@ -485,45 +485,6 @@ static bool MatchTypes(const TypeList& types, Method* m) {
   return true;
 }
 
-static int FindFormalArg(Arg* arg, Method* m, TypeTable* types) {
-  for (int i = 0; i < m->formalArgList.size(); ++i) {
-    Var* formalArg = m->formalArgList[i].get();
-    if (arg->GetID() == formalArg->name &&
-        arg->GetExpr()->GetType(types)->CanWidenTo(formalArg->type)) {
-      return i;
-    }
-  }
-  return -1;
-}
-
-static bool MatchArgs(ArgList* args, Method* m, TypeTable* types, std::vector<Expr*>* newArgList) {
-  std::vector<Expr*> result = m->defaultArgs;
-  if (args->IsNamed()) {
-    for (auto arg : args->GetArgs()) {
-      int index = FindFormalArg(arg, m, types);
-      if (index == -1) { return false; }
-      result[index] = arg->GetExpr();
-    }
-  } else {
-    size_t      numArgs = args->GetArgs().size();
-    Arg* const* a = args->GetArgs().data();
-    if (numArgs > m->formalArgList.size()) { return false; }
-    int offset = m->modifiers & Method::STATIC ? 0 : 1;
-    for (int i = 0; i < numArgs; ++i) {
-      Expr* expr = a[i]->GetExpr();
-      if (expr && !expr->GetType(types)->CanWidenTo(m->formalArgList[i + offset]->type)) {
-        return false;
-      }
-      result[i + offset] = expr;
-    }
-    for (int i = offset; i < result.size(); ++i) {
-      if (!result[i]) { return false; }
-    }
-  }
-  *newArgList = result;
-  return true;
-}
-
 static bool MatchFields(ArgList*            args,
                         ClassType*          c,
                         TypeTable*          types,
@@ -568,27 +529,6 @@ Method* ClassType::FindMethod(const std::string& name, const TypeList& args) {
   }
   if (parent_) {
     return parent_->FindMethod(name, args);
-  } else {
-    return nullptr;
-  }
-}
-
-Method* ClassType::FindMethod(const std::string&  name,
-                              ArgList*            args,
-                              TypeTable*          types,
-                              std::vector<Expr*>* newArgList) {
-  for (const auto& it : methods_) {
-    Method* m = it.get();
-    if (m->name == name) {
-      std::vector<Expr*> result;
-      if (MatchArgs(args, m, types, &result)) {
-        *newArgList = result;
-        return m;
-      }
-    }
-  }
-  if (parent_) {
-    return parent_->FindMethod(name, args, types, newArgList);
   } else {
     return nullptr;
   }

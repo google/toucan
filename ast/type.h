@@ -27,7 +27,6 @@
 namespace Toucan {
 
 class Expr;
-class ArgList;
 class TypeTable;
 class ClassType;
 class ListType;
@@ -404,10 +403,6 @@ class ClassType : public Type {
   void                AddMethod(Method* method, int vtableIndex);
   size_t              ComputeFieldOffsets();
   Method*             FindMethod(const std::string& name, const TypeList& args);
-  Method*             FindMethod(const std::string&  name,
-                                 ArgList*            args,
-                                 TypeTable*          types,
-                                 std::vector<Expr*>* newArgList);
   void                AddEnum(std::string id, EnumType* enumType);
   const FieldVector&  GetFields() const { return fields_; }          // local fields only
   int                 GetTotalFields() const { return numFields_; }  // includes inherited fields

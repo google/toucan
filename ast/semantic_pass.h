@@ -52,12 +52,18 @@ class SemanticPass : public NodeVisitor {
   int    GetNumErrors() const { return numErrors_; }
 
  private:
-  Result ResolveMethodCall(Expr* expr, ClassType* classType, std::string id, ArgList* arglist);
-  Expr*  ResolveListExpr(UnresolvedListExpr* node, Type* dstType);
-  void   WidenArgList(std::vector<Expr*>& argList, const VarVector& formalArgList);
-  Expr*  Widen(Expr* expr, Type* dstType);
-  Stmt*  InitializeVar(Expr* varExpr, Type* type, Expr* initExpr);
-  Stmts* InitializeClass(Expr* thisExpr, ClassType* classType);
+  Result  ResolveMethodCall(Expr* expr, ClassType* classType, std::string id, ArgList* arglist);
+  Expr*   ResolveListExpr(UnresolvedListExpr* node, Type* dstType);
+  void    WidenArgList(std::vector<Expr*>& argList, const VarVector& formalArgList);
+  Expr*   Widen(Expr* expr, Type* dstType);
+  Stmt*   InitializeVar(Expr* varExpr, Type* type, Expr* initExpr);
+  Stmts*  InitializeClass(Expr* thisExpr, ClassType* classType);
+  int     FindFormalArg(Arg* arg, Method* m, TypeTable* types);
+  bool    MatchArgs(ArgList* args, Method* m, TypeTable* types, std::vector<Expr*>* newArgList);
+  Method* FindMethod(ClassType*          classType,
+                     const std::string&  name,
+                     ArgList*            args,
+                     std::vector<Expr*>* newArgList);
   SymbolTable* symbols_;
   TypeTable*   types_;
   int          numErrors_;
