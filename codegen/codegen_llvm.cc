@@ -64,9 +64,8 @@ CodeGenLLVM::CodeGenLLVM(llvm::LLVMContext*                 context,
   controlBlockType_ = ControlBlockType();
   controlBlockPtrType_ = llvm::PointerType::get(controlBlockType_, 0);
   typeListType_ = llvm::PointerType::get(llvm::PointerType::get(voidPtrType_, 0), 0);
-  typeList_ =
-      new llvm::GlobalVariable(*module_, typeListType_, true,
-                               llvm::GlobalVariable::ExternalLinkage, nullptr, "_type_list");
+  typeList_ = new llvm::GlobalVariable(
+      *module_, typeListType_, true, llvm::GlobalVariable::ExternalLinkage, nullptr, "_type_list");
 }
 
 void CodeGenLLVM::Run(Stmts* stmts) {
@@ -98,11 +97,11 @@ void CodeGenLLVM::ConvertAndAppendFieldTypes(ClassType*                classType
 
 llvm::Type* CodeGenLLVM::ControlBlockType() {
   std::vector<llvm::Type*> types;
-  types.push_back(intType_);       // strong refcount
-  types.push_back(intType_);       // weak refcount
-  types.push_back(intType_);       // array length
+  types.push_back(intType_);      // strong refcount
+  types.push_back(intType_);      // weak refcount
+  types.push_back(intType_);      // array length
   types.push_back(voidPtrType_);  // ClassType
-  types.push_back(vtableType_);    // vtable
+  types.push_back(vtableType_);   // vtable
   return llvm::StructType::get(*context_, types);
 }
 
@@ -205,7 +204,7 @@ llvm::GlobalVariable* CodeGenLLVM::GetOrCreateVTable(ClassType* classType) {
 
 void CodeGenLLVM::FillVTable(ClassType* classType) {
   llvm::GlobalVariable* vtable = GetOrCreateVTable(classType);
-  llvm::ArrayType* arrayType = llvm::ArrayType::get(funcPtrType_, classType->GetVTableSize());
+  llvm::ArrayType*      arrayType = llvm::ArrayType::get(funcPtrType_, classType->GetVTableSize());
   std::vector<llvm::Constant*> functions;
   for (Method* const& method : classType->GetVTable()) {
     llvm::Function* function = GetOrCreateMethodStub(method);
@@ -234,7 +233,7 @@ llvm::Value* CodeGenLLVM::CreateControlBlock(Type* type) {
     llvm::GlobalVariable* vtable = GetOrCreateVTable(static_cast<ClassType*>(type));
     llvm::Value*          indices[] = {Int(0), Int(0)};
     llvm::Type*           type = vtable->getValueType();
-    llvm::Value* vtableValue = llvm::ConstantExpr::getGetElementPtr(type, vtable, indices);
+    llvm::Value*          vtableValue = llvm::ConstantExpr::getGetElementPtr(type, vtable, indices);
     builder_->CreateStore(vtableValue, GetVTableAddress(controlBlock));
   }
   return controlBlock;
@@ -375,7 +374,7 @@ void CodeGenLLVM::UnrefWeakPtr(llvm::Value* ptr) {
 llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
   if (method->data) { return static_cast<llvm::Function*>(method->data); }
   std::vector<llvm::Type*> params;
-  llvm::Intrinsic::ID intrinsic = llvm::Intrinsic::not_intrinsic;
+  llvm::Intrinsic::ID      intrinsic = llvm::Intrinsic::not_intrinsic;
   if (method->classType->IsNative()) {
     if (method->templateMethod) { return GetOrCreateMethodStub(method->templateMethod); }
     if (method->modifiers & Method::STATIC) {
@@ -399,13 +398,13 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
       params.push_back(ConvertType(var->type));
     }
   }
-  llvm::Function*     function;
+  llvm::Function* function;
   if (intrinsic) {
     function = llvm::Intrinsic::getDeclaration(module_, intrinsic, params);
     intrinsics_[method] = intrinsic;
   } else {
-    llvm::Type* returnType = nativeTypes ? ConvertTypeToNative(method->returnType)
-                                         : ConvertType(method->returnType);
+    llvm::Type* returnType =
+        nativeTypes ? ConvertTypeToNative(method->returnType) : ConvertType(method->returnType);
     llvm::FunctionType* functionType = llvm::FunctionType::get(returnType, params, false);
     function = llvm::Function::Create(functionType, llvm::GlobalValue::ExternalLinkage,
                                       method->GetMangledName(), module_);
@@ -422,10 +421,8 @@ llvm::Intrinsic::ID CodeGenLLVM::FindIntrinsic(Method* method) {
     const char*         methodName;
     llvm::Intrinsic::ID id;
   } intrinsics[] = {
-      "Math", "sqrt",  llvm::Intrinsic::sqrt,
-      "Math", "sin",   llvm::Intrinsic::sin,
-      "Math", "cos",   llvm::Intrinsic::cos,
-      "Math", "fabs",  llvm::Intrinsic::fabs,
+      "Math", "sqrt", llvm::Intrinsic::sqrt, "Math", "sin",  llvm::Intrinsic::sin,
+      "Math", "cos",  llvm::Intrinsic::cos,  "Math", "fabs", llvm::Intrinsic::fabs,
   };
 
   for (auto intrinsic : intrinsics) {
@@ -443,8 +440,7 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
     codeGenSPIRV.Run(method);
     std::vector<uint32_t> spirv;
     spirv = codeGenSPIRV.header();
-    spirv.insert(spirv.end(), codeGenSPIRV.annotations().begin(),
-                 codeGenSPIRV.annotations().end());
+    spirv.insert(spirv.end(), codeGenSPIRV.annotations().begin(), codeGenSPIRV.annotations().end());
     spirv.insert(spirv.end(), codeGenSPIRV.decl().begin(), codeGenSPIRV.decl().end());
     spirv.insert(spirv.end(), codeGenSPIRV.GetBody().begin(), codeGenSPIRV.GetBody().end());
 
@@ -467,9 +463,7 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
 #endif
     return;
   }
-  if (method->modifiers & Method::DEVICEONLY) {
-    return;
-  }
+  if (method->modifiers & Method::DEVICEONLY) { return; }
   llvm::Function* function = GetOrCreateMethodStub(method);
   if (method->classType->IsNative()) return;
   llvm::BasicBlock* whereWasI = builder_->GetInsertBlock();
@@ -1036,8 +1030,8 @@ Result CodeGenLLVM::Visit(VarExpr* expr) {
 }
 
 Result CodeGenLLVM::Visit(TempVarExpr* node) {
-  llvm::Type*       type = ConvertType(node->GetType());
-  auto* tempVar = builder_->CreateAlloca(type);
+  llvm::Type* type = ConvertType(node->GetType());
+  auto*       tempVar = builder_->CreateAlloca(type);
   if (Expr* initExpr = node->GetInitExpr()) {
     builder_->CreateStore(GenerateLLVM(initExpr), tempVar);
   }
@@ -1083,7 +1077,7 @@ Result CodeGenLLVM::Visit(IncDecExpr* node) {
 
 Result CodeGenLLVM::Visit(ZeroInitStmt* node) {
   llvm::Value* lhs = GenerateLLVM(node->GetLHS());
-  Type* type = node->GetLHS()->GetType(types_);
+  Type*        type = node->GetLHS()->GetType(types_);
   assert(type->IsPtr());
   type = static_cast<PtrType*>(type)->GetBaseType();
   llvm::Value* zero = llvm::Constant::getNullValue(ConvertType(type));
@@ -1109,7 +1103,8 @@ Result CodeGenLLVM::Visit(NewExpr* newExpr) {
     // Note that the return type is the type of the "new" expression, including
     // template type and qualifiers, not the return type of the method, which is native and
     // untemplated.
-    expr = GenerateMethodCall(constructor, newExpr->GetArgs(), qualifiers, newExpr->GetType(types_));
+    expr =
+        GenerateMethodCall(constructor, newExpr->GetArgs(), qualifiers, newExpr->GetType(types_));
   } else {
     expr = CreateMalloc(llvmType, length);
     llvm::Value* controlBlock = CreateControlBlock(type);
@@ -1257,8 +1252,7 @@ Result CodeGenLLVM::Visit(IfStatement* ifStmt) {
   Stmt*             optElse = ifStmt->GetOptElse();
   llvm::Function*   f = builder_->GetInsertBlock()->getParent();
   llvm::BasicBlock* trueBlock = llvm::BasicBlock::Create(*context_, "trueBlock", f);
-  llvm::BasicBlock* elseBlock =
-      optElse ? llvm::BasicBlock::Create(*context_, "elseBlock", f) : 0;
+  llvm::BasicBlock* elseBlock = optElse ? llvm::BasicBlock::Create(*context_, "elseBlock", f) : 0;
   llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context_, "afterBlock", f);
   builder_->CreateCondBr(v, trueBlock, elseBlock ? elseBlock : afterBlock);
   builder_->SetInsertPoint(trueBlock);
@@ -1313,12 +1307,15 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*   method,
   } else {
     result = builder_->CreateCall(function, args);
   }
-  if (method->classType->IsNative() && !intrinsic) { result = ConvertFromNative(returnType, result); }
+  if (method->classType->IsNative() && !intrinsic) {
+    result = ConvertFromNative(returnType, result);
+  }
   return result;
 }
 
 Result CodeGenLLVM::Visit(MethodCall* node) {
-  return GenerateMethodCall(node->GetMethod(), node->GetArgList(), 0, node->GetMethod()->returnType);
+  return GenerateMethodCall(node->GetMethod(), node->GetArgList(), 0,
+                            node->GetMethod()->returnType);
 }
 
 Result CodeGenLLVM::Visit(NullConstant* node) {

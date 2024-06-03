@@ -79,10 +79,10 @@ int main(int argc, char** argv) {
   bool showTime = false;
   bool stubAPI = false;
 
-  int         opt;
-  char        optstring[] = "dsgvntc:m:I:";
-  std::string classname = "Class";
-  std::string methodname = "method";
+  int                      opt;
+  char                     optstring[] = "dsgvntc:m:I:";
+  std::string              classname = "Class";
+  std::string              methodname = "method";
   std::vector<std::string> includePaths;
 
   while ((opt = getopt(argc, argv, optstring)) > 0) {

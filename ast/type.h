@@ -273,7 +273,8 @@ class QualifiedType : public Type {
 };
 
 struct Field {
-  Field(std::string n, Type* t, int i, ClassType* c, Expr* d) : name(n), type(t), index(i), classType(c), defaultValue(d) {}
+  Field(std::string n, Type* t, int i, ClassType* c, Expr* d)
+      : name(n), type(t), index(i), classType(c), defaultValue(d) {}
   std::string name;
   Type*       type;
   int         index;
@@ -501,7 +502,7 @@ class WeakPtrType : public PtrType {
   std::string ToString() const override;
   bool        IsWeakPtr() const override { return true; }
   bool        CanWidenTo(Type* type) const override;
-  bool        CanInitFrom(const ListType* type) const override { return GetBaseType()->CanInitFrom(type); }
+  bool CanInitFrom(const ListType* type) const override { return GetBaseType()->CanInitFrom(type); }
 };
 
 class RawPtrType : public PtrType {
@@ -529,13 +530,14 @@ class NullType : public PtrType {
 class ListType : public Type {
  public:
   ListType(const VarVector& types);
-  bool        IsList() const override { return true; }
-  bool        IsPOD() const override { return false; } // FIXME: true if all types are POD?
-  std::string ToString() const override { return "ListType"; }
-  bool        CanWidenTo(Type* type) const override { return type->CanInitFrom(this); }
-  int         GetSizeInBytes() const override;
+  bool             IsList() const override { return true; }
+  bool             IsPOD() const override { return false; }  // FIXME: true if all types are POD?
+  std::string      ToString() const override { return "ListType"; }
+  bool             CanWidenTo(Type* type) const override { return type->CanInitFrom(this); }
+  int              GetSizeInBytes() const override;
   const VarVector& GetTypes() const { return types_; }
-  bool        IsNamed() const { return !types_.empty() && !types_[0]->name.empty(); }
+  bool             IsNamed() const { return !types_.empty() && !types_[0]->name.empty(); }
+
  private:
   VarVector types_;
 };

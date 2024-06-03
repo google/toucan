@@ -57,12 +57,12 @@ int main(int argc, char** argv) {
   bool dumpSymbolTable = false;
   bool spirv = false;
 
-  int         opt;
-  char        optstring[] = "dsgvc:m:o:t:I:";
-  std::string classname = "Class";
-  std::string methodname = "method";
-  std::string outputFilename = "a.o";
-  std::string initTypesFilename = "init_types.cc";
+  int                      opt;
+  char                     optstring[] = "dsgvc:m:o:t:I:";
+  std::string              classname = "Class";
+  std::string              methodname = "method";
+  std::string              outputFilename = "a.o";
+  std::string              initTypesFilename = "init_types.cc";
   std::vector<std::string> includePaths;
 
   while ((opt = getopt(argc, argv, optstring)) > 0) {

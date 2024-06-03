@@ -27,11 +27,7 @@ namespace Toucan {
 ShaderValidationPass::ShaderValidationPass(SymbolTable* symbols,
                                            TypeTable*   types,
                                            Type*        thisPtrType)
-    : symbols_(symbols),
-      types_(types),
-      thisPtrType_(thisPtrType),
-      returnValue_(0),
-      numErrors_(0) {}
+    : symbols_(symbols), types_(types), thisPtrType_(thisPtrType), returnValue_(0), numErrors_(0) {}
 
 Result ShaderValidationPass::Visit(ArrayAccess* node) {
   Resolve(node->GetExpr());

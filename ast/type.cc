@@ -300,8 +300,8 @@ std::string Method::GetMangledName() const {
           result += static_cast<ClassType*>(arg->type)->GetName();
         } else if (arg->type->IsVector()) {
           auto vectorType = static_cast<VectorType*>(arg->type);
-          result += vectorType->GetComponentType()->ToString() +
-                    std::to_string(vectorType->GetLength());
+          result +=
+              vectorType->GetComponentType()->ToString() + std::to_string(vectorType->GetLength());
         } else {
           result += arg->type->ToString();
         }
@@ -366,9 +366,7 @@ void ClassType::SetMemoryLayout(MemoryLayout memoryLayout, TypeTable* types) {
 
 size_t ClassType::ComputeFieldOffsets() {
   size_t offset = 0;
-  if (parent_) {
-    offset = parent_->ComputeFieldOffsets();
-  }
+  if (parent_) { offset = parent_->ComputeFieldOffsets(); }
   Field* prevField = nullptr;
   for (const auto& field : GetFields()) {
     size_t size = field->type->GetSizeInBytes();
@@ -490,7 +488,8 @@ static bool MatchTypes(const TypeList& types, Method* m) {
 static int FindFormalArg(Arg* arg, Method* m, TypeTable* types) {
   for (int i = 0; i < m->formalArgList.size(); ++i) {
     Var* formalArg = m->formalArgList[i].get();
-    if (arg->GetID() == formalArg->name && arg->GetExpr()->GetType(types)->CanWidenTo(formalArg->type)) {
+    if (arg->GetID() == formalArg->name &&
+        arg->GetExpr()->GetType(types)->CanWidenTo(formalArg->type)) {
       return i;
     }
   }
@@ -512,7 +511,9 @@ static bool MatchArgs(ArgList* args, Method* m, TypeTable* types, std::vector<Ex
     int offset = m->modifiers & Method::STATIC ? 0 : 1;
     for (int i = 0; i < numArgs; ++i) {
       Expr* expr = a[i]->GetExpr();
-      if (expr && !expr->GetType(types)->CanWidenTo(m->formalArgList[i + offset]->type)) { return false; }
+      if (expr && !expr->GetType(types)->CanWidenTo(m->formalArgList[i + offset]->type)) {
+        return false;
+      }
       result[i + offset] = expr;
     }
     for (int i = offset; i < result.size(); ++i) {
@@ -523,7 +524,10 @@ static bool MatchArgs(ArgList* args, Method* m, TypeTable* types, std::vector<Ex
   return true;
 }
 
-static bool MatchFields(ArgList* args, ClassType* c, TypeTable* types, std::vector<Expr*>* newArgList) {
+static bool MatchFields(ArgList*            args,
+                        ClassType*          c,
+                        TypeTable*          types,
+                        std::vector<Expr*>* newArgList) {
   std::vector<Expr*> result;
   for (auto& field : c->GetFields()) {
     result.push_back(field->defaultValue);
@@ -538,13 +542,11 @@ static bool MatchFields(ArgList* args, ClassType* c, TypeTable* types, std::vect
   } else {
     size_t      numArgs = args->GetArgs().size();
     Arg* const* a = args->GetArgs().data();
-    auto& fields = c->GetFields();
+    auto&       fields = c->GetFields();
     if (numArgs > fields.size()) { return false; }
     for (int i = 0; i < numArgs; ++i) {
       Expr* expr = a[i]->GetExpr();
-      if (expr && !expr->GetType(types)->CanWidenTo(fields[i]->type)) {
-        return false;
-      }
+      if (expr && !expr->GetType(types)->CanWidenTo(fields[i]->type)) { return false; }
       result[i] = expr;
     }
   }

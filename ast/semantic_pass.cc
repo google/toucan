@@ -115,15 +115,16 @@ Result SemanticPass::Visit(ArgList* node) {
 }
 
 Result SemanticPass::Visit(UnresolvedInitializer* node) {
-  Type*    type = node->GetType();
-  ArgList* argList = Resolve(node->GetArgList());
-  auto     args = argList->GetArgs();
+  Type*              type = node->GetType();
+  ArgList*           argList = Resolve(node->GetArgList());
+  auto               args = argList->GetArgs();
   std::vector<Expr*> exprs;
   if (type->IsClass() && node->IsConstructor()) {
     ClassType*         classType = static_cast<ClassType*>(type);
     TypeList           types;
     std::vector<Expr*> constructorArgs;
-    Method* constructor = classType->FindMethod(classType->GetName(), argList, types_, &constructorArgs);
+    Method*            constructor =
+        classType->FindMethod(classType->GetName(), argList, types_, &constructorArgs);
     if (!constructor) {
       return Error("constructor for class \"%s\" with those arguments not found",
                    classType->GetName().c_str());
@@ -168,9 +169,7 @@ Stmt* SemanticPass::InitializeVar(Expr* varExpr, Type* type, Expr* initExpr) {
 
 Stmts* SemanticPass::InitializeClass(Expr* thisExpr, ClassType* classType) {
   Stmts* stmts = Make<Stmts>();
-  if (classType->GetParent()) {
-    stmts->Append(InitializeClass(thisExpr, classType->GetParent()));
-  }
+  if (classType->GetParent()) { stmts->Append(InitializeClass(thisExpr, classType->GetParent())); }
   for (const auto& field : classType->GetFields()) {
     Expr* fieldExpr = Make<FieldAccess>(thisExpr, field.get());
     stmts->Append(InitializeVar(fieldExpr, field->type, Resolve(field->defaultValue)));
@@ -198,7 +197,7 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
     std::string errorMsg = std::string("cannot create storage of type ") + type->ToString();
     return Error(errorMsg.c_str());
   }
-  Var* var = symbols_->DefineVar(id, type);
+  Var*  var = symbols_->DefineVar(id, type);
   Expr* varExpr = Make<VarExpr>(var);
   return InitializeVar(varExpr, type, initExpr);
 }
@@ -261,11 +260,11 @@ Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
     auto* tempVar = Make<TempVarExpr>(dstType, ResolveListExpr(node, dstType));
     return Make<RawToWeakPtr>(tempVar);
   }
-  Type* type = dstType;
-  auto argList = node->GetArgList();
+  Type*              type = dstType;
+  auto               argList = node->GetArgList();
   std::vector<Expr*> exprs;
   if (dstType->IsClass()) {
-    auto classType = static_cast<ClassType*>(dstType);
+    auto  classType = static_cast<ClassType*>(dstType);
     auto& fields = classType->GetFields();
     if (argList->IsNamed()) {
       exprs.resize(classType->GetTotalFields(), nullptr);
@@ -520,8 +519,7 @@ Result SemanticPass::Visit(BinOpNode* node) {
   return Make<BinOpNode>(node->GetOp(), lhs, rhs);
 }
 
-void SemanticPass::WidenArgList(std::vector<Expr*>& argList,
-                                const VarVector&    formalArgList) {
+void SemanticPass::WidenArgList(std::vector<Expr*>& argList, const VarVector& formalArgList) {
   assert(argList.size() == formalArgList.size());
   for (int i = 0; i < argList.size(); ++i) {
     if (!argList[i]) continue;
@@ -666,9 +664,10 @@ Result SemanticPass::Default(ASTNode* node) {
 
 Result SemanticPass::Error(const char* fmt, ...) {
   const FileLocation& location = fileLocation_;
-  std::string         filename =
-      fileLocation_.filename ? std::filesystem::path(*fileLocation_.filename).filename().string() : "";
-  va_list argp;
+  std::string         filename = fileLocation_.filename
+                                     ? std::filesystem::path(*fileLocation_.filename).filename().string()
+                                     : "";
+  va_list             argp;
   va_start(argp, fmt);
   fprintf(stderr, "%s:%d:  ", filename.c_str(), fileLocation_.lineNum);
   vfprintf(stderr, fmt, argp);

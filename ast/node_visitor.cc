@@ -52,9 +52,7 @@ Result NodeVisitor::Visit(EnumConstant* node) { return Make<EnumConstant>(node->
 
 Result NodeVisitor::Visit(FloatConstant* node) { return Make<FloatConstant>(node->GetValue()); }
 
-Result NodeVisitor::Visit(DoubleConstant* node) {
-  return Make<DoubleConstant>(node->GetValue());
-}
+Result NodeVisitor::Visit(DoubleConstant* node) { return Make<DoubleConstant>(node->GetValue()); }
 
 Result NodeVisitor::Visit(BoolConstant* node) { return Make<BoolConstant>(node->GetValue()); }
 
@@ -101,7 +99,9 @@ Result NodeVisitor::Visit(VarDeclaration* decl) {
 
 Result NodeVisitor::Visit(LoadExpr* node) { return Make<LoadExpr>(Resolve(node->GetExpr())); }
 
-Result NodeVisitor::Visit(SmartToRawPtr* node) { return Make<SmartToRawPtr>(Resolve(node->GetExpr())); }
+Result NodeVisitor::Visit(SmartToRawPtr* node) {
+  return Make<SmartToRawPtr>(Resolve(node->GetExpr()));
+}
 
 Result NodeVisitor::Visit(StoreStmt* node) {
   return Make<StoreStmt>(Resolve(node->GetLHS()), Resolve(node->GetRHS()));
@@ -119,7 +119,9 @@ Result NodeVisitor::Visit(UnaryOp* node) {
   return Make<UnaryOp>(node->GetOp(), rhs);
 }
 
-Result NodeVisitor::Visit(RawToWeakPtr* node) { return Make<RawToWeakPtr>(Resolve(node->GetExpr())); }
+Result NodeVisitor::Visit(RawToWeakPtr* node) {
+  return Make<RawToWeakPtr>(Resolve(node->GetExpr()));
+}
 
 Result NodeVisitor::Visit(ReturnStatement* stmt) {
   return Make<ReturnStatement>(Resolve(stmt->GetExpr()), stmt->GetScope());

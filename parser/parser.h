@@ -21,10 +21,10 @@ class Stmts;
 };  // namespace Toucan
 
 extern FILE* yyin;
-extern int   ParseProgram(const char*               filename,
-                          Toucan::SymbolTable*      symbols,
-                          Toucan::TypeTable*        types,
-                          Toucan::NodeVector*       nodes,
-                          const std::vector<std::string>&  includePaths,
-                          Toucan::Stmts**           stmts);
+extern int   ParseProgram(const char*                     filename,
+                          Toucan::SymbolTable*            symbols,
+                          Toucan::TypeTable*              types,
+                          Toucan::NodeVector*             nodes,
+                          const std::vector<std::string>& includePaths,
+                          Toucan::Stmts**                 stmts);
 #endif

@@ -98,7 +98,12 @@ struct SampleableTextureCube : public TextureView {
 struct Texture {
   Texture(wgpu::Texture t, wgpu::TextureView v, const wgpu::Extent3D& s, wgpu::TextureFormat f)
       : texture(t), view(v), size(s), format(f) {}
-  Texture(int qualifiers, Type* pixelFormat, wgpu::Device device, wgpu::TextureDimension d, wgpu::Extent3D s) : size(s), format(ToDawnTextureFormat(pixelFormat)) {
+  Texture(int                    qualifiers,
+          Type*                  pixelFormat,
+          wgpu::Device           device,
+          wgpu::TextureDimension d,
+          wgpu::Extent3D         s)
+      : size(s), format(ToDawnTextureFormat(pixelFormat)) {
     wgpu::TextureDescriptor desc;
     desc.usage = ToDawnTextureUsage(qualifiers);
     desc.size = s;
@@ -127,7 +132,9 @@ struct Texture {
     destICT.origin = origin;
     encoder.CopyBufferToTexture(&sourceICB, &destICT, &extent);
   }
-  wgpu::TextureView CreateView(wgpu::TextureViewDimension dimension, uint32_t arrayLayer, uint32_t mipLevel) const {
+  wgpu::TextureView CreateView(wgpu::TextureViewDimension dimension,
+                               uint32_t                   arrayLayer,
+                               uint32_t                   mipLevel) const {
     wgpu::TextureViewDescriptor desc;
     desc.format = format;
     desc.dimension = dimension;
@@ -335,7 +342,8 @@ static wgpu::PrimitiveTopology toDawnPrimitiveTopology(PrimitiveTopology type) {
   }
 }
 
-wgpu::VertexBufferLayout toDawnVertexBufferLayout(Type* vertexInput, std::vector<wgpu::VertexAttribute>* vaDescs) {
+wgpu::VertexBufferLayout toDawnVertexBufferLayout(Type*                               vertexInput,
+                                                  std::vector<wgpu::VertexAttribute>* vaDescs) {
   size_t start = vaDescs->size();
   if (vertexInput->IsClass()) {
     auto               classType = static_cast<ClassType*>(vertexInput);
@@ -574,23 +582,21 @@ struct PipelineLayout {
   }
 };
 
-static void ExtractPipelineLayout(ClassType*                             classType,
-                                  Device*                                device,
-                                  PipelineLayout*                        out) {
+static void ExtractPipelineLayout(ClassType* classType, Device* device, PipelineLayout* out) {
   if (classType->GetParent()) { ExtractPipelineLayout(classType->GetParent(), device, out); }
   for (const auto& field : classType->GetFields()) {
     Type* type = field->type;
 
-    assert (type->IsPtr());
+    assert(type->IsPtr());
     type = static_cast<PtrType*>(type)->GetBaseType();
-    int qualifiers;
+    int   qualifiers;
     Type* unqualifiedType = type->GetUnqualifiedType(&qualifiers);
     assert(unqualifiedType->IsClass());
 
     ClassType* classType = static_cast<ClassType*>(unqualifiedType);
     if (classType->GetTemplate() == NativeClass::ColorAttachment) {
-      wgpu::ColorTargetState         colorTargetState;
-      const auto& templateArgs = classType->GetTemplateArgs();
+      wgpu::ColorTargetState colorTargetState;
+      const auto&            templateArgs = classType->GetTemplateArgs();
       assert(templateArgs.size() == 1);
       colorTargetState.format = ToDawnTextureFormat(templateArgs[0]);
       out->colorTargets.push_back(colorTargetState);
@@ -704,13 +710,13 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   ExtractPipelineLayout(classType, device, &pipelineLayout);
   pipelineLayout.FinalizeVertexLayouts();
 
-  wgpu::VertexState                  vertexState;
+  wgpu::VertexState vertexState;
   vertexState.module = vertexShader;
   vertexState.entryPoint = "main";
   vertexState.bufferCount = pipelineLayout.vertexBufferLayouts.size();
   vertexState.buffers = pipelineLayout.vertexBufferLayouts.data();
   wgpu::RenderPipelineDescriptor rpDesc;
-  wgpu::DepthStencilState depthStencilState;
+  wgpu::DepthStencilState        depthStencilState;
   if (depthStencil->ptr) {
     Type* type = depthStencil->controlBlock->type;
     assert(type->IsClass());
@@ -727,8 +733,8 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   fragmentState.constants = nullptr;
   fragmentState.targetCount = pipelineLayout.colorTargets.size();
   fragmentState.targets = pipelineLayout.colorTargets.data();
-  wgpu::PrimitiveState primitiveState;
-  wgpu::PipelineLayoutDescriptor     desc;
+  wgpu::PrimitiveState           primitiveState;
+  wgpu::PipelineLayoutDescriptor desc;
   desc.bindGroupLayoutCount = pipelineLayout.bindGroupLayouts.size();
   desc.bindGroupLayouts = pipelineLayout.bindGroupLayouts.data();
   rpDesc.layout = device->device.CreatePipelineLayout(&desc);
@@ -763,9 +769,9 @@ ComputePipeline* ComputePipeline_ComputePipeline(int     qualifiers,
   computeState.module = computeShader;
   computeState.entryPoint = "main";
   wgpu::ComputePipelineDescriptor cpDesc;
-  PipelineLayout pipelineLayout;
+  PipelineLayout                  pipelineLayout;
   ExtractPipelineLayout(classType, device, &pipelineLayout);
-  wgpu::PipelineLayoutDescriptor     desc;
+  wgpu::PipelineLayoutDescriptor desc;
   desc.bindGroupLayoutCount = pipelineLayout.bindGroupLayouts.size();
   desc.bindGroupLayouts = pipelineLayout.bindGroupLayouts.data();
   cpDesc.layout = device->device.CreatePipelineLayout(&desc);
@@ -811,7 +817,8 @@ void SampleableTexture3D_Destroy(SampleableTexture3D* This) { delete This; }
 void SampleableTextureCube_Destroy(SampleableTextureCube* This) { delete This; }
 
 Texture1D* Texture1D_Texture1D(int qualifiers, Type* format, Device* device, uint32_t width) {
-  return new Texture1D(qualifiers, format, device->device, wgpu::TextureDimension::e1D, {width, 1, 1});
+  return new Texture1D(qualifiers, format, device->device, wgpu::TextureDimension::e1D,
+                       {width, 1, 1});
 }
 
 void Texture1D_Destroy(Texture1D* This) { delete This; }
@@ -837,7 +844,8 @@ Texture2D* Texture2D_Texture2D(int      qualifiers,
                                Device*  device,
                                uint32_t width,
                                uint32_t height) {
-  return new Texture2D(qualifiers, format, device->device, wgpu::TextureDimension::e2D, {width, height, 1});
+  return new Texture2D(qualifiers, format, device->device, wgpu::TextureDimension::e2D,
+                       {width, height, 1});
 }
 
 void Texture2D_Destroy(Texture2D* This) { delete This; }
@@ -872,7 +880,8 @@ Texture2DArray* Texture2DArray_Texture2DArray(int      qualifiers,
                                               uint32_t width,
                                               uint32_t height,
                                               uint32_t layers) {
-  return new Texture2DArray(qualifiers, format, device->device, wgpu::TextureDimension::e2D, {width, height, layers});
+  return new Texture2DArray(qualifiers, format, device->device, wgpu::TextureDimension::e2D,
+                            {width, height, layers});
 }
 
 void Texture2DArray_Destroy(Texture2DArray* This) { delete This; }
@@ -883,11 +892,15 @@ SampleableTexture2DArray* Texture2DArray_CreateSampleableView(Texture2DArray* Th
   return new SampleableTexture2DArray(This->texture.CreateView(&desc));
 }
 
-Texture2D* Texture2DArray_CreateRenderableView(Texture2DArray* This, uint32_t layer, uint32_t mipLevel) {
+Texture2D* Texture2DArray_CreateRenderableView(Texture2DArray* This,
+                                               uint32_t        layer,
+                                               uint32_t        mipLevel) {
   return new Texture2D(This, wgpu::TextureViewDimension::e2D, layer, mipLevel);
 }
 
-Texture2DArray* Texture2DArray_CreateStorageView(Texture2DArray* This, uint32_t baseArrayLayer, uint32_t mipLevel) {
+Texture2DArray* Texture2DArray_CreateStorageView(Texture2DArray* This,
+                                                 uint32_t        baseArrayLayer,
+                                                 uint32_t        mipLevel) {
   return new Texture2DArray(This, wgpu::TextureViewDimension::e2DArray, baseArrayLayer, mipLevel);
 }
 
@@ -910,7 +923,8 @@ Texture3D* Texture3D_Texture3D(int      qualifiers,
                                uint32_t width,
                                uint32_t height,
                                uint32_t depth) {
-  return new Texture3D(qualifiers, format, device->device, wgpu::TextureDimension::e3D, {width, height, depth});
+  return new Texture3D(qualifiers, format, device->device, wgpu::TextureDimension::e3D,
+                       {width, height, depth});
 }
 
 void Texture3D_Destroy(Texture3D* This) { delete This; }
@@ -945,7 +959,8 @@ TextureCube* TextureCube_TextureCube(int      qualifiers,
                                      Device*  device,
                                      uint32_t width,
                                      uint32_t height) {
-  return new TextureCube(qualifiers, format, device->device, wgpu::TextureDimension::e2D, {width, height, 6});
+  return new TextureCube(qualifiers, format, device->device, wgpu::TextureDimension::e2D,
+                         {width, height, 6});
 }
 
 void TextureCube_Destroy(TextureCube* This) { delete This; }
@@ -1054,7 +1069,10 @@ static Object* MapSync(wgpu::MapMode mapMode, Buffer* buffer) {
   return &buffer->mappedObject;
 }
 
-Buffer* Buffer_Buffer_Device_uint(int qualifiers, Type* type, Device* device, uint32_t dynamicArraySize) {
+Buffer* Buffer_Buffer_Device_uint(int      qualifiers,
+                                  Type*    type,
+                                  Device*  device,
+                                  uint32_t dynamicArraySize) {
   wgpu::BufferDescriptor desc;
   desc.usage = toDawnBufferUsage(qualifiers);
   desc.size = type->GetSizeInBytes(dynamicArraySize);
@@ -1064,9 +1082,7 @@ Buffer* Buffer_Buffer_Device_uint(int qualifiers, Type* type, Device* device, ui
 
 Buffer* Buffer_Buffer_Device_T(int qualifiers, Type* type, Device* device, Object* object) {
   uint32_t size = 1;
-  if (type->IsUnsizedArray()) {
-    size = object->controlBlock->arrayLength;
-  }
+  if (type->IsUnsizedArray()) { size = object->controlBlock->arrayLength; }
   Buffer* result = Buffer_Buffer_Device_uint(qualifiers, type, device, size);
   Buffer_SetData(result, object);
   return result;
@@ -1116,12 +1132,12 @@ void Queue_Submit(Queue* queue, CommandBuffer* commandBuffer) {
   queue->queue.Submit(1, &commandBuffer->commandBuffer);
 }
 
-ColorAttachment* ColorAttachment_ColorAttachment(int qualifiers,
-                                                 Type* type,
+ColorAttachment* ColorAttachment_ColorAttachment(int        qualifiers,
+                                                 Type*      type,
                                                  Texture2D* texture,
-                                                 LoadOp loadOp,
-                                                 StoreOp storeOp,
-                                                 float* clearValue) {
+                                                 LoadOp     loadOp,
+                                                 StoreOp    storeOp,
+                                                 float*     clearValue) {
   wgpu::RenderPassColorAttachment attachment;
   attachment.clearValue = {clearValue[0], clearValue[1], clearValue[2], clearValue[3]};
   attachment.loadOp = ToDawnLoadOp(loadOp);
@@ -1132,14 +1148,14 @@ ColorAttachment* ColorAttachment_ColorAttachment(int qualifiers,
 
 void ColorAttachment_Destroy(ColorAttachment* This) { delete This; }
 
-DepthStencilAttachment* DepthStencilAttachment_DepthStencilAttachment(int qualifiers,
-                                                                      Type* type,
+DepthStencilAttachment* DepthStencilAttachment_DepthStencilAttachment(int        qualifiers,
+                                                                      Type*      type,
                                                                       Texture2D* texture,
-                                                                      LoadOp depthLoadOp,
-                                                                      StoreOp depthStoreOp,
-                                                                      float depthClearValue,
-                                                                      LoadOp stencilLoadOp,
-                                                                      StoreOp stencilStoreOp,
+                                                                      LoadOp     depthLoadOp,
+                                                                      StoreOp    depthStoreOp,
+                                                                      float      depthClearValue,
+                                                                      LoadOp     stencilLoadOp,
+                                                                      StoreOp    stencilStoreOp,
                                                                       int stencilClearValue) {
   wgpu::RenderPassDepthStencilAttachment attachment;
   attachment.view = texture->view;
@@ -1160,11 +1176,11 @@ RenderPass* RenderPass_RenderPass_CommandEncoder_T(int             qualifiers,
                                                    Object*         data) {
   Type* objectType = data->controlBlock->type;
   assert(objectType->IsClass());
-  ClassType* classType = static_cast<ClassType*>(objectType);
+  ClassType*   classType = static_cast<ClassType*>(objectType);
   PipelineData pipelineData;
   ExtractPipelineData(classType, data->ptr, &pipelineData);
 
-  wgpu::RenderPassDescriptor             desc;
+  wgpu::RenderPassDescriptor desc;
   desc.colorAttachmentCount = pipelineData.colorAttachments.size();
   desc.colorAttachments = pipelineData.colorAttachments.data();
   if (pipelineData.depthStencilAttachment.view != nullptr) {
@@ -1181,7 +1197,7 @@ RenderPass* RenderPass_RenderPass_RenderPass(int qualifiers, Type* type, RenderP
 
 void RenderPass_Set(RenderPass* This, Object* data) {
   PipelineData pipelineData;
-  Type* objectType = data->controlBlock->type;
+  Type*        objectType = data->controlBlock->type;
   assert(objectType->IsClass());
   ClassType* classType = static_cast<ClassType*>(objectType);
   ExtractPipelineData(classType, data->ptr, &pipelineData);
@@ -1213,7 +1229,10 @@ void RenderPass_End(RenderPass* This) { This->encoder.End(); }
 
 void RenderPass_Destroy(RenderPass* This) { delete This; }
 
-ComputePass* ComputePass_ComputePass(int qualifiers, Type* type, CommandEncoder* encoder, Object* data) {
+ComputePass* ComputePass_ComputePass(int             qualifiers,
+                                     Type*           type,
+                                     CommandEncoder* encoder,
+                                     Object*         data) {
   PipelineData pipelineData;
   if (data && data->controlBlock) {
     Type* objectType = data->controlBlock->type;
@@ -1222,7 +1241,7 @@ ComputePass* ComputePass_ComputePass(int qualifiers, Type* type, CommandEncoder*
     ExtractPipelineData(classType, data->ptr, &pipelineData);
   }
   wgpu::ComputePassDescriptor desc;
-  auto passEncoder = encoder->encoder.BeginComputePass(&desc);
+  auto                        passEncoder = encoder->encoder.BeginComputePass(&desc);
   pipelineData.Set(passEncoder);
   return new ComputePass(passEncoder);
 }
@@ -1233,7 +1252,7 @@ void ComputePass_SetPipeline(ComputePass* This, ComputePipeline* pipeline) {
 
 void ComputePass_Set(ComputePass* This, Object* data) {
   PipelineData pipelineData;
-  Type* objectType = data->controlBlock->type;
+  Type*        objectType = data->controlBlock->type;
   assert(objectType->IsClass());
   ClassType* classType = static_cast<ClassType*>(objectType);
   ExtractPipelineData(classType, data->ptr, &pipelineData);
@@ -1241,9 +1260,9 @@ void ComputePass_Set(ComputePass* This, Object* data) {
 }
 
 void ComputePass_Dispatch(ComputePass* This,
-                          uint32_t      workgroupCountX,
-                          uint32_t      workgroupCountY,
-                          uint32_t      workgroupCountZ) {
+                          uint32_t     workgroupCountX,
+                          uint32_t     workgroupCountY,
+                          uint32_t     workgroupCountZ) {
   This->encoder.DispatchWorkgroups(workgroupCountX, workgroupCountY, workgroupCountZ);
 }
 
@@ -1258,7 +1277,9 @@ CommandBuffer* CommandEncoder_Finish(CommandEncoder* encoder) {
 void CommandBuffer_Destroy(CommandBuffer* This) { delete This; }
 
 Texture2D* SwapChain_GetCurrentTexture(SwapChain* swapChain) {
-  return new Texture2D(swapChain->swapChain.GetCurrentTexture(), swapChain->swapChain.GetCurrentTexture().CreateView(), swapChain->extent, swapChain->format);
+  return new Texture2D(swapChain->swapChain.GetCurrentTexture(),
+                       swapChain->swapChain.GetCurrentTexture().CreateView(), swapChain->extent,
+                       swapChain->format);
 }
 
 #if !TARGET_IS_MAC

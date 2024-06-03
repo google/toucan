@@ -136,9 +136,7 @@ Device* Device_Device() {
   return new Device(device);
 }
 
-wgpu::TextureFormat GetPreferredSwapChainFormat() {
-  return wgpu::TextureFormat::BGRA8Unorm;
-}
+wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::BGRA8Unorm; }
 
 SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
   RECT rect;

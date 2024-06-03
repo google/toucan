@@ -18,7 +18,8 @@ namespace Toucan {
 
 FileLocation::FileLocation() : filename(nullptr), lineNum(0) {}
 
-FileLocation::FileLocation(const FileLocation& other) : filename(other.filename), lineNum(other.lineNum) {}
+FileLocation::FileLocation(const FileLocation& other)
+    : filename(other.filename), lineNum(other.lineNum) {}
 
 FileLocation::FileLocation(std::shared_ptr<std::string> f, int n) : filename(f), lineNum(n) {}
 
@@ -129,8 +130,7 @@ Type* UnaryOp::GetType(TypeTable* types) { return rhs_->GetType(types); }
 UnresolvedInitializer::UnresolvedInitializer(Type* type, ArgList* arglist, bool constructor)
     : type_(type), arglist_(arglist), constructor_(constructor) {}
 
-Initializer::Initializer(Type* type, ExprList* arglist)
-    : type_(type), arglist_(arglist) {}
+Initializer::Initializer(Type* type, ExprList* arglist) : type_(type), arglist_(arglist) {}
 
 UnresolvedListExpr::UnresolvedListExpr(ArgList* arglist) : arglist_(arglist) {}
 

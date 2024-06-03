@@ -40,7 +40,7 @@ static void copyTouches(emscripten::val touches, Event* result) {
   }
 }
 
-}
+}  // namespace
 
 struct Window {
   Window(Device* d, wgpu::Surface s, uint32_t w, uint32_t h)

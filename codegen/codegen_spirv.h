@@ -128,31 +128,35 @@ class CodeGenSPIRV : public Visitor {
  private:
   Type*    GetAndQualifyUnderlyingType(Type* type);
   void     ExtractPipelineVars(Method* entryPoint, Code* interface);
-  void     ExtractPipelineVars(ClassType* classType, ShaderType shaderType, Code* interface, uint32_t* inputCount, uint32_t* outputCount);
+  void     ExtractPipelineVars(ClassType* classType,
+                               ShaderType shaderType,
+                               Code*      interface,
+                               uint32_t*  inputCount,
+                               uint32_t*  outputCount);
   uint32_t CreateVectorSplat(uint32_t value, VectorType* type);
   uint32_t CreateCast(Type* srcType, Type* dstType, uint32_t resultType, uint32_t valueId);
   uint32_t GetSampledImageType(Type* imageType);
 
-  uint32_t                                      nextID_ = 1;
-  uint32_t                                      glslStd450Import_;
-  TypeTable*                                    types_;
-  Code                                          header_;
-  Code                                          annotations_;
-  Code                                          decl_;
-  Code                                          body_;
-  std::unordered_map<Type*, uint32_t>           spirvTypes_;
-  typedef std::pair<Type*, uint32_t>            PtrTypeKey;
-  std::unordered_map<PtrTypeKey, uint32_t>      spirvPtrTypes_;
-  std::unordered_map<Type*, uint32_t>           sampledImageTypes_;
-  std::unordered_map<Code, uint32_t, HashCode>  spirvFunctionTypes_;
-  std::unordered_map<int32_t, uint32_t>         intConstants_;
-  std::unordered_map<float, uint32_t>           floatConstants_;
-  std::unordered_map<Type*, uint32_t>           zeroConstants_;
-  std::unordered_map<Method*, uint32_t>         functions_;
-  PtrType*                                      thisPtrType_ = nullptr;
-  BindGroupList                                 bindGroups_;
-  std::vector<uint32_t>                         pipelineVars_;
-  VarVector                                     builtInVars_;
+  uint32_t                                     nextID_ = 1;
+  uint32_t                                     glslStd450Import_;
+  TypeTable*                                   types_;
+  Code                                         header_;
+  Code                                         annotations_;
+  Code                                         decl_;
+  Code                                         body_;
+  std::unordered_map<Type*, uint32_t>          spirvTypes_;
+  typedef std::pair<Type*, uint32_t>           PtrTypeKey;
+  std::unordered_map<PtrTypeKey, uint32_t>     spirvPtrTypes_;
+  std::unordered_map<Type*, uint32_t>          sampledImageTypes_;
+  std::unordered_map<Code, uint32_t, HashCode> spirvFunctionTypes_;
+  std::unordered_map<int32_t, uint32_t>        intConstants_;
+  std::unordered_map<float, uint32_t>          floatConstants_;
+  std::unordered_map<Type*, uint32_t>          zeroConstants_;
+  std::unordered_map<Method*, uint32_t>        functions_;
+  PtrType*                                     thisPtrType_ = nullptr;
+  BindGroupList                                bindGroups_;
+  std::vector<uint32_t>                        pipelineVars_;
+  VarVector                                    builtInVars_;
 };
 
 };  // namespace Toucan

@@ -202,9 +202,7 @@ Event* System_GetNextEvent() {
   return result;
 }
 
-wgpu::TextureFormat GetPreferredSwapChainFormat() {
-  return wgpu::TextureFormat::BGRA8Unorm;
-}
+wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::BGRA8Unorm; }
 
 SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
   Device*                   device = window->device;

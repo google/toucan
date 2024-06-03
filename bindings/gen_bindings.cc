@@ -126,10 +126,9 @@ void GenBindings::GenType(Type* type) {
             typeMap_[qualifiedType->GetBaseType()], qualifiedType->GetQualifiers());
   } else if (type->IsUnresolvedScopedType()) {
     auto unresolvedScopedType = static_cast<UnresolvedScopedType*>(type);
-    fprintf(
-        file_,
-        "types->GetUnresolvedScopedType(static_cast<FormalTemplateArg*>(typeList[%d]), \"%s\")",
-        typeMap_[unresolvedScopedType->GetBaseType()], unresolvedScopedType->GetID().c_str());
+    fprintf(file_,
+            "types->GetUnresolvedScopedType(static_cast<FormalTemplateArg*>(typeList[%d]), \"%s\")",
+            typeMap_[unresolvedScopedType->GetBaseType()], unresolvedScopedType->GetID().c_str());
   } else if (type->IsList()) {
     fprintf(file_, "nullptr");
   } else {
@@ -278,7 +277,7 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
     Var*  var = argList[i].get();
     Expr* defaultValue = method->defaultArgs[i];
     assert(!defaultValue || !defaultValue->GetType(types_)->IsList());
-    int   defaultValueId = defaultValue ? sourcePass_.Resolve(defaultValue) : 0;
+    int defaultValueId = defaultValue ? sourcePass_.Resolve(defaultValue) : 0;
     fprintf(file_, "  m->AddFormalArg(\"%s\", typeList[%d], ", var->name.c_str(),
             typeMap_[var->type]);
     if (defaultValue) {
@@ -356,7 +355,7 @@ void GenBindings::GenBindingsForClass(ClassType* classType) {
   }
   for (const auto& i : classType->GetFields()) {
     Field* field = i.get();
-    int   defaultValueId = field->defaultValue ? sourcePass_.Resolve(field->defaultValue) : 0;
+    int    defaultValueId = field->defaultValue ? sourcePass_.Resolve(field->defaultValue) : 0;
     fprintf(file_, "  c->AddField(\"%s\", typeList[%d], ", field->name.c_str(),
             typeMap_[field->type]);
     if (field->defaultValue) {

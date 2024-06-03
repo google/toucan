@@ -100,7 +100,7 @@ Type* TypeReplacementPass::ResolveType(Type* type) {
   } else if (type->IsWeakPtr()) {
     return types_->GetWeakPtrType(ResolveType(static_cast<PtrType*>(type)->GetBaseType()));
   } else if (type->IsQualified()) {
-    int qualifiers;
+    int   qualifiers;
     Type* result = ResolveType(type->GetUnqualifiedType(&qualifiers));
     result = PushQualifiers(result, qualifiers);
     return result;
@@ -123,13 +123,12 @@ Type* TypeReplacementPass::ResolveType(Type* type) {
     } else if (newType->IsClass()) {
       auto classType = static_cast<ClassType*>(newType);
       if (ust->GetID() == "BaseClass") {
-        if (auto parent = classType->GetParent()) {
-          newType = parent;
-        }
+        if (auto parent = classType->GetParent()) { newType = parent; }
       } else {
         newType = static_cast<ClassType*>(newType)->FindType(ust->GetID());
         if (!newType) {
-          Error("Type \"%s\" not found in \"%s\"", ust->GetID().c_str(), newType->ToString().c_str());
+          Error("Type \"%s\" not found in \"%s\"", ust->GetID().c_str(),
+                newType->ToString().c_str());
         }
       }
     } else {

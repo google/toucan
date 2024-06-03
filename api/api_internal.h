@@ -25,11 +25,12 @@ struct Device {
 };
 
 struct SwapChain {
-  SwapChain(wgpu::SwapChain sc, wgpu::Extent3D e, wgpu::TextureFormat f, void* p) : swapChain(sc), extent(e), format(f), pool(p) {}
-  wgpu::SwapChain      swapChain;
-  wgpu::Extent3D       extent;
-  wgpu::TextureFormat  format;
-  void*                pool;
+  SwapChain(wgpu::SwapChain sc, wgpu::Extent3D e, wgpu::TextureFormat f, void* p)
+      : swapChain(sc), extent(e), format(f), pool(p) {}
+  wgpu::SwapChain     swapChain;
+  wgpu::Extent3D      extent;
+  wgpu::TextureFormat format;
+  void*               pool;
 };
 
 struct Event {

@@ -46,23 +46,23 @@ struct FileLocation {
 
 class ScopedFileLocation {
  public:
-  ScopedFileLocation(FileLocation* p, const FileLocation& newLocation) : location_(p), previous_(*p) {
+  ScopedFileLocation(FileLocation* p, const FileLocation& newLocation)
+      : location_(p), previous_(*p) {
     *location_ = newLocation;
   }
- ~ScopedFileLocation() {
-    *location_ = previous_;
-  }
+  ~ScopedFileLocation() { *location_ = previous_; }
+
  private:
   FileLocation* location_;
-  FileLocation previous_;
+  FileLocation  previous_;
 };
 
 class ASTNode {
  public:
   ASTNode();
-  virtual            ~ASTNode();
-  virtual Result      Accept(Visitor* visitor) = 0;
-  void                SetFileLocation(const FileLocation& fileLocation) { fileLocation_ = fileLocation; }
+  virtual ~ASTNode();
+  virtual Result Accept(Visitor* visitor) = 0;
+  void           SetFileLocation(const FileLocation& fileLocation) { fileLocation_ = fileLocation; }
   const FileLocation& GetFileLocation() const { return fileLocation_; }
   int                 GetLineNum() const { return fileLocation_.lineNum; }
 
@@ -259,14 +259,14 @@ class BinOpNode : public Expr {
 class Initializer : public Expr {
  public:
   Initializer(Type* type, ExprList* arglist);
-  Result     Accept(Visitor* visitor) override;
-  Type*      GetType(TypeTable* types) override { return type_; }
-  Type*      GetType() { return type_; }
-  ExprList*  GetArgList() { return arglist_; }
+  Result    Accept(Visitor* visitor) override;
+  Type*     GetType(TypeTable* types) override { return type_; }
+  Type*     GetType() { return type_; }
+  ExprList* GetArgList() { return arglist_; }
 
  private:
-  Type*      type_;
-  ExprList*  arglist_;
+  Type*     type_;
+  ExprList* arglist_;
 };
 
 class UnresolvedInitializer : public Expr {
@@ -290,7 +290,7 @@ class UnresolvedListExpr : public Expr {
   Result   Accept(Visitor* visitor) override;
   Type*    GetType(TypeTable* types) override;
   ArgList* GetArgList() { return arglist_; }
-  bool  IsUnresolvedListExpr() const override { return true; }
+  bool     IsUnresolvedListExpr() const override { return true; }
 
  private:
   ArgList* arglist_;

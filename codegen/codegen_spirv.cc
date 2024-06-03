@@ -35,11 +35,15 @@ constexpr uint32_t kBindGroupsEnd = kBindGroupsStart + kMaxBindGroups - 1;
 
 namespace Toucan {
 
-bool isBindGroup(ClassType* classType) { return classType->GetTemplate() == NativeClass::BindGroup; }
+bool isBindGroup(ClassType* classType) {
+  return classType->GetTemplate() == NativeClass::BindGroup;
+}
 
 bool isBuffer(ClassType* classType) { return classType->GetTemplate() == NativeClass::Buffer; }
 
-bool isColorAttachment(ClassType* classType) { return classType->GetTemplate() == NativeClass::ColorAttachment; }
+bool isColorAttachment(ClassType* classType) {
+  return classType->GetTemplate() == NativeClass::ColorAttachment;
+}
 
 bool isSampler(ClassType* classType) { return classType == NativeClass::Sampler; }
 
@@ -64,8 +68,9 @@ bool isSampleableTextureCube(ClassType* classType) {
 }
 
 bool isTextureView(ClassType* classType) {
-  return isSampleableTexture1D(classType) || isSampleableTexture2D(classType) || isSampleableTexture3D(classType) ||
-         isSampleableTexture2DArray(classType) || isSampleableTextureCube(classType);
+  return isSampleableTexture1D(classType) || isSampleableTexture2D(classType) ||
+         isSampleableTexture3D(classType) || isSampleableTexture2DArray(classType) ||
+         isSampleableTextureCube(classType);
 }
 
 bool isMath(ClassType* classType) { return classType == NativeClass::Math; }
@@ -353,23 +358,30 @@ void CodeGenSPIRV::ExtractPipelineVars(Method* entryPoint, Code* interface) {
   assert(entryPoint->formalArgList.size() > 0);
   thisPtrType_ = static_cast<PtrType*>(entryPoint->formalArgList[0]->type);
   assert(thisPtrType_->IsPtr());
-  uint32_t    inputCount = 0, outputCount = 0;
-  ExtractPipelineVars(entryPoint->classType, entryPoint->shaderType, interface, &inputCount, &outputCount);
+  uint32_t inputCount = 0, outputCount = 0;
+  ExtractPipelineVars(entryPoint->classType, entryPoint->shaderType, interface, &inputCount,
+                      &outputCount);
   assert(bindGroups_.size() <= kMaxBindGroups);
   // Remove this "this" pointer.
   entryPoint->formalArgList.erase(entryPoint->formalArgList.begin());
   entryPoint->modifiers |= Method::STATIC;
 }
 
-void CodeGenSPIRV::ExtractPipelineVars(ClassType* classType, ShaderType shaderType, Code* interface, uint32_t* inputCount, uint32_t* outputCount) {
-  if (classType->GetParent()) { ExtractPipelineVars(classType->GetParent(), shaderType, interface, inputCount, outputCount); }
+void CodeGenSPIRV::ExtractPipelineVars(ClassType* classType,
+                                       ShaderType shaderType,
+                                       Code*      interface,
+                                       uint32_t*  inputCount,
+                                       uint32_t*  outputCount) {
+  if (classType->GetParent()) {
+    ExtractPipelineVars(classType->GetParent(), shaderType, interface, inputCount, outputCount);
+  }
   for (const auto& field : classType->GetFields()) {
-    Type* type = field->type;
+    Type*    type = field->type;
     uint32_t pipelineVar = 0;
 
     assert(type->IsPtr());
     type = static_cast<PtrType*>(type)->GetBaseType();
-    int qualifiers;
+    int   qualifiers;
     Type* unqualifiedType = type->GetUnqualifiedType(&qualifiers);
     assert(unqualifiedType->IsClass());
     ClassType* classType = static_cast<ClassType*>(unqualifiedType);
@@ -384,21 +396,23 @@ void CodeGenSPIRV::ExtractPipelineVars(ClassType* classType, ShaderType shaderTy
       }
     } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment) {
       // Do nothing; depth/stencil variables are inaccessible from device code.
-    } else if (classType->GetTemplate() == NativeClass::Buffer && qualifiers == Type::Qualifier::Vertex) {
+    } else if (classType->GetTemplate() == NativeClass::Buffer &&
+               qualifiers == Type::Qualifier::Vertex) {
       if (shaderType == ShaderType::Vertex) {
         Type* arg = classType->GetTemplateArgs()[0];
         assert(arg->IsArray());
-        Type* elementType = static_cast<ArrayType*>(arg)->GetElementType();
+        Type*    elementType = static_cast<ArrayType*>(arg)->GetElementType();
         uint32_t ptrToType = ConvertPointerToType(elementType, spv::StorageClassInput);
         uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {spv::StorageClassInput});
         interface->push_back(ptrId);
         Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, (*inputCount)++}, &annotations_);
         pipelineVar = ptrId;
       }
-    } else if (classType->GetTemplate() == NativeClass::Buffer && qualifiers == Type::Qualifier::Index) {
+    } else if (classType->GetTemplate() == NativeClass::Buffer &&
+               qualifiers == Type::Qualifier::Index) {
       // Do nothing; index buffers are inaccessible from device code.
     } else if (classType->GetTemplate() == NativeClass::BindGroup) {
-      Type* argType = classType->GetTemplateArgs()[0];
+      Type*     argType = classType->GetTemplateArgs()[0];
       VarVector bindGroup;
       if (argType->IsClass()) {
         auto* bindGroupClass = static_cast<ClassType*>(argType);
@@ -426,7 +440,7 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
   // the duration of this method.
   auto argsBackup = entryPoint->formalArgList;
 
-  Code        interface;
+  Code interface;
   ExtractPipelineVars(entryPoint, &interface);
   uint32_t group = 0;
   for (auto& bindGroup : bindGroups_) {
@@ -480,9 +494,9 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
 
   header_.push_back(spv::MagicNumber);
   header_.push_back(0x00010300);
-  header_.push_back(0);         // Generator
-  header_.push_back(nextID_);   // Bound
-  header_.push_back(0);         // Schema
+  header_.push_back(0);        // Generator
+  header_.push_back(nextID_);  // Bound
+  header_.push_back(0);        // Schema
   Append(spv::OpCapability, {spv::CapabilityMatrix}, &header_);
   Append(spv::OpCapability, {spv::CapabilityShader}, &header_);
   Append(spv::OpCapability, {spv::CapabilitySampled1D}, &header_);
@@ -634,9 +648,9 @@ uint32_t CodeGenSPIRV::AppendImageDecl(uint32_t        dim,
   uint32_t sampledType = ConvertType(templateArgs[0]);
   uint32_t depth = 0;  // not depth
   uint32_t arrayed = array ? 1 : 0;
-  uint32_t ms = 0;  // not multisampled
-  uint32_t sampled = 1; // sampled
-  uint32_t format = spv::ImageFormatUnknown; 
+  uint32_t ms = 0;       // not multisampled
+  uint32_t sampled = 1;  // sampled
+  uint32_t format = spv::ImageFormatUnknown;
   return AppendTypeDecl(spv::Op::OpTypeImage,
                         {sampledType, dim, depth, arrayed, ms, sampled, format});
 }
@@ -901,17 +915,15 @@ Result CodeGenSPIRV::Visit(CastExpr* expr) {
   Type*    srcType = expr->GetExpr()->GetType(types_);
   Type*    dstType = expr->GetType();
   uint32_t valueId = GenerateSPIRV(expr->GetExpr());
-  if (srcType == dstType || srcType->IsPtr() && dstType->IsPtr()) {
-    return valueId;
-  }
+  if (srcType == dstType || srcType->IsPtr() && dstType->IsPtr()) { return valueId; }
   uint32_t resultType = ConvertType(dstType);
   return CreateCast(srcType, dstType, resultType, valueId);
 }
 
 Result CodeGenSPIRV::Visit(Initializer* node) {
-  auto                     args = node->GetArgList()->Get();
-  Code                     resultArgs;
-  uint32_t                 resultType = ConvertType(node->GetType());
+  auto     args = node->GetArgList()->Get();
+  Code     resultArgs;
+  uint32_t resultType = ConvertType(node->GetType());
   for (auto arg : args) {
     resultArgs.push_back(GenerateSPIRV(arg));
   }
@@ -1106,7 +1118,7 @@ Result CodeGenSPIRV::Visit(ReturnStatement* stmt) {
 }
 
 Result CodeGenSPIRV::Visit(MethodCall* expr) {
-  Method*  method = expr->GetMethod();
+  Method*                   method = expr->GetMethod();
   const std::vector<Expr*>& args = expr->GetArgList()->Get();
   if (isBuffer(method->classType)) {
     if (method->name == "MapReadUniform" || method->name == "MapReadStoreage" ||
@@ -1149,9 +1161,7 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
       return {};
     }
   } else if (isBindGroup(method->classType)) {
-    if (method->name == "Get") {
-      return GenerateSPIRV(args[0]);
-    }
+    if (method->name == "Get") { return GenerateSPIRV(args[0]); }
   } else if (isMath(method->classType)) {
     uint32_t resultType = ConvertType(expr->GetType(types_));
     if (method->name == "sqrt") {
