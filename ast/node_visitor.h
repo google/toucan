@@ -63,16 +63,22 @@ class NodeVisitor : public Visitor {
   Result        Default(ASTNode* node) override;
   template <typename T>
   T* Resolve(T* t) {
-    return t ? static_cast<T*>(t->Accept(this).p) : nullptr;
+    if (t) {
+      ScopedFileLocation scopedFile(&fileLocation_, t->GetFileLocation());
+      return static_cast<T*>(t->Accept(this).p);
+    } else {
+      return nullptr;
+    }
   }
 
  protected:
   template <typename T, typename... ARGS>
-  T* Make(ASTNode* orig, ARGS&&... args) {
+  T* Make(ARGS&&... args) {
     T* node = nodes_->Make<T>(std::forward<ARGS>(args)...);
-    node->SetFileLocation(orig->GetFileLocation());
+    node->SetFileLocation(fileLocation_);
     return node;
   }
+  FileLocation fileLocation_;
 
  private:
   NodeVector* nodes_;

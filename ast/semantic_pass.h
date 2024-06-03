@@ -47,21 +47,20 @@ class SemanticPass : public NodeVisitor {
   Result Visit(UnresolvedStaticMethodCall* node) override;
   Result Visit(VarDeclaration* decl) override;
   Result Visit(WhileStatement* stmt) override;
-  Result Error(ASTNode* node, const char* fmt, ...);
+  Result Error(const char* fmt, ...);
   Result Default(ASTNode* node) override;
   int    GetNumErrors() const { return numErrors_; }
 
  private:
-  Result ResolveMethodCall(ASTNode*    node,
-                           Expr*       expr,
+  Result ResolveMethodCall(Expr*       expr,
                            ClassType*  classType,
                            std::string id,
                            ArgList*    arglist);
   Expr*  ResolveListExpr(UnresolvedListExpr* node, Type* dstType);
-  void   WidenArgList(ASTNode* node, std::vector<Expr*>& argList, const VarVector& formalArgList);
+  void   WidenArgList(std::vector<Expr*>& argList, const VarVector& formalArgList);
   Expr*  Widen(Expr* expr, Type* dstType);
-  Stmt*  InitializeVar(ASTNode* node, Expr* varExpr, Type* type, Expr* initExpr);
-  Stmts* InitializeClass(ASTNode* node, Expr* thisExpr, ClassType* classType);
+  Stmt*  InitializeVar(Expr* varExpr, Type* type, Expr* initExpr);
+  Stmts* InitializeClass(Expr* thisExpr, ClassType* classType);
   SymbolTable* symbols_;
   TypeTable*   types_;
   int          numErrors_;

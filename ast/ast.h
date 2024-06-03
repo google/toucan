@@ -37,9 +37,24 @@ union Result {
 };
 
 struct FileLocation {
+  FileLocation();
+  FileLocation(const FileLocation& other);
   FileLocation(std::shared_ptr<std::string> f, int n);
   std::shared_ptr<std::string> filename;
   int                          lineNum;
+};
+
+class ScopedFileLocation {
+ public:
+  ScopedFileLocation(FileLocation* p, const FileLocation& newLocation) : location_(p), previous_(*p) {
+    *location_ = newLocation;
+  }
+ ~ScopedFileLocation() {
+    *location_ = previous_;
+  }
+ private:
+  FileLocation* location_;
+  FileLocation previous_;
 };
 
 class ASTNode {

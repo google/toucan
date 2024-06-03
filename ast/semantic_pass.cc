@@ -37,13 +37,13 @@ Result SemanticPass::Visit(SmartToRawPtr* node) {
   if (!expr) return nullptr;
   Type* exprType = expr->GetType(types_);
   if (!exprType->IsStrongPtr() && !exprType->IsWeakPtr()) {
-    return Error(node, "attempt to dereference a non-pointer");
+    return Error("attempt to dereference a non-pointer");
   }
-  return Make<SmartToRawPtr>(node, expr);
+  return Make<SmartToRawPtr>(expr);
 }
 
 Result SemanticPass::Visit(ArrayAccess* node) {
-  if (!node->GetIndex()) { return Error(node, "variable-sized array type used as expression"); }
+  if (!node->GetIndex()) { return Error("variable-sized array type used as expression"); }
   Expr* expr = Resolve(node->GetExpr());
   if (!expr) return nullptr;
   Expr* index = Resolve(node->GetIndex());
@@ -52,20 +52,20 @@ Result SemanticPass::Visit(ArrayAccess* node) {
   if (exprType->IsRawPtr()) { exprType = static_cast<RawPtrType*>(exprType)->GetBaseType(); }
   if (exprType->IsStrongPtr() || exprType->IsWeakPtr()) {
     exprType = static_cast<PtrType*>(exprType)->GetBaseType();
-    if (expr->GetType(types_)->IsRawPtr()) { expr = Make<LoadExpr>(node, expr); }
-    expr = Make<SmartToRawPtr>(node, expr);
+    if (expr->GetType(types_)->IsRawPtr()) { expr = Make<LoadExpr>(expr); }
+    expr = Make<SmartToRawPtr>(expr);
   }
   exprType = exprType->GetUnqualifiedType();
   Type* indexType = index->GetType(types_);
   if (!indexType->IsInt() && !indexType->IsUInt()) {
-    return Error(node, "array index must be integer");
+    return Error("array index must be integer");
   } else if (exprType->IsArray() || exprType->IsMatrix()) {
-    return Make<ArrayAccess>(node, expr, index);
+    return Make<ArrayAccess>(expr, index);
   } else if (exprType->IsVector()) {
     ConstantFolder cf;
-    return Make<UnresolvedSwizzleExpr>(node, expr, cf.Resolve(index));
+    return Make<UnresolvedSwizzleExpr>(expr, cf.Resolve(index));
   } else {
-    return Error(node, "expression is not of indexable type");
+    return Error("expression is not of indexable type");
   }
 }
 
@@ -74,14 +74,14 @@ Result SemanticPass::Visit(CastExpr* node) {
   if (expr && expr->GetType(types_) == node->GetType()) {
     return expr;
   } else {
-    return Make<CastExpr>(node, node->GetType(), expr);
+    return Make<CastExpr>(node->GetType(), expr);
   }
 }
 
 Result SemanticPass::Visit(Data* node) { return node; }
 
 Result SemanticPass::Visit(Stmts* stmts) {
-  Stmts* newStmts = Make<Stmts>(stmts);
+  Stmts* newStmts = Make<Stmts>();
   Scope* scope = stmts->GetScope();
   if (scope) { symbols_->PushScope(scope); }
   for (Stmt* const& it : stmts->GetStmts()) {
@@ -103,11 +103,11 @@ Result SemanticPass::Visit(ArgList* node) {
   for (auto arg : node->GetArgs()) {
     if (node->IsNamed()) {
       if (arg->GetID().empty()) {
-        return Error(node, "if one argument is named, all arguments must be named");
+        return Error("if one argument is named, all arguments must be named");
       }
     } else {
       if (!arg->GetID().empty()) {
-        return Error(node, "if one argument is unnamed, all arguments must be unnamed");
+        return Error("if one argument is unnamed, all arguments must be unnamed");
       }
     }
   }
@@ -125,16 +125,16 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
     std::vector<Expr*> constructorArgs;
     Method* constructor = classType->FindMethod(classType->GetName(), argList, types_, &constructorArgs);
     if (!constructor) {
-      return Error(node, "constructor for class \"%s\" with those arguments not found",
+      return Error("constructor for class \"%s\" with those arguments not found",
                    classType->GetName().c_str());
     }
-    auto* tempVar = Make<TempVarExpr>(node, node->GetType());
-    constructorArgs[0] = Make<RawToWeakPtr>(node, tempVar);
-    WidenArgList(node, constructorArgs, constructor->formalArgList);
-    auto* exprList = Make<ExprList>(node, std::move(constructorArgs));
-    Expr* result = Make<MethodCall>(node, constructor, exprList);
-    result = Make<SmartToRawPtr>(node, result);
-    return Make<LoadExpr>(node, result);
+    auto* tempVar = Make<TempVarExpr>(node->GetType());
+    constructorArgs[0] = Make<RawToWeakPtr>(tempVar);
+    WidenArgList(constructorArgs, constructor->formalArgList);
+    auto* exprList = Make<ExprList>(std::move(constructorArgs));
+    Expr* result = Make<MethodCall>(constructor, exprList);
+    result = Make<SmartToRawPtr>(result);
+    return Make<LoadExpr>(result);
   } else if (type->IsVector() && args.size() == 1) {
     unsigned int length = static_cast<VectorType*>(type)->GetLength();
     for (int i = 0; i < length; ++i) {
@@ -145,35 +145,35 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
       exprs.push_back(arg->GetExpr());
     }
   }
-  auto exprList = Make<ExprList>(node, std::move(exprs));
-  return Make<Initializer>(node, node->GetType(), exprList);
+  auto exprList = Make<ExprList>(std::move(exprs));
+  return Make<Initializer>(node->GetType(), exprList);
 }
 
-Stmt* SemanticPass::InitializeVar(ASTNode* node, Expr* varExpr, Type* type, Expr* initExpr) {
+Stmt* SemanticPass::InitializeVar(Expr* varExpr, Type* type, Expr* initExpr) {
   if (initExpr) {
     Type* initExprType = initExpr->GetType(types_);
     if (!initExprType->CanWidenTo(type)) {
-      Error(node, "cannot store a value of type \"%s\" to a location of type \"%s\"",
+      Error("cannot store a value of type \"%s\" to a location of type \"%s\"",
             initExprType->ToString().c_str(), type->ToString().c_str());
       return nullptr;
     }
     initExpr = Widen(initExpr, type);
-    return Make<StoreStmt>(node, varExpr, initExpr);
+    return Make<StoreStmt>(varExpr, initExpr);
   } else if (type->IsClass()) {
-    return InitializeClass(node, varExpr, static_cast<ClassType*>(type));
+    return InitializeClass(varExpr, static_cast<ClassType*>(type));
   } else {
-    return Make<ZeroInitStmt>(node, varExpr);
+    return Make<ZeroInitStmt>(varExpr);
   }
 }
 
-Stmts* SemanticPass::InitializeClass(ASTNode* node, Expr* thisExpr, ClassType* classType) {
-  Stmts* stmts = Make<Stmts>(node);
+Stmts* SemanticPass::InitializeClass(Expr* thisExpr, ClassType* classType) {
+  Stmts* stmts = Make<Stmts>();
   if (classType->GetParent()) {
-    stmts->Append(InitializeClass(node, thisExpr, classType->GetParent()));
+    stmts->Append(InitializeClass(thisExpr, classType->GetParent()));
   }
   for (const auto& field : classType->GetFields()) {
-    Expr* fieldExpr = Make<FieldAccess>(node, thisExpr, field.get());
-    stmts->Append(InitializeVar(node, fieldExpr, field->type, Resolve(field->defaultValue)));
+    Expr* fieldExpr = Make<FieldAccess>(thisExpr, field.get());
+    stmts->Append(InitializeVar(fieldExpr, field->type, Resolve(field->defaultValue)));
   }
   return stmts;
 }
@@ -182,7 +182,7 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
   std::string id = decl->GetID();
   Type*       type = decl->GetType();
   if (symbols_->FindVarInScope(id)) {
-    return Error(decl, "variable \"%s\" already defined in this scope", id.c_str());
+    return Error("variable \"%s\" already defined in this scope", id.c_str());
   }
   if (!type) return nullptr;
   Expr* initExpr = nullptr;
@@ -191,20 +191,19 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
     if (!initExpr) { return nullptr; }
   }
   if (type->IsAuto()) {
-    if (!initExpr) { return Error(decl, "auto with no initializer expression"); }
+    if (!initExpr) { return Error("auto with no initializer expression"); }
     type = initExpr->GetType(types_);
   }
   if (type->IsVoid() || (type->IsArray() && static_cast<ArrayType*>(type)->GetNumElements() == 0)) {
     std::string errorMsg = std::string("cannot create storage of type ") + type->ToString();
-    return Error(decl, errorMsg.c_str());
+    return Error(errorMsg.c_str());
   }
   Var* var = symbols_->DefineVar(id, type);
-  Expr* varExpr = Make<VarExpr>(decl, var);
-  return InitializeVar(decl, varExpr, type, initExpr);
+  Expr* varExpr = Make<VarExpr>(var);
+  return InitializeVar(varExpr, type, initExpr);
 }
 
-Result SemanticPass::ResolveMethodCall(ASTNode*    node,
-                                       Expr*       expr,
+Result SemanticPass::ResolveMethodCall(Expr*       expr,
                                        ClassType*  classType,
                                        std::string id,
                                        ArgList*    arglist) {
@@ -219,16 +218,16 @@ Result SemanticPass::ResolveMethodCall(ASTNode*    node,
       if (arg != arglist->GetArgs().back()) { msg += ", "; }
     }
     msg += ")";
-    Error(node, msg.c_str());
+    Error(msg.c_str());
 
     for (const auto& method : classType->GetMethods()) {
-      if (method->name == id) { Error(node, method->ToString().c_str()); }
+      if (method->name == id) { Error(method->ToString().c_str()); }
     }
     return nullptr;
   }
   if (!(method->modifiers & Method::STATIC)) {
     if (!expr) {
-      return Error(node, "attempt to call non-static method \"%s\" on class \"%s\"", id.c_str(),
+      return Error("attempt to call non-static method \"%s\" on class \"%s\"", id.c_str(),
                    classType->ToString().c_str());
     } else {
       newArgList[0] = expr;
@@ -236,13 +235,13 @@ Result SemanticPass::ResolveMethodCall(ASTNode*    node,
   }
   for (int i = 0; i < newArgList.size(); ++i) {
     if (!newArgList[i]) {
-      return Error(node, "formal parameter \"%s\" has no default value",
+      return Error("formal parameter \"%s\" has no default value",
                    method->formalArgList[i]->name.c_str());
     }
   }
-  WidenArgList(node, newArgList, method->formalArgList);
-  auto* exprList = Make<ExprList>(node, std::move(newArgList));
-  return Make<MethodCall>(node, method, exprList);
+  WidenArgList(newArgList, method->formalArgList);
+  auto* exprList = Make<ExprList>(std::move(newArgList));
+  return Make<MethodCall>(method, exprList);
 }
 
 Expr* SemanticPass::Widen(Expr* node, Type* dstType) {
@@ -252,15 +251,15 @@ Expr* SemanticPass::Widen(Expr* node, Type* dstType) {
   } else if (node->IsUnresolvedListExpr()) {
     return ResolveListExpr(static_cast<UnresolvedListExpr*>(node), dstType);
   } else {
-    return Make<CastExpr>(node, dstType, node);
+    return Make<CastExpr>(dstType, node);
   }
 }
 
 Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
   if (dstType->IsPtr()) {
     dstType = static_cast<PtrType*>(dstType)->GetBaseType();
-    auto* tempVar = Make<TempVarExpr>(node, dstType, ResolveListExpr(node, dstType));
-    return Make<RawToWeakPtr>(node, tempVar);
+    auto* tempVar = Make<TempVarExpr>(dstType, ResolveListExpr(node, dstType));
+    return Make<RawToWeakPtr>(tempVar);
   }
   Type* type = dstType;
   auto argList = node->GetArgList();
@@ -289,7 +288,7 @@ Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
     }
   } else {
     if (argList->IsNamed()) {
-      Error(node, "named list expression are unsupported for %s", dstType->ToString().c_str());
+      Error("named list expression are unsupported for %s", dstType->ToString().c_str());
       return nullptr;
     }
     Type* elementType;
@@ -310,8 +309,8 @@ Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
       exprs.push_back(argExpr);
     }
   }
-  auto exprList = Make<ExprList>(node, std::move(exprs));
-  return Make<Initializer>(node, type, exprList);
+  auto exprList = Make<ExprList>(std::move(exprs));
+  return Make<Initializer>(type, exprList);
 }
 
 Result SemanticPass::Visit(UnresolvedMethodCall* node) {
@@ -326,19 +325,19 @@ Result SemanticPass::Visit(UnresolvedMethodCall* node) {
   if (type->IsPtr()) {
     thisPtrType = type;
     type = static_cast<PtrType*>(type)->GetBaseType();
-    if (expr->GetType(types_)->IsRawPtr()) { expr = Make<LoadExpr>(node, expr); }
+    if (expr->GetType(types_)->IsRawPtr()) { expr = Make<LoadExpr>(expr); }
   } else {
     if (!expr->GetType(types_)->IsRawPtr()) {
-      expr = Make<TempVarExpr>(node, expr->GetType(types_), expr);
+      expr = Make<TempVarExpr>(expr->GetType(types_), expr);
     }
-    expr = Make<RawToWeakPtr>(node, expr);
+    expr = Make<RawToWeakPtr>(expr);
     thisPtrType = expr->GetType(types_);
   }
-  if (!type) { return Error(node, "calling method on void pointer?"); }
+  if (!type) { return Error("calling method on void pointer?"); }
   type = type->GetUnqualifiedType();
-  if (!type->IsClass()) { return Error(node, "expression does not evaluate to class type"); }
+  if (!type->IsClass()) { return Error("expression does not evaluate to class type"); }
   ClassType* classType = static_cast<ClassType*>(type);
-  return ResolveMethodCall(node, expr, classType, id, arglist);
+  return ResolveMethodCall(expr, classType, id, arglist);
 }
 
 Result SemanticPass::Visit(UnresolvedStaticMethodCall* node) {
@@ -346,7 +345,7 @@ Result SemanticPass::Visit(UnresolvedStaticMethodCall* node) {
   ArgList*    arglist = Resolve(node->GetArgList());
   if (!arglist) return nullptr;
   ClassType* classType = node->classType();
-  return ResolveMethodCall(node, nullptr, classType, id, arglist);
+  return ResolveMethodCall(nullptr, classType, id, arglist);
 }
 
 Result SemanticPass::Visit(LoadExpr* node) {
@@ -355,36 +354,36 @@ Result SemanticPass::Visit(LoadExpr* node) {
   if (expr->IsUnresolvedSwizzleExpr()) {
     auto swizzle = static_cast<UnresolvedSwizzleExpr*>(expr);
     // Bypass the swizzle, load its base and extract our element.
-    Expr* loadedBase = Make<LoadExpr>(node, swizzle->GetExpr());
-    return Make<ExtractElementExpr>(node, loadedBase, swizzle->GetIndex());
+    Expr* loadedBase = Make<LoadExpr>(swizzle->GetExpr());
+    return Make<ExtractElementExpr>(loadedBase, swizzle->GetIndex());
   }
   if (!expr->GetType(types_)->IsRawPtr()) {
     // Method calls and length expressions can get a spurious load when converted from
     // "assignable".
     return expr;
   }
-  return Make<LoadExpr>(node, expr);
+  return Make<LoadExpr>(expr);
 }
 
 Result SemanticPass::Visit(UnresolvedIdentifier* node) {
   std::string id = node->GetID();
   if (Var* var = symbols_->FindVar(id)) {
-    return Make<VarExpr>(node, var);
+    return Make<VarExpr>(var);
   } else if (Field* field = symbols_->FindField(id)) {
     Var* thisPtr = symbols_->FindVar("this");
     if (!thisPtr) {
       // TODO:  Implement static field access
-      return Error(node, "attempt to access non-static field in static method");
+      return Error("attempt to access non-static field in static method");
     } else {
-      Expr* varExpr = Make<VarExpr>(node, thisPtr);
-      Expr* loadExpr = Make<LoadExpr>(node, varExpr);
-      Expr* derefExpr = Make<SmartToRawPtr>(node, loadExpr);
-      return Make<FieldAccess>(node, derefExpr, field);
+      Expr* varExpr = Make<VarExpr>(thisPtr);
+      Expr* loadExpr = Make<LoadExpr>(varExpr);
+      Expr* derefExpr = Make<SmartToRawPtr>(loadExpr);
+      return Make<FieldAccess>(derefExpr, field);
     }
   } else if (const EnumValue* enumValue = symbols_->FindEnumValue(id)) {
-    return Make<EnumConstant>(node, enumValue);
+    return Make<EnumConstant>(enumValue);
   } else {
-    return Error(node, "unknown symbol \"%s\"", id.c_str());
+    return Error("unknown symbol \"%s\"", id.c_str());
   }
 }
 
@@ -397,46 +396,46 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
   if (type->IsPtr()) {
     type = static_cast<PtrType*>(type)->GetBaseType();
     if (type->IsArray()) {
-      if (id == "length") { return Make<LengthExpr>(node, expr); }
+      if (id == "length") { return Make<LengthExpr>(expr); }
     }
-    if (expr->GetType(types_)->IsRawPtr()) { expr = Make<LoadExpr>(node, expr); }
-    expr = Make<SmartToRawPtr>(node, expr);
+    if (expr->GetType(types_)->IsRawPtr()) { expr = Make<LoadExpr>(expr); }
+    expr = Make<SmartToRawPtr>(expr);
   }
   type = type->GetUnqualifiedType();
   if (type->IsArray()) {
     if (id == "length") {
       ArrayType* atype = static_cast<ArrayType*>(type);
       assert(atype->GetNumElements() > 0);
-      return Make<IntConstant>(node, atype->GetNumElements(), 32);  // FIXME: uint?
+      return Make<IntConstant>(atype->GetNumElements(), 32);  // FIXME: uint?
     } else {
-      return Error(node, "unknown array property \"%s\"", id.c_str());
+      return Error("unknown array property \"%s\"", id.c_str());
     }
   } else if (type->IsClass()) {
     ClassType* classType;
     classType = static_cast<ClassType*>(type);
     Field* field = classType->FindField(id);
     if (field) {
-      return Make<FieldAccess>(node, expr, field);
+      return Make<FieldAccess>(expr, field);
     } else {
-      return Error(node, "field \"%s\" not found on class \"%s\"", id.c_str(),
+      return Error("field \"%s\" not found on class \"%s\"", id.c_str(),
                    classType->ToString().c_str());
     }
   } else if (type->IsVector()) {
     int index = static_cast<VectorType*>(type)->GetSwizzle(id);
     if (index >= 0 && index <= 3) {
-      return Make<UnresolvedSwizzleExpr>(node, expr, index);
+      return Make<UnresolvedSwizzleExpr>(expr, index);
     } else {
-      return Error(node, "invalid swizzle '%s'", id.c_str());
+      return Error("invalid swizzle '%s'", id.c_str());
     }
   } else {
-    return Error(node, "Expression is not of class, reference or vector type");
+    return Error("Expression is not of class, reference or vector type");
   }
 }
 
 Result SemanticPass::Visit(IncDecExpr* node) {
   Expr* expr = Resolve(node->GetExpr());
   if (!expr) return nullptr;
-  return Make<IncDecExpr>(node, node->GetOp(), expr, node->returnOrigValue());
+  return Make<IncDecExpr>(node->GetOp(), expr, node->returnOrigValue());
 }
 
 Result SemanticPass::Visit(StoreStmt* node) {
@@ -448,23 +447,23 @@ Result SemanticPass::Visit(StoreStmt* node) {
     auto swizzle = static_cast<UnresolvedSwizzleExpr*>(lhs);
     // Bypass the swizzle, load its arg and insert our new value.
     lhs = swizzle->GetExpr();
-    Expr* loadedBase = Make<LoadExpr>(node, lhs);
-    rhs = Make<InsertElementExpr>(node, loadedBase, rhs, swizzle->GetIndex());
+    Expr* loadedBase = Make<LoadExpr>(lhs);
+    rhs = Make<InsertElementExpr>(loadedBase, rhs, swizzle->GetIndex());
   }
   Type* lhsType = lhs->GetType(types_);
-  if (!lhsType->IsRawPtr()) { return Error(node, "expression is not an assignable value"); }
+  if (!lhsType->IsRawPtr()) { return Error("expression is not an assignable value"); }
   lhsType = static_cast<RawPtrType*>(lhsType)->GetBaseType();
   Type* rhsType = rhs->GetType(types_);
   int   qualifiers;
   lhsType = lhsType->GetUnqualifiedType(&qualifiers);
   if (qualifiers & Type::Qualifier::ReadOnly) {
-    return Error(node, "expression is not an assignable value");
+    return Error("expression is not an assignable value");
   } else if (!rhsType->CanWidenTo(lhsType)) {
-    return Error(node, "cannot store a value of type \"%s\" to a location of type \"%s\"",
+    return Error("cannot store a value of type \"%s\" to a location of type \"%s\"",
                  rhsType->ToString().c_str(), lhsType->ToString().c_str());
   } else {
     rhs = Widen(rhs, lhsType);
-    return Make<StoreStmt>(node, lhs, rhs);
+    return Make<StoreStmt>(lhs, rhs);
   }
 }
 
@@ -495,34 +494,33 @@ Result SemanticPass::Visit(BinOpNode* node) {
   bool  isEqualityOp = node->GetOp() == BinOpNode::EQ || node->GetOp() == BinOpNode::NE;
   if (!lhsType->CanWidenTo(rhsType) && !rhsType->CanWidenTo(lhsType) &&
       !IsValidNonMatchingOp(node->GetOp(), lhsType, rhsType)) {
-    return Error(node, "type mismatch on binary operator");
+    return Error("type mismatch on binary operator");
   }
   if (node->GetOp() == BinOpNode::LOGICAL_AND || node->GetOp() == BinOpNode::LOGICAL_AND) {
     if (!lhsType->IsBool() || !rhsType->IsBool()) {
-      return Error(node, "non-boolean argument to logical operator");
+      return Error("non-boolean argument to logical operator");
     }
   }
   if (node->IsRelOp()) {
     if (lhsType->IsEnum() || lhsType->IsBool()) {
-      if (!isEqualityOp) { return Error(node, "invalid type for binary operator"); }
+      if (!isEqualityOp) { return Error("invalid type for binary operator"); }
     } else if (!(lhsType->IsInt() || lhsType->IsUInt() || lhsType->IsFloatingPoint())) {
-      return Error(node, "invalid type for relational operator");
+      return Error("invalid type for relational operator");
     }
   }
   if (lhsType != rhsType) {
     if (lhsType->CanWidenTo(rhsType)) {
-      lhs = Make<CastExpr>(node, rhsType, lhs);
+      lhs = Make<CastExpr>(rhsType, lhs);
       assert(lhs->GetType(types_) == rhs->GetType(types_));
     } else if (rhsType->CanWidenTo(lhsType)) {
-      rhs = Make<CastExpr>(node, lhsType, rhs);
+      rhs = Make<CastExpr>(lhsType, rhs);
       assert(lhs->GetType(types_) == rhs->GetType(types_));
     }
   }
-  return Make<BinOpNode>(node, node->GetOp(), lhs, rhs);
+  return Make<BinOpNode>(node->GetOp(), lhs, rhs);
 }
 
-void SemanticPass::WidenArgList(ASTNode*            node,
-                                std::vector<Expr*>& argList,
+void SemanticPass::WidenArgList(std::vector<Expr*>& argList,
                                 const VarVector&    formalArgList) {
   assert(argList.size() == formalArgList.size());
   for (int i = 0; i < argList.size(); ++i) {
@@ -546,10 +544,10 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
   if (unqualifiedType->IsClass()) {
     auto* classType = static_cast<ClassType*>(unqualifiedType);
     if (classType->HasUnsizedArray()) {
-      if (!length) { return Error(node, "class with unsized array must be allocated with size"); }
+      if (!length) { return Error("class with unsized array must be allocated with size"); }
     }
     if (!classType->IsFullySpecified()) {
-      return Error(node, "cannot allocate partially-specified template class %s",
+      return Error("cannot allocate partially-specified template class %s",
                    classType->ToString().c_str());
     }
     std::vector<Expr*> exprList;
@@ -557,27 +555,27 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
     if (constructor) {
       for (int i = 1; i < exprList.size(); ++i) {
         if (!exprList[i]) {
-          return Error(node, "formal parameter \"%s\" has no default value",
+          return Error("formal parameter \"%s\" has no default value",
                        constructor->formalArgList[i]->name.c_str());
         }
       }
-      WidenArgList(node, exprList, constructor->formalArgList);
-      args = Make<ExprList>(node, std::move(exprList));
+      WidenArgList(exprList, constructor->formalArgList);
+      args = Make<ExprList>(std::move(exprList));
     } else if (classType->IsNative()) {
-      return Error(node->GetArgList(), "matching constructor not found");
+      return Error("matching constructor not found");
     }
   }
-  return Make<NewExpr>(node, type, length, constructor, args);
+  return Make<NewExpr>(type, length, constructor, args);
 }
 
 Result SemanticPass::Visit(IfStatement* s) {
   Expr* expr = Resolve(s->GetExpr());
   if (expr && expr->GetType(types_) != types_->GetBool()) {
-    return Error(s, "condition must be boolean");
+    return Error("condition must be boolean");
   } else {
     Stmt* stmt = Resolve(s->GetStmt());
     Stmt* optElse = Resolve(s->GetOptElse());
-    return Make<IfStatement>(s, expr, stmt, optElse);
+    return Make<IfStatement>(expr, stmt, optElse);
   }
 }
 
@@ -585,9 +583,9 @@ Result SemanticPass::Visit(WhileStatement* s) {
   Expr* cond = Resolve(s->GetCond());
   Stmt* body = Resolve(s->GetBody());
   if (cond && cond->GetType(types_) != types_->GetBool()) {
-    return Error(s, "condition must be boolean");
+    return Error("condition must be boolean");
   } else {
-    return Make<WhileStatement>(s, cond, body);
+    return Make<WhileStatement>(cond, body);
   }
 }
 
@@ -595,9 +593,9 @@ Result SemanticPass::Visit(DoStatement* s) {
   Stmt* body = Resolve(s->GetBody());
   Expr* cond = Resolve(s->GetCond());
   if (cond && cond->GetType(types_) != types_->GetBool()) {
-    return Error(s, "condition must be boolean");
+    return Error("condition must be boolean");
   } else {
-    return Make<DoStatement>(s, body, cond);
+    return Make<DoStatement>(body, cond);
   }
 }
 
@@ -606,7 +604,7 @@ Result SemanticPass::Visit(ForStatement* node) {
   Expr* cond = Resolve(node->GetCond());
   Stmt* loopStmt = Resolve(node->GetLoopStmt());
   Stmt* body = Resolve(node->GetBody());
-  return Make<ForStatement>(node, initStmt, cond, loopStmt, body);
+  return Make<ForStatement>(initStmt, cond, loopStmt, body);
 }
 
 Result SemanticPass::Visit(NewArrayExpr* expr) {
@@ -615,9 +613,9 @@ Result SemanticPass::Visit(NewArrayExpr* expr) {
   if (!type) return nullptr;
   if (type->IsArray()) {
     ArrayType* arrayType = static_cast<ArrayType*>(type);
-    if (arrayType->GetNumElements() == 0) { return Error(expr, "cannot allocate unsized array"); }
+    if (arrayType->GetNumElements() == 0) { return Error("cannot allocate unsized array"); }
   }
-  return Make<NewArrayExpr>(expr, type, sizeExpr);
+  return Make<NewArrayExpr>(type, sizeExpr);
 }
 
 Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
@@ -631,9 +629,9 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
       // If last statement is not a return statement,
       if (!method->stmts->ContainsReturn()) {
         if (method->returnType != types_->GetVoid()) {
-          return Error(defn, "implicit void return, in method returning non-void.");
+          return Error("implicit void return, in method returning non-void.");
         } else {
-          Stmt* last = Make<ReturnStatement>(defn, nullptr, nullptr);
+          Stmt* last = Make<ReturnStatement>(nullptr, nullptr);
           method->stmts->Append(last);
         }
       }
@@ -644,8 +642,8 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   }
   Method* destructor = classType->GetVTable()[0];
   if (!destructor->stmts) {
-    Stmts* stmts = Make<Stmts>(defn);
-    stmts->Append(Make<ReturnStatement>(defn, nullptr, nullptr));
+    Stmts* stmts = Make<Stmts>();
+    stmts->Append(Make<ReturnStatement>(nullptr, nullptr));
     destructor->stmts = stmts;
   }
 
@@ -653,7 +651,7 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   for (const auto& field : fields) {
     if (field->type->IsUnsizedArray()) {
       if (field != fields.back()) {
-        return Error(defn, "Unsized arrays are only allwed as the last field of a class");
+        return Error("Unsized arrays are only allwed as the last field of a class");
       }
     }
   }
@@ -663,17 +661,16 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
 }
 
 Result SemanticPass::Default(ASTNode* node) {
-  return Error(node,
-               "Internal compiler error:  attempt to check semantics on a resolved expression.");
+  return Error("Internal compiler error:  attempt to check semantics on a resolved expression.");
 }
 
-Result SemanticPass::Error(ASTNode* node, const char* fmt, ...) {
-  const FileLocation& location = node->GetFileLocation();
+Result SemanticPass::Error(const char* fmt, ...) {
+  const FileLocation& location = fileLocation_;
   std::string         filename =
-      location.filename ? std::filesystem::path(*location.filename).filename().string() : "";
+      fileLocation_.filename ? std::filesystem::path(*fileLocation_.filename).filename().string() : "";
   va_list argp;
   va_start(argp, fmt);
-  fprintf(stderr, "%s:%d:  ", filename.c_str(), location.lineNum);
+  fprintf(stderr, "%s:%d:  ", filename.c_str(), fileLocation_.lineNum);
   vfprintf(stderr, fmt, argp);
   fprintf(stderr, "\n");
   numErrors_++;

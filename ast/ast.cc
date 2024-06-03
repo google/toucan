@@ -16,9 +16,13 @@
 
 namespace Toucan {
 
+FileLocation::FileLocation() : filename(nullptr), lineNum(0) {}
+
+FileLocation::FileLocation(const FileLocation& other) : filename(other.filename), lineNum(other.lineNum) {}
+
 FileLocation::FileLocation(std::shared_ptr<std::string> f, int n) : filename(f), lineNum(n) {}
 
-ASTNode::ASTNode() : fileLocation_(nullptr, 0) {}
+ASTNode::ASTNode() {}
 
 Expr::Expr() {}
 
