@@ -1,3 +1,5 @@
+include "include/test.t"
+
 class Foo {
   float value;
   Foo plusOne() {
@@ -13,4 +15,5 @@ class Foo {
 }
 
 Foo f = Foo.zero().plusOne();
+Test.Expect(f.value == 1.0);
 return f.value;

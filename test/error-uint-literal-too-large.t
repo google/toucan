@@ -1,2 +1,2 @@
 uint a = 5000000000u;
-return (float) a;
+return 705032704.0;

@@ -4,4 +4,5 @@ class Bar {
   }
 }
 
-return Bar.Foo(f = 3.0);
+float r = Bar.Foo(f = 3.0);
+return 0.0;

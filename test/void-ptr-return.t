@@ -1,3 +1,5 @@
+include "include/test.t"
+
 float a = 3.0;
 class Foo {
   void^ Weak() { return new Foo(); }
@@ -10,4 +12,5 @@ f.Weak();
 f.Strong();
 f.WeakNull();
 f.StrongNull();
+Test.Expect(a == 3.0);
 return a;

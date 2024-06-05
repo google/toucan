@@ -229,7 +229,7 @@ result is 10.000000
 test/local-var-while.t
 result is 10.000000
 test/loop.t
-result is inf
+result is 41341.914062
 test/matrix-constructor.t
 result is 3.000000
 test/matrix-initializer.t

@@ -1,3 +1,4 @@
+include "include/test.t"
 class Foo {
   float value;
   static Foo One() {
@@ -7,4 +8,5 @@ class Foo {
   }
 }
 
+Test.Expect(Foo.One().value == 1.0);
 return Foo.One().value;

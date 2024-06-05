@@ -1,3 +1,5 @@
+include "include/test.t"
+
 class Bar {
   float get() {
     return 3.0;
@@ -12,4 +14,5 @@ class Template<T> {
 
 Template<Bar>* templateBar = new Template<Bar>();
 templateBar.set(new Bar());
+Test.Expect(templateBar.get() == 3.0);
 return templateBar.get();

@@ -1,2 +1,3 @@
 int a = 2147483648;
-return (float) a;
+float r = (float) a;
+return r;

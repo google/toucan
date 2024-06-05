@@ -1,2 +1,3 @@
 float f = 3.0;
-return *f;
+float r = *f;
+return 0.0;

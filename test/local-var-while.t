@@ -1,3 +1,5 @@
+include "include/test.t"
+
 int a = 0;
 int i = 5;
 while (i > 0) {
@@ -6,4 +8,6 @@ while (i > 0) {
     a += c;
     --i;
 }
+Test.Expect(i == 0);
+Test.Expect(a == 10);
 return (float) a;

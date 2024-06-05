@@ -274,8 +274,12 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
           typeMap_[method->classType]);
   const VarVector& argList = method->formalArgList;
   for (int i = 0; i < argList.size(); ++i) {
-    Var*  var = argList[i].get();
-    Expr* defaultValue = method->defaultArgs[i];
+    Var* var = argList[i].get();
+    // Only emit default values for native methods.
+    // The DumpAsSourcePass is not fully implemented for all types, and
+    // non-native default values are never used at runtime.
+    // TODO: fix this through proper constant folding.
+    Expr* defaultValue = method->classType->IsNative() ? method->defaultArgs[i] : nullptr;
     assert(!defaultValue || !defaultValue->GetType(types_)->IsList());
     int defaultValueId = defaultValue ? sourcePass_.Resolve(defaultValue) : 0;
     fprintf(file_, "  m->AddFormalArg(\"%s\", typeList[%d], ", var->name.c_str(),

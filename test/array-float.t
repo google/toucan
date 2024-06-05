@@ -1,3 +1,5 @@
+include "include/test.t"
+
 int outer_count = 200;
 float[1024] a;
 for (int i = 0; i < a.length; i++) {
@@ -8,4 +10,6 @@ for (int j = 0; j < outer_count; ++j) {
     a[i] = a[i] * 1.00001 + 1.0;
   }
 }
+
+Test.Expect(a[0] == 2004203.875);
 return a[0];

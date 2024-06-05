@@ -1,3 +1,5 @@
+include "include/test.t"
+
 class Foo {
   float bar(int a) {
     float f = 0.0;
@@ -12,4 +14,6 @@ class Foo {
 };
 
 Foo* f = new Foo();
+Test.Expect(f.bar(3) == 3.0);
+Test.Expect(f.bar(-4.0) == 4.0);
 return f.bar(3) + f.bar(-4.0);

@@ -1,3 +1,5 @@
+include "include/test.t"
+
 class Foo {
   static float cast(int x) {
     float y = 0.0;
@@ -10,4 +12,5 @@ class Foo {
 };
 
 Foo* foo = new Foo();
+Test.Expect(foo.cast(42) == 42.0);
 return foo.cast(69);
