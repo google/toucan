@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 
 #include <filesystem>
+#include <optional>
 #include <stack>
 #include <unordered_map>
 #include <unordered_set>
@@ -614,36 +615,40 @@ static void PushFile(const char* filename) {
   fileStack_.push(FileLocation(std::make_shared<std::string>(filename), 1));
 }
 
-static FILE* TryIncludeFile(std::string dir, const char* filename) {
+static std::optional<std::string> FindIncludeFile(const char* filename) {
   struct stat statbuf;
-  std::string path = !dir.empty() ? dir + "/" + filename : filename;
-  if (stat(path.c_str(), &statbuf) != 0) {
+  for (auto dir : includePaths_) {
+    auto path = std::filesystem::path(dir) / filename;
+    if (stat(path.string().c_str(), &statbuf) == 0) {
+      return path.string();
+    }
+  }
+  auto path = std::filesystem::path(*fileStack_.top().filename);
+  path = path.replace_filename(filename);
+  if (stat(path.string().c_str(), &statbuf) == 0) {
+    return path.string();
+  }
+  return std::nullopt;
+}
+
+FILE* IncludeFile(const char* filename) {
+  auto path = FindIncludeFile(filename);
+  if (!path) {
+    yyerrorf("file \"%s\" not found", filename);
     return nullptr;
   }
-  FILE* f = fopen(path.c_str(), "r");
+  if (includedFiles_.find(*path) != includedFiles_.end()) {
+    // File was previously included
+    return nullptr;
+  }
+  FILE* f = fopen(path->c_str(), "r");
   if (!f) {
     yyerrorf("file \"%s\" could not be opened for reading", filename);
     return nullptr;
   }
-  includedFiles_.insert(filename);
-  PushFile(filename);
+  includedFiles_.insert(*path);
+  PushFile(path->c_str());
   return f;
-}
-
-FILE* IncludeFile(const char* filename) {
-  if (includedFiles_.find(filename) != includedFiles_.end()) {
-    return nullptr;
-  }
-  for (auto path : includePaths_) {
-    if (FILE* f = TryIncludeFile(path, filename)) {
-      return f;
-    }
-  }
-  if (FILE* f = TryIncludeFile("", filename)) {
-    return f;
-  }
-  yyerrorf("file \"%s\" not found", filename);
-  return nullptr;
 }
 
 void PopFile() {

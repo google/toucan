@@ -161,14 +161,15 @@ result is 6.000000
 test/inc-dec-short.t
 result is 6.000000
 test/include-not-found.t
-include-not-found.t:1: file "test/include/bogus.t" not found
+include-not-found.t:1: file "include/bogus.t" not found
 test/include-syntax-error-after-included-file.t
 include-syntax-error-after-included-file.t:3: syntax error
 test/include-syntax-error-in-included-file.t
 syntax-error.t:2: syntax error
+test/include-twice-by-different-paths.t
+result is 6.000000
 test/include-twice.t
-include-twice.t:1: file "test/include/simpleclass.t" not found
-include-twice.t:2: file "test/include/simpleclass.t" not found
+result is 6.000000
 test/include.t
 result is 6.000000
 test/index-buffer-short.t
