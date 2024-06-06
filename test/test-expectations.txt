@@ -277,6 +277,8 @@ test/static-method.t
 result is -1234.000000
 test/store-null.t
 result is 0.000000
+test/string-conversions.t
+result is 0.000000
 test/swizzle-store.t
 result is 432.000000
 test/templated-class-initializer.t

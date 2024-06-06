@@ -238,6 +238,7 @@ native class Math {
   static float<2> fabs(float<2> v);
   static float<3> fabs(float<3> v);
   static float<4> fabs(float<4> v);
+  static int      clz(int value);
   static float    rand();
   static float<3> normalize(float<3> v);
   static float<3> reflect(float<3> incident, float<3> normal);
