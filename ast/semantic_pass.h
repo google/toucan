@@ -15,13 +15,13 @@
 #ifndef _AST_AST_SEMANTIC_PASS_H_
 #define _AST_AST_SEMANTIC_PASS_H_
 
-#include "node_visitor.h"
+#include "copy_visitor.h"
 
 namespace Toucan {
 
 class SymbolTable;
 
-class SemanticPass : public NodeVisitor {
+class SemanticPass : public CopyVisitor {
  public:
   SemanticPass(NodeVector* nodes, SymbolTable* symbols, TypeTable* types);
   Result Visit(ArgList* node) override;

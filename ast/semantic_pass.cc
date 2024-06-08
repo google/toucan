@@ -30,7 +30,7 @@
 namespace Toucan {
 
 SemanticPass::SemanticPass(NodeVector* nodes, SymbolTable* symbols, TypeTable* types)
-    : NodeVisitor(nodes), symbols_(symbols), types_(types), numErrors_(0) {}
+    : CopyVisitor(nodes), symbols_(symbols), types_(types), numErrors_(0) {}
 
 Result SemanticPass::Visit(SmartToRawPtr* node) {
   Expr* expr = Resolve(node->GetExpr());
@@ -111,7 +111,7 @@ Result SemanticPass::Visit(ArgList* node) {
       }
     }
   }
-  return NodeVisitor::Visit(node);
+  return CopyVisitor::Visit(node);
 }
 
 Result SemanticPass::Visit(UnresolvedInitializer* node) {

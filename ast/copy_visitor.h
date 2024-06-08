@@ -19,9 +19,9 @@
 
 namespace Toucan {
 
-class NodeVisitor : public Visitor {
+class CopyVisitor : public Visitor {
  public:
-  NodeVisitor(NodeVector* nodes);
+  CopyVisitor(NodeVector* nodes);
   virtual Type* ResolveType(Type* type);
   Result        Visit(Arg* node) override;
   Result        Visit(ArgList* node) override;

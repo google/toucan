@@ -18,7 +18,7 @@ source_set("ast") {
     "constant_folder.cc",
     "dump_as_source_pass.cc",
     "native_class.cc",
-    "node_visitor.cc",
+    "copy_visitor.cc",
     "semantic_pass.cc",
     "symbol.cc",
     "type.cc",

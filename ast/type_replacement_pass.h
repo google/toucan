@@ -15,13 +15,13 @@
 #ifndef _AST_TYPE_REPLACEMENT_PASS_H_
 #define _AST_TYPE_REPLACEMENT_PASS_H_
 
-#include "node_visitor.h"
+#include "copy_visitor.h"
 
 namespace Toucan {
 
 class SymbolTable;
 
-class TypeReplacementPass : public NodeVisitor {
+class TypeReplacementPass : public CopyVisitor {
  public:
   TypeReplacementPass(NodeVector*     nodes,
                       SymbolTable*    symbols,

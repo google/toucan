@@ -27,7 +27,7 @@ TypeReplacementPass::TypeReplacementPass(NodeVector*     nodes,
                                          TypeTable*      types,
                                          const TypeList& srcTypes,
                                          const TypeList& dstTypes)
-    : NodeVisitor(nodes),
+    : CopyVisitor(nodes),
       symbols_(symbols),
       types_(types),
       srcTypes_(srcTypes),

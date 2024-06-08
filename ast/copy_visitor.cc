@@ -12,53 +12,53 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "node_visitor.h"
+#include "copy_visitor.h"
 
 namespace Toucan {
 
-NodeVisitor::NodeVisitor(NodeVector* nodes) : nodes_(nodes) {}
+CopyVisitor::CopyVisitor(NodeVector* nodes) : nodes_(nodes) {}
 
-Type* NodeVisitor::ResolveType(Type* type) { return type; }
+Type* CopyVisitor::ResolveType(Type* type) { return type; }
 
-Result NodeVisitor::Visit(Arg* node) { return Make<Arg>(node->GetID(), Resolve(node->GetExpr())); }
+Result CopyVisitor::Visit(Arg* node) { return Make<Arg>(node->GetID(), Resolve(node->GetExpr())); }
 
-Result NodeVisitor::Visit(ArrayAccess* node) {
+Result CopyVisitor::Visit(ArrayAccess* node) {
   Expr* expr = Resolve(node->GetExpr());
   Expr* index = Resolve(node->GetIndex());
   return Make<ArrayAccess>(expr, index);
 }
 
-Result NodeVisitor::Visit(CastExpr* node) {
+Result CopyVisitor::Visit(CastExpr* node) {
   Type* type = ResolveType(node->GetType());
   Expr* expr = Resolve(node->GetExpr());
   return Make<CastExpr>(type, expr);
 }
 
-Result NodeVisitor::Visit(Initializer* node) {
+Result CopyVisitor::Visit(Initializer* node) {
   Type*     type = ResolveType(node->GetType());
   ExprList* argList = Resolve(node->GetArgList());
   return Make<Initializer>(type, argList);
 }
 
-Result NodeVisitor::Visit(IntConstant* node) {
+Result CopyVisitor::Visit(IntConstant* node) {
   return Make<IntConstant>(node->GetValue(), node->GetBits());
 }
 
-Result NodeVisitor::Visit(UIntConstant* node) {
+Result CopyVisitor::Visit(UIntConstant* node) {
   return Make<UIntConstant>(node->GetValue(), node->GetBits());
 }
 
-Result NodeVisitor::Visit(EnumConstant* node) { return Make<EnumConstant>(node->GetValue()); }
+Result CopyVisitor::Visit(EnumConstant* node) { return Make<EnumConstant>(node->GetValue()); }
 
-Result NodeVisitor::Visit(FloatConstant* node) { return Make<FloatConstant>(node->GetValue()); }
+Result CopyVisitor::Visit(FloatConstant* node) { return Make<FloatConstant>(node->GetValue()); }
 
-Result NodeVisitor::Visit(DoubleConstant* node) { return Make<DoubleConstant>(node->GetValue()); }
+Result CopyVisitor::Visit(DoubleConstant* node) { return Make<DoubleConstant>(node->GetValue()); }
 
-Result NodeVisitor::Visit(BoolConstant* node) { return Make<BoolConstant>(node->GetValue()); }
+Result CopyVisitor::Visit(BoolConstant* node) { return Make<BoolConstant>(node->GetValue()); }
 
-Result NodeVisitor::Visit(NullConstant* node) { return Make<NullConstant>(); }
+Result CopyVisitor::Visit(NullConstant* node) { return Make<NullConstant>(); }
 
-Result NodeVisitor::Visit(Stmts* stmts) {
+Result CopyVisitor::Visit(Stmts* stmts) {
   auto* newStmts = Make<Stmts>();
   for (Stmt* const& it : stmts->GetStmts()) {
     Stmt* stmt = Resolve(it);
@@ -67,7 +67,7 @@ Result NodeVisitor::Visit(Stmts* stmts) {
   return newStmts;
 }
 
-Result NodeVisitor::Visit(ArgList* a) {
+Result CopyVisitor::Visit(ArgList* a) {
   auto* arglist = Make<ArgList>();
   for (Arg* const& i : a->GetArgs()) {
     arglist->Append(Resolve(i));
@@ -75,7 +75,7 @@ Result NodeVisitor::Visit(ArgList* a) {
   return arglist;
 }
 
-Result NodeVisitor::Visit(ExprList* node) {
+Result CopyVisitor::Visit(ExprList* node) {
   auto* exprList = Make<ExprList>();
   for (auto expr : node->Get()) {
     exprList->Append(Resolve(expr));
@@ -83,77 +83,77 @@ Result NodeVisitor::Visit(ExprList* node) {
   return exprList;
 }
 
-Result NodeVisitor::Visit(ExprStmt* stmt) { return Make<ExprStmt>(Resolve(stmt->GetExpr())); }
+Result CopyVisitor::Visit(ExprStmt* stmt) { return Make<ExprStmt>(Resolve(stmt->GetExpr())); }
 
-Result NodeVisitor::Visit(UnresolvedInitializer* node) {
+Result CopyVisitor::Visit(UnresolvedInitializer* node) {
   Type*    type = ResolveType(node->GetType());
   ArgList* argList = Resolve(node->GetArgList());
   return Make<UnresolvedInitializer>(type, argList, node->IsConstructor());
 }
 
-Result NodeVisitor::Visit(VarDeclaration* decl) {
+Result CopyVisitor::Visit(VarDeclaration* decl) {
   Type* type = ResolveType(decl->GetType());
   Expr* initExpr = Resolve(decl->GetInitExpr());
   return Make<VarDeclaration>(decl->GetID(), type, initExpr);
 }
 
-Result NodeVisitor::Visit(LoadExpr* node) { return Make<LoadExpr>(Resolve(node->GetExpr())); }
+Result CopyVisitor::Visit(LoadExpr* node) { return Make<LoadExpr>(Resolve(node->GetExpr())); }
 
-Result NodeVisitor::Visit(SmartToRawPtr* node) {
+Result CopyVisitor::Visit(SmartToRawPtr* node) {
   return Make<SmartToRawPtr>(Resolve(node->GetExpr()));
 }
 
-Result NodeVisitor::Visit(StoreStmt* node) {
+Result CopyVisitor::Visit(StoreStmt* node) {
   return Make<StoreStmt>(Resolve(node->GetLHS()), Resolve(node->GetRHS()));
 }
 
-Result NodeVisitor::Visit(BinOpNode* node) {
+Result CopyVisitor::Visit(BinOpNode* node) {
   Expr* rhs = Resolve(node->GetRHS());
   Expr* lhs = Resolve(node->GetLHS());
   return Make<BinOpNode>(node->GetOp(), lhs, rhs);
 }
 
-Result NodeVisitor::Visit(UnaryOp* node) {
+Result CopyVisitor::Visit(UnaryOp* node) {
   Expr* rhs = Resolve(node->GetRHS());
   if (!rhs) return nullptr;
   return Make<UnaryOp>(node->GetOp(), rhs);
 }
 
-Result NodeVisitor::Visit(RawToWeakPtr* node) {
+Result CopyVisitor::Visit(RawToWeakPtr* node) {
   return Make<RawToWeakPtr>(Resolve(node->GetExpr()));
 }
 
-Result NodeVisitor::Visit(ReturnStatement* stmt) {
+Result CopyVisitor::Visit(ReturnStatement* stmt) {
   return Make<ReturnStatement>(Resolve(stmt->GetExpr()), stmt->GetScope());
 }
 
-Result NodeVisitor::Visit(NewExpr* expr) {
+Result CopyVisitor::Visit(NewExpr* expr) {
   Type*     type = ResolveType(expr->GetType());
   Expr*     length = Resolve(expr->GetLength());
   ExprList* args = Resolve(expr->GetArgs());
   return Make<NewExpr>(type, length, expr->GetConstructor(), args);
 }
 
-Result NodeVisitor::Visit(IfStatement* s) {
+Result CopyVisitor::Visit(IfStatement* s) {
   Expr* expr = Resolve(s->GetExpr());
   Stmt* stmt = Resolve(s->GetStmt());
   Stmt* optElse = Resolve(s->GetOptElse());
   return Make<IfStatement>(expr, stmt, optElse);
 }
 
-Result NodeVisitor::Visit(WhileStatement* s) {
+Result CopyVisitor::Visit(WhileStatement* s) {
   Expr* cond = Resolve(s->GetCond());
   Stmt* body = Resolve(s->GetBody());
   return Make<WhileStatement>(cond, body);
 }
 
-Result NodeVisitor::Visit(DoStatement* s) {
+Result CopyVisitor::Visit(DoStatement* s) {
   Stmt* body = Resolve(s->GetBody());
   Expr* cond = Resolve(s->GetCond());
   return Make<DoStatement>(body, cond);
 }
 
-Result NodeVisitor::Visit(ForStatement* node) {
+Result CopyVisitor::Visit(ForStatement* node) {
   Stmt* initStmt = Resolve(node->GetInitStmt());
   Expr* cond = Resolve(node->GetCond());
   Stmt* loopStmt = Resolve(node->GetLoopStmt());
@@ -161,47 +161,47 @@ Result NodeVisitor::Visit(ForStatement* node) {
   return Make<ForStatement>(initStmt, cond, loopStmt, body);
 }
 
-Result NodeVisitor::Visit(NewArrayExpr* expr) {
+Result CopyVisitor::Visit(NewArrayExpr* expr) {
   Type* type = ResolveType(expr->GetElementType());
   Expr* sizeExpr = Resolve(expr->GetSizeExpr());
   return Make<NewArrayExpr>(type, sizeExpr);
 }
 
-Result NodeVisitor::Visit(UnresolvedClassDefinition* defn) {
+Result CopyVisitor::Visit(UnresolvedClassDefinition* defn) {
   return Make<UnresolvedClassDefinition>(defn->GetScope());
 }
 
-Result NodeVisitor::Visit(UnresolvedDot* node) {
+Result CopyVisitor::Visit(UnresolvedDot* node) {
   return Make<UnresolvedDot>(Resolve(node->GetExpr()), node->GetID());
 }
 
-Result NodeVisitor::Visit(UnresolvedListExpr* node) {
+Result CopyVisitor::Visit(UnresolvedListExpr* node) {
   return Make<UnresolvedListExpr>(Resolve(node->GetArgList()));
 }
 
-Result NodeVisitor::Visit(UnresolvedMethodCall* node) {
+Result CopyVisitor::Visit(UnresolvedMethodCall* node) {
   return Make<UnresolvedMethodCall>(Resolve(node->GetExpr()), node->GetID(),
                                     Resolve(node->GetArgList()));
 }
 
-Result NodeVisitor::Visit(UnresolvedNewExpr* expr) {
+Result CopyVisitor::Visit(UnresolvedNewExpr* expr) {
   Type*    type = ResolveType(expr->GetType());
   Expr*    length = Resolve(expr->GetLength());
   ArgList* arglist = Resolve(expr->GetArgList());
   return Make<UnresolvedNewExpr>(type, length, arglist);
 }
 
-Result NodeVisitor::Visit(UnresolvedStaticMethodCall* node) {
+Result CopyVisitor::Visit(UnresolvedStaticMethodCall* node) {
   return Make<UnresolvedStaticMethodCall>(node->classType(), node->GetID(),
                                           Resolve(node->GetArgList()));
 }
 
-Result NodeVisitor::Visit(UnresolvedIdentifier* node) {
+Result CopyVisitor::Visit(UnresolvedIdentifier* node) {
   return Make<UnresolvedIdentifier>(node->GetID());
 }
 
-Result NodeVisitor::Default(ASTNode* node) {
-  fprintf(stderr, "Internal error: unhandled node in NodeVisitor pass.");
+Result CopyVisitor::Default(ASTNode* node) {
+  fprintf(stderr, "Internal error: unhandled node in CopyVisitor pass.");
   return {};
 }
 
