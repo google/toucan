@@ -50,7 +50,6 @@ struct ValueTypePair {
 };
 
 using DataVars = std::unordered_map<const void*, llvm::GlobalValue*>;
-using IntrinsicMap = std::unordered_map<Method*, llvm::Intrinsic::ID>;
 using DerefList = std::vector<ValueTypePair>;
 using BuiltinCall = llvm::Value* (CodeGenLLVM::*)(const FileLocation& location);
 
@@ -185,7 +184,6 @@ class CodeGenLLVM : public Visitor {
   DerefList                          temporaries_;
   llvm::Type*                        typeListType_;
   llvm::GlobalValue*                 typeList_;
-  IntrinsicMap                       intrinsics_;
 };
 
 };  // namespace Toucan

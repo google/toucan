@@ -401,7 +401,10 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
   llvm::Function* function;
   if (intrinsic) {
     function = llvm::Intrinsic::getDeclaration(module_, intrinsic, params);
-    intrinsics_[method] = intrinsic;
+    if (intrinsic == llvm::Intrinsic::ctlz) {
+      // is_zero_poison
+      params.push_back(boolType_);
+    }
   } else {
     llvm::Type* returnType =
         nativeTypes ? ConvertTypeToNative(method->returnType) : ConvertType(method->returnType);
@@ -1305,6 +1308,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
                                              Type*               returnType,
                                              const FileLocation& location) {
   std::vector<llvm::Value*> args;
+  llvm::Function*           function = GetOrCreateMethodStub(method);
   if (auto builtin = FindBuiltin(method)) { return std::invoke(builtin, this, location); }
   if (method->classType->IsNative() && (method->modifiers & Method::STATIC)) {
     if (method->classType->GetTemplate()) {
@@ -1315,7 +1319,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
       args.push_back(CreateTypePtr(type));
     }
   }
-  bool intrinsic = intrinsics_.find(method) != intrinsics_.end();
+  llvm::Intrinsic::ID intrinsic = function->getIntrinsicID();
   for (auto arg : argList->Get()) {
     llvm::Value* v = GenerateLLVM(arg);
     Type*        type = arg->GetType(types_);
@@ -1323,8 +1327,11 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
     if (method->classType->IsNative() && !intrinsic) { v = ConvertToNative(type, v); }
     args.push_back(v);
   }
-  llvm::Function* function = GetOrCreateMethodStub(method);
-  llvm::Value*    result;
+  if (intrinsic == llvm::Intrinsic::ctlz) {
+    // is_zero_poison: false
+    args.push_back(llvm::ConstantInt::get(boolType_, 0, true));
+  }
+  llvm::Value* result;
   if (method->modifiers & Method::VIRTUAL) {
     llvm::Value* objPtr = *args.begin();
     int          index = method->index;
