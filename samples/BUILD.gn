@@ -21,6 +21,10 @@ group("samples") {
   ]
 }
 
+toucan_executable("decode") {
+  sources = [ "decode.t" ]
+}
+
 toucan_executable("skybox") {
   sources = [ "skybox.t" ]
 }
@@ -43,6 +47,18 @@ toucan_executable("springy-compute-3d") {
 
 toucan_executable("shiny") {
   sources = [ "shiny.t" ]
+}
+
+toucan_executable("triangle") {
+  sources = [ "triangle.t" ]
+}
+
+toucan_executable("gouraud") {
+  sources = [ "gouraud.t" ]
+}
+
+toucan_executable("window") {
+  sources = [ "window.t" ]
 }
 
 source_set("main") {

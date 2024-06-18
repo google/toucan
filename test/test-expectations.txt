@@ -1,13 +1,10 @@
 test/abort.t
-result is 0.000000
 test/aggregate-return.t
 result is 1.000000
 test/allocate-unsized-array.t
 allocate-unsized-array.t:1:  cannot allocate unsized array
 test/allocate-unsized-class.t
 result is 42.000000
-test/api.t
-result is 640.000000
 test/array-assign.t
 result is -4321.000000
 test/array-class.t
@@ -29,9 +26,6 @@ array-new.t:5: array size is not an integer constant
 test/arrays.t
 result is 1242.000000
 test/assert-failed.t
-result is 0.000000
-test/bind-group.t
-result is 0.000000
 test/binop-widen.t
 result is 2.000000
 test/bitwise.t
@@ -66,10 +60,6 @@ test/class-initializer.t
 result is -21.000000
 test/complex-method.t
 result is 10.000000
-test/compute-with-trailing-padding.t
-result is 0.000000
-test/compute.t
-result is 0.000000
 test/constructor-with-default-arg.t
 result is 3.000000
 test/constructor-with-explicit-initializer.t
@@ -80,7 +70,6 @@ test/control-flow.t
 result is 3.200000
 test/decl-test.t
 result is 3.000000
-test/decode.t
 test/dereference.t
 result is 7.000000
 test/destructor.t
@@ -89,8 +78,6 @@ test/do-test.t
 result is 10.000000
 test/double.t
 result is 6.000000
-test/draw.t
-result is 0.000000
 test/duplicate-method.t
 result is 2.000000
 test/duplicate-var.t
@@ -99,6 +86,7 @@ test/early-return-bool.t
 result is 1.000000
 test/early-return-int.t
 result is 1.000000
+test/empty.t
 test/enum.t
 result is 1.000000
 test/error-constructor-not-found.t
@@ -126,6 +114,7 @@ test/error-wrong-named-param.t
 error-wrong-named-param.t:7:  class Bar has no method Foo(b = float, a = int)
 error-wrong-named-param.t:7:  float Bar.Foo(int, float)
 test/expectation-failed.t
+test/expectation-failed.t:4: expectation failed
 result is 0.000000
 test/fabs.t
 result is 3.000000
@@ -145,8 +134,12 @@ result is 42.000000
 test/field-store.t
 result is 2.000000
 test/file-location-default-arg.t
+test/file-location-default-arg.t:12
+test/file-location-default-arg.t:13
+test/file-location-default-arg.t:14
 result is 0.000000
 test/file-location.t
+test/file-location.t:4
 result is 0.000000
 test/for-stmt.t
 result is 2.700000
@@ -155,15 +148,11 @@ result is -321.000000
 test/forward-var-error.t
 forward-var-error.t:1:  unknown symbol "a"
 forward-var-error.t:3:  unknown symbol "b"
-test/gouraud-separate-vertex-buffers-parent-class.t
-result is 0.000000
-test/gouraud-separate-vertex-buffers.t
-result is 0.000000
-test/gouraud.t
-result is 0.000000
 test/hello-split.t
+Hello, world.
 result is 0.000000
 test/hello.t
+Hello, world.
 result is 0.000000
 test/if-stmt.t
 result is 3.000000
@@ -187,10 +176,6 @@ test/include-twice.t
 result is 6.000000
 test/include.t
 result is 6.000000
-test/index-buffer-short.t
-result is 0.000000
-test/index-buffer.t
-result is 0.000000
 test/indexed-bracketed-expr.t
 result is 4321.000000
 test/indexed-method-return.t
@@ -266,12 +251,8 @@ test/override.t
 result is 2345.000000
 test/really-simple.t
 result is 0.000000
-test/render-to-texture.t
-result is 0.000000
 test/scope-test.t
 result is 6.000000
-test/shader-method-call.t
-result is 0.000000
 test/shader.t
 shader.t:8: syntax error
 test/short-vector.t
@@ -289,6 +270,12 @@ result is -1234.000000
 test/store-null.t
 result is 0.000000
 test/string-conversions.t
+0
+1
+9
+-1
+12
+123456789
 result is 0.000000
 test/swizzle-store.t
 result is 432.000000
@@ -306,17 +293,6 @@ test/templated-vector.t
 result is 2.000000
 test/test.t
 result is 2.500000
-test/texture1d.t
-test/texture2d.t
-test/texture2darray.t
-test/texture3d.t
-test/texturecube.t
-test/triangle.t
-result is 0.000000
-test/two-color-attachments.t
-result is 0.000000
-test/two-windows.t
-result is 0.000000
 test/ubyte-vector.t
 result is 3.000000
 test/ubyte.t
@@ -325,13 +301,6 @@ test/uint.t
 result is 1.000000
 test/unary-minus.t
 result is -7.000000
-test/uniform-triangle.t
-test/uniform-with-padded-array.t
-result is 0.000000
-test/uniform-with-padded-class.t
-result is 0.000000
-test/uniform.t
-result is 0.000000
 test/unknown-param-type.t
 unknown-param-type.t:2: syntax error
 test/unknown-return-type.t
@@ -368,8 +337,6 @@ test/void-value-error.t
 void-value-error.t:4:  implicit void return, in method returning non-void.
 test/vtable.t
 result is 1.000000
-test/window.t
-result is 0.000000
 test/workgroup-size.t
 workgroup-size.t:5: workgroup size must have 1, 2, or 3 dimensions
 workgroup-size.t:6: workgroup size must have 1, 2, or 3 dimensions

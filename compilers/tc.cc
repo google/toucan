@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
   bool spirv = false;
 
   int                      opt;
-  char                     optstring[] = "dsgvc:m:o:t:I:";
+  char                     optstring[] = "dsvc:m:o:t:I:";
   std::string              classname = "Class";
   std::string              methodname = "method";
   std::string              outputFilename = "a.o";

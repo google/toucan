@@ -64,8 +64,6 @@ double GetTimeUsec() {
 }
 #endif
 
-int stub() { return 0; }
-
 typedef float (*PFF)();
 
 void WriteCode(const std::vector<uint32_t>& code) {
@@ -77,10 +75,9 @@ int main(int argc, char** argv) {
   bool dumpSymbolTable = false;
   bool spirv = false;
   bool showTime = false;
-  bool stubAPI = false;
 
   int                      opt;
-  char                     optstring[] = "dsgvntc:m:I:";
+  char                     optstring[] = "dsvtc:m:I:";
   std::string              classname = "Class";
   std::string              methodname = "method";
   std::vector<std::string> includePaths;
@@ -90,7 +87,6 @@ int main(int argc, char** argv) {
       case 'd': dump = true; break;
       case 's': dumpSymbolTable = true; break;
       case 'v': spirv = true; break;
-      case 'n': stubAPI = true; break;
       case 't': showTime = true; break;
       case 'c': classname = optarg; break;
       case 'm': methodname = optarg; break;
@@ -191,19 +187,6 @@ int main(int argc, char** argv) {
   engine->DisableLazyCompilation();
 #endif
   codeGenLLVM.Run(stmts);
-  if (stubAPI) {
-    for (auto i : types.GetTypes()) {
-      if (i->IsClass()) {
-        ClassType* classType = static_cast<ClassType*>(i);
-        if (classType->IsNative()) {
-          for (auto& m : classType->GetMethods()) {
-            auto* func = static_cast<llvm::Function*>(m->data);
-            if (func) { engine->addGlobalMapping(func, reinterpret_cast<void*>(stub)); }
-          }
-        }
-      }
-    }
-  }
   auto typeList = types.GetTypes().data();
   engine->addGlobalMapping(codeGenLLVM.GetTypeList(), &typeList);
   if (verifyFunction(*main)) { printf("LLVM main function is broken; aborting"); }

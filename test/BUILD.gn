@@ -17,31 +17,12 @@ import("../toucan_executable.gni")
 group("tests") {
   deps = [
     ":simple",
-    ":window",
-    ":triangle",
-    ":gouraud",
-    ":decode",
+    ":hello",
   ]
 }
 
 toucan_executable("simple") {
   sources = [ "simple.t" ]
-}
-
-toucan_executable("window") {
-  sources = [ "window.t" ]
-}
-
-toucan_executable("triangle") {
-  sources = [ "triangle.t" ]
-}
-
-toucan_executable("gouraud") {
-  sources = [ "gouraud.t" ]
-}
-
-toucan_executable("decode") {
-  sources = [ "decode.t" ]
 }
 
 toucan_executable("hello") {

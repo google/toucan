@@ -27,5 +27,4 @@ else:
 for file in files:
   print('test/' + os.path.basename(file));
   sys.stdout.flush();
-  subprocess.call([exe_path, '-n', file]);
-#  subprocess.call([exe_path, '-gn', file]);
+  subprocess.call([exe_path, file]);
