@@ -13,4 +13,3 @@ Foo* foo = new Foo();
 foo.bar = new Bar();
 foo.bar.baz = 2.0;
 Test.Expect(foo.bar.baz == 2.0);
-return foo.bar.baz;

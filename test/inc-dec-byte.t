@@ -8,4 +8,3 @@ Test.Expect((int) a++ == 3);
 Test.Expect((int) --b == 1);
 Test.Expect((int) ++c == 1);
 Test.Expect((int) d-- == 1);
-return (float) (a + b + c + d);

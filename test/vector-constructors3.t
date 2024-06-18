@@ -10,7 +10,3 @@ Test.Expect(v32.y == 3.0);
 Test.Expect(v33.x == 4.0);
 Test.Expect(v33.y == 5.0);
 Test.Expect(v33.z == 6.0);
-
-return v31.x + v31.y + v31.z
-     + v32.x + v32.y + v32.z
-     + v33.x + v33.y + v33.z;

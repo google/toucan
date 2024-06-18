@@ -12,4 +12,3 @@ Test.Expect(f[0][0] == 1.0);
 Test.Expect(f[0][1] == 2.0);
 Test.Expect(f[1][0] == 3.0);
 Test.Expect(f[1][1] == 4.0);
-return f[1].x;

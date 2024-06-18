@@ -14,4 +14,3 @@ Test.Expect(v.x == 1);
 Test.Expect(v.y == 1);
 Test.Expect(v.z == 1);
 Test.Expect(v.w == 1);
-return v21.x + v21.y + v22.x + v22.y + (float)(v.x + v.y + v.z + v.w);

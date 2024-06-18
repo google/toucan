@@ -9,4 +9,3 @@ for (i = 0; i < 100; i = i + 1) {
   f = f * g;
 }
 Test.Expect(f == 41341.914062);
-return f;

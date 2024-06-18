@@ -9,4 +9,3 @@ class C {
 
 C* c = new C();
 Test.Expect(c.value == 3.0);
-return c.value;

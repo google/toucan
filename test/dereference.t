@@ -15,4 +15,3 @@ Test.Expect(temp.z == 6.0);
 Test.Expect(atemp[0] == 3.0);
 Test.Expect(atemp[1] == 2.0);
 Test.Expect(atemp[2] == 1.0);
-return *f + temp.x + atemp[1];

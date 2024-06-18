@@ -7,4 +7,3 @@ class Bar {
 }
 
 Test.Expect(Bar.Foo(f = 3.0, i = 1) == 2.0);
-return Bar.Foo(f = 3.0, i = 1);

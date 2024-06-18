@@ -13,4 +13,3 @@ class Foo {
 
 Foo* foo = new Foo();
 Test.Expect(foo.cast(42) == 42.0);
-return foo.cast(69);

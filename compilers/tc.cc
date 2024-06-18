@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
     module->setDataLayout(targetMachine->createDataLayout());
     symbols.PushScope(topScope);
     llvm::FunctionCallee c =
-        module->getOrInsertFunction("toucan_main", llvm::Type::getFloatTy(context));
+        module->getOrInsertFunction("toucan_main", llvm::Type::getVoidTy(context));
     llvm::Function* main = llvm::cast<llvm::Function>(c.getCallee());
     main->setCallingConv(llvm::CallingConv::C);
     llvm::BasicBlock*                 block = llvm::BasicBlock::Create(context, "mainEntry", main);

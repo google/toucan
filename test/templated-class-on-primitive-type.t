@@ -9,4 +9,3 @@ class Template<T> {
 Template<float>* t = new Template<float>();
 t.set(3.0);
 Test.Expect(t.get() == 3.0);
-return t.get();

@@ -73,4 +73,3 @@ while (System.IsRunning()) {
   uniformData.mvpMatrix[1][0] = Math.sin(theta);
   uniformData.mvpMatrix[0][1] = -uniformData.mvpMatrix[1][0];
 }
-return 0.0;

@@ -13,4 +13,3 @@ for (int j = 0; j < count; ++j) {
   }
 }
 Test.Expect(a[1].x == 2004203.875);
-return a[1].x;

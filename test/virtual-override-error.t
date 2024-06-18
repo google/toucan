@@ -13,4 +13,3 @@ class Bar : Foo {
   }
 };
 Foo* f = new Bar();
-return f.baz();

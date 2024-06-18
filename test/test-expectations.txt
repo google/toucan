@@ -1,102 +1,61 @@
 test/abort.t
 test/aggregate-return.t
-result is 1.000000
 test/allocate-unsized-array.t
 allocate-unsized-array.t:1:  cannot allocate unsized array
 test/allocate-unsized-class.t
-result is 42.000000
 test/array-assign.t
-result is -4321.000000
 test/array-class.t
-result is 5.000000
 test/array-constant.t
-result is 3.000000
 test/array-float.t
-result is 2004203.875000
 test/array-float4.t
-result is 2004203.875000
 test/array-length-dynamic.t
-result is 3.000000
 test/array-length-static.t
-result is 5.000000
 test/array-new.t
 array-new.t:3: array size is not an integer constant
 array-new.t:4: array size is not an integer constant
 array-new.t:5: array size is not an integer constant
 test/arrays.t
-result is 1242.000000
 test/assert-failed.t
 test/binop-widen.t
-result is 2.000000
 test/bitwise.t
-result is 8.000000
 test/bool-constants.t
-result is 3.000000
 test/byte-vector.t
-result is -5.000000
 test/byte.t
-result is -3.000000
 test/cast-classes.t
 cast-classes.t:14:  cannot store a value of type "null" to a location of type "int"
 cast-classes.t:17:  cannot store a value of type "Base2*" to a location of type "Base*"
 cast-classes.t:19:  cannot store a value of type "Derived*" to a location of type "Derived2*"
 test/cast-int-to-float.t
-result is 3.000000
 test/cast-int-vector-to-float-vector.t
-result is 101.000000
 test/cast-static-array-to-dynamic.t
-result is 4.000000
 test/cast-uint-to-float.t
-result is 3000000000.000000
 test/cast-uint-vector-to-float-vector.t
-result is 3000000000.000000
 test/chained-method-call.t
-result is 1.000000
 test/class-constructor-calls-constructor.t
-result is 42.000000
 test/class-constructor.t
-result is 21.000000
 test/class-initializer.t
-result is -21.000000
 test/complex-method.t
-result is 10.000000
 test/constructor-with-default-arg.t
-result is 3.000000
 test/constructor-with-explicit-initializer.t
-result is 2.000000
 test/constructor.t
-result is 3.141590
 test/control-flow.t
-result is 3.200000
 test/decl-test.t
-result is 3.000000
 test/dereference.t
-result is 7.000000
 test/destructor.t
-result is 1234.000000
 test/do-test.t
-result is 10.000000
 test/double.t
-result is 6.000000
 test/duplicate-method.t
-result is 2.000000
 test/duplicate-var.t
-result is 3.000000
 test/early-return-bool.t
-result is 1.000000
 test/early-return-int.t
-result is 1.000000
 test/empty.t
 test/enum.t
-result is 1.000000
 test/error-constructor-not-found.t
 error-constructor-not-found.t:1:  matching constructor not found
 test/error-derefernce.t
 error-derefernce.t:2:  attempt to dereference a non-pointer
 test/error-hex-literal-too-large.t
-result is 0.000000
 test/error-int-literal-too-large.t
-result is -2147483648.000000
 test/error-named-param-missing-one.t
 error-named-param-missing-one.t:7:  class Bar has no method Foo(f = float)
 error-named-param-missing-one.t:7:  float Bar.Foo(int, float)
@@ -109,15 +68,12 @@ test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(CommandEncoder*, Buffer<float<4>[]>*, int)
 error-texture-from-buffer-incorrect-format.t:9:  void Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint, uint)
 test/error-uint-literal-too-large.t
-result is 705032704.000000
 test/error-wrong-named-param.t
 error-wrong-named-param.t:7:  class Bar has no method Foo(b = float, a = int)
 error-wrong-named-param.t:7:  float Bar.Foo(int, float)
 test/expectation-failed.t
 test/expectation-failed.t:4: expectation failed
-result is 0.000000
 test/fabs.t
-result is 3.000000
 test/fail-allocate-class-with-unsized-array.t
 fail-allocate-class-with-unsized-array.t:5:  class with unsized array must be allocated with size
 test/fail-invalid-storage-types.t
@@ -128,42 +84,27 @@ fail-unsized-array-not-last-in-class.t:4:  Unsized arrays are only allwed as the
 test/field-access-from-static-method-error.t
 field-access-from-static-method-error.t:3:  attempt to access non-static field in static method
 test/field-access.t
-result is 3.000000
 test/field-default-value.t
-result is 42.000000
 test/field-store.t
-result is 2.000000
 test/file-location-default-arg.t
 test/file-location-default-arg.t:12
 test/file-location-default-arg.t:13
 test/file-location-default-arg.t:14
-result is 0.000000
 test/file-location.t
 test/file-location.t:4
-result is 0.000000
 test/for-stmt.t
-result is 2.700000
 test/forward-field.t
-result is -321.000000
 test/forward-var-error.t
 forward-var-error.t:1:  unknown symbol "a"
-forward-var-error.t:3:  unknown symbol "b"
 test/hello-split.t
 Hello, world.
-result is 0.000000
 test/hello.t
 Hello, world.
-result is 0.000000
 test/if-stmt.t
-result is 3.000000
 test/implicit-return.t
-result is 0.000000
 test/inc-dec-byte.t
-result is 6.000000
 test/inc-dec-float.t
-result is 6.000000
 test/inc-dec-short.t
-result is 6.000000
 test/include-not-found.t
 include-not-found.t:1: file "include/bogus.t" not found
 test/include-syntax-error-after-included-file.t
@@ -171,62 +112,38 @@ include-syntax-error-after-included-file.t:3: syntax error
 test/include-syntax-error-in-included-file.t
 syntax-error.t:2: syntax error
 test/include-twice-by-different-paths.t
-result is 6.000000
 test/include-twice.t
-result is 6.000000
 test/include.t
-result is 6.000000
 test/indexed-bracketed-expr.t
-result is 4321.000000
 test/indexed-method-return.t
-result is 1234.000000
 test/inherited-field.t
-result is 5.000000
 test/inline-file.t
-result is 97.000000
 test/invalid-assignment.t
 invalid-assignment.t:1: syntax error
 test/invalid-forward-decl.t
 invalid-forward-decl.t:5: type is already declared as non-class
 invalid-forward-decl.t:8: syntax error
 test/later-class-field.t
-result is -3.000000
 test/length-store-error.t
 length-store-error.t:2:  expression is not an assignable value
 test/list-init-aggregated-class.t
-result is 6.000000
 test/list-init-class-to-ptr.t
-result is 42.000000
 test/list-init-class.t
-result is 8.000000
 test/list-init-inherited-field.t
-result is 8.000000
 test/list-init-matrix.t
-result is 3.000000
 test/list-init-padded-class.t
-result is 1.000000
 test/list-init-vector-arg.t
-result is 3.000000
 test/list-init-vector.t
-result is 10.000000
 test/local-var-do.t
-result is 10.000000
 test/local-var-while.t
-result is 10.000000
 test/loop.t
-result is 41341.914062
 test/matrix-constructor.t
-result is 3.000000
 test/matrix-initializer.t
-result is 3.000000
 test/matrix.t
-result is 555.000000
 test/method-assignment-error.t
 method-assignment-error.t:8:  expression is not an assignable value
 test/method-chained.t
-result is 3.000000
 test/method.t
-result is 3.000000
 test/missing-class.t
 missing-class.t:3: syntax error
 test/missing-field.t
@@ -236,39 +153,24 @@ missing-method.t:5:  class Foo has no method zzz()
 test/missing-parent-class.t
 missing-parent-class.t:1: syntax error
 test/mutual-recursion.t
-result is 10.000000
 test/named-param-default-value.t
-result is 8.000000
 test/named-param.t
-result is 2.000000
 test/new.t
-result is -1234.000000
 test/no-terminator-error.t
-result is -1234.000000
 test/overload.t
-result is 7.000000
 test/override.t
-result is 2345.000000
 test/really-simple.t
-result is 0.000000
 test/scope-test.t
-result is 6.000000
 test/shader.t
 shader.t:8: syntax error
 test/short-vector.t
-result is 32764.000000
 test/short.t
-result is 3.000000
 test/simple.t
-result is 6.000000
+6
 test/stack-method-call.t
-result is 3.000000
 test/static-method-with-args.t
-result is 6.000000
 test/static-method.t
-result is -1234.000000
 test/store-null.t
-result is 0.000000
 test/string-conversions.t
 0
 1
@@ -276,55 +178,32 @@ test/string-conversions.t
 -1
 12
 123456789
-result is 0.000000
 test/swizzle-store.t
-result is 432.000000
 test/templated-class-initializer.t
-result is 5.000000
 test/templated-class-on-primitive-type.t
-result is 3.000000
 test/templated-class.t
-result is 3.000000
 test/templated-matrix.t
-result is 3.000000
 test/templated-on-class-and-primitive-type.t
-result is 8.000000
 test/templated-vector.t
-result is 2.000000
 test/test.t
-result is 2.500000
 test/ubyte-vector.t
-result is 3.000000
 test/ubyte.t
-result is 3.000000
 test/uint.t
-result is 1.000000
 test/unary-minus.t
-result is -7.000000
 test/unknown-param-type.t
 unknown-param-type.t:2: syntax error
 test/unknown-return-type.t
 unknown-return-type.t:2: syntax error
 test/unspecified-template-destructor.t
-result is 42.000000
 test/ushort-vector.t
-result is 65535.000000
 test/ushort.t
-result is 65535.000000
 test/vector-constructors.t
-result is 7.000000
 test/vector-constructors3.t
-result is 23.000000
 test/vector-constructors4.t
-result is 58.000000
 test/vector-initializer.t
-result is 7.000000
 test/vector-scalar-mul-div.t
-result is 5.500000
 test/vector-store-by-index.t
-result is 432.000000
 test/virtual-function.t
-result is 1.000000
 test/virtual-override-error.t
 virtual-override-error.t:10: override of virtual method must be virtual
 virtual-override-error.t:13: attempt to override a non-virtual method
@@ -332,11 +211,9 @@ test/void-array.t
 void-array.t:3: invalid array element type "void"
 void-array.t:3: invalid array element type "void"
 test/void-ptr-return.t
-result is 3.000000
 test/void-value-error.t
 void-value-error.t:4:  implicit void return, in method returning non-void.
 test/vtable.t
-result is 1.000000
 test/workgroup-size.t
 workgroup-size.t:5: workgroup size must have 1, 2, or 3 dimensions
 workgroup-size.t:6: workgroup size must have 1, 2, or 3 dimensions
@@ -344,4 +221,3 @@ workgroup-size.t:7: workgroup size is not an integer constant
 workgroup-size.t:8: non-compute shaders do not require a workgroup size
 workgroup-size.t:9: non-compute shaders do not require a workgroup size
 test/worst-cast-ever.t
-result is 69.000000

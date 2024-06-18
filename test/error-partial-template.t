@@ -5,5 +5,3 @@ class Foo<T, U> {
 
 auto partial = new Foo<int>();
 auto noargs = new Foo();
-
-return 0.0;

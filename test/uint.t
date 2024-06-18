@@ -6,4 +6,3 @@ Test.Expect(a < b);
 int c = 3;
 int d = (int) 3000000000u;
 Test.Expect(c > d);
-return 1.0;

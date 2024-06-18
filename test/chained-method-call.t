@@ -16,4 +16,3 @@ class Foo {
 
 Foo f = Foo.zero().plusOne();
 Test.Expect(f.value == 1.0);
-return f.value;

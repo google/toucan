@@ -15,4 +15,3 @@ class Template<T> {
 Template<Bar>* templateBar = new Template<Bar>();
 templateBar.set(new Bar());
 Test.Expect(templateBar.get() == 3.0);
-return templateBar.get();

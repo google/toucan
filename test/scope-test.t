@@ -7,4 +7,3 @@ float y;
   y = z;
 }
 Test.Expect(y == 6.0);
-return y;

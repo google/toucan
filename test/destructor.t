@@ -22,4 +22,3 @@ float r = -1.0;
   r = f.r;
 }
 Test.Expect(r == 1234.0);
-return r;

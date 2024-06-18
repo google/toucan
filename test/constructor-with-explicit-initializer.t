@@ -8,4 +8,3 @@ class C {
 C c = C(1.0, 2.0);
 Test.Expect(c.value1 == 2.0);
 Test.Expect(c.value2 == 1.0);
-return c.value1;

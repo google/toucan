@@ -6,4 +6,3 @@ class Foo {
 
 Foo* foo = new Foo();
 foo.bar() = 3.0;
-return 0.0;

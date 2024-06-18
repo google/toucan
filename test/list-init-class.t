@@ -8,4 +8,3 @@ class C {
 C c = { 3, 5.0 };
 Test.Expect(c.i == 3);
 Test.Expect(c.a == 5.0);
-return c.a + (float) c.i;

@@ -20,4 +20,3 @@ class Bump {
 
 Foo* foo = new Foo();
 Test.Expect(foo.bar().bump() == 3.0);
-return foo.bar().bump();

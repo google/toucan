@@ -8,4 +8,3 @@ buffer.Unmap();
 auto encoder = new CommandEncoder(device);
 tex.CopyFromBuffer(encoder, buffer, 1);
 device.GetQueue().Submit(encoder.Finish());
-return 0.0;

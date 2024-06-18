@@ -14,4 +14,3 @@ class Bar : Foo {
 
 Bar* b = new Bar();
 Test.Expect(b.func() == 2345.0);
-return b.func();

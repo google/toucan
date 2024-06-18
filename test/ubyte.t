@@ -2,4 +2,3 @@ include "include/test.t"
 
 ubyte a = 3ub;
 Test.Expect((int) a == 3);
-return (float) a;

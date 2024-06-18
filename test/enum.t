@@ -17,4 +17,3 @@ if (a.f == BAR ) {
   r = 1.0;
 }
 Test.Expect(r == 1.0);
-return r;

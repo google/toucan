@@ -7,4 +7,3 @@ System.Print(filename);
 System.Print(":");
 System.Print(String.From(line).Get());
 System.PrintLine("");
-return 0.0;

@@ -12,4 +12,3 @@ class Template<T> {
 }
 Template<S> foo;
 Test.Expect(foo.value.value == 5.0);
-return foo.value.value;

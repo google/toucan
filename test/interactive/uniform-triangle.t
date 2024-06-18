@@ -42,4 +42,3 @@ for (int i = 0; i < 1000; ++i) {
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
 }
-return 0.0;

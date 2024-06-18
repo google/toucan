@@ -9,4 +9,3 @@ class C {
   }
 }
 Test.Expect(C.m() == 1.0);
-return C.m();

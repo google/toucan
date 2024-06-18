@@ -7,4 +7,3 @@ class Foo {
 
 Foo foo;
 Test.Expect(foo.f == 42.0);
-return foo.f;

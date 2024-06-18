@@ -996,6 +996,9 @@ int ParseProgram(const char* filename,
   PushFile(filename);
   yyparse();
   if (numSyntaxErrors == 0) {
+    if (!(*rootStmts_)->ContainsReturn()) {
+      (*rootStmts_)->Append(Make<ReturnStatement>(nullptr, symbols_->PeekScope()));
+    }
     InstantiateClassTemplates();
   }
   PopFile();

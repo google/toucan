@@ -21,8 +21,3 @@ Test.Expect(v44.x == 7.0);
 Test.Expect(v44.y == 8.0); 
 Test.Expect(v44.z == 9.0); 
 Test.Expect(v44.w == 10.0); 
-
-return v41.x + v41.y + v41.z + v41.w
-     + v42.x + v42.y + v42.z + v42.w
-     + v43.x + v43.y + v43.z + v43.w
-     + v44.x + v44.y + v44.z + v44.w;

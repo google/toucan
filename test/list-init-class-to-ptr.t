@@ -11,4 +11,3 @@ class C {
 C c;
 c.clobber({42.0});
 Test.Expect(c.f == 42.0);
-return c.f;

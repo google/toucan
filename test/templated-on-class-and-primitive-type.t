@@ -18,4 +18,3 @@ Foo<float> foofloat = Foo<float>(3.0);
 Foo<Bar> foobar;
 Test.Expect(foobar.mine.GetFloat() == 5.0);
 Test.Expect(foofloat.mine == 3.0);
-return foobar.mine.GetFloat() + foofloat.mine;

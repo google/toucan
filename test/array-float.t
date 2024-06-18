@@ -12,4 +12,3 @@ for (int j = 0; j < outer_count; ++j) {
 }
 
 Test.Expect(a[0] == 2004203.875);
-return a[0];

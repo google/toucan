@@ -7,4 +7,3 @@ class Q {
 }
 P* p = new P();
 Q* q = new Q(null);
-return 0.0;

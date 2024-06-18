@@ -25,4 +25,3 @@ swapChain1.Present();
 swapChain2.Present();
 
 while (System.IsRunning()) System.GetNextEvent();
-return 0.0;

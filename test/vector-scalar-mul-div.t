@@ -7,5 +7,3 @@ Test.Expect(x.x == 2.0);
 Test.Expect(x.y == 4.0);
 Test.Expect(y.x == 1.5);
 Test.Expect(y.y == 2.0);
-
-return x.y + y.x;

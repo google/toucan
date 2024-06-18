@@ -17,4 +17,3 @@ b = d;              // valid; Derived* can be widened to Base*
 b = b2;             // error, b2 is not derived from b
 b2 = d2;            // valid; Derived2 can be widened to Base2*
 d2 = d;             // error; Derived2 and Derived are unrelated
-return 0.0;

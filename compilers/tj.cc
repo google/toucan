@@ -64,7 +64,7 @@ double GetTimeUsec() {
 }
 #endif
 
-typedef float (*PFF)();
+typedef void (*PFV)();
 
 void WriteCode(const std::vector<uint32_t>& code) {
   std::cout.write(reinterpret_cast<const char*>(code.data()), code.size() * 4);
@@ -158,7 +158,7 @@ int main(int argc, char** argv) {
   llvm::LLVMContext             context;
   std::unique_ptr<llvm::Module> module(new llvm::Module("test", context));
   symbols.PushScope(topScope);
-  llvm::FunctionCallee c = module->getOrInsertFunction("tjmain", llvm::Type::getFloatTy(context));
+  llvm::FunctionCallee c = module->getOrInsertFunction("tjmain", llvm::Type::getVoidTy(context));
   llvm::Function*      main = llvm::cast<llvm::Function>(c.getCallee());
   main->setCallingConv(llvm::CallingConv::C);
   llvm::BasicBlock*                 block = llvm::BasicBlock::Create(context, "main_entry", main);
@@ -200,12 +200,11 @@ int main(int argc, char** argv) {
 #endif
   } else {
     engine->finalizeObject();
-    PFF ptr = reinterpret_cast<PFF>(engine->getPointerToFunction(main));
+    PFV ptr = reinterpret_cast<PFV>(engine->getPointerToFunction(main));
     start = GetTimeUsec();
-    float result = (*ptr)();
+    (*ptr)();
     end = GetTimeUsec();
     if (showTime) printf("LLVM time is %lf usec\n", end - start);
-    printf("result is %f\n", result);
   }
   delete engine;
   llvm::llvm_shutdown();

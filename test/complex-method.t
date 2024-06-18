@@ -10,4 +10,3 @@ class Foo {
 Foo* foo = new Foo();
 float result = foo.dot(float<4>(1.0, 0.5, 0.0, 1.0), float<4>(0.5, 1.0, 0.0, 9.0));
 Test.Expect(result == 10.0);
-return result;

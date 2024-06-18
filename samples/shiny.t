@@ -219,4 +219,3 @@ while (System.IsRunning()) {
 
   handler.Handle(System.GetNextEvent());
 }
-return 0.0;

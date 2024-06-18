@@ -5,4 +5,3 @@ class Foo {
 
 Foo* foo = new Foo();
 foo.foo();
-return 0.0;

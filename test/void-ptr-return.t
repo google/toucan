@@ -13,4 +13,3 @@ f.Strong();
 f.WeakNull();
 f.StrongNull();
 Test.Expect(a == 3.0);
-return a;

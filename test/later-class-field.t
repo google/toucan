@@ -5,7 +5,7 @@ class Bar;
 Bar* b = new Bar();
 b.x = -3.0;
 Test.Expect(b.x == -3.0);
-return b.x;
+return;
 
 class Bar {
   float x;

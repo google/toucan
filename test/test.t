@@ -5,4 +5,3 @@ Test.Expect(v.x == 2.5);
 Test.Expect(v.y == 0.0);
 Test.Expect(v.z == 1.0);
 Test.Expect(v.w == 1.5);
-return v.x;

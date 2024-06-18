@@ -7,5 +7,3 @@ Test.Expect(v21.x == 1.0);
 Test.Expect(v21.y == 1.0);
 Test.Expect(v22.x == 2.0);
 Test.Expect(v22.y == 3.0);
-
-return v21.x + v21.y + v22.x + v22.y;

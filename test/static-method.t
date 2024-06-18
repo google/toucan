@@ -7,4 +7,3 @@ class Foo {
 };
 
 Test.Expect(Foo.whee() == -1234.0);
-return Foo.whee();

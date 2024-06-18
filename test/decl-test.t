@@ -9,4 +9,3 @@ int b;
   int[3] bb;
 }
 Test.Expect(a == 3.0);
-return a;

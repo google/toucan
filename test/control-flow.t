@@ -9,4 +9,3 @@ if (i < 1) {
   f = 3.2;
 }
 Test.Expect(f == 3.2);
-return 3.2;

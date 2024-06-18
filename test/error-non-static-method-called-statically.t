@@ -3,4 +3,3 @@ class Foo {
 };
 
 Foo.bar();
-return 0.0;

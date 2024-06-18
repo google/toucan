@@ -6,4 +6,3 @@ Test.Expect(b.x == -3.0);
 Test.Expect(b.y == 101.0);
 Test.Expect(b.z == 2.0);
 Test.Expect(b.w == 0.0);
-return b.y;

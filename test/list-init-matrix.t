@@ -11,4 +11,3 @@ Test.Expect(m[3][0] == 5.0);
 Test.Expect(m[3][1] == -3.0);
 Test.Expect(m[3][2] == 1.0);
 Test.Expect(m[3][3] == 1.0);
-return m[0][0] + m[3][0] + m[3][1];

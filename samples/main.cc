@@ -22,7 +22,7 @@ using namespace Toucan;
 
 extern "C" {
 
-extern float       toucan_main();
+extern void        toucan_main();
 const Type* const* _type_list;
 }
 
@@ -33,7 +33,6 @@ int main(int argc, char** argv) {
   InitTypes(&symbols, &types, &nodes);
   types.Layout();
   _type_list = types.GetTypes().data();
-  float result = toucan_main();
-  printf("result is %f\n", result);
+  toucan_main();
   return 0;
 }

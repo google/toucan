@@ -12,4 +12,3 @@ Test.Expect(c.v.x == 1.0);
 Test.Expect(c.v.y == 2.0);
 Test.Expect(c.v.z == 3.0);
 Test.Expect(c.v.w == 4.0);
-return c.v.x;

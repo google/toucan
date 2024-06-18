@@ -56,4 +56,3 @@ while (System.IsRunning()) {
 
   while (System.HasPendingEvents()) System.GetNextEvent();
 }
-return 0.0;

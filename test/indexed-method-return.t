@@ -9,4 +9,3 @@ class Foo {
 }
 
 Test.Expect(Foo.generate()[9] == 1234.0);
-return Foo.generate()[9];

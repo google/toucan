@@ -14,4 +14,3 @@ foo.inc();
 foo.inc();
 foo.inc();
 Test.Expect(foo.x == 3.0);
-return foo.x;

@@ -9,4 +9,3 @@ class C {
 C c = C(40.0);
 Test.Expect(c.x == 45.0);
 Test.Expect(c.y == 42.0);
-return c.y;

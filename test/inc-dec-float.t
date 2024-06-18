@@ -9,4 +9,3 @@ Test.Expect(a++ == 3.0);
 Test.Expect(--b == 1.0);
 Test.Expect(++c == 1.0);
 Test.Expect(d-- == 1.0);
-return (float) (a + b + c + d);

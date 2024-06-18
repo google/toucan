@@ -7,4 +7,3 @@ for(int i = 0; i < 1000; i = i + 1) {
   c = a * b;
 }
 Test.Expect(b == 2.7);
-return b;

@@ -35,4 +35,3 @@ renderPass.End();
 device.GetQueue().Submit(encoder.Finish());
 swapChain.Present();
 while (System.IsRunning()) System.GetNextEvent();
-return 0.0;

@@ -49,4 +49,3 @@ while (System.IsRunning()) {
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
 }
-return 0.0;

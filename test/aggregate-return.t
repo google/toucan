@@ -9,4 +9,3 @@ class Foo {
 }
 
 Test.Expect(Foo.One().value == 1.0);
-return Foo.One().value;

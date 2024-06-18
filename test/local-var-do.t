@@ -9,4 +9,3 @@ do {
 } while (i > 0);
 Test.Expect(i == 0);
 Test.Expect(a == 10);
-return (float) a;
