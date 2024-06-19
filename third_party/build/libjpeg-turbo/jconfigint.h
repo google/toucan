@@ -25,7 +25,7 @@
 #define VERSION  "2.1.92"
 
 /* The size of `size_t', as computed by sizeof. */
-#if TARGET_IS_WASM
+#if TARGET_OS_IS_WASM
 #define SIZEOF_SIZE_T  4
 #else
 #define SIZEOF_SIZE_T  8

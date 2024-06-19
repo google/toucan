@@ -370,6 +370,16 @@ gcc_like_toolchain("gcc_like_target") {
   default_link_extension = ""
 }
 
+gcc_like_toolchain("android") {
+  cpu = target_cpu
+  os = target_os
+  ar = "$android_ndk_bin_dir/llvm-ar"
+  cc = "$android_ndk_bin_dir/clang"
+  cxx = "$android_ndk_bin_dir/clang++"
+  link = cxx
+  default_link_extension = ""
+}
+
 if (host_os == "win") {
   em_ext = ".bat"
 } else {

@@ -294,7 +294,7 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
   fprintf(file_, "  c->AddMethod(m, %d);\n", method->index);
   if (classType->IsNative()) {
     if (header_ && !(method->modifiers & Method::DEVICEONLY)) {
-#if defined(_WIN32) && !TARGET_IS_WASM
+#if TARGET_OS_IS_WIN
       fprintf(header_, "__declspec(dllexport) ");
 #endif
       PrintNativeType(header_, method->returnType);

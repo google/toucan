@@ -21,47 +21,54 @@ group("samples") {
   ]
 }
 
-toucan_executable("decode") {
+toucan_app("decode") {
   sources = [ "decode.t" ]
 }
 
-toucan_executable("skybox") {
+toucan_app("skybox") {
   sources = [ "skybox.t" ]
 }
 
-toucan_executable("springy") {
+toucan_app("springy") {
   sources = [ "springy.t" ]
 }
 
-toucan_executable("springy-3d") {
+toucan_app("springy-3d") {
   sources = [ "springy-3d.t" ]
 }
 
-toucan_executable("springy-compute") {
+toucan_app("springy-compute") {
   sources = [ "springy-compute.t" ]
 }
 
-toucan_executable("springy-compute-3d") {
+toucan_app("springy-compute-3d") {
   sources = [ "springy-compute-3d.t" ]
 }
 
-toucan_executable("shiny") {
+toucan_app("shiny") {
   sources = [ "shiny.t" ]
 }
 
-toucan_executable("triangle") {
+toucan_app("triangle") {
   sources = [ "triangle.t" ]
 }
 
-toucan_executable("gouraud") {
+toucan_app("gouraud") {
   sources = [ "gouraud.t" ]
 }
 
-toucan_executable("window") {
+toucan_app("window") {
   sources = [ "window.t" ]
 }
 
 source_set("main") {
   sources = [ "main.cc" ]
   include_dirs = [ ".." ]
+}
+
+if (is_android) {
+  source_set("android_main") {
+    sources = [ "android_main.cc", "$android_ndk_dir/sources/android/native_app_glue/android_native_app_glue.c" ]
+    include_dirs = [ "..", "$android_ndk_dir/sources/android/native_app_glue" ]
+  }
 }

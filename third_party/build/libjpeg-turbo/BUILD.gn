@@ -123,8 +123,18 @@ source_set("libjpeg-turbo") {
     sources += [ "$libjpeg/simd/i386/jsimd.c" ]
   } else if (current_cpu == "arm32") {
     sources += [ "$libjpeg/simd/arm/aarch32/jsimd.c" ]
-  } else if (current_cpu == "arm64") {
-    sources += [ "$libjpeg/simd/arm/aarch64/jsimd.c" ]
+  } else if (false && current_cpu == "arm64") {
+    sources += [
+      "$libjpeg/simd/arm/aarch64/jsimd.c",
+      "$libjpeg/simd/arm/jcgray-neon.c",
+      "$libjpeg/simd/arm/jcphuff-neon.c",
+      "$libjpeg/simd/arm/jcsample-neon.c",
+      "$libjpeg/simd/arm/jdmerge-neon.c",
+      "$libjpeg/simd/arm/jdsample-neon.c",
+      "$libjpeg/simd/arm/jfdctfst-neon.c",
+      "$libjpeg/simd/arm/jidctred-neon.c",
+      "$libjpeg/simd/arm/jquanti-neon.c",
+    ]
   } else {
     sources += [ "$libjpeg/jsimd_none.c" ]
   }

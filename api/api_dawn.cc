@@ -20,7 +20,7 @@
 #include <cstring>
 #include <unordered_map>
 
-#if TARGET_IS_WASM
+#if TARGET_OS_IS_WASM
 #include <emscripten.h>
 #endif
 
@@ -551,7 +551,7 @@ void Queue_Destroy(Queue* This) { delete This; }
 
 wgpu::ShaderModule createShaderModule(Device* device, Method* m) {
   wgpu::ShaderModuleDescriptor desc;
-#if TARGET_IS_WASM
+#if TARGET_OS_IS_WASM
   wgpu::ShaderModuleWGSLDescriptor wgslDesc;
   wgslDesc.code = m->wgsl.data();
   desc.nextInChain = &wgslDesc;
@@ -1017,7 +1017,7 @@ void CommandEncoder_CopyBufferToBuffer(CommandEncoder* encoder, Buffer* source, 
   encoder->encoder.CopyBufferToBuffer(source->buffer, 0, dest->buffer, 0, source->sizeInBytes);
 }
 
-#if TARGET_IS_WASM
+#if TARGET_OS_IS_WASM
 EM_ASYNC_JS(WGPUBufferMapAsyncStatus,
             JSMapSync,
             (WGPUBuffer bufferID, WGPUMapMode mode, int offset, int size),
@@ -1038,7 +1038,7 @@ static Object* MapSync(wgpu::MapMode mapMode, Buffer* buffer) {
   auto callback = [](WGPUBufferMapAsyncStatus status, void* userData) {
     *(WGPUBufferMapAsyncStatus*)userData = status;
   };
-#if TARGET_IS_WASM
+#if TARGET_OS_IS_WASM
   status =
       JSMapSync(buffer->buffer.Get(), static_cast<WGPUMapMode>(mapMode), 0, buffer->sizeInBytes);
 #else
@@ -1055,7 +1055,7 @@ static Object* MapSync(wgpu::MapMode mapMode, Buffer* buffer) {
   } else {
     buffer->mappedObject.ptr = buffer->buffer.GetMappedRange();
   }
-#if TARGET_IS_X86
+#if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
   ControlBlock* controlBlock =
       static_cast<ControlBlock*>(_aligned_malloc(sizeof(ControlBlock), 16));
 #else
@@ -1101,7 +1101,7 @@ void Buffer_Unmap(Buffer* buffer) {
   ControlBlock* controlBlock = buffer->mappedObject.controlBlock;
   controlBlock->strongRefs = 0;
   if (controlBlock->weakRefs == 0) {
-#if TARGET_IS_X86
+#if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
     _aligned_free(controlBlock);
 #else
     free(controlBlock);
@@ -1282,8 +1282,8 @@ Texture2D* SwapChain_GetCurrentTexture(SwapChain* swapChain) {
                        swapChain->format);
 }
 
-#if !TARGET_IS_MAC
-#if !TARGET_IS_WASM
+#if !TARGET_OS_IS_MAC
+#if !TARGET_OS_IS_WASM
 void SwapChain_Present(SwapChain* swapChain) { swapChain->swapChain.Present(); }
 #endif
 

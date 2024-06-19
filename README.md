@@ -9,7 +9,7 @@ applications. It was designed to answer the following question: "Could a
 unified programming environment reduce the friction of developing CPU/GPU
 apps?". Built on WebGPU and featuring unified CPU/GPU SIMD datatypes, syntax
 and API, it aims for native-level performance with a single, concise source.
-It currently runs on Windows, MacOS, Linux, and Web.
+It currently runs on Windows, MacOS, Linux, Android, and Web.
 
 For further information, see [this presentation](https://docs.google.com/presentation/d/1tUlG9w7AsP8pexBWRwk1uYDrwNMvTJqcxdH482ip4LM/edit?usp=sharing&resourcekey=0-gEpoxkfBbXC3qbbKRQhrwg) and [this document](https://docs.google.com/document/d/1oWNt2IoA1u-j7i2D24pnlFP6JIlQdrKZlNY6qoW2K80/edit?usp=sharing&resourcekey=0-mb8K3ATyRv-ZGl34Y4C-zQ).
 
@@ -50,7 +50,7 @@ These will be retrieved by the git-sync-deps script.
    pushd third_party/llvm/llvm
    mkdir -p out/Release
    cd out/Release
-   cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="lld;clang" -DLLVM_TARGETS_TO_BUILD="host;WebAssembly" -DLLVM_INCLUDE_BENCHMARKS=false -DLLVM_INCLUDE_EXAMPLES=false -DLLVM_INCLUDE_TESTS=false ../..
+   cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="lld;clang" -DLLVM_TARGETS_TO_BUILD="host;X86;ARM;AArch64;WebAssembly" -DLLVM_INCLUDE_BENCHMARKS=false -DLLVM_INCLUDE_EXAMPLES=false -DLLVM_INCLUDE_TESTS=false ../..
    make
    popd
 ```
@@ -73,7 +73,7 @@ These will be retrieved by the git-sync-deps script.
    pushd third_party\llvm\llvm
    mkdir out
    cd out
-   cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="lld;clang" -DLLVM_TARGETS_TO_BUILD="host;WebAssembly" -DLLVM_INCLUDE_BENCHMARKS=false -DLLVM_INCLUDE_EXAMPLES=false -DLLVM_INCLUDE_TESTS=false ..
+   cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="lld;clang" -DLLVM_TARGETS_TO_BUILD="host;X86;ARM;AArch64;WebAssembly" -DLLVM_INCLUDE_BENCHMARKS=false -DLLVM_INCLUDE_EXAMPLES=false -DLLVM_INCLUDE_TESTS=false ..
    cmake --build . --config Release
    popd
 ```
@@ -90,6 +90,37 @@ These will be retrieved by the git-sync-deps script.
    echo is_debug=false > out\Release\args.gn
    gn gen out\Release
    ninja -C out\Release
+```
+
+## Build instructions (Android)
+
+1. Run `tools/git-sync-deps` to update `third_party` dependencies
+
+2. Install the Android SDK, and ensure ANDROID_SDK_ROOT is set.
+
+3. Install the Android NDK (r26d is known to work), and sure ANDROID_NDK_ROOT is set.
+
+4. Build LLVM (Makefiles):
+```
+   pushd third_party/llvm/llvm
+   mkdir -p out/Release
+   cd out/Release
+   cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="lld;clang" -DLLVM_TARGETS_TO_BUILD="host;X86;ARM;AArch64;WebAssembly" -DLLVM_INCLUDE_BENCHMARKS=false -DLLVM_INCLUDE_EXAMPLES=false -DLLVM_INCLUDE_TESTS=false ../..
+   make
+   popd
+```
+
+5. Build tc and native samples:
+
+```
+   mkdir -p out/Release-android
+   echo is_debug=false > out/Release-android/args.gn
+   echo target_os=\"android\" >> out/Release-android/args.gn
+   echo target_cpu=\"arm64\" >> out/Release-android/args.gn
+   echo android_ndk_dir=\"$ANDROID_NDK_ROOT\" >> out/Release-android/args.gn
+   echo android_sdk_dir=\"$ANDROID_SDK_ROOT\" >> out/Release-android/args.gn
+   gn gen out/Release-android
+   ninja -C out/Release-android
 ```
 
 ## Build instructions (WebAssembly)
@@ -145,9 +176,24 @@ e.g., `out/Release/springy`
 - open `http://localhost:8080`
 - open sample (e.g., springy.html)
 
+## Installing and running Android samples
+
+```
+adb install -r out/Release-android/$SAMPLE.apk
+adb shell am start -a android.intent.action.MAIN -n org.toucanlang.$SAMPLE/android.app.NativeActivity
+```
+
+e.g.,
+
+```
+adb install -r out/Release-android/springy.apk
+adb shell am start -a android.intent.action.MAIN -n org.toucanlang.springy/android.app.NativeActivity
+```
+
 ## Testing instructions
 
 There is a primitive test harness in test/test.py, and a set of end-to-end
-tests. Run it as follows:
+tests. This requires tj, so it is only supported on Windows, Mac and
+Linux. Run it as follows:
 
 `test/test.py >& test/test-expectations.txt`

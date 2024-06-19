@@ -24,7 +24,7 @@ with open(result, 'w') as output:
   output.write('  lib = ""\n')
   output.write('}\n\n')
 
-  with subprocess.Popen([llvm_config, "--libs", "engine", "mcjit", "x86codegen", "webassemblycodegen"], stdout=subprocess.PIPE) as input:
+  with subprocess.Popen([llvm_config, "--libs", "engine", "mcjit", "x86codegen", "armcodegen", "aarch64codegen", "webassemblycodegen"], stdout=subprocess.PIPE) as input:
 
     output.write('llvm_libs = [\n')
     for line in io.TextIOWrapper(input.stdout, encoding="utf-8"):

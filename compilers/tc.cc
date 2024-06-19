@@ -143,8 +143,20 @@ int main(int argc, char** argv) {
     LLVMInitializeNativeTarget();
     LLVMInitializeNativeAsmPrinter();
 
-#if TARGET_IS_WASM
+#if TARGET_CPU_IS_WASM
     std::string targetTriple = "wasm32-unknown-unknown";
+#elif TARGET_OS_IS_ANDROID
+#if TARGET_CPU_IS_ARM64
+    std::string targetTriple = "aarch64-linux-android";
+#elif TARGET_CPU_IS_ARM32
+    std::string targetTriple = "armv7a-linux-androideabi";
+#elif TARGET_CPU_IS_X64
+    std::string targetTriple = "x86_64-linux-android";
+#elif TARGET_CPU_IS_X86
+    std::string targetTriple = "i686-linux-android";
+#else
+#error unsupported Android CPU
+#endif
 #else
     std::string targetTriple = llvm::sys::getDefaultTargetTriple();
 #endif
@@ -160,7 +172,7 @@ int main(int argc, char** argv) {
     module->setTargetTriple(targetTriple);
 
     auto cpu = "generic";
-#if TARGET_IS_WASM
+#if TARGET_OS_IS_WASM
     auto features = "+simd128";
 #else
     auto features = "";

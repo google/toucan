@@ -43,13 +43,18 @@ source_set("api") {
   ]
   if (!is_wasm) {
     deps += [
-      "//third_party/dawn/src/dawn:proc_static",
       "//third_party/dawn/src/dawn/native:headers",
     ]
   }
   sources = [
     "api_dawn.cc",
     "api_image_codecs.cc",
+  ]
+  include_dirs = [
+    "..",
+    target_gen_dir,
+    "../third_party/libjpeg-turbo",
+    "../third_party/build/libjpeg-turbo",
   ]
   if (is_win) {
     sources += [ "api_win.cc" ]
@@ -64,12 +69,10 @@ source_set("api") {
   if (is_wasm) {
     sources += [ "api_wasm.cc" ]
   }
-  include_dirs = [
-    "..",
-    target_gen_dir,
-    "../third_party/libjpeg-turbo",
-    "../third_party/build/libjpeg-turbo",
-  ]
+  if (is_android) {
+    sources += [ "api_android.cc" ]
+    include_dirs += [ "$android_ndk_dir/sources/android/native_app_glue" ]
+  }
 }
 
 source_set("init_types") {

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-template("toucan_executable") {
+template("toucan_objects") {
   make_action = "make_" + target_name
   outer_target = target_name
   action(make_action) {
@@ -38,6 +38,13 @@ template("toucan_executable") {
       "-I", "../..",
       "-I", "../../samples/include",
     ] + rebase_path(sources, root_build_dir)
+  }
+}
+
+template("toucan_executable") {
+  make_action = "make_" + target_name
+  toucan_objects(target_name) {
+    sources = invoker.sources
   }
   executable("${target_name}") {
     deps = [
@@ -81,6 +88,9 @@ template("toucan_executable") {
         "user32.lib",
       ]
     }
+    if (is_android) {
+      libs = [ "android" ]
+    }
     if (is_wasm) {
       ldflags = [
         "--shell-file", rebase_path("//emscripten/shell.html", root_build_dir),
@@ -98,6 +108,63 @@ template("toucan_executable") {
       inputs = [
         "//emscripten/shell.html"
       ]
+    }
+  }
+}
+
+template("toucan_android_main_lib") {
+  make_action = "make_" + target_name
+  toucan_objects(target_name) {
+    sources = invoker.sources
+  }
+  shared_library("${target_name}") {
+    deps = [
+      ":${make_action}",
+      "../api:api",
+      "../ast:ast",
+      "//samples:android_main",
+      "//third_party/build/libjpeg-turbo",
+      "//third_party/dawn/src/dawn:proc_static",
+      "//third_party/dawn/src/dawn:cpp",
+      "//third_party/dawn/src/dawn/native:static",
+    ]
+    include_dirs = [ ".." ]
+    sources = get_target_outputs(":${make_action}")
+    libs = [ "android" ]
+    ldflags = [ "-static-libstdc++" ]
+  }
+}
+
+template("toucan_apk") {
+  toucan_android_main_lib(target_name) {
+    sources = invoker.sources
+  }
+  make_action = "make_apk_" + target_name
+  outer_target = target_name
+  action(make_action) {
+    script = "../tools/make-apk.py"
+    outfile = "${root_out_dir}/${outer_target}.apk"
+    deps = [ ":${outer_target}" ]
+    args = [
+      "--target-name", outer_target,
+      "--sdk-dir", android_sdk_dir,
+      "--target-cpu", target_cpu,
+      "--source-lib", rebase_path(root_build_dir + "/lib" + outer_target + ".so"),
+      "--keystore", rebase_path("../tools/toucan.keystore", root_build_dir),
+      "--out", rebase_path(outfile, root_build_dir),
+    ]
+    outputs = [ outfile ]
+  }
+}
+
+template("toucan_app") {
+  if (is_android) {
+    toucan_apk(target_name) {
+      sources = invoker.sources
+    }
+  } else {
+    toucan_executable(target_name) {
+      sources = invoker.sources
     }
   }
 }

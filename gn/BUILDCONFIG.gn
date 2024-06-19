@@ -28,7 +28,13 @@ declare_args() {
   win_sdk = "C:/Program Files (x86)/Windows Kits/10"
   win_sdk_version = ""
 
+  ndk_api = 26
+
   emscripten_dir = rebase_path("//third_party/emscripten")
+
+  android_ndk_dir = ""
+  android_sdk_dir = ""
+  android_ndk_bin_dir = ""
 
   clang_win = ""
 
@@ -103,7 +109,6 @@ set_defaults("component") {
 }
 
 if (host_os == "win") {
-  host_toolchain = "//gn/toolchain:msvc_host"
   if (win_vc == "") {
     win_vc = exec_script("//tools/vswhere.py", [], "string")
   }
@@ -113,6 +118,7 @@ if (host_os == "win") {
   if (win_sdk_version == "") {
     win_sdk_version = exec_script("//tools/first-dir-entry.py", ["$win_sdk/Include"], "string")
   }
+  host_toolchain = "//gn/toolchain:msvc_host"
 } else {
   host_toolchain = "//gn/toolchain:gcc_like_host"
 }
@@ -121,6 +127,33 @@ if (target_os == "win") {
   set_default_toolchain("//gn/toolchain:msvc_target")
 } else if (target_os == "wasm") {
   set_default_toolchain("//gn/toolchain:wasm")
+} else if (target_os == "android") {
+  set_default_toolchain("//gn/toolchain:android")
 } else {
   set_default_toolchain("//gn/toolchain:gcc_like_target")
+}
+
+if (is_android) {
+  ndk_host = ""
+  ndk_target = ""
+
+  if (host_os == "linux") {
+    ndk_host = "linux-x86_64"
+  } else if (host_os == "mac") {
+    ndk_host = "darwin-x86_64"
+  } else if (host_os == "win") {
+    ndk_host = "windows-x86_64"
+  }
+
+  if (target_cpu == "arm64") {
+    ndk_target = "aarch64-linux-android"
+  } else if (target_cpu == "arm") {
+    ndk_target = "armv7a-linux-androideabi"
+  } else if (target_cpu == "x64") {
+    ndk_target = "x86_64-linux-android"
+  } else if (target_cpu == "x86") {
+    ndk_target = "i686-linux-android"
+  }
+
+  android_ndk_bin_dir = "$android_ndk_dir/toolchains/llvm/prebuilt/$ndk_host/bin"
 }

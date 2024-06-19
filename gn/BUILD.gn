@@ -44,14 +44,65 @@ config("default") {
     if (is_linux) {
       cflags = [ "-fPIC" ]
     }
+    if (current_os == "android") {
+      cflags = [ "-fPIC", "--target=$ndk_target$ndk_api" ]
+      ldflags = [ "--target=$ndk_target$ndk_api" ]
+    }
   }
   if (!is_debug) {
     defines += [ "NDEBUG" ]
   }
+
+  if (target_os == "android") {
+    defines += [ "TARGET_OS_IS_ANDROID=1" ]
+  } else {
+    defines += [ "TARGET_OS_IS_ANDROID=0" ]
+  }
+  if (target_os == "linux") {
+    defines += [ "TARGET_OS_IS_LINUX=1" ]
+  } else {
+    defines += [ "TARGET_OS_IS_LINUX=0" ]
+  }
+  if (target_os == "mac") {
+    defines += [ "TARGET_OS_IS_MAC=1" ]
+  } else {
+    defines += [ "TARGET_OS_IS_MAC=0" ]
+  }
+  if (target_os == "win") {
+    defines += [ "TARGET_OS_IS_WIN=1" ]
+  } else {
+    defines += [ "TARGET_OS_IS_WIN=0" ]
+  }
   if (target_os == "wasm") {
-    defines += [ "TARGET_IS_WASM=1" ]
-  } else if (target_os == "mac") {
-    defines += [ "TARGET_IS_MAC=1" ]
+    defines += [ "TARGET_OS_IS_WASM=1" ]
+  } else {
+    defines += [ "TARGET_OS_IS_WASM=0" ]
+  }
+
+  if (target_cpu == "x86") {
+    defines += [ "TARGET_CPU_IS_X86=1" ]
+  } else {
+    defines += [ "TARGET_CPU_IS_X86=0" ]
+  }
+  if (target_cpu == "x64") {
+    defines += [ "TARGET_CPU_IS_X64=1" ]
+  } else {
+    defines += [ "TARGET_CPU_IS_X64=0" ]
+  }
+  if (target_cpu == "arm") {
+    defines += [ "TARGET_CPU_IS_ARM32=1" ]
+  } else {
+    defines += [ "TARGET_CPU_IS_ARM32=0" ]
+  }
+  if (target_cpu == "arm64") {
+    defines += [ "TARGET_CPU_IS_ARM64=1" ]
+  } else {
+    defines += [ "TARGET_CPU_IS_ARM64=0" ]
+  }
+  if (target_cpu == "wasm") {
+    defines += [ "TARGET_CPU_IS_WASM=1" ]
+  } else {
+    defines += [ "TARGET_CPU_IS_WASM=0" ]
   }
 }
 

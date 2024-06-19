@@ -17,7 +17,7 @@ group("all") {
     "//samples:samples",
     "//test:tests",
   ]
-  if (!is_wasm) {
+  if (!is_wasm && !is_android) {
     deps += [
       "//compilers:tj",
     ]

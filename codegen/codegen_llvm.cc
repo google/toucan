@@ -25,7 +25,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
-#if TARGET_IS_WASM
+#if TARGET_OS_IS_WASM
 #include <tint/tint.h>
 #endif
 
@@ -476,7 +476,7 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
     spirv.insert(spirv.end(), codeGenSPIRV.decl().begin(), codeGenSPIRV.decl().end());
     spirv.insert(spirv.end(), codeGenSPIRV.GetBody().begin(), codeGenSPIRV.GetBody().end());
 
-#if TARGET_IS_WASM
+#if TARGET_OS_IS_WASM
     tint::spirv::reader::Options spirvOptions;
     tint::Program                program = tint::spirv::reader::Read(spirv, spirvOptions);
     if (!program.IsValid()) {
@@ -525,7 +525,7 @@ llvm::Value* CodeGenLLVM::CreateMalloc(llvm::Type* type, llvm::Value* arraySize)
   // TODO(senorblanco):  initialize this once, not every time
   std::vector<llvm::Type*> args;
   args.push_back(intType_);
-#if TARGET_IS_X86
+#if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
   args.push_back(intType_);
 #endif
   llvm::FunctionType* ft = llvm::FunctionType::get(voidPtrType_, args, false);
@@ -533,7 +533,7 @@ llvm::Value* CodeGenLLVM::CreateMalloc(llvm::Type* type, llvm::Value* arraySize)
   llvm::Value*        nullPtr = llvm::ConstantPointerNull::get(ptrType);
   llvm::Value*        size = builder_->CreateGEP(type, nullPtr, indices);
   llvm::Value*        sizeInt = builder_->CreatePtrToInt(size, intType_);
-#if TARGET_IS_X86
+#if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
   llvm::FunctionCallee alignedMalloc = module_->getOrInsertFunction("_aligned_malloc", ft);
   llvm::Value*         sixteen = llvm::ConstantInt::get(intType_, 16);
   llvm::Value*         ptr = builder_->CreateCall(alignedMalloc, {sizeInt, sixteen});
@@ -549,7 +549,7 @@ void CodeGenLLVM::GenerateFree(llvm::Value* value) {
   args.push_back(voidPtrType_);
   llvm::Type*         voidType = llvm::Type::getVoidTy(*context_);
   llvm::FunctionType* ft = llvm::FunctionType::get(voidType, args, false);
-#if TARGET_IS_X86
+#if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
   llvm::FunctionCallee free = module_->getOrInsertFunction("_aligned_free", ft);
 #else
   llvm::FunctionCallee free = module_->getOrInsertFunction("free", ft);
