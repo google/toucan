@@ -20,7 +20,6 @@ config("default") {
       "$win_sdk/Include/$win_sdk_version/ucrt",
       "$win_sdk/Include/$win_sdk_version/um",
       "$win_sdk/Include/$win_sdk_version/winrt",
-      "C:\Program Files (x86)\GnuWin32\include",
     ]
     lib_dirs = [
       "$win_sdk/Lib/$win_sdk_version/ucrt/$current_cpu",

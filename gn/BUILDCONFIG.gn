@@ -22,11 +22,11 @@ declare_args() {
   cxx = "c++"
   cc_wrapper = ""
 
-  win_sdk = "C:/Program Files (x86)/Windows Kits/10"
-  win_sdk_version = "10.0.22621.0"
+  win_vc = ""
+  win_toolchain_version = ""
 
-  win_vc = "C:/Program Files/Microsoft Visual Studio/2022/Community/VC"
-  win_toolchain_version = "14.38.33130"
+  win_sdk = "C:/Program Files (x86)/Windows Kits/10"
+  win_sdk_version = ""
 
   emscripten_dir = rebase_path("//third_party/emscripten")
 
@@ -104,6 +104,15 @@ set_defaults("component") {
 
 if (host_os == "win") {
   host_toolchain = "//gn/toolchain:msvc_host"
+  if (win_vc == "") {
+    win_vc = exec_script("//tools/vswhere.py", [], "string")
+  }
+  if (win_toolchain_version == "") {
+    win_toolchain_version = exec_script("//tools/first-dir-entry.py", ["$win_vc/Tools/MSVC"], "string")
+  }
+  if (win_sdk_version == "") {
+    win_sdk_version = exec_script("//tools/first-dir-entry.py", ["$win_sdk/Include"], "string")
+  }
 } else {
   host_toolchain = "//gn/toolchain:gcc_like_host"
 }

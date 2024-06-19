@@ -59,7 +59,4 @@ source_set("parser") {
     "..",
     "$target_gen_dir",
   ]
-  if (is_win) {
-    include_dirs += [ "C:\Program Files (x86)\GnuWin32\include" ]
-  }
 }
