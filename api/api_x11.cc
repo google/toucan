@@ -27,6 +27,7 @@
 #include <X11/Xutil.h>
 #include <X11/extensions/Xv.h>
 #undef Window
+#undef Status
 #undef Success
 #undef Always
 #undef None

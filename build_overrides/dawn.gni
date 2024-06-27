@@ -20,6 +20,7 @@
 # users of Dawn don't have to set dirs if they happen to use the same as Dawn.
 
 dawn_has_build = false
+build_with_angle = false
 
 dawn_abseil_dir = "//third_party/abseil-cpp"
 dawn_jinja2_dir = "//third_party/jinja2"
