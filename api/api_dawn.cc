@@ -1282,14 +1282,21 @@ CommandBuffer* CommandEncoder_Finish(CommandEncoder* encoder) {
 void CommandBuffer_Destroy(CommandBuffer* This) { delete This; }
 
 Texture2D* SwapChain_GetCurrentTexture(SwapChain* swapChain) {
-  return new Texture2D(swapChain->swapChain.GetCurrentTexture(),
-                       swapChain->swapChain.GetCurrentTexture().CreateView(), swapChain->extent,
+#if TARGET_OS_IS_WASM
+  wgpu::Texture texture = swapChain->swapChain.GetCurrentTexture();
+#else
+  wgpu::SurfaceTexture surfaceTexture;
+  swapChain->surface.GetCurrentTexture(&surfaceTexture);
+  wgpu::Texture texture = surfaceTexture.texture;
+#endif
+
+  return new Texture2D(texture, texture.CreateView(), swapChain->extent,
                        swapChain->format);
 }
 
 #if !TARGET_OS_IS_MAC
 #if !TARGET_OS_IS_WASM
-void SwapChain_Present(SwapChain* swapChain) { swapChain->swapChain.Present(); }
+void SwapChain_Present(SwapChain* swapChain) { swapChain->surface.Present(); }
 #endif
 
 void SwapChain_Destroy(SwapChain* This) { delete This; }
@@ -1324,12 +1331,13 @@ wgpu::Device CreateDawnDevice(wgpu::BackendType type, wgpu::ErrorCallback errorC
     dawnProcSetProcs(&backendProcs);
   }
 
+  wgpu::DeviceDescriptor desc;
+  desc.uncapturedErrorCallbackInfo.callback = errorCallback;
+
   for (auto adapter : nativeInstance->EnumerateAdapters()) {
     wgpu::AdapterProperties properties;
     adapter.GetProperties(&properties);
-    wgpu::DeviceDescriptor desc;
-    desc.uncapturedErrorCallbackInfo.callback = errorCallback;
-    if (properties.backendType == type) { return adapter.CreateDevice(); }
+    if (properties.backendType == type) { return adapter.CreateDevice(&desc); }
   }
   return nullptr;
 }

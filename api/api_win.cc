@@ -40,9 +40,8 @@ unsigned ToToucanEventModifiers(WPARAM wParam) {
 }  // namespace
 
 struct Window {
-  Window(HWND w, Device* d, wgpu::Surface s) : wnd(w), device(d), surface(s) {}
+  Window(HWND w, Device* d) : wnd(w), device(d) {}
   HWND          wnd;
-  wgpu::Surface surface;
   Device*       device;
 };
 
@@ -93,15 +92,7 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
 
   ::ShowWindow(hwnd, SW_SHOW);
 
-  wgpu::SurfaceDescriptorFromWindowsHWND winSurfaceDesc;
-  winSurfaceDesc.hwnd = hwnd;
-  wgpu::SurfaceDescriptor surfaceDesc;
-  surfaceDesc.nextInChain = &winSurfaceDesc;
-
-  static wgpu::Instance instance = wgpu::CreateInstance({});
-  wgpu::Surface surface = instance.CreateSurface(&surfaceDesc);
-
-  Window*       w = new Window(hwnd, device, surface);
+  Window*       w = new Window(hwnd, device);
   SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)w);
   gNumWindows++;
   return w;
@@ -121,14 +112,23 @@ SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
   RECT rect;
   GetClientRect(window->wnd, &rect);
 
-  wgpu::SwapChainDescriptor desc;
-  desc.usage = wgpu::TextureUsage::RenderAttachment;
-  desc.format = ToDawnTextureFormat(format);
-  desc.width = rect.right - rect.left;
-  desc.height = rect.bottom - rect.top;
-  desc.presentMode = wgpu::PresentMode::Fifo;
-  wgpu::SwapChain swapChain = window->device->device.CreateSwapChain(window->surface, &desc);
-  return new SwapChain(swapChain, {desc.width, desc.height, 1}, desc.format, nullptr);
+  wgpu::SurfaceConfiguration config;
+  config.device = window->device->device;
+  config.format = ToDawnTextureFormat(format);
+  config.usage = wgpu::TextureUsage::RenderAttachment;
+  config.width = rect.right - rect.left;
+  config.height = rect.bottom - rect.top;
+  config.presentMode = wgpu::PresentMode::Fifo;
+
+  wgpu::SurfaceDescriptorFromWindowsHWND winSurfaceDesc;
+  winSurfaceDesc.hwnd = window->wnd;
+  wgpu::SurfaceDescriptor surfaceDesc;
+  surfaceDesc.nextInChain = &winSurfaceDesc;
+
+  static wgpu::Instance instance = wgpu::CreateInstance({});
+  wgpu::Surface surface = instance.CreateSurface(&surfaceDesc);
+  surface.Configure(&config);
+  return new SwapChain(surface, {config.width, config.height, 1}, config.format, nullptr);
 }
 
 bool System_IsRunning() { return gNumWindows > 0; }

@@ -31,10 +31,9 @@ static int                                     gNumWindows = 0;
 static android_app*                            gAndroidApp;
 
 struct Window {
-  Window(ANativeWindow* w, Device* d, wgpu::Surface s) : window(w), device(d), surface(s) {}
+  Window(ANativeWindow* w, Device* d) : window(w), device(d) {}
   ANativeWindow* window;
   Device*        device;
-  wgpu::Surface  surface;
 };
 
 Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint32_t height) {
@@ -53,23 +52,14 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
     window = nullptr;
   }
   if (!window) { return nullptr; }
-
-  wgpu::SurfaceDescriptorFromAndroidNativeWindow awDesc;
-  awDesc.window = window;
-  wgpu::SurfaceDescriptor desc;
-  desc.nextInChain = &awDesc;
-
-  static wgpu::Instance instance = wgpu::CreateInstance({});
-
-  wgpu::Surface surface = instance.CreateSurface(&desc);
   gNumWindows++;
-  return new Window(window, device, surface);
+  return new Window(window, device);
 }
 
 void Window_Destroy(Window* This) { delete This; }
 
 static void PrintDeviceError(WGPUErrorType, const char* message, void*) {
-  printf("Device error: %s\n", message);
+  LOGV("Device error: %s", message);
 }
 
 Device* Device_Device() {
@@ -97,14 +87,26 @@ wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::
 
 SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
   Device*                   device = window->device;
-  wgpu::SwapChainDescriptor desc;
-  desc.usage = wgpu::TextureUsage::RenderAttachment;
-  desc.format = wgpu::TextureFormat::RGBA8Unorm;
-  desc.width = ANativeWindow_getWidth(window->window);
-  desc.height = ANativeWindow_getHeight(window->window);
-  desc.presentMode = wgpu::PresentMode::Immediate;
-  wgpu::SwapChain swapChain = device->device.CreateSwapChain(window->surface, &desc);
-  return new SwapChain(swapChain, {desc.width, desc.height, 1}, desc.format, nullptr);
+
+  wgpu::SurfaceConfiguration config;
+  config.device = device->device;
+  config.format = wgpu::TextureFormat::RGBA8Unorm;
+  config.width = ANativeWindow_getWidth(window->window);
+  config.height = ANativeWindow_getHeight(window->window);
+  config.presentMode = wgpu::PresentMode::Fifo;
+
+  wgpu::SurfaceDescriptorFromAndroidNativeWindow awDesc;
+  awDesc.window = window->window;
+  wgpu::SurfaceDescriptor surfaceDesc;
+  surfaceDesc.nextInChain = &awDesc;
+
+  static wgpu::Instance instance = wgpu::CreateInstance({});
+
+  wgpu::Surface surface = instance.CreateSurface(&surfaceDesc);
+
+  surface.Configure(&config);
+
+  return new SwapChain(surface, {config.width, config.height, 1}, config.format, nullptr);
 }
 
 double System_GetCurrentTime() {

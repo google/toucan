@@ -50,12 +50,11 @@ static int                                     gNumWindows = 0;
 static Atom                                    gWM_DELETE_WINDOW;
 
 struct Window {
-  Window(Display* dpy, XWindow w, Device* d, wgpu::Surface s)
-      : display(dpy), window(w), device(d), surface(s) {}
+  Window(Display* dpy, XWindow w, Device* d)
+      : display(dpy), window(w), device(d) {}
   Display*      display;
   XWindow       window;
   Device*       device;
-  wgpu::Surface surface;
 };
 
 static Display* gDisplay;
@@ -86,17 +85,8 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
   ::XSetWMProtocols(gDisplay, window, &gWM_DELETE_WINDOW, 1);
   ::XMapWindow(gDisplay, window);
   ::XSync(gDisplay, True);
-  wgpu::SurfaceDescriptorFromXlibWindow xlibDesc;
-  xlibDesc.display = gDisplay;
-  xlibDesc.window = window;
-  wgpu::SurfaceDescriptor desc;
-  desc.nextInChain = &xlibDesc;
-
-  static wgpu::Instance instance = wgpu::CreateInstance({});
-
-  wgpu::Surface surface = instance.CreateSurface(&desc);
   gNumWindows++;
-  return new Window(gDisplay, window, device, surface);
+  return new Window(gDisplay, window, device);
 }
 
 void Window_Destroy(Window* This) {
@@ -155,16 +145,30 @@ wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::
 
 SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
   Device*                   device = window->device;
-  wgpu::SwapChainDescriptor desc;
-  desc.usage = wgpu::TextureUsage::RenderAttachment;
-  desc.format = wgpu::TextureFormat::BGRA8Unorm;
+
+  wgpu::SurfaceConfiguration config;
+  config.device = device->device;
+  config.format = wgpu::TextureFormat::BGRA8Unorm;
   XWindowAttributes attributes;
   XGetWindowAttributes(gDisplay, window->window, &attributes);
-  desc.width = attributes.width;
-  desc.height = attributes.height;
-  desc.presentMode = wgpu::PresentMode::Immediate;
-  wgpu::SwapChain swapChain = device->device.CreateSwapChain(window->surface, &desc);
-  return new SwapChain(swapChain, {desc.width, desc.height, 1}, desc.format, nullptr);
+  config.width = attributes.width;
+  config.height = attributes.height;
+  config.presentMode = wgpu::PresentMode::Fifo;
+
+  wgpu::SurfaceDescriptorFromXlibWindow xlibDesc;
+  xlibDesc.display = gDisplay;
+  xlibDesc.window = window->window;
+
+  wgpu::SurfaceDescriptor surfaceDesc;
+  surfaceDesc.nextInChain = &xlibDesc;
+
+  static wgpu::Instance instance = wgpu::CreateInstance({});
+
+  wgpu::Surface surface = instance.CreateSurface(&surfaceDesc);
+
+  surface.Configure(&config);
+
+  return new SwapChain(surface, {config.width, config.height, 1}, config.format, nullptr);
 }
 
 double System_GetCurrentTime() {

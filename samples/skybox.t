@@ -113,5 +113,7 @@ while (System.IsRunning()) {
   device.GetQueue().Submit(cb);
   swapChain.Present();
 
-  handler.Handle(System.GetNextEvent());
+  do {
+    handler.Handle(System.GetNextEvent());
+  } while (System.HasPendingEvents());
 }

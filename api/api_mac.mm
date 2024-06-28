@@ -53,16 +53,14 @@ struct Window {
          NSView*       v,
          CAMetalLayer* l,
          id<MTLDevice> md,
-         wgpu::Surface s,
          Device*       d,
          uint32_t      w,
          uint32_t      h)
-      : window(nsw), view(v), layer(l), mtlDevice(md), surface(s), device(d), width(w), height(h) {}
+      : window(nsw), view(v), layer(l), mtlDevice(md), device(d), width(w), height(h) {}
   NSWindow*     window;
   NSView*       view;
   CAMetalLayer* layer;
   id<MTLDevice> mtlDevice;
-  wgpu::Surface surface;
   Device*       device;
   uint32_t      width;
   uint32_t      height;
@@ -138,13 +136,7 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
   [view setLayer:layer];
 
   [window setContentView:view];
-  wgpu::SurfaceDescriptorFromMetalLayer metalLayerDesc;
-  metalLayerDesc.layer = layer;
-  wgpu::SurfaceDescriptor desc;
-  desc.nextInChain = &metalLayerDesc;
-  static wgpu::Instance instance = wgpu::CreateInstance({});
-  wgpu::Surface surface = instance.CreateSurface(&desc);
-  Window*       w = new Window(window, view, layer, mtlDevice, surface, device, width, height);
+  Window*       w = new Window(window, view, layer, mtlDevice, device, width, height);
   id            delegate = [[ToucanWindowDelegate alloc] initWithWindow:w];
   [window setDelegate:delegate];
   return w;
@@ -157,20 +149,30 @@ wgpu::TextureFormat GetPreferredSwapChainFormat() {
 }
 
 SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
-  wgpu::SwapChainDescriptor desc;
-  // FIXME: add usage and present mode
-  desc.usage = wgpu::TextureUsage::RenderAttachment;
-  desc.format = ToDawnTextureFormat(format);
-  desc.width = window->width;
-  desc.height = window->height;
-  desc.presentMode = wgpu::PresentMode::Fifo;
-  wgpu::SwapChain swapChain = window->device->device.CreateSwapChain(window->surface, &desc);
+  Device* device = window->device;
 
-  return new SwapChain(swapChain, {window->width, window->height, 1}, desc.format, [[NSAutoreleasePool alloc] init]);
+  wgpu::SurfaceConfiguration config;
+  config.device = device->device;
+  config.format = ToDawnTextureFormat(format);
+
+  config.width = window->width;
+  config.height = window->height;
+  config.presentMode = wgpu::PresentMode::Fifo;
+
+  wgpu::SurfaceDescriptorFromMetalLayer metalLayerDesc;
+  metalLayerDesc.layer = window->layer;
+  wgpu::SurfaceDescriptor desc;
+  desc.nextInChain = &metalLayerDesc;
+  static wgpu::Instance instance = wgpu::CreateInstance({});
+  wgpu::Surface surface = instance.CreateSurface(&desc);
+
+  surface.Configure(&config);
+
+  return new SwapChain(surface, {window->width, window->height, 1}, config.format, [[NSAutoreleasePool alloc] init]);
 }
 
 void SwapChain_Present(SwapChain* swapChain) {
-  swapChain->swapChain.Present();
+  swapChain->surface.Present();
   [static_cast<NSAutoreleasePool*>(swapChain->pool) release];
   swapChain->pool = [[NSAutoreleasePool alloc] init];
 }
