@@ -89,7 +89,7 @@ template("toucan_executable") {
       ]
     }
     if (is_android) {
-      libs = [ "android" ]
+      libs = [ "android", "log" ]
     }
     if (is_wasm) {
       ldflags = [

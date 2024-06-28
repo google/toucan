@@ -22,10 +22,8 @@
 #include <memory>
 
 #define Window XWindow
-#include <X11/Xlib-xcb.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <X11/extensions/Xv.h>
 #undef Window
 #undef Status
 #undef Success
@@ -33,11 +31,6 @@
 #undef None
 #undef Bool
 
-#include <dawn/dawn_proc.h>
-#include <dawn/native/DawnNative.h>
-#include <dawn/native/VulkanBackend.h>
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_xcb.h>
 #include <webgpu/webgpu_cpp.h>
 
 #include "api_internal.h"
@@ -53,38 +46,14 @@ int ToToucanEventModifiers(int state) {
 }
 }  // namespace
 
-static std::unique_ptr<dawn::native::Instance> gNativeInstance;
-static wgpu::Instance                          gInstance;
 static int                                     gNumWindows = 0;
 static Atom                                    gWM_DELETE_WINDOW;
 
-// FIXME: refactor this
-wgpu::Device createDevice(wgpu::BackendType type) {
-  if (!gNativeInstance) {
-    gNativeInstance = std::make_unique<dawn::native::Instance>();
-    DawnProcTable backendProcs = dawn::native::GetProcs();
-    dawnProcSetProcs(&backendProcs);
-  }
-
-  if (!gInstance) {
-    wgpu::InstanceDescriptor desc;
-    gInstance = wgpu::CreateInstance(&desc);
-  }
-
-  for (auto adapter : gNativeInstance->EnumerateAdapters()) {
-    wgpu::AdapterProperties properties;
-    adapter.GetProperties(&properties);
-    if (properties.backendType == type) { return adapter.CreateDevice(); }
-  }
-  return nullptr;
-}
-
 struct Window {
-  Window(Display* dpy, XWindow w, VkSurfaceKHR vs, Device* d, wgpu::Surface s)
-      : display(dpy), window(w), vkSurface(vs), device(d), surface(s) {}
+  Window(Display* dpy, XWindow w, Device* d, wgpu::Surface s)
+      : display(dpy), window(w), device(d), surface(s) {}
   Display*      display;
   XWindow       window;
-  VkSurfaceKHR  vkSurface;
   Device*       device;
   wgpu::Surface surface;
 };
@@ -109,28 +78,7 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
                                    visualInfo.depth, InputOutput, visualInfo.visual,
                                    CWColormap | CWEventMask, &windowAttributes);
   if (!window) { return nullptr; }
-  Window* w = nullptr;
-  void*   vkLib = dlopen("libvulkan.so.1", RTLD_NOW);
-  if (!vkLib) { return nullptr; }
-  auto createXcbSurfaceKHR =
-      reinterpret_cast<PFN_vkCreateXcbSurfaceKHR>(dlsym(vkLib, "vkCreateXcbSurfaceKHR"));
-  if (!createXcbSurfaceKHR) { return nullptr; }
 
-  VkInstance vkInstance = dawn::native::vulkan::GetInstance(device->device.Get());
-  if (!vkInstance) { return nullptr; }
-
-  VkXcbSurfaceCreateInfoKHR surfaceCreateInfo;
-  memset(&surfaceCreateInfo, 0, sizeof(VkXcbSurfaceCreateInfoKHR));
-  surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
-  surfaceCreateInfo.pNext = nullptr;
-  surfaceCreateInfo.flags = 0;
-  surfaceCreateInfo.connection = XGetXCBConnection(gDisplay);
-  surfaceCreateInfo.window = window;
-
-  VkSurfaceKHR vkSurface;
-  if (createXcbSurfaceKHR(vkInstance, &surfaceCreateInfo, nullptr, &vkSurface) != VK_SUCCESS) {
-    return nullptr;
-  }
   XSelectInput(
       gDisplay, window,
       ButtonPressMask | ButtonReleaseMask | ButtonMotionMask | PointerMotionMask | ExposureMask);
@@ -143,9 +91,12 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
   xlibDesc.window = window;
   wgpu::SurfaceDescriptor desc;
   desc.nextInChain = &xlibDesc;
-  wgpu::Surface surface = gInstance.CreateSurface(&desc);
+
+  static wgpu::Instance instance = wgpu::CreateInstance({});
+
+  wgpu::Surface surface = instance.CreateSurface(&desc);
   gNumWindows++;
-  return new Window(gDisplay, window, vkSurface, device, surface);
+  return new Window(gDisplay, window, device, surface);
 }
 
 void Window_Destroy(Window* This) {
@@ -158,11 +109,8 @@ static void PrintDeviceError(WGPUErrorType, const char* message, void*) {
 }
 
 Device* Device_Device() {
-  wgpu::Device device = createDevice(wgpu::BackendType::Vulkan);
+  wgpu::Device device = CreateDawnDevice(wgpu::BackendType::Vulkan, PrintDeviceError);
   if (!device) { return nullptr; }
-  assert(dawn::native::vulkan::GetInstance(device.Get()));
-  // TODO: add an error callback/interface to Toucan's Device.
-  device.SetUncapturedErrorCallback(PrintDeviceError, nullptr);
   return new Device(device);
 }
 

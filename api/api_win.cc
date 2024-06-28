@@ -19,8 +19,6 @@
 
 #include <memory>
 
-#include <dawn/dawn_proc.h>
-#include <dawn/native/DawnNative.h>
 #include <webgpu/webgpu_cpp.h>
 
 #include "api_internal.h"
@@ -48,8 +46,6 @@ struct Window {
   Device*       device;
 };
 
-static std::unique_ptr<dawn::native::Instance> gNativeInstance;
-static wgpu::Instance                          gInstance;
 static int                                     gNumWindows = 0;
 
 static LRESULT CALLBACK mainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
@@ -96,11 +92,15 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
   if (!hwnd) return nullptr;
 
   ::ShowWindow(hwnd, SW_SHOW);
+
   wgpu::SurfaceDescriptorFromWindowsHWND winSurfaceDesc;
   winSurfaceDesc.hwnd = hwnd;
   wgpu::SurfaceDescriptor surfaceDesc;
   surfaceDesc.nextInChain = &winSurfaceDesc;
-  wgpu::Surface surface = gInstance.CreateSurface(&surfaceDesc);
+
+  static wgpu::Instance instance = wgpu::CreateInstance({});
+  wgpu::Surface surface = instance.CreateSurface(&surfaceDesc);
+
   Window*       w = new Window(hwnd, device, surface);
   SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)w);
   gNumWindows++;
@@ -109,30 +109,9 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
 
 void Window_Destroy(Window* This) { delete This; }
 
-wgpu::Device createDevice(wgpu::BackendType type) {
-  if (!gNativeInstance) {
-    gNativeInstance = std::make_unique<dawn::native::Instance>();
-    DawnProcTable backendProcs = dawn::native::GetProcs();
-    dawnProcSetProcs(&backendProcs);
-  }
-
-  if (!gInstance) {
-    wgpu::InstanceDescriptor desc;
-    gInstance = wgpu::CreateInstance(&desc);
-  }
-
-  for (auto adapter : gNativeInstance->EnumerateAdapters()) {
-    wgpu::AdapterProperties properties;
-    adapter.GetProperties(&properties);
-    if (properties.backendType == type) { return adapter.CreateDevice(); }
-  }
-  return nullptr;
-}
-
 Device* Device_Device() {
-  wgpu::Device device = createDevice(wgpu::BackendType::D3D12);
+  wgpu::Device device = CreateDawnDevice(wgpu::BackendType::D3D12, PrintDeviceError);
   if (!device) { return nullptr; }
-  device.SetUncapturedErrorCallback(PrintDeviceError, nullptr);
   return new Device(device);
 }
 

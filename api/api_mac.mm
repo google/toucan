@@ -18,8 +18,6 @@
 
 #include <memory>
 
-#include <dawn/dawn_proc.h>
-#include <dawn/native/DawnNative.h>
 #include <webgpu/webgpu_cpp.h>
 
 #import <AppKit/AppKit.h>
@@ -48,8 +46,6 @@ void PrintDeviceError(WGPUErrorType, const char* message, void*) {
 
 }  // namespace
 
-static std::unique_ptr<dawn::native::Instance> gNativeInstance;
-static wgpu::Instance                          gInstance;
 static bool                                    gInitialized = false;
 
 struct Window {
@@ -109,27 +105,6 @@ void Initialize() {
   if (![[NSRunningApplication currentApplication] isFinishedLaunching]) { [NSApp run]; }
 }
 
-// FIXME: refactor this, and make instance persistent
-wgpu::Device createDevice(wgpu::BackendType type) {
-  if (!gNativeInstance) {
-    gNativeInstance = std::make_unique<dawn::native::Instance>();
-    DawnProcTable backendProcs = dawn::native::GetProcs();
-    dawnProcSetProcs(&backendProcs);
-  }
-
-  if (!gInstance) {
-    wgpu::InstanceDescriptor desc;
-    gInstance = wgpu::CreateInstance(&desc);
-  }
-
-  for (auto adapter : gNativeInstance->EnumerateAdapters()) {
-    wgpu::AdapterProperties properties;
-    adapter.GetProperties(&properties);
-    if (properties.backendType == type) { return adapter.CreateDevice(); }
-  }
-  return nullptr;
-}
-
 }  // namespace
 
 Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint32_t height) {
@@ -167,7 +142,8 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
   metalLayerDesc.layer = layer;
   wgpu::SurfaceDescriptor desc;
   desc.nextInChain = &metalLayerDesc;
-  wgpu::Surface surface = gInstance.CreateSurface(&desc);
+  static wgpu::Instance instance = wgpu::CreateInstance({});
+  wgpu::Surface surface = instance.CreateSurface(&desc);
   Window*       w = new Window(window, view, layer, mtlDevice, surface, device, width, height);
   id            delegate = [[ToucanWindowDelegate alloc] initWithWindow:w];
   [window setDelegate:delegate];
@@ -205,11 +181,8 @@ void SwapChain_Destroy(SwapChain* This) {
 }
 
 Device* Device_Device() {
-  static std::unique_ptr<dawn::native::Instance> instance =
-      std::make_unique<dawn::native::Instance>();
-  wgpu::Device device = createDevice(wgpu::BackendType::Metal);
+  wgpu::Device device = CreateDawnDevice(wgpu::BackendType::Metal, PrintDeviceError);
   if (!device) { return nullptr; }
-  device.SetUncapturedErrorCallback(PrintDeviceError, nullptr);
   return new Device(device);
 }
 

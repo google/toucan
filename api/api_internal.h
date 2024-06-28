@@ -45,6 +45,7 @@ struct Event {
 
 wgpu::TextureFormat GetPreferredSwapChainFormat();
 wgpu::TextureFormat ToDawnTextureFormat(Type* type);
+wgpu::Device CreateDawnDevice(wgpu::BackendType type, wgpu::ErrorCallback callback);
 
 }  // namespace Toucan
 #endif  // _APIINTERNAL_H

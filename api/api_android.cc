@@ -19,45 +19,16 @@
 
 #include <cassert>
 
-#include <dawn/dawn_proc.h>
-#include <dawn/native/VulkanBackend.h>
-
-#include <vulkan/vulkan_android.h>
+#include <webgpu/webgpu_cpp.h>
 
 #include "api_internal.h"
 
-#ifdef NDEBUG
 #define LOGV(...) ((void)__android_log_print(ANDROID_LOG_VERBOSE, "Toucan App", __VA_ARGS__))
-#else
-#define LOGV(...) ((void)0)
-#endif
 
 namespace Toucan {
 
-static std::unique_ptr<dawn::native::Instance> gNativeInstance;
-static wgpu::Instance                          gInstance;
 static int                                     gNumWindows = 0;
 static android_app*                            gAndroidApp;
-
-wgpu::Device createDevice(wgpu::BackendType type) {
-  if (!gNativeInstance) {
-    gNativeInstance = std::make_unique<dawn::native::Instance>();
-    DawnProcTable backendProcs = dawn::native::GetProcs();
-    dawnProcSetProcs(&backendProcs);
-  }
-
-  if (!gInstance) {
-    wgpu::InstanceDescriptor desc;
-    gInstance = wgpu::CreateInstance(&desc);
-  }
-
-  for (auto adapter : gNativeInstance->EnumerateAdapters()) {
-    wgpu::AdapterProperties properties;
-    adapter.GetProperties(&properties);
-    if (properties.backendType == type) { return adapter.CreateDevice(); }
-  }
-  return nullptr;
-}
 
 struct Window {
   Window(ANativeWindow* w, Device* d, wgpu::Surface s) : window(w), device(d), surface(s) {}
@@ -82,23 +53,15 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
     window = nullptr;
   }
   if (!window) { return nullptr; }
-  Window* w = nullptr;
-
-  VkInstance vkInstance = dawn::native::vulkan::GetInstance(device->device.Get());
-  if (!vkInstance) { return nullptr; }
-
-  VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo;
-  memset(&surfaceCreateInfo, 0, sizeof(VkAndroidSurfaceCreateInfoKHR));
-  surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
-  surfaceCreateInfo.pNext = nullptr;
-  surfaceCreateInfo.flags = 0;
-  surfaceCreateInfo.window = window;
 
   wgpu::SurfaceDescriptorFromAndroidNativeWindow awDesc;
   awDesc.window = window;
   wgpu::SurfaceDescriptor desc;
   desc.nextInChain = &awDesc;
-  wgpu::Surface surface = gInstance.CreateSurface(&desc);
+
+  static wgpu::Instance instance = wgpu::CreateInstance({});
+
+  wgpu::Surface surface = instance.CreateSurface(&desc);
   gNumWindows++;
   return new Window(window, device, surface);
 }
@@ -110,13 +73,9 @@ static void PrintDeviceError(WGPUErrorType, const char* message, void*) {
 }
 
 Device* Device_Device() {
-  wgpu::Device device = createDevice(wgpu::BackendType::Vulkan);
+  wgpu::Device device = CreateDawnDevice(wgpu::BackendType::Vulkan, PrintDeviceError);
   if (!device) { return nullptr; }
-  assert(dawn::native::vulkan::GetInstance(device.Get()));
-  // TODO: add an error callback/interface to Toucan's Device.
-  device.SetUncapturedErrorCallback(PrintDeviceError, nullptr);
-  auto funky = new Device(device);
-  return funky;
+  return new Device(device);
 }
 
 bool System_IsRunning() { return true; }
