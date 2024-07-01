@@ -212,8 +212,8 @@ for (int i = 0; i < bodies.length; ++i) {
 }
 
 Device* device = new Device();
-Window* window = new Window(device, 0, 0, 960, 960);
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
+Window* window = new Window(0, 0, 960, 960);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 int numBodyVerts = bodies.length * 3;
 auto bodyVBO = new vertex storage Buffer<Vector[]>(device, numBodyVerts);

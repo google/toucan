@@ -209,12 +209,12 @@ native class ComputePass<T> {
 }
 
 native class Window {
-  Window(Device* device, int x, int y, uint width, uint height);
+  Window(int x, int y, uint width, uint height);
  ~Window();
 }
 
 native class SwapChain<T> {
-  SwapChain(Window^ window);
+  SwapChain(Device^ device, Window^ window);
  ~SwapChain();
   renderable Texture2D<T>* GetCurrentTexture();
   void Present();

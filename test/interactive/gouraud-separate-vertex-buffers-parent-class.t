@@ -1,6 +1,6 @@
 Device* device = new Device();
-Window* window = new Window(device, 0, 0, 640, 480);
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
+Window* window = new Window(0, 0, 640, 480);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 float<2>[3] positions;
 positions[0] = float<2>( 0.0,  1.0);

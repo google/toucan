@@ -33,8 +33,8 @@ CubeLoader.Load(device, inline("third_party/home-cube/bottom.jpg"), texture, 3);
 CubeLoader.Load(device, inline("third_party/home-cube/front.jpg"), texture, 4);
 CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 
-Window* window = new Window(device, 0, 0, 1024, 1024);
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
+Window* window = new Window(0, 0, 1024, 1024);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 auto cubeVB = new vertex Buffer<float<3>[]>(device, &cubeVerts);
 auto cubeIB = new index Buffer<uint[]>(device, &cubeIndices);

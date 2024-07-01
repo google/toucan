@@ -53,15 +53,13 @@ struct Window {
          NSView*       v,
          CAMetalLayer* l,
          id<MTLDevice> md,
-         Device*       d,
          uint32_t      w,
          uint32_t      h)
-      : window(nsw), view(v), layer(l), mtlDevice(md), device(d), width(w), height(h) {}
+      : window(nsw), view(v), layer(l), mtlDevice(md), width(w), height(h) {}
   NSWindow*     window;
   NSView*       view;
   CAMetalLayer* layer;
   id<MTLDevice> mtlDevice;
-  Device*       device;
   uint32_t      width;
   uint32_t      height;
 };
@@ -105,7 +103,7 @@ void Initialize() {
 
 }  // namespace
 
-Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint32_t height) {
+Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
   NSApplication* app = [NSApplication sharedApplication];
   NSRect         rect = NSMakeRect(x, y, width, height);
   int mask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable |
@@ -136,7 +134,7 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
   [view setLayer:layer];
 
   [window setContentView:view];
-  Window*       w = new Window(window, view, layer, mtlDevice, device, width, height);
+  Window*       w = new Window(window, view, layer, mtlDevice, width, height);
   id            delegate = [[ToucanWindowDelegate alloc] initWithWindow:w];
   [window setDelegate:delegate];
   return w;
@@ -148,9 +146,7 @@ wgpu::TextureFormat GetPreferredSwapChainFormat() {
   return wgpu::TextureFormat::BGRA8Unorm;
 }
 
-SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
-  Device* device = window->device;
-
+SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Window* window) {
   wgpu::SurfaceConfiguration config;
   config.device = device->device;
   config.format = ToDawnTextureFormat(format);
@@ -277,11 +273,6 @@ double System_GetCurrentTime() {
 
   gettimeofday(&now, NULL);
   return static_cast<double>(now.tv_sec) + static_cast<double>(now.tv_usec) / 1000000.0;
-}
-
-void Window_SwapBuffers(Window* window) {
-  if (!window || !window->device) return;
-  //  [window->device->device flushBuffer]; // FIXME
 }
 
 };  // namespace Toucan

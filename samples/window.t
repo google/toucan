@@ -1,6 +1,6 @@
 Device* device = new Device();
-Window* window = new Window(device, 0, 0, 640, 480);
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
+Window* window = new Window(0, 0, 640, 480);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 auto framebuffer = swapChain.GetCurrentTexture();
 auto encoder = new CommandEncoder(device);
 class Pipeline {

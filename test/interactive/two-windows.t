@@ -2,10 +2,10 @@ auto green = float<4>(0.0, 1.0, 0.0, 1.0);
 auto blue = float<4>(0.0, 0.0, 1.0, 1.0);
 Device* device = new Device();
 Queue* queue = device.GetQueue();
-Window* window1 = new Window(device, 0, 0, 640, 480);
-Window* window2 = new Window(device, 100, 100, 640, 480);
-auto swapChain1 = new SwapChain<PreferredSwapChainFormat>(window1);
-auto swapChain2 = new SwapChain<PreferredSwapChainFormat>(window2);
+Window* window1 = new Window(0, 0, 640, 480);
+Window* window2 = new Window(100, 100, 640, 480);
+auto swapChain1 = new SwapChain<PreferredSwapChainFormat>(device, window1);
+auto swapChain2 = new SwapChain<PreferredSwapChainFormat>(device, window2);
 auto framebuffer1 = swapChain1.GetCurrentTexture();
 auto framebuffer2 = swapChain2.GetCurrentTexture();
 class Pipeline {

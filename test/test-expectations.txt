@@ -65,6 +65,7 @@ test/error-partial-template.t
 error-partial-template.t:6:  cannot allocate partially-specified template class Foo<int>
 error-partial-template.t:7:  cannot allocate partially-specified template class Foo
 test/error-texture-from-buffer-incorrect-format.t
+error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
 error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(CommandEncoder*, Buffer<float<4>[]>*, int)
 error-texture-from-buffer-incorrect-format.t:9:  void Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint, uint)
 test/error-uint-literal-too-large.t

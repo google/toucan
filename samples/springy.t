@@ -135,8 +135,8 @@ for (int i = 0; i < bodies.length; ++i) {
 }
 
 Device* device = new Device();
-Window* window = new Window(device, 0, 0, 960, 960);
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
+Window* window = new Window(0, 0, 960, 960);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 auto physicsSystem = new ParticleSystem(bodies, springs);
 
 auto bodyVerts = new Vector[bodies.length * 3];

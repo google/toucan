@@ -157,8 +157,8 @@ class FinalizeSprings : ComputeBase {
 }
 
 Device* device = new Device();
-Window* window = new Window(device, 0, 0, 960, 960);
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(window);
+Window* window = new Window(0, 0, 960, 960);
+auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 auto bodies = new Body[width * height * depth];
 auto springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
 Vector count = Utils.makeVector((float) width, (float) height, (float) depth, Vector(0.0));

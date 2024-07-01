@@ -43,9 +43,8 @@ static void copyTouches(emscripten::val touches, Event* result) {
 }  // namespace
 
 struct Window {
-  Window(Device* d, wgpu::Surface s, uint32_t w, uint32_t h)
-      : device(d), surface(s), width(w), height(h) {}
-  Device*       device;
+  Window(wgpu::Surface s, uint32_t w, uint32_t h)
+      : surface(s), width(w), height(h) {}
   wgpu::Surface surface;
   uint32_t      width, height;
 };
@@ -80,7 +79,7 @@ EM_JS(void, createWindow, (int32_t x, int32_t y, int32_t width, int32_t height),
     Module.numWindows++;
 });
 
-Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint32_t height) {
+Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
   EM_ASM({ createWindow($0, $1, $2, $3) }, x, y, width, height);
 
   wgpu::SurfaceDescriptorFromCanvasHTMLSelector canvasDesc{};
@@ -90,7 +89,7 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
   surfDesc.nextInChain = &canvasDesc;
   wgpu::Instance instance = wgpuCreateInstance(nullptr);
   wgpu::Surface  surface = instance.CreateSurface(&surfDesc);
-  return new Window(device, surface, width, height);
+  return new Window(surface, width, height);
 }
 
 void Window_Destroy(Window* This) { delete This; }
@@ -179,8 +178,7 @@ wgpu::TextureFormat GetPreferredSwapChainFormat() {
   return static_cast<wgpu::TextureFormat>(format);
 }
 
-SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
-  Device*                   device = window->device;
+SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Window* window) {
   wgpu::SwapChainDescriptor desc;
   desc.usage = wgpu::TextureUsage::RenderAttachment;
   desc.format = ToDawnTextureFormat(format);

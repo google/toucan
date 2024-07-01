@@ -50,16 +50,15 @@ static int                                     gNumWindows = 0;
 static Atom                                    gWM_DELETE_WINDOW;
 
 struct Window {
-  Window(Display* dpy, XWindow w, Device* d)
-      : display(dpy), window(w), device(d) {}
+  Window(Display* dpy, XWindow w)
+      : display(dpy), window(w) {}
   Display*      display;
   XWindow       window;
-  Device*       device;
 };
 
 static Display* gDisplay;
 
-Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint32_t height) {
+Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
   if (!gDisplay) gDisplay = ::XOpenDisplay(0);
   if (!gDisplay) return nullptr;
   XWindow     rootWindow = RootWindow(gDisplay, DefaultScreen(gDisplay));
@@ -86,7 +85,7 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
   ::XMapWindow(gDisplay, window);
   ::XSync(gDisplay, True);
   gNumWindows++;
-  return new Window(gDisplay, window, device);
+  return new Window(gDisplay, window);
 }
 
 void Window_Destroy(Window* This) {
@@ -143,9 +142,7 @@ Event* System_GetNextEvent() {
 
 wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::BGRA8Unorm; }
 
-SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
-  Device*                   device = window->device;
-
+SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Window* window) {
   wgpu::SurfaceConfiguration config;
   config.device = device->device;
   config.format = wgpu::TextureFormat::BGRA8Unorm;

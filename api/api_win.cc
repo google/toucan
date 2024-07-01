@@ -40,9 +40,8 @@ unsigned ToToucanEventModifiers(WPARAM wParam) {
 }  // namespace
 
 struct Window {
-  Window(HWND w, Device* d) : wnd(w), device(d) {}
+  Window(HWND w) : wnd(w) {}
   HWND          wnd;
-  Device*       device;
 };
 
 static int                                     gNumWindows = 0;
@@ -80,7 +79,7 @@ static void registerMainWindowClass() {
   }
 }
 
-Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint32_t height) {
+Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
   registerMainWindowClass();
   RECT  r = {0, 0, static_cast<LONG>(width), static_cast<LONG>(height)};
   DWORD style = WS_OVERLAPPEDWINDOW;
@@ -92,7 +91,7 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
 
   ::ShowWindow(hwnd, SW_SHOW);
 
-  Window*       w = new Window(hwnd, device);
+  Window*       w = new Window(hwnd);
   SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)w);
   gNumWindows++;
   return w;
@@ -108,12 +107,12 @@ Device* Device_Device() {
 
 wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::BGRA8Unorm; }
 
-SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
+SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Window* window) {
   RECT rect;
   GetClientRect(window->wnd, &rect);
 
   wgpu::SurfaceConfiguration config;
-  config.device = window->device->device;
+  config.device = device->device;
   config.format = ToDawnTextureFormat(format);
   config.usage = wgpu::TextureUsage::RenderAttachment;
   config.width = rect.right - rect.left;

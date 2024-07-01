@@ -31,12 +31,11 @@ static int                                     gNumWindows = 0;
 static android_app*                            gAndroidApp;
 
 struct Window {
-  Window(ANativeWindow* w, Device* d) : window(w), device(d) {}
+  Window(ANativeWindow* w) : window(w) {}
   ANativeWindow* window;
-  Device*        device;
 };
 
-Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint32_t height) {
+Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
   ANativeWindow* window;
   if (gNumWindows == 0) {
     while (gAndroidApp->window == nullptr) {
@@ -53,7 +52,7 @@ Window* Window_Window(Device* device, int32_t x, int32_t y, uint32_t width, uint
   }
   if (!window) { return nullptr; }
   gNumWindows++;
-  return new Window(window, device);
+  return new Window(window);
 }
 
 void Window_Destroy(Window* This) { delete This; }
@@ -85,9 +84,7 @@ Event* System_GetNextEvent() {
 
 wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::RGBA8Unorm; }
 
-SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Window* window) {
-  Device*                   device = window->device;
-
+SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Window* window) {
   wgpu::SurfaceConfiguration config;
   config.device = device->device;
   config.format = wgpu::TextureFormat::RGBA8Unorm;
