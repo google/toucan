@@ -47,13 +47,14 @@ int ToToucanEventModifiers(int state) {
 }  // namespace
 
 static int  gNumWindows = 0;
+static uint32_t gScreenSize[2];
 static Atom gWM_DELETE_WINDOW;
 
 struct Window {
-  Window(Display* dpy, XWindow w) : display(dpy), window(w) {}
+  Window(Display* dpy, XWindow w, const uint32_t sz[2]) : display(dpy), window(w) { size[0] = sz[0]; size[1] = sz[1]; }
   Display* display;
   XWindow  window;
-  uint32_t size[2] = {0, 0};
+  uint32_t size[2];
 };
 
 static Display* gDisplay;
@@ -86,14 +87,10 @@ Window* Window_Window(const int32_t* position, const uint32_t* size) {
   ::XMapWindow(gDisplay, window);
   ::XSync(gDisplay, True);
   gNumWindows++;
-  return new Window(gDisplay, window);
+  return new Window(gDisplay, window, size);
 }
 
 const uint32_t* Window_GetSize(Window* This) {
-  XWindowAttributes attributes;
-  XGetWindowAttributes(gDisplay, This->window, &attributes);
-  This->size[0] = attributes.width;
-  This->size[1] = attributes.height;
   return This->size;
 }
 
@@ -147,6 +144,14 @@ Event* System_GetNextEvent() {
     default: break;
   }
   return result;
+}
+
+const uint32_t* System_GetScreenSize() {
+  if (!gDisplay) gDisplay = ::XOpenDisplay(0);
+  Screen* screen = XDefaultScreenOfDisplay(gDisplay);
+  gScreenSize[0] = WidthOfScreen(screen);
+  gScreenSize[1] = HeightOfScreen(screen);
+  return gScreenSize;
 }
 
 wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::BGRA8Unorm; }

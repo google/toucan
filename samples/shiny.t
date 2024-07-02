@@ -36,7 +36,7 @@ CubeLoader.Load(device, inline("third_party/home-cube/bottom.jpg"), texture, 3);
 CubeLoader.Load(device, inline("third_party/home-cube/front.jpg"), texture, 4);
 CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 
-Window* window = new Window({0, 0}, {1024, 1024});
+Window* window = new Window({0, 0}, System.GetScreenSize());
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 class Tessellator {
@@ -179,7 +179,9 @@ teapotData.bindings = new BindGroup<Bindings>(device, &teapotBindings);
 EventHandler handler;
 handler.rotation = float<2>(0.0, 0.0);
 handler.distance = 10.0;
-float<4, 4> projection = Transform.projection(0.5, 200.0, -1.0, 1.0, -1.0, 1.0);
+auto windowSize = window.GetSize();
+float aspectRatio = (float) windowSize.x / (float) windowSize.y;
+float<4, 4> projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
 auto teapotQuat = Quaternion(float<3>(1.0, 0.0, 0.0), -3.1415926 / 2.0);
 teapotQuat.normalize();
 auto teapotRotation = teapotQuat.toMatrix();

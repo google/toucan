@@ -36,6 +36,7 @@
 @end
 
 static bool gIsRunning = true;
+static uint32_t gScreenSize[2];
 
 namespace Toucan {
 
@@ -268,6 +269,12 @@ Event* System_GetNextEvent() {
     default: event->type = EventType::Unknown;
   }
   return event;
+}
+
+const uint32_t* System_GetScreenSize() {
+  gScreenSize[0] = [[NSScreen mainScreen] frame].size.width;
+  gScreenSize[1] = [[NSScreen mainScreen] frame].size.height;
+  return gScreenSize;
 }
 
 double System_GetCurrentTime() {

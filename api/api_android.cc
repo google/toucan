@@ -29,6 +29,21 @@ namespace Toucan {
 
 static int          gNumWindows = 0;
 static android_app* gAndroidApp;
+static uint32_t     gScreenSize[2];
+
+namespace {
+
+void WaitForMainWindow() {
+  while (gAndroidApp->window == nullptr) {
+    int                  events;
+    void*                data;
+    android_poll_source* source = nullptr;
+    int ident = ALooper_pollOnce(-1, nullptr, &events, reinterpret_cast<void**>(&source));
+    if (source != nullptr) { source->process(gAndroidApp, source); }
+  }
+}
+
+}
 
 struct Window {
   Window(ANativeWindow* w) : window(w) {}
@@ -39,13 +54,7 @@ struct Window {
 Window* Window_Window(const int32_t* position, const uint32_t* size) {
   ANativeWindow* window;
   if (gNumWindows == 0) {
-    while (gAndroidApp->window == nullptr) {
-      int                  events;
-      void*                data;
-      android_poll_source* source = nullptr;
-      int ident = ALooper_pollOnce(-1, nullptr, &events, reinterpret_cast<void**>(&source));
-      if (source != nullptr) { source->process(gAndroidApp, source); }
-    }
+    WaitForMainWindow();
     window = gAndroidApp->window;
   } else {
     // TODO: create a dialog of x, y, width, height
@@ -60,7 +69,7 @@ void Window_Destroy(Window* This) { delete This; }
 
 const uint32_t* Window_GetSize(Window* This) {
   This->size[0] = ANativeWindow_getWidth(This->window);
-  This->size[0] = ANativeWindow_getHeight(This->window);
+  This->size[1] = ANativeWindow_getHeight(This->window);
   return This->size;
 }
 
@@ -87,6 +96,13 @@ Event* System_GetNextEvent() {
   int ident = ALooper_pollOnce(-1, nullptr, &events, reinterpret_cast<void**>(&source));
   if (source != nullptr) { source->process(gAndroidApp, source); }
   return result;
+}
+
+const uint32_t* System_GetScreenSize() {
+  WaitForMainWindow();
+  gScreenSize[0] = ANativeWindow_getWidth(gAndroidApp->window);
+  gScreenSize[1] = ANativeWindow_getHeight(gAndroidApp->window);
+  return gScreenSize;
 }
 
 wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::RGBA8Unorm; }

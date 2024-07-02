@@ -49,6 +49,7 @@ struct Window {
 };
 
 static int gNumWindows = 0;
+static uint32_t gScreenSize[2];
 
 static LRESULT CALLBACK mainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
   LONG rc = 0L;
@@ -102,7 +103,15 @@ Window* Window_Window(const int32_t* position, const uint32_t* size) {
   return w;
 }
 
-const uint32_t* Window_GetSize(Window* This) { return This->size; }
+const uint32_t* Window_GetSize(Window* This) {
+  return This->size;
+}
+
+const uint32_t* System_GetScreenSize() {
+  gScreenSize[0] = static_cast<uint32_t>(GetSystemMetrics(SM_CXSCREEN));
+  gScreenSize[1] = static_cast<uint32_t>(GetSystemMetrics(SM_CYSCREEN));
+  return gScreenSize;
+}
 
 void Window_Destroy(Window* This) { delete This; }
 
@@ -115,15 +124,12 @@ Device* Device_Device() {
 wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::BGRA8Unorm; }
 
 SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Window* window) {
-  RECT rect;
-  GetClientRect(window->wnd, &rect);
-
   wgpu::SurfaceConfiguration config;
   config.device = device->device;
   config.format = ToDawnTextureFormat(format);
   config.usage = wgpu::TextureUsage::RenderAttachment;
-  config.width = rect.right - rect.left;
-  config.height = rect.bottom - rect.top;
+  config.width = window->size[0];
+  config.height = window->size[1];
   config.presentMode = wgpu::PresentMode::Fifo;
 
   wgpu::SurfaceDescriptorFromWindowsHWND winSurfaceDesc;

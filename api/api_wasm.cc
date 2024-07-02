@@ -23,13 +23,15 @@ namespace Toucan {
 
 namespace {
 
-static void copyMouseEvent(emscripten::val event, Event* result) {
+static uint32_t gScreenSize[2];
+
+void copyMouseEvent(emscripten::val event, Event* result) {
   result->button = event["button"].as<int>();
   result->mousePos[0] = event["clientX"].as<int>();
   result->mousePos[1] = event["clientY"].as<int>();
 }
 
-static void copyTouches(emscripten::val touches, Event* result) {
+void copyTouches(emscripten::val touches, Event* result) {
   int length = touches["length"].as<int>();
   if (length > 10) length = 10;
   result->numTouches = length;
@@ -169,6 +171,12 @@ Event* System_GetNextEvent() {
   if (event["shiftKey"].as<bool>()) { result->modifiers |= Shift; }
   if (event["ctrlKey"].as<bool>()) { result->modifiers |= Control; }
   return result;
+}
+
+const uint32_t* System_GetScreenSize() {
+  gScreenSize[0] = static_cast<uint32_t>(EM_ASM_INT("return window.innerWidth"));
+  gScreenSize[1] = static_cast<uint32_t>(EM_ASM_INT("return window.innerHeight"));
+  return gScreenSize;
 }
 
 double System_GetCurrentTime() {

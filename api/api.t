@@ -274,6 +274,7 @@ native class System {
   static bool     IsRunning();
   static bool     HasPendingEvents();
   static Event*   GetNextEvent();
+  static uint<2>  GetScreenSize();
   static int      StorageBarrier();   // FIXME should be void return
   static double   GetCurrentTime();
   static void     Print(ubyte[]^ str);

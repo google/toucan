@@ -1,5 +1,5 @@
 Device* device = new Device();
-Window* window = new Window({0, 0}, {640, 480});
+Window* window = new Window({0, 0}, System.GetScreenSize());
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 auto framebuffer = swapChain.GetCurrentTexture();
 auto encoder = new CommandEncoder(device);
