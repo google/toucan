@@ -99,7 +99,6 @@ while (System.IsRunning()) {
   uniforms.model = Transform.scale(100.0, 100.0, 100.0);
 //  uniforms.viewInverse = Transform.invert(uniforms.view);
   cubeBindings.uniforms.SetData(&uniforms);
-  auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
   SkyboxPipeline p;
   auto fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);

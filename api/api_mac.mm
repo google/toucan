@@ -167,7 +167,7 @@ SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Win
 
   surface.Configure(&config);
 
-  return new SwapChain(surface, {config.width, config.height, 1}, config.format, [[NSAutoreleasePool alloc] init]);
+  return new SwapChain(surface, device->device, {config.width, config.height, 1}, config.format, [[NSAutoreleasePool alloc] init]);
 }
 
 void SwapChain_Present(SwapChain* swapChain) {
@@ -296,6 +296,16 @@ double System_GetCurrentTime() {
 
 - (BOOL)windowShouldClose:(id)sender {
   return YES;
+}
+
+- (void)windowDidResize:(NSNotification*)notification {
+  const NSRect contentRect = [window->view frame];
+  const NSRect fbRect = [window->view convertRectToBacking:contentRect];
+
+  if (fbRect.size.width != window->size[0] || fbRect.size.height != window->size[1]) {
+    window->size[0] = fbRect.size.width;
+    window->size[1] = fbRect.size.height;
+  }
 }
 
 @end

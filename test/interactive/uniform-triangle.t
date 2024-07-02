@@ -27,7 +27,6 @@ for (int i = 0; i < 1000; ++i) {
   while (System.HasPendingEvents()) {
     System.GetNextEvent();
   }
-  auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
   writeonly Uniforms^ s = stagingBuffer.MapWrite();
   float f = (float) i / 1000.0;

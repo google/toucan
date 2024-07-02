@@ -57,9 +57,20 @@ static LRESULT CALLBACK mainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPAR
   switch (message) {
     case WM_CLOSE:
       ::DestroyWindow(hWnd);
+      break;
+    case WM_DESTROY:
       if (--gNumWindows == 0) { ::PostQuitMessage(0); }
       break;
-    default: rc = DefWindowProc(hWnd, message, wParam, lParam); break;
+    case WM_SIZE:
+      if (Window* w = reinterpret_cast<Window*>(GetWindowLongPtr(hWnd, GWLP_USERDATA))) {
+        RECT rect;
+        GetWindowRect(hWnd, &rect);
+        w->size[0] = rect.right - rect.left;
+        w->size[1] = rect.bottom - rect.top;
+      }
+    default:
+      rc = DefWindowProc(hWnd, message, wParam, lParam);
+      break;
   }
   return rc;
 }
@@ -98,7 +109,7 @@ Window* Window_Window(const int32_t* position, const uint32_t* size) {
   ::ShowWindow(hwnd, SW_SHOW);
 
   Window* w = new Window(hwnd, size);
-  SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)w);
+  SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(w));
   gNumWindows++;
   return w;
 }
@@ -140,7 +151,7 @@ SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Win
   static wgpu::Instance instance = wgpu::CreateInstance({});
   wgpu::Surface         surface = instance.CreateSurface(&surfaceDesc);
   surface.Configure(&config);
-  return new SwapChain(surface, {config.width, config.height, 1}, config.format, nullptr);
+  return new SwapChain(surface, device->device, {config.width, config.height, 1}, config.format, nullptr);
 }
 
 bool System_IsRunning() { return gNumWindows > 0; }

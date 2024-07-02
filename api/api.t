@@ -217,6 +217,7 @@ native class Window {
 native class SwapChain<T> {
   SwapChain(Device^ device, Window^ window);
  ~SwapChain();
+  void Resize(uint<2> size);
   renderable Texture2D<T>* GetCurrentTexture();
   void Present();
 }

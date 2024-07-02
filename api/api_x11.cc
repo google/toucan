@@ -49,6 +49,7 @@ int ToToucanEventModifiers(int state) {
 static int  gNumWindows = 0;
 static uint32_t gScreenSize[2];
 static Atom gWM_DELETE_WINDOW;
+static std::unordered_map<XWindow, Window*> gWindows;
 
 struct Window {
   Window(Display* dpy, XWindow w, const uint32_t sz[2]) : display(dpy), window(w) { size[0] = sz[0]; size[1] = sz[1]; }
@@ -81,13 +82,13 @@ Window* Window_Window(const int32_t* position, const uint32_t* size) {
 
   XSelectInput(
       gDisplay, window,
-      ButtonPressMask | ButtonReleaseMask | ButtonMotionMask | PointerMotionMask | ExposureMask);
+      ButtonPressMask | ButtonReleaseMask | ButtonMotionMask | PointerMotionMask | ExposureMask | StructureNotifyMask );
   if (!gWM_DELETE_WINDOW) { gWM_DELETE_WINDOW = XInternAtom(gDisplay, "WM_DELETE_WINDOW", False); }
   ::XSetWMProtocols(gDisplay, window, &gWM_DELETE_WINDOW, 1);
   ::XMapWindow(gDisplay, window);
   ::XSync(gDisplay, True);
   gNumWindows++;
-  return new Window(gDisplay, window, size);
+  return gWindows[window] = new Window(gDisplay, window, size);
 }
 
 const uint32_t* Window_GetSize(Window* This) {
@@ -134,11 +135,16 @@ Event* System_GetNextEvent() {
       result->mousePos[1] = event.xmotion.y;
       result->modifiers = ToToucanEventModifiers(event.xmotion.state);
       break;
+    case ConfigureNotify:
+      if (Window* window = gWindows[event.xconfigure.window]) {
+        window->size[0] = event.xconfigure.width;
+        window->size[1] = event.xconfigure.height;
+      }
+      break;
     case DestroyNotify: gNumWindows--; break;
     case ClientMessage:
       if (static_cast<Atom>(event.xclient.data.l[0]) == gWM_DELETE_WINDOW) {
         ::XDestroyWindow(gDisplay, event.xclient.window);
-        gNumWindows--;
       }
       break;
     default: break;
@@ -157,15 +163,6 @@ const uint32_t* System_GetScreenSize() {
 wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::BGRA8Unorm; }
 
 SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Window* window) {
-  wgpu::SurfaceConfiguration config;
-  config.device = device->device;
-  config.format = wgpu::TextureFormat::BGRA8Unorm;
-  XWindowAttributes attributes;
-  XGetWindowAttributes(gDisplay, window->window, &attributes);
-  config.width = attributes.width;
-  config.height = attributes.height;
-  config.presentMode = wgpu::PresentMode::Fifo;
-
   wgpu::SurfaceDescriptorFromXlibWindow xlibDesc;
   xlibDesc.display = gDisplay;
   xlibDesc.window = window->window;
@@ -177,9 +174,17 @@ SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Win
 
   wgpu::Surface surface = instance.CreateSurface(&surfaceDesc);
 
+  wgpu::SurfaceConfiguration config;
+  config.device = device->device;
+  config.format = ToDawnTextureFormat(format);
+  XWindowAttributes attributes;
+  XGetWindowAttributes(gDisplay, window->window, &attributes);
+  config.width = attributes.width;
+  config.height = attributes.height;
+
   surface.Configure(&config);
 
-  return new SwapChain(surface, {config.width, config.height, 1}, config.format, nullptr);
+  return new SwapChain(surface, device->device, {config.width, config.height, 1}, config.format, nullptr);
 }
 
 double System_GetCurrentTime() {

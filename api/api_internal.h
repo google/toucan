@@ -26,14 +26,15 @@ struct Device {
 
 struct SwapChain {
 #if TARGET_OS_IS_WASM
-  SwapChain(wgpu::SwapChain sc, wgpu::Extent3D e, wgpu::TextureFormat f, void* p)
-      : swapChain(sc), extent(e), format(f), pool(p) {}
+  SwapChain(wgpu::SwapChain sc, wgpu::Surface s, wgpu::Device d, wgpu::Extent3D e, wgpu::TextureFormat f, void* p)
+      : swapChain(sc), surface(s), device(d), extent(e), format(f), pool(p) {}
   wgpu::SwapChain     swapChain;
 #else
-  SwapChain(wgpu::Surface s, wgpu::Extent3D e, wgpu::TextureFormat f, void* p)
-      : surface(s), extent(e), format(f), pool(p) {}
-  wgpu::Surface       surface;
+  SwapChain(wgpu::Surface s, wgpu::Device d, wgpu::Extent3D e, wgpu::TextureFormat f, void* p)
+      : surface(s), device(d), extent(e), format(f), pool(p) {}
 #endif
+  wgpu::Surface       surface;
+  wgpu::Device        device;
   wgpu::Extent3D      extent;
   wgpu::TextureFormat format;
   void*               pool;

@@ -108,13 +108,6 @@ const uint32_t* System_GetScreenSize() {
 wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::RGBA8Unorm; }
 
 SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Window* window) {
-  wgpu::SurfaceConfiguration config;
-  config.device = device->device;
-  config.format = wgpu::TextureFormat::RGBA8Unorm;
-  config.width = ANativeWindow_getWidth(window->window);
-  config.height = ANativeWindow_getHeight(window->window);
-  config.presentMode = wgpu::PresentMode::Fifo;
-
   wgpu::SurfaceDescriptorFromAndroidNativeWindow awDesc;
   awDesc.window = window->window;
   wgpu::SurfaceDescriptor surfaceDesc;
@@ -124,9 +117,15 @@ SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Win
 
   wgpu::Surface surface = instance.CreateSurface(&surfaceDesc);
 
+  wgpu::SurfaceConfiguration config;
+  config.device = device->device;
+  config.format = ToDawnTextureFormat(format);
+  config.width = ANativeWindow_getWidth(window->window);
+  config.height = ANativeWindow_getHeight(window->window);
+
   surface.Configure(&config);
 
-  return new SwapChain(surface, {config.width, config.height, 1}, config.format, nullptr);
+  return new SwapChain(surface, device->device, {config.width, config.height, 1}, config.format, nullptr);
 }
 
 double System_GetCurrentTime() {

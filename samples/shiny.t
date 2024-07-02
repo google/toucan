@@ -179,19 +179,25 @@ teapotData.bindings = new BindGroup<Bindings>(device, &teapotBindings);
 EventHandler handler;
 handler.rotation = float<2>(0.0, 0.0);
 handler.distance = 10.0;
-auto windowSize = window.GetSize();
-float aspectRatio = (float) windowSize.x / (float) windowSize.y;
-float<4, 4> projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
 auto teapotQuat = Quaternion(float<3>(1.0, 0.0, 0.0), -3.1415926 / 2.0);
 teapotQuat.normalize();
 auto teapotRotation = teapotQuat.toMatrix();
 auto depthBuffer = new renderable Texture2D<Depth24Plus>(device, window.GetSize());
+Uniforms uniforms;
+auto prevWindowSize = uint<2>{0, 0};
 while (System.IsRunning()) {
   Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
-  Uniforms uniforms;
-  uniforms.projection = projection;
+  auto newSize = window.GetSize();
+  // FIXME: relationals should work on vectors
+  if (newSize.x != prevWindowSize.x || newSize.y != prevWindowSize.y) {
+    swapChain.Resize(newSize);
+    depthBuffer = new renderable Texture2D<Depth24Plus>(device, newSize);
+    float aspectRatio = (float) newSize.x / (float) newSize.y;
+    uniforms.projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
+    prevWindowSize = newSize;
+  }
   uniforms.view = Transform.translate(0.0, 0.0, -handler.distance);
   uniforms.view *= orientation.toMatrix();
   uniforms.model = Transform.scale(100.0, 100.0, 100.0);
@@ -199,7 +205,6 @@ while (System.IsRunning()) {
   cubeBindings.uniforms.SetData(&uniforms);
   uniforms.model = teapotRotation * Transform.scale(2.0, 2.0, 2.0);
   teapotBindings.uniforms.SetData(&uniforms);
-  auto framebuffer = swapChain.GetCurrentTexture();
   auto encoder = new CommandEncoder(device);
   auto fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
   auto db = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);

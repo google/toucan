@@ -63,7 +63,6 @@ Bindings bindings;
 bindings.sampler = sampler;
 bindings.textureView = texView;
 auto bindGroup = new BindGroup<Bindings>(device, &bindings);
-auto framebuffer = swapChain.GetCurrentTexture();
 auto encoder = new CommandEncoder(device);
 Pipeline p;
 p.vert = vb;
