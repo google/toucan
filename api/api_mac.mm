@@ -53,15 +53,13 @@ struct Window {
          NSView*       v,
          CAMetalLayer* l,
          id<MTLDevice> md,
-         uint32_t      w,
-         uint32_t      h)
-      : window(nsw), view(v), layer(l), mtlDevice(md), width(w), height(h) {}
+         const uint32_t      sz[2])
+      : window(nsw), view(v), layer(l), mtlDevice(md) { size[0] = sz[0]; size[1] = sz[1]; }
   NSWindow*     window;
   NSView*       view;
   CAMetalLayer* layer;
   id<MTLDevice> mtlDevice;
-  uint32_t      width;
-  uint32_t      height;
+  uint32_t      size[2];
 };
 
 namespace {
@@ -103,9 +101,13 @@ void Initialize() {
 
 }  // namespace
 
-Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
+const uint32_t* Window_GetSize(Window* This) {
+  return This->size;
+}
+
+Window* Window_Window(const int32_t* position, const uint32_t* size) {
   NSApplication* app = [NSApplication sharedApplication];
-  NSRect         rect = NSMakeRect(x, y, width, height);
+  NSRect         rect = NSMakeRect(position[0], position[1], size[0], size[1]);
   int mask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable |
              NSWindowStyleMaskResizable;
   NSWindow* window = [[NSWindow alloc] initWithContentRect:rect
@@ -117,16 +119,16 @@ Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
   // this could be wrong on multi-GPU systems.
   id<MTLDevice> mtlDevice = MTLCreateSystemDefaultDevice();
 
-  CGSize size;
-  size.width = width;
-  size.height = height;
+  CGSize cgSize;
+  cgSize.width = size[0];
+  cgSize.height = size[1];
   [window makeKeyAndOrderFront:NSApp];
 
   CAMetalLayer* layer = [CAMetalLayer layer];
   [layer setDevice:mtlDevice];
   [layer setPixelFormat:MTLPixelFormatBGRA8Unorm];
   [layer setFramebufferOnly:YES];
-  [layer setDrawableSize:size];
+  [layer setDrawableSize:cgSize];
   [layer setColorspace:CGColorSpaceCreateDeviceRGB()];
 
   NSView* view = [[NSView alloc] initWithFrame:rect];
@@ -134,7 +136,7 @@ Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
   [view setLayer:layer];
 
   [window setContentView:view];
-  Window*       w = new Window(window, view, layer, mtlDevice, width, height);
+  Window*       w = new Window(window, view, layer, mtlDevice, size);
   id            delegate = [[ToucanWindowDelegate alloc] initWithWindow:w];
   [window setDelegate:delegate];
   return w;
@@ -151,8 +153,8 @@ SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Win
   config.device = device->device;
   config.format = ToDawnTextureFormat(format);
 
-  config.width = window->width;
-  config.height = window->height;
+  config.width = window->size[0];
+  config.height = window->size[1];
   config.presentMode = wgpu::PresentMode::Fifo;
 
   wgpu::SurfaceDescriptorFromMetalLayer metalLayerDesc;
@@ -164,7 +166,7 @@ SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Win
 
   surface.Configure(&config);
 
-  return new SwapChain(surface, {window->width, window->height, 1}, config.format, [[NSAutoreleasePool alloc] init]);
+  return new SwapChain(surface, {config.width, config.height, 1}, config.format, [[NSAutoreleasePool alloc] init]);
 }
 
 void SwapChain_Present(SwapChain* swapChain) {
@@ -289,17 +291,6 @@ double System_GetCurrentTime() {
   return YES;
 }
 
-- (void)windowDidResize:(NSNotification*)notification {
-  const NSRect contentRect = [window->view frame];
-  const NSRect fbRect = [window->view convertRectToBacking:contentRect];
-
-  if (fbRect.size.width != window->width || fbRect.size.height != window->height) {
-    window->width = fbRect.size.width;
-    window->height = fbRect.size.height;
-
-    // FIXME: send a resize event
-  }
-}
 @end
 
 @implementation ToucanAppDelegate : NSObject

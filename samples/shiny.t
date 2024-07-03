@@ -15,19 +15,20 @@ using Format = RGBA8unorm;
 class CubeLoader {
   static void Load(Device* device, ubyte[]^ data, TextureCube<Format>^ texture, uint face) {
     auto image = new ImageDecoder<Format>(data);
-    auto buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * image.Height());
+    auto size = image.GetSize();
+    auto buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * size.y);
     writeonly Format::MemoryType[]^ b = buffer.MapWrite();
     image.Decode(b, texture.MinBufferWidth());
     buffer.Unmap();
     auto encoder = new CommandEncoder(device);
-    texture.CopyFromBuffer(encoder, buffer, image.Width(), image.Height(), 1, uint<3>(0, 0, face));
+    texture.CopyFromBuffer(encoder, buffer, {size.x, size.y, 1}, uint<3>(0, 0, face));
     device.GetQueue().Submit(encoder.Finish());
   }
 }
 
 Device* device = new Device();
 
-auto texture = new sampleable TextureCube<RGBA8unorm>(device, 2176, 2176);
+auto texture = new sampleable TextureCube<RGBA8unorm>(device, {2176, 2176});
 CubeLoader.Load(device, inline("third_party/home-cube/right.jpg"), texture, 0);
 CubeLoader.Load(device, inline("third_party/home-cube/left.jpg"), texture, 1);
 CubeLoader.Load(device, inline("third_party/home-cube/top.jpg"), texture, 2);
@@ -35,7 +36,7 @@ CubeLoader.Load(device, inline("third_party/home-cube/bottom.jpg"), texture, 3);
 CubeLoader.Load(device, inline("third_party/home-cube/front.jpg"), texture, 4);
 CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 
-Window* window = new Window(0, 0, 1024, 1024);
+Window* window = new Window({0, 0}, {1024, 1024});
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 class Tessellator {
@@ -182,7 +183,7 @@ float<4, 4> projection = Transform.projection(0.5, 200.0, -1.0, 1.0, -1.0, 1.0);
 auto teapotQuat = Quaternion(float<3>(1.0, 0.0, 0.0), -3.1415926 / 2.0);
 teapotQuat.normalize();
 auto teapotRotation = teapotQuat.toMatrix();
-auto depthBuffer = new renderable Texture2D<Depth24Plus>(device, 1024, 1024);
+auto depthBuffer = new renderable Texture2D<Depth24Plus>(device, window.GetSize());
 while (System.IsRunning()) {
   Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));

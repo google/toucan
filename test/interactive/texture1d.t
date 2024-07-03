@@ -7,7 +7,7 @@ class Varyings {
 };
 
 Device* device = new Device();
-Window* window = new Window(0, 0, 640, 480);
+Window* window = new Window({0, 0}, {640, 480});
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 auto verts = new Vertex[4];
 verts[0].position = float<4>(-1.0, -1.0, 0.0, 1.0);

@@ -30,7 +30,7 @@ struct ImageDecoder {
   Type*                         pixelFormat;
   struct jpeg_decompress_struct cinfo;
   struct jpeg_error_mgr         jerr;
-  uint32_t                      width, height;
+  uint32_t                      size[2];
 };
 
 namespace {
@@ -53,14 +53,12 @@ ImageDecoder* ImageDecoder_ImageDecoder(int qualifiers, Type* pixelFormat, Objec
   jpeg_create_decompress(&result->cinfo);
   jpeg_mem_src(&result->cinfo, static_cast<unsigned char*>(encodedImage->ptr), length);
   jpeg_read_header(&result->cinfo, TRUE);
-  result->width = result->cinfo.image_width;
-  result->height = result->cinfo.image_height;
+  result->size[0] = result->cinfo.image_width;
+  result->size[1] = result->cinfo.image_height;
   return result;
 }
 
-uint32_t ImageDecoder_Width(ImageDecoder* This) { return This->width; }
-
-uint32_t ImageDecoder_Height(ImageDecoder* This) { return This->height; }
+const uint32_t* ImageDecoder_GetSize(ImageDecoder* This) { return This->size; }
 
 void ImageDecoder_Decode(ImageDecoder* This, Object* dest, uint32_t bufferWidth) {
   jpeg_start_decompress(&This->cinfo);
@@ -80,7 +78,7 @@ void ImageDecoder_Decode(ImageDecoder* This, Object* dest, uint32_t bufferWidth)
     jpeg_read_scanlines(&This->cinfo, scanline, 1);
     if (This->cinfo.output_components == 3) {
       uint8_t* buf = scanline[0];
-      for (int x = 0; x < This->width; x++) {
+      for (int x = 0; x < This->size[0]; x++) {
         uint8_t r = *buf++;
         uint8_t g = *buf++;
         uint8_t b = *buf++;

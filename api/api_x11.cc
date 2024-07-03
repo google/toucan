@@ -46,19 +46,19 @@ int ToToucanEventModifiers(int state) {
 }
 }  // namespace
 
-static int                                     gNumWindows = 0;
-static Atom                                    gWM_DELETE_WINDOW;
+static int  gNumWindows = 0;
+static Atom gWM_DELETE_WINDOW;
 
 struct Window {
-  Window(Display* dpy, XWindow w)
-      : display(dpy), window(w) {}
-  Display*      display;
-  XWindow       window;
+  Window(Display* dpy, XWindow w) : display(dpy), window(w) {}
+  Display* display;
+  XWindow  window;
+  uint32_t size[2] = {0, 0};
 };
 
 static Display* gDisplay;
 
-Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
+Window* Window_Window(const int32_t* position, const uint32_t* size) {
   if (!gDisplay) gDisplay = ::XOpenDisplay(0);
   if (!gDisplay) return nullptr;
   XWindow     rootWindow = RootWindow(gDisplay, DefaultScreen(gDisplay));
@@ -72,7 +72,8 @@ Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
   windowAttributes.border_pixel = BlackPixel(gDisplay, visualInfo.screen);
   windowAttributes.colormap = colorMap;
   windowAttributes.event_mask = StructureNotifyMask;
-  XWindow window = ::XCreateWindow(gDisplay, rootWindow, x, y, width, height, 1, /* border_width */
+  XWindow window = ::XCreateWindow(gDisplay, rootWindow, position[0], position[1], size[0], size[1],
+                                   1, /* border_width */
                                    visualInfo.depth, InputOutput, visualInfo.visual,
                                    CWColormap | CWEventMask, &windowAttributes);
   if (!window) { return nullptr; }
@@ -86,6 +87,14 @@ Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
   ::XSync(gDisplay, True);
   gNumWindows++;
   return new Window(gDisplay, window);
+}
+
+const uint32_t* Window_GetSize(Window* This) {
+  XWindowAttributes attributes;
+  XGetWindowAttributes(gDisplay, This->window, &attributes);
+  This->size[0] = attributes.width;
+  This->size[1] = attributes.height;
+  return This->size;
 }
 
 void Window_Destroy(Window* This) {

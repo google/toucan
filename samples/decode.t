@@ -7,16 +7,17 @@ Device* device = new Device();
 
 using Format = RGBA8unorm;
 auto image = new ImageDecoder<RGBA8unorm>(inline("third_party/libjpeg-turbo/testimages/testorig.jpg"));
-auto texture = new sampleable Texture2D<Format>(device, image.Width(), image.Height());
-auto buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * image.Height());
+auto imageSize = image.GetSize();
+auto texture = new sampleable Texture2D<Format>(device, imageSize);
+auto buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * imageSize.y);
 writeonly Format::MemoryType[]^ b = buffer.MapWrite();
 image.Decode(b, texture.MinBufferWidth());
 buffer.Unmap();
 auto copyEncoder = new CommandEncoder(device);
-texture.CopyFromBuffer(copyEncoder, buffer, image.Width(), image.Height());
+texture.CopyFromBuffer(copyEncoder, buffer, imageSize);
 device.GetQueue().Submit(copyEncoder.Finish());
 
-Window* window = new Window(0, 0, image.Width(), image.Height());
+Window* window = new Window({0, 0}, imageSize);
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 auto verts = new Vertex[4];
 verts[0].position = float<4>(-1.0,  1.0, 0.0, 1.0);

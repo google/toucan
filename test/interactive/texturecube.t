@@ -7,7 +7,7 @@ class Varyings {
 };
 
 Device* device = new Device();
-Window* window = new Window(0, 0, 640, 480);
+Window* window = new Window({0, 0}, {640, 480});
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 auto verts = new Vertex[4];
 verts[0].position = float<4>(-1.0, -1.0, 0.0, 1.0);
@@ -49,7 +49,7 @@ class Pipeline {
     BindGroup<Bindings>*     bindings;
 };
 auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
-auto tex = new sampleable TextureCube<RGBA8unorm>(device, 2, 2);
+auto tex = new sampleable TextureCube<RGBA8unorm>(device, {2, 2});
 auto buffer = new Buffer<ubyte<4>[]>(device, 64 * 2 * 2);
 auto data = buffer.MapWrite();
 data[0]   =  ubyte<4>(255ub,   0ub,   0ub, 255ub);
@@ -62,7 +62,7 @@ data[192]  = ubyte<4>(255ub,   0ub, 255ub, 255ub);
 data[193]  = ubyte<4>(255ub, 255ub, 255ub, 255ub);
 buffer.Unmap();
 auto copyEncoder = new CommandEncoder(device);
-tex.CopyFromBuffer(copyEncoder, buffer, 2, 2, 2);
+tex.CopyFromBuffer(copyEncoder, buffer, {2, 2, 2});
 device.GetQueue().Submit(copyEncoder.Finish());
 Bindings bindings;
 bindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);

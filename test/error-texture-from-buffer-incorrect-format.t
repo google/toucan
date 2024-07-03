@@ -1,5 +1,5 @@
 Device* device = new Device();
-Window* window = new Window(device, 0, 0, 640, 480);
+Window* window = new Window(device, {0, 0}, {640, 480});
 auto tex = new sampleable Texture1D<RGBA8unorm>(device, 1);
 auto buffer = new Buffer<float<4>[]>(device);
 auto data = buffer.MapWrite();

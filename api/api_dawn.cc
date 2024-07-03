@@ -844,13 +844,9 @@ void Texture1D_CopyFromBuffer(Texture1D*      dest,
   dest->CopyFromBuffer(encoder->encoder, source->buffer, {width, 1, 1}, {origin, 0, 0});
 }
 
-Texture2D* Texture2D_Texture2D(int      qualifiers,
-                               Type*    format,
-                               Device*  device,
-                               uint32_t width,
-                               uint32_t height) {
+Texture2D* Texture2D_Texture2D(int qualifiers, Type* format, Device* device, const uint32_t* size) {
   return new Texture2D(qualifiers, format, device->device, wgpu::TextureDimension::e2D,
-                       {width, height, 1});
+                       {size[0], size[1], 1});
 }
 
 void Texture2D_Destroy(Texture2D* This) { delete This; }
@@ -872,21 +868,18 @@ uint32_t Texture2D_MinBufferWidth(Texture2D* This) { return This->MinBufferWidth
 void Texture2D_CopyFromBuffer(Texture2D*      dest,
                               CommandEncoder* encoder,
                               Buffer*         source,
-                              uint32_t        width,
-                              uint32_t        height,
-                              uint32_t*       origin) {
-  dest->CopyFromBuffer(encoder->encoder, source->buffer, {width, height, 1},
+                              const uint32_t* size,
+                              const uint32_t* origin) {
+  dest->CopyFromBuffer(encoder->encoder, source->buffer, {size[0], size[1], 1},
                        {origin[0], origin[1], 0});
 }
 
-Texture2DArray* Texture2DArray_Texture2DArray(int      qualifiers,
-                                              Type*    format,
-                                              Device*  device,
-                                              uint32_t width,
-                                              uint32_t height,
-                                              uint32_t layers) {
+Texture2DArray* Texture2DArray_Texture2DArray(int             qualifiers,
+                                              Type*           format,
+                                              Device*         device,
+                                              const uint32_t* size) {
   return new Texture2DArray(qualifiers, format, device->device, wgpu::TextureDimension::e2D,
-                            {width, height, layers});
+                            {size[0], size[1], size[2]});
 }
 
 void Texture2DArray_Destroy(Texture2DArray* This) { delete This; }
@@ -914,22 +907,15 @@ uint32_t Texture2DArray_MinBufferWidth(Texture2DArray* This) { return This->MinB
 void Texture2DArray_CopyFromBuffer(Texture2DArray* dest,
                                    CommandEncoder* encoder,
                                    Buffer*         source,
-                                   uint32_t        width,
-                                   uint32_t        height,
-                                   uint32_t        layers,
-                                   uint32_t*       origin) {
-  dest->CopyFromBuffer(encoder->encoder, source->buffer, {width, height, layers},
+                                   const uint32_t* size,
+                                   const uint32_t* origin) {
+  dest->CopyFromBuffer(encoder->encoder, source->buffer, {size[0], size[1], size[2]},
                        {origin[0], origin[1], origin[2]});
 }
 
-Texture3D* Texture3D_Texture3D(int      qualifiers,
-                               Type*    format,
-                               Device*  device,
-                               uint32_t width,
-                               uint32_t height,
-                               uint32_t depth) {
+Texture3D* Texture3D_Texture3D(int qualifiers, Type* format, Device* device, const uint32_t* size) {
   return new Texture3D(qualifiers, format, device->device, wgpu::TextureDimension::e3D,
-                       {width, height, depth});
+                       {size[0], size[1], size[2]});
 }
 
 void Texture3D_Destroy(Texture3D* This) { delete This; }
@@ -951,21 +937,18 @@ uint32_t Texture3D_MinBufferWidth(Texture3D* This) { return This->MinBufferWidth
 void Texture3D_CopyFromBuffer(Texture3D*      dest,
                               CommandEncoder* encoder,
                               Buffer*         source,
-                              uint32_t        width,
-                              uint32_t        height,
-                              uint32_t        depth,
-                              uint32_t*       origin) {
-  dest->CopyFromBuffer(encoder->encoder, source->buffer, {width, height, depth},
+                              const uint32_t* size,
+                              const uint32_t* origin) {
+  dest->CopyFromBuffer(encoder->encoder, source->buffer, {size[0], size[1], size[2]},
                        {origin[0], origin[1], origin[2]});
 }
 
-TextureCube* TextureCube_TextureCube(int      qualifiers,
-                                     Type*    format,
-                                     Device*  device,
-                                     uint32_t width,
-                                     uint32_t height) {
+TextureCube* TextureCube_TextureCube(int             qualifiers,
+                                     Type*           format,
+                                     Device*         device,
+                                     const uint32_t* size) {
   return new TextureCube(qualifiers, format, device->device, wgpu::TextureDimension::e2D,
-                         {width, height, 6});
+                         {size[0], size[1], 6});
 }
 
 void TextureCube_Destroy(TextureCube* This) { delete This; }
@@ -990,11 +973,9 @@ uint32_t TextureCube_MinBufferWidth(TextureCube* This) { return This->MinBufferW
 void TextureCube_CopyFromBuffer(TextureCube*    dest,
                                 CommandEncoder* encoder,
                                 Buffer*         source,
-                                uint32_t        width,
-                                uint32_t        height,
-                                uint32_t        faces,
-                                uint32_t*       origin) {
-  dest->CopyFromBuffer(encoder->encoder, source->buffer, {width, height, faces},
+                                const uint32_t* size,
+                                const uint32_t* origin) {
+  dest->CopyFromBuffer(encoder->encoder, source->buffer, {size[0], size[1], size[2]},
                        {origin[0], origin[1], origin[2]});
 }
 
@@ -1137,12 +1118,12 @@ void Queue_Submit(Queue* queue, CommandBuffer* commandBuffer) {
   queue->queue.Submit(1, &commandBuffer->commandBuffer);
 }
 
-ColorAttachment* ColorAttachment_ColorAttachment(int        qualifiers,
-                                                 Type*      type,
-                                                 Texture2D* texture,
-                                                 LoadOp     loadOp,
-                                                 StoreOp    storeOp,
-                                                 float*     clearValue) {
+ColorAttachment* ColorAttachment_ColorAttachment(int          qualifiers,
+                                                 Type*        type,
+                                                 Texture2D*   texture,
+                                                 LoadOp       loadOp,
+                                                 StoreOp      storeOp,
+                                                 const float* clearValue) {
   wgpu::RenderPassColorAttachment attachment;
   attachment.clearValue = {clearValue[0], clearValue[1], clearValue[2], clearValue[3]};
   attachment.loadOp = ToDawnLoadOp(loadOp);
@@ -1290,8 +1271,7 @@ Texture2D* SwapChain_GetCurrentTexture(SwapChain* swapChain) {
   wgpu::Texture texture = surfaceTexture.texture;
 #endif
 
-  return new Texture2D(texture, texture.CreateView(), swapChain->extent,
-                       swapChain->format);
+  return new Texture2D(texture, texture.CreateView(), swapChain->extent, swapChain->format);
 }
 
 #if !TARGET_OS_IS_MAC

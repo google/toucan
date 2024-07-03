@@ -4,7 +4,7 @@ class Vertex {
 };
 using Varyings = float<4>;
 Device* device = new Device();
-Window* window = new Window(0, 0, 640, 480);
+Window* window = new Window({0, 0}, {640, 480});
 Queue* queue = device.GetQueue();
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 auto verts = new Vertex[4];

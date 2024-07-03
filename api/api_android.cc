@@ -27,15 +27,16 @@
 
 namespace Toucan {
 
-static int                                     gNumWindows = 0;
-static android_app*                            gAndroidApp;
+static int          gNumWindows = 0;
+static android_app* gAndroidApp;
 
 struct Window {
   Window(ANativeWindow* w) : window(w) {}
   ANativeWindow* window;
+  uint32_t       size[2] = {0, 0};
 };
 
-Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
+Window* Window_Window(const int32_t* position, const uint32_t* size) {
   ANativeWindow* window;
   if (gNumWindows == 0) {
     while (gAndroidApp->window == nullptr) {
@@ -56,6 +57,12 @@ Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
 }
 
 void Window_Destroy(Window* This) { delete This; }
+
+const uint32_t* Window_GetSize(Window* This) {
+  This->size[0] = ANativeWindow_getWidth(This->window);
+  This->size[0] = ANativeWindow_getHeight(This->window);
+  return This->size;
+}
 
 static void PrintDeviceError(WGPUErrorType, const char* message, void*) {
   LOGV("Device error: %s", message);

@@ -249,6 +249,7 @@ void PrintNativeType(FILE* file, Type* type) {
     }
     fprintf(file, "*");
   } else if (type->IsVector()) {
+    fprintf(file, "const ");
     PrintNativeType(file, static_cast<VectorType*>(type)->GetComponentType());
     fprintf(file, "*");
   } else if (type->IsMatrix()) {

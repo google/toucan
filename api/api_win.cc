@@ -40,11 +40,15 @@ unsigned ToToucanEventModifiers(WPARAM wParam) {
 }  // namespace
 
 struct Window {
-  Window(HWND w) : wnd(w) {}
-  HWND          wnd;
+  Window(HWND w, const uint32_t sz[2]) : wnd(w) {
+    size[0] = sz[0];
+    size[1] = sz[1];
+  }
+  HWND     wnd;
+  uint32_t size[2];
 };
 
-static int                                     gNumWindows = 0;
+static int gNumWindows = 0;
 
 static LRESULT CALLBACK mainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
   LONG rc = 0L;
@@ -79,23 +83,26 @@ static void registerMainWindowClass() {
   }
 }
 
-Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
+Window* Window_Window(const int32_t* position, const uint32_t* size) {
   registerMainWindowClass();
-  RECT  r = {0, 0, static_cast<LONG>(width), static_cast<LONG>(height)};
+  RECT  r = {0, 0, static_cast<LONG>(size[0]), static_cast<LONG>(size[1])};
   DWORD style = WS_OVERLAPPEDWINDOW;
   bool  hasMenuBar = false;
   ::AdjustWindowRect(&r, style, hasMenuBar);
-  HWND hwnd = ::CreateWindow("mainWndClass", "Main Window", style, x, y, r.right - r.left,
-                             r.bottom - r.top, nullptr, nullptr, nullptr, nullptr);
+  HWND hwnd =
+      ::CreateWindow("mainWndClass", "Main Window", style, position[0], position[1],
+                     r.right - r.left, r.bottom - r.top, nullptr, nullptr, nullptr, nullptr);
   if (!hwnd) return nullptr;
 
   ::ShowWindow(hwnd, SW_SHOW);
 
-  Window*       w = new Window(hwnd);
+  Window* w = new Window(hwnd, size);
   SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)w);
   gNumWindows++;
   return w;
 }
+
+const uint32_t* Window_GetSize(Window* This) { return This->size; }
 
 void Window_Destroy(Window* This) { delete This; }
 
@@ -125,7 +132,7 @@ SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Win
   surfaceDesc.nextInChain = &winSurfaceDesc;
 
   static wgpu::Instance instance = wgpu::CreateInstance({});
-  wgpu::Surface surface = instance.CreateSurface(&surfaceDesc);
+  wgpu::Surface         surface = instance.CreateSurface(&surfaceDesc);
   surface.Configure(&config);
   return new SwapChain(surface, {config.width, config.height, 1}, config.format, nullptr);
 }

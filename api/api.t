@@ -119,43 +119,43 @@ native class Texture1D<PF> {
 }
 
 native class Texture2D<PF> {
-  Texture2D(Device* device, uint width, uint height);
+  Texture2D(Device* device, uint<2> size);
  ~Texture2D();
   SampleableTexture2D<PF::SampledType>* CreateSampleableView();
   renderable Texture2D<PF>* CreateRenderableView(uint mipLevel = 0);
   storage Texture2D<PF>* CreateStorageView(uint mipLevel = 0);
   uint MinBufferWidth();
-  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint<2> origin = uint<2>(0, 0));
+  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint<2> size, uint<2> origin = uint<2>(0, 0));
 }
 
 native class Texture2DArray<PF> {
-  Texture2DArray(Device* device, uint width, uint height, uint layers);
+  Texture2DArray(Device* device, uint<3> size);
  ~Texture2D();
   SampleableTexture2DArray<PF::SampledType>* CreateSampleableView();
   renderable Texture2D<PF>* CreateRenderableView(uint layer, uint mipLevel = 0);
   storage Texture2DArray<PF>* CreateStorageView(uint layer, uint mipLevel = 0);
   uint MinBufferWidth();
-  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint arrayLayers, uint<3> origin = uint<3>(0, 0, 0));
+  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint<3> size, uint<3> origin = uint<3>(0, 0, 0));
 }
 
 native class Texture3D<PF> {
-  Texture3D(Device* device, uint width, uint height, uint depth);
+  Texture3D(Device* device, uint<3> size);
  ~Texture3D();
   SampleableTexture3D<PF::SampledType>* CreateSampleableView();
   renderable Texture2D<PF>* CreateRenderableView(uint depth, uint mipLevel = 0);
   storage Texture3D<PF>* CreateStorageView(uint depth, uint mipLevel = 0);
   uint MinBufferWidth();
-  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint depth, uint<3> origin = uint<3>(0, 0, 0));
+  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint<3> size, uint<3> origin = uint<3>(0, 0, 0));
 }
 
 native class TextureCube<PF> {
-  TextureCube(Device* device, uint width, uint height);
+  TextureCube(Device* device, uint<2> size);
  ~TextureCube();
   SampleableTextureCube<PF::SampledType>* CreateSampleableView();
   renderable Texture2D<PF>* CreateRenderableView(uint face, uint mipLevel = 0);
   storage Texture2D<PF>* CreateStorageView(uint face, uint mipLevel = 0);
   uint MinBufferWidth();
-  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint width, uint height, uint faces, uint<3> origin = uint<3>(0, 0, 0));
+  void CopyFromBuffer(CommandEncoder^ encoder, Buffer<PF::MemoryType[]>^ source, uint<3> size, uint<3> origin = uint<3>(0, 0, 0));
 }
 
 native class CommandEncoder {
@@ -209,7 +209,8 @@ native class ComputePass<T> {
 }
 
 native class Window {
-  Window(int x, int y, uint width, uint height);
+  Window(int<2> position, uint<2> size);
+  uint<2> GetSize();
  ~Window();
 }
 
@@ -250,8 +251,7 @@ native class Math {
 native class ImageDecoder<PF> {
   ImageDecoder(ubyte[]^ encodedImage);
  ~ImageDecoder();
-  uint Width();
-  uint Height();
+  uint<2> GetSize();
   void Decode(writeonly PF::MemoryType[]^ buffer, uint bufferWidth);
 }
 

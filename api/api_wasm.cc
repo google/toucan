@@ -43,10 +43,10 @@ static void copyTouches(emscripten::val touches, Event* result) {
 }  // namespace
 
 struct Window {
-  Window(wgpu::Surface s, uint32_t w, uint32_t h)
-      : surface(s), width(w), height(h) {}
+  Window(wgpu::Surface s, const uint32_t sz[2])
+      : surface(s) { size[0] = sz[0]; size[1] = sz[1]; }
   wgpu::Surface surface;
-  uint32_t      width, height;
+  uint32_t      size[2];
 };
 
 EM_JS(void, createWindow, (int32_t x, int32_t y, int32_t width, int32_t height), {
@@ -79,8 +79,8 @@ EM_JS(void, createWindow, (int32_t x, int32_t y, int32_t width, int32_t height),
     Module.numWindows++;
 });
 
-Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
-  EM_ASM({ createWindow($0, $1, $2, $3) }, x, y, width, height);
+Window* Window_Window(const int32_t* position, const uint32_t* size) {
+  EM_ASM({ createWindow($0, $1, $2, $3) }, position[0], position[1], size[0], size[1]);
 
   wgpu::SurfaceDescriptorFromCanvasHTMLSelector canvasDesc{};
   canvasDesc.selector = "!toucanvas";
@@ -89,10 +89,14 @@ Window* Window_Window(int32_t x, int32_t y, uint32_t width, uint32_t height) {
   surfDesc.nextInChain = &canvasDesc;
   wgpu::Instance instance = wgpuCreateInstance(nullptr);
   wgpu::Surface  surface = instance.CreateSurface(&surfDesc);
-  return new Window(surface, width, height);
+  return new Window(surface, size);
 }
 
 void Window_Destroy(Window* This) { delete This; }
+
+const uint32_t* Window_GetSize(Window* This) {
+  return This->size;
+}
 
 static void PrintDeviceError(WGPUErrorType, const char* message, void*) {
   printf("Device error: %s\n", message);
@@ -182,8 +186,8 @@ SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Win
   wgpu::SwapChainDescriptor desc;
   desc.usage = wgpu::TextureUsage::RenderAttachment;
   desc.format = ToDawnTextureFormat(format);
-  desc.width = window->width;
-  desc.height = window->height;
+  desc.width = window->size[0];
+  desc.height = window->size[1];
   desc.presentMode = wgpu::PresentMode::Fifo;
   wgpu::SwapChain swapChain = device->device.CreateSwapChain(window->surface, &desc);
   return new SwapChain(swapChain, {desc.width, desc.height, 1}, desc.format, nullptr);

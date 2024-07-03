@@ -593,7 +593,8 @@ llvm::Value* CodeGenLLVM::ConvertFromNative(Type* type, llvm::Value* value) {
       value = builder_->CreateLoad(ConvertType(type), value);
     }
   } else if (type->IsVector()) {
-    assert(!"Vector arguments to native types are unsupported\n");
+    // Dereference vector*
+    value = builder_->CreateLoad(ConvertType(type), value);
   }
   return value;
 }

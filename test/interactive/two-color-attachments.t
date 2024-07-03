@@ -1,6 +1,6 @@
 using Vertex = float<4>;
 Device* device = new Device();
-Window* window = new Window(0, 0, 640, 480);
+Window* window = new Window({0, 0}, {640, 480});
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 auto verts = new Vertex[3];
 verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
@@ -36,8 +36,8 @@ class Pipeline {
   BindGroup<Bindings>* bindings;
 }
 auto encoder = new CommandEncoder(device);
-auto redTex = new sampleable renderable Texture2D<RGBA8unorm>(device, 640, 480);
-auto greenTex = new sampleable renderable Texture2D<RGBA8unorm>(device, 640, 480);
+auto redTex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());
+auto greenTex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());
 RTTPipeline rp;
 rp.red = new ColorAttachment<RGBA8unorm>(redTex, Clear, Store);
 rp.green = new ColorAttachment<RGBA8unorm>(greenTex, Clear, Store);
