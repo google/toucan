@@ -43,7 +43,18 @@ void WaitForMainWindow() {
   }
 }
 
+EventType ToToucanEventType(AInputEvent* inputEvent) {
+  int32_t action = AMotionEvent_getAction(inputEvent);
+  int32_t flags = action & AMOTION_EVENT_ACTION_MASK;
+
+  switch (flags) {
+    case AMOTION_EVENT_ACTION_DOWN: return EventType::TouchStart;
+    case AMOTION_EVENT_ACTION_UP: return EventType::TouchEnd;
+    default: return EventType::TouchMove;
+  }
 }
+
+}  // namespace
 
 struct Window {
   Window(ANativeWindow* w) : window(w) {}
@@ -88,14 +99,28 @@ bool System_IsRunning() { return true; }
 bool System_HasPendingEvents() { return AInputQueue_hasEvents(gAndroidApp->inputQueue); }
 
 Event* System_GetNextEvent() {
-  Event* result = new Event();
-  result->type = EventType::Unknown;
+  Event* event = new Event();
+  event->type = EventType::Unknown;
   int                  events;
   void*                data;
   android_poll_source* source = nullptr;
-  int ident = ALooper_pollOnce(-1, nullptr, &events, reinterpret_cast<void**>(&source));
-  if (source != nullptr) { source->process(gAndroidApp, source); }
-  return result;
+  int          ident = ALooper_pollOnce(-1, nullptr, &events, reinterpret_cast<void**>(&source));
+  AInputEvent* inputEvent = NULL;
+  if (AInputQueue_getEvent(gAndroidApp->inputQueue, &inputEvent) >= 0) {
+    switch (AInputEvent_getType(inputEvent)) {
+      case AINPUT_EVENT_TYPE_MOTION:
+        event->type = ToToucanEventType(inputEvent);
+        event->numTouches =
+            std::min(static_cast<int>(AMotionEvent_getPointerCount(inputEvent)), 10);
+        for (int i = 0; i < event->numTouches; ++i) {
+          event->touches[i][0] = AMotionEvent_getX(inputEvent, i);
+          event->touches[i][1] = AMotionEvent_getY(inputEvent, i);
+        }
+        break;
+    }
+    AInputQueue_finishEvent(gAndroidApp->inputQueue, inputEvent, 1);
+  }
+  return event;
 }
 
 const uint32_t* System_GetScreenSize() {
@@ -125,7 +150,8 @@ SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Win
 
   surface.Configure(&config);
 
-  return new SwapChain(surface, device->device, {config.width, config.height, 1}, config.format, nullptr);
+  return new SwapChain(surface, device->device, {config.width, config.height, 1}, config.format,
+                       nullptr);
 }
 
 double System_GetCurrentTime() {
