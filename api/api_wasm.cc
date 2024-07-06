@@ -76,7 +76,7 @@ EM_JS(int, createWindow, (int32_t x, int32_t y, int32_t width, int32_t height), 
       Module.events.push(e);
       if (Module.newInput) Module.newInput();
     };
-    events.forEach((eventType) => w.addEventListener(eventType, inputListener, { passive: false }));
+    events.forEach((eventType) => canvas.addEventListener(eventType, inputListener, { passive: false }));
     w.oncontextmenu = (e) => { e.preventDefault() };
     specialHTMLTargets["!toucanvas"] = canvas;
     return w.id = Module.numWindows++;
