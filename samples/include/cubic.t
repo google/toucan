@@ -1,9 +1,9 @@
 class Cubic<T> {
-  void FromBezier(T p0, T p1, T p2, T p3) {
-    a =        p0;
-    b = -3.0 * p0 + 3.0 * p1;
-    c =  3.0 * p0 - 6.0 * p1 + 3.0 * p2;
-    d =       -p0 + 3.0 * p1 - 3.0 * p2 + p3;
+  void FromBezier(T[4] p) {
+    a =        p[0];
+    b = -3.0 * p[0] + 3.0 * p[1];
+    c =  3.0 * p[0] - 6.0 * p[1] + 3.0 * p[2];
+    d =       -p[0] + 3.0 * p[1] - 3.0 * p[2] + p[3];
   }
 
   T Evaluate(float p) {

@@ -29,4 +29,12 @@ class Utils {
   static float<3> makeVector(float x, float y, float z, float<3> placeholder) {
     return float<3>(x, y, z);
   }
+  static float<3> cross(float<3> a, float<3> b) {
+    return float<3>(a.y * b.z - a.z * b.y,
+                    a.z * b.x - a.x * b.z,
+                    a.x * b.y - a.y * b.x);
+  }
+  static float<3> normalize(float<3> v) {
+    return v * (1.0 / Utils.length(v));
+  }
 }

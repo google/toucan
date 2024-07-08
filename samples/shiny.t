@@ -39,38 +39,59 @@ CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 Window* window = new Window({0, 0}, System.GetScreenSize());
 auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
-class Tessellator {
-  Tessellator(float<3>[]^ controlPoints, uint[]^ controlIndices, int level) {
+class BicubicPatch {
+  Vertex Evaluate(float u, float v) {
+    float<3>[4] pu, pv;
+    for (int i = 0; i < 4; ++i) {
+      pu[i] = vCubics[i].Evaluate(v);
+      pv[i] = uCubics[i].Evaluate(u);
+    }
+    Cubic<float<3>> uCubic, vCubic;
+    uCubic.FromBezier(pu);
+    vCubic.FromBezier(pv);
+    Vertex result;
+    result.position = uCubic.Evaluate(u);
+    auto uTangent = uCubic.EvaluateTangent(u);
+    auto vTangent = vCubic.EvaluateTangent(v);
+    if (vTangent.x == 0.0 && vTangent.y == 0.0 && vTangent.z == 0.0) {
+      if (result.position.z <= 0.0) {
+        result.normal = { 0.0, 0.0, -1.0 };
+      } else {
+        result.normal = { 0.0, 0.0, 1.0 };
+      }
+    } else {
+      result.normal = Utils.normalize(Utils.cross(vTangent, uTangent));
+    }
+    return result;
+  }
+  Cubic<float<3>>[4] uCubics, vCubics;
+}
+
+class BicubicTessellator {
+  BicubicTessellator(float<3>[]^ controlPoints, uint[]^ controlIndices, int level) {
     int numPatches = controlIndices.length / 16;
-    int patchWidth = level + 1;  // FIXME: use wraparound and remove "+ 1"
+    int patchWidth = level + 1;
     int verticesPerPatch = patchWidth * patchWidth;
-    int numVertices = numPatches * verticesPerPatch;
-    int numIndices = numPatches * level * level * 6;
-    vertices = new Vertex[numVertices];
-    indices = new uint[numIndices];
+    vertices = new Vertex[numPatches * verticesPerPatch];
+    indices = new uint[numPatches * level * level * 6];
     int vi = 0, ii = 0;
     float scale = 1.0 / (float) level;
-    for (int k = 0; k < controlIndices.length;) {
-      Cubic<float<3>>[4] cubics;
+    for (int k = 0; k < controlIndices.length; k += 16) {
+      BicubicPatch patch;
       for (int i = 0; i < 4; ++i) {
-        float<3>[4] p;
+        float<3>[4] pu, pv;
         for (int j = 0; j < 4; ++j) {
-          p[j] = controlPoints[controlIndices[k++]];
+          pu[j] = controlPoints[controlIndices[k + i + j * 4]];
+          pv[j] = controlPoints[controlIndices[k + i * 4 + j]];
         }
-        cubics[i].FromBezier(p[0], p[1], p[2], p[3]);
+        patch.uCubics[i].FromBezier(pu);
+        patch.vCubics[i].FromBezier(pv);
       }
       for (int i = 0; i <= level; ++i) {
-        float t = (float) i * scale;
-        float<3>[4] p;
-        for (int j = 0; j < 4; ++j) {
-          p[j] = cubics[j].Evaluate(t);
-        }
-        Cubic<float<3>> cubic;
-        cubic.FromBezier(p[0], p[1], p[2], p[3]);
+        float v = (float) i * scale;
         for (int j = 0; j <= level; ++j) {
-          float s = (float) j * scale;
-          vertices[vi].position = cubic.Evaluate(s);
-          vertices[vi].normal = cubic.EvaluateTangent(s);
+          float u = (float) j * scale;
+          vertices[vi] = patch.Evaluate(u, v);
           if (i < level && j < level) {
             indices[ii] = vi;
             indices[ii + 1] = vi + 1;
@@ -89,7 +110,7 @@ class Tessellator {
   uint[]* indices;
 }
 
-Tessellator* tessTeapot = new Tessellator(&teapotControlPoints, &teapotIndices, 8);
+auto tessTeapot = new BicubicTessellator(&teapotControlPoints, &teapotIndices, 8);
 
 class Uniforms {
   float<4,4>  model, view, projection;
@@ -145,7 +166,7 @@ class ReflectionPipeline : Pipeline {
       auto uniforms = b.uniforms.MapReadUniform();
       float<3> p = Math.normalize(varyings.position);
       float<3> n = Math.normalize(varyings.normal);
-      float<3> r = Math.reflect(-p, n);
+      float<3> r = Math.reflect(p, n);
       auto r4 = Math.inverse(uniforms.view) * float<4>(r.x, r.y, r.z, 0.0);
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-r4.x, r4.y, r4.z)));
     }
