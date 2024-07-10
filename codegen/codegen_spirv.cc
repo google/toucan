@@ -485,12 +485,11 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
                             &interface);
   AppendCode(spv::Op::OpReturn, {});
   AppendCode(spv::Op::OpFunctionEnd, {});
-  for (const auto& it : functions_) {
-    Method*  m = it.first;
-    uint32_t functionId = it.second;
-    GenCodeForMethod(m, functionId);
+  while (!pendingMethods_.empty()) {
+    Method* m = pendingMethods_.front();
+    pendingMethods_.pop_front();
+    GenCodeForMethod(m, functions_[m]);
   }
-  functions_.clear();
 
   header_.push_back(spv::MagicNumber);
   header_.push_back(0x00010300);
@@ -1204,6 +1203,7 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
   if (functionId == 0) {
     functionId = NextId();
     functions_[method] = functionId;
+    pendingMethods_.push_back(method);
   }
   Code resultArgs;
   resultArgs.push_back(functionId);

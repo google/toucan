@@ -44,7 +44,6 @@ class Spring {
   float  ks;
   float  kd;
   float  r;
-  float  placeholder;
 }
 
 class Utils {
@@ -97,8 +96,6 @@ class ComputeBase {
 
 class ComputeForces : ComputeBase {
   void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
-    float placeholder1 = Utils.dot(Vector(0.0), Vector(0.0));
-    float placeholder2 = Utils.length(Vector(0.0));
     auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     auto springs = bindings.Get().springStorage.MapReadWriteStorage();
     auto u = bindings.Get().uniforms.MapReadUniform();

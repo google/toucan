@@ -15,6 +15,7 @@
 #ifndef _CODEGEN_CODEGEN_SPIRV_H_
 #define _CODEGEN_CODEGEN_SPIRV_H_
 
+#include <list>
 #include <unordered_map>
 
 #include <ast/ast.h>
@@ -153,6 +154,7 @@ class CodeGenSPIRV : public Visitor {
   std::unordered_map<float, uint32_t>          floatConstants_;
   std::unordered_map<Type*, uint32_t>          zeroConstants_;
   std::unordered_map<Method*, uint32_t>        functions_;
+  std::list<Method*>                           pendingMethods_;
   PtrType*                                     thisPtrType_ = nullptr;
   BindGroupList                                bindGroups_;
   std::vector<uint32_t>                        pipelineVars_;
