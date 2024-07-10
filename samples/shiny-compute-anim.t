@@ -67,50 +67,27 @@ class BicubicPatch {
   Cubic<float<3>>[4] uCubics, vCubics;
 }
 
-class BicubicTessellator {
-  BicubicTessellator(float<3>[]^ controlPoints, uint[]^ controlIndices, int level) {
-    int numPatches = controlIndices.length / 16;
-    int patchWidth = level + 1;
-    int verticesPerPatch = patchWidth * patchWidth;
-    vertices = new Vertex[numPatches * verticesPerPatch];
-    indices = new uint[numPatches * level * level * 6];
-    int vi = 0, ii = 0;
-    float scale = 1.0 / (float) level;
-    for (int k = 0; k < controlIndices.length; k += 16) {
-      BicubicPatch patch;
-      for (int i = 0; i < 4; ++i) {
-        float<3>[4] pu, pv;
-        for (int j = 0; j < 4; ++j) {
-          pu[j] = controlPoints[controlIndices[k + i + j * 4]];
-          pv[j] = controlPoints[controlIndices[k + i * 4 + j]];
-        }
-        patch.uCubics[i].FromBezier(pu);
-        patch.vCubics[i].FromBezier(pv);
-      }
-      for (int i = 0; i <= level; ++i) {
-        float v = (float) i * scale;
-        for (int j = 0; j <= level; ++j) {
-          float u = (float) j * scale;
-          vertices[vi] = patch.Evaluate(u, v);
-          if (i < level && j < level) {
-            indices[ii] = vi;
-            indices[ii + 1] = vi + 1;
-            indices[ii + 2] = vi + patchWidth + 1;
-            indices[ii + 3] = vi;
-            indices[ii + 4] = vi + patchWidth + 1;
-            indices[ii + 5] = vi + patchWidth;
-            ii += 6;
-          }
-          ++vi;
-        }
-      }
-    }
-  }
-  Vertex[]* vertices;
-  uint[]* indices;
-}
+uint level = 64;
+uint patchWidth = level + 1;
+uint numPatches = teapotControlIndices.length / 16;
+auto tessTeapotIndices = new uint[numPatches * level * level * 6];
 
-auto tessTeapot = new BicubicTessellator(&teapotControlPoints, &teapotControlIndices, 8);
+int vi = 0, ii = 0;
+for (int k = 0; k < numPatches; ++k) {
+  for (int i = 0; i < level; ++i) {
+    for (int j = 0; j < level; ++j) {
+      tessTeapotIndices[ii++] = vi;
+      tessTeapotIndices[ii++] = vi + 1;
+      tessTeapotIndices[ii++] = vi + patchWidth + 1;
+      tessTeapotIndices[ii++] = vi;
+      tessTeapotIndices[ii++] = vi + patchWidth + 1;
+      tessTeapotIndices[ii++] = vi + patchWidth;
+      ++vi;
+    }
+    ++vi;           // skip the last column
+  }
+  vi += patchWidth; // skip the last row
+}
 
 class Uniforms {
   float<4,4>  model, view, projection;
@@ -128,6 +105,46 @@ class DrawPipeline {
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
   DepthStencilAttachment<Depth24Plus>* depth;
   BindGroup<Bindings>* bindings;
+}
+
+class ComputeUniforms {
+  uint  patchWidth;
+  float scale;
+}
+
+class ComputeBindings {
+  storage Buffer<float<3>[]>* controlPoints;
+  storage Buffer<uint[]>* controlIndices;
+  storage Buffer<Vertex[]>* vertices;
+  uniform Buffer<ComputeUniforms>* uniforms;
+}
+
+class BicubicComputePipeline {
+  void computeShader(ComputeBuiltins cb) compute(8, 8, 1) {
+    auto controlPoints = bindings.Get().controlPoints.MapReadWriteStorage();
+    auto controlIndices = bindings.Get().controlIndices.MapReadWriteStorage();
+    auto vertices = bindings.Get().vertices.MapReadWriteStorage();
+    auto uniforms = bindings.Get().uniforms.MapReadUniform();
+    float u = (float) cb.globalInvocationId.x * uniforms.scale;
+    float v = (float) cb.globalInvocationId.y * uniforms.scale;
+    if (u > 1.0 || v > 1.0) {
+      return;
+    }
+    uint k = cb.globalInvocationId.z * 16u;
+    BicubicPatch patch;
+    for (int i = 0; i < 4; ++i) {
+      float<3>[4] pu, pv;
+      for (int j = 0; j < 4; ++j) {
+        pu[j] = controlPoints[controlIndices[k + i + j * 4]];
+        pv[j] = controlPoints[controlIndices[k + i * 4 + j]];
+      }
+      patch.uCubics[i].FromBezier(pu);
+      patch.vCubics[i].FromBezier(pv);
+    }
+    uint id = cb.globalInvocationId.x + uniforms.patchWidth * (cb.globalInvocationId.y + uniforms.patchWidth * cb.globalInvocationId.z);
+    vertices[id] = patch.Evaluate(u, v);
+  }
+  BindGroup<ComputeBindings>* bindings;
 }
 
 class SkyboxPipeline : DrawPipeline {
@@ -173,6 +190,8 @@ class ReflectionPipeline : DrawPipeline {
     vertex Buffer<Vertex[]>* vert;
 };
 
+auto tessPipeline = new ComputePipeline<BicubicComputePipeline>(device);
+
 auto depthState = new DepthStencilState<Depth24Plus>();
 
 auto cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, TriangleList);
@@ -192,9 +211,20 @@ teapotBindings.sampler = cubeBindings.sampler;
 teapotBindings.textureView = cubeBindings.textureView;
 teapotBindings.uniforms = new uniform Buffer<Uniforms>(device);
 
+uint numVerticesPerPatch = patchWidth * patchWidth;
+auto teapotVertices = new vertex storage Buffer<Vertex[]>(device, numPatches * numVerticesPerPatch);
+
+auto teapotControlPointsBuffer = new storage Buffer<float<3>[]>(device, teapotControlPoints.length);
+auto computeBindings = new BindGroup<ComputeBindings>(device, {
+  controlPoints = teapotControlPointsBuffer,
+  controlIndices = new storage Buffer<uint[]>(device, &teapotControlIndices),
+  vertices = teapotVertices,
+  uniforms = new uniform Buffer<ComputeUniforms>(device, { patchWidth = patchWidth, scale = 1.0 / (float) level } )
+});
+
 ReflectionPipeline teapotData;
-teapotData.vert = new vertex Buffer<Vertex[]>(device, tessTeapot.vertices);
-teapotData.indexBuffer = new index Buffer<uint[]>(device, tessTeapot.indices);
+teapotData.vert = teapotVertices;
+teapotData.indexBuffer = new index Buffer<uint[]>(device, tessTeapotIndices);
 teapotData.bindings = new BindGroup<Bindings>(device, &teapotBindings);
 
 EventHandler handler;
@@ -206,7 +236,40 @@ auto teapotRotation = teapotQuat.toMatrix();
 auto depthBuffer = new renderable Texture2D<Depth24Plus>(device, window.GetSize());
 Uniforms uniforms;
 auto prevWindowSize = uint<2>{0, 0};
+double startTime = System.GetCurrentTime();
+Cubic<float>[4] animCurves;
+animCurves[0].FromBezier({1.0, 1.0, 1.5, 1.5});
+animCurves[1].FromBezier({1.5, 1.5, 1.0, 1.0});
+animCurves[2].FromBezier({1.0, 1.0, 0.5, 0.5});
+animCurves[3].FromBezier({0.5, 0.5, 1.0, 1.0});
+float[4] keyTimes = { 0.0, 0.5, 1.5, 1.7 };
+float duration = 2.0;
+auto animTeapotControlPoints = new float<3>[teapotControlPoints.length];
 while (System.IsRunning()) {
+  float animTime = (float) ((System.GetCurrentTime() - startTime) % duration);
+  int key = keyTimes.length - 1;
+  float keyEnd = duration;
+  for (int i = 0; i < keyTimes.length - 1; ++i) {
+    if (animTime >= keyTimes[i] && animTime < keyTimes[i + 1]) {
+      key = i;
+      keyEnd = keyTimes[i + 1];
+    }
+  }
+  float keyStart = keyTimes[key];
+  float t = animCurves[key].Evaluate((animTime - keyStart) / (keyEnd - keyStart));
+
+  for (int i = 0; i < teapotControlPoints.length; ++i) {
+    animTeapotControlPoints[i] = teapotControlPoints[i];
+  }
+
+  for (int i = 0; i < teapotControlIndices.length; i += 16) {
+    animTeapotControlPoints[teapotControlIndices[i + 5]] *= t;
+    animTeapotControlPoints[teapotControlIndices[i + 6]] *= t;
+    animTeapotControlPoints[teapotControlIndices[i + 9]] *= t;
+    animTeapotControlPoints[teapotControlIndices[i + 10]] *= t;
+  }
+
+  teapotControlPointsBuffer.SetData(animTeapotControlPoints);
   Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
@@ -227,6 +290,12 @@ while (System.IsRunning()) {
   uniforms.model = teapotRotation * Transform.scale(2.0, 2.0, 2.0);
   teapotBindings.uniforms.SetData(&uniforms);
   auto encoder = new CommandEncoder(device);
+
+  auto tessPass = new ComputePass<BicubicComputePipeline>(encoder, { bindings = computeBindings });
+  tessPass.SetPipeline(tessPipeline);
+  tessPass.Dispatch((patchWidth + 7) / 8, (patchWidth + 7) / 8, numPatches);
+  tessPass.End();
+
   auto fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
   auto db = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
   auto renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = fb, depth = db });
@@ -239,14 +308,14 @@ while (System.IsRunning()) {
   auto teapotPass = new RenderPass<ReflectionPipeline>(renderPass);
   teapotPass.SetPipeline(teapotPipeline);
   teapotPass.Set(&teapotData);
-  teapotPass.DrawIndexed(tessTeapot.indices.length, 1, 0, 0, 0);
+  teapotPass.DrawIndexed(tessTeapotIndices.length, 1, 0, 0, 0);
 
   renderPass.End();
   CommandBuffer* cb = encoder.Finish();
   device.GetQueue().Submit(cb);
   swapChain.Present();
 
-  do {
+  while (System.HasPendingEvents()) {
     handler.Handle(System.GetNextEvent());
-  } while (System.HasPendingEvents());
+  }
 }
