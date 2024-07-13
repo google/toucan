@@ -1,8 +1,5 @@
 - rename 'auto' -> 'let'
-- port to ARM
-- port to Android
 - implement window resize event
-- implement Window.GetWidth() and Window.GetHeight()
 - implement raw ptr optimization (or explicit raw ptrs?)
 - implement foreach
 - implement Math.inverse() on CPU side
@@ -19,7 +16,6 @@
 - change length attribute to builtin function
 - fix LLVM codegen of chained array access
 - implement "constant" keyword
-- remove the need to "prime" the Utils methods
 - implement -> operator
 - validate return values in semantic pass
 - runtime check on SetData that data.length matches Buffer length
@@ -32,7 +28,6 @@
 - use static class initializers in the .h (class.num_fields_, e.g.)
 - remove AutoType in favour of parse-time checking?
 - ensure index/vertex/uniform/storage qualifiers are only applied to Buffer
-- template bind groups by class?
 - decide on Vector vs List naming: VarVector? or VarList?
 - implement "Is<>" and "As<>"
 - write shader validation pass
@@ -42,11 +37,9 @@
  - no allocation
  - no pointers other than Buffer, Texture*, TextureView*
  - no conditional assignment to pointer variables
-- Native function registry
-- refactor UnresolvedStaticMethodCall and UnresolvedMethodCall
 - convert bindings generator from C to C++
 - texture formats
-- prevent calls into null via native methods in api.tt that don't exist
+- prevent calls into null via native methods in api.t that don't exist
 - implement long, ulong
 - implement readonly, writeonly, readwrite
 - Make ClassTemplate take a vector of TemplateTypes, not just Type*
@@ -56,7 +49,6 @@
 - finish destructors
 - implement narrowing class casts
 - call field initializers
-- check for uninitialized load in locals
 - use shared_ptr in scope->method?  (just in case the parser blows up before
   the method parse completes)
 - clean up scope stuff:
