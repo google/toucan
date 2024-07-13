@@ -1062,6 +1062,7 @@ Result CodeGenSPIRV::Visit(IfStatement* stmt) {
   uint32_t falseLabel = NextId();
   uint32_t exitLabel = optElse ? NextId() : falseLabel;
   uint32_t conditionId = GenerateSPIRV(stmt->GetExpr());
+  AppendCode(spv::Op::OpSelectionMerge, {exitLabel, 0});
   AppendCode(spv::Op::OpBranchConditional, {conditionId, trueLabel, falseLabel});
   AppendCode(spv::Op::OpLabel, {trueLabel});
   GenerateSPIRV(stmt->GetStmt());
