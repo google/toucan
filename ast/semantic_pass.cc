@@ -430,10 +430,36 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
   }
 }
 
+Expr* SemanticPass::MakeConstantOne(Type* type) {
+  if (type->IsInteger()) {
+    return Make<IntConstant>(1, static_cast<IntegerType*>(type)->GetBits());
+  } else if (type->IsFloat()) {
+    return Make<FloatConstant>(1.0f);
+  } else if (type->IsDouble()) {
+    return Make<DoubleConstant>(1.0);
+  } else {
+    assert(!"unexpected type for constant");
+    return nullptr;
+  }
+}
+
 Result SemanticPass::Visit(IncDecExpr* node) {
   Expr* expr = Resolve(node->GetExpr());
   if (!expr) return nullptr;
-  return Make<IncDecExpr>(node->GetOp(), expr, node->returnOrigValue());
+  Expr* value = Make<LoadExpr>(expr);
+  Type* type = value->GetType(types_);
+  auto op = node->GetOp() == IncDecExpr::Op::Inc ? BinOpNode::Op::ADD
+                                                 : BinOpNode::Op::SUB;
+  Expr* result = Make<BinOpNode>(op, value, MakeConstantOne(type));
+  Stmt* store = Make<StoreStmt>(expr, result);
+  return Make<ExprWithStmt>(node->returnOrigValue() ? value : result, store);
+}
+
+Result SemanticPass::Visit(ExprWithStmt* node) {
+  Expr* expr = Resolve(node->GetExpr());
+  if (!expr) return nullptr;
+  Stmt* stmt = Resolve(node->GetStmt());
+  return Make<ExprWithStmt>(expr, stmt);
 }
 
 Result SemanticPass::Visit(StoreStmt* node) {

@@ -31,6 +31,7 @@ class SemanticPass : public CopyVisitor {
   Result Visit(UnresolvedClassDefinition* defn) override;
   Result Visit(Data* expr) override;
   Result Visit(DoStatement* stmt) override;
+  Result Visit(ExprWithStmt* node) override;
   Result Visit(ForStatement* forStmt) override;
   Result Visit(IfStatement* stmt) override;
   Result Visit(NewArrayExpr* expr) override;
@@ -52,6 +53,7 @@ class SemanticPass : public CopyVisitor {
   int    GetNumErrors() const { return numErrors_; }
 
  private:
+  Expr*   MakeConstantOne(Type* type);
   Result  ResolveMethodCall(Expr* expr, ClassType* classType, std::string id, ArgList* arglist);
   Expr*   ResolveListExpr(UnresolvedListExpr* node, Type* dstType);
   void    WidenArgList(std::vector<Expr*>& argList, const VarVector& formalArgList);

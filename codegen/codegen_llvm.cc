@@ -1087,29 +1087,10 @@ Result CodeGenLLVM::Visit(LoadExpr* expr) {
   return r;
 }
 
-Result CodeGenLLVM::Visit(IncDecExpr* node) {
-  Type*        type = node->GetType(types_);
-  llvm::Type*  llvmType = ConvertType(type);
-  llvm::Value* ptr = GenerateLLVM(node->GetExpr());
-  llvm::Value* value = builder_->CreateLoad(llvmType, ptr);
-  llvm::Value* result;
-  if (type->IsInteger()) {
-    llvm::Value* one = llvm::ConstantInt::get(llvmType, 1);
-    if (node->GetOp() == IncDecExpr::Op::Inc) {
-      result = builder_->CreateAdd(value, one);
-    } else {
-      result = builder_->CreateSub(value, one);
-    }
-  } else {
-    llvm::Value* one = llvm::ConstantFP::get(llvmType, 1.0f);
-    if (node->GetOp() == IncDecExpr::Op::Inc) {
-      result = builder_->CreateFAdd(value, one);
-    } else {
-      result = builder_->CreateFSub(value, one);
-    }
-  }
-  builder_->CreateStore(result, ptr);
-  return node->returnOrigValue() ? value : result;
+Result CodeGenLLVM::Visit(ExprWithStmt* node) {
+  llvm::Value* expr = GenerateLLVM(node->GetExpr());
+  node->GetStmt()->Accept(this);
+  return expr;
 }
 
 Result CodeGenLLVM::Visit(ZeroInitStmt* node) {

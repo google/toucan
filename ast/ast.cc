@@ -33,6 +33,12 @@ Type* LoadExpr::GetType(TypeTable* types) {
   return static_cast<RawPtrType*>(type)->GetBaseType()->GetUnqualifiedType();
 }
 
+ExprWithStmt::ExprWithStmt(Expr* expr, Stmt* stmt) : expr_(expr), stmt_(stmt) {}
+
+Type* ExprWithStmt::GetType(TypeTable* types) {
+  return expr_->GetType(types);
+}
+
 Type* IncDecExpr::GetType(TypeTable* types) {
   Type* type = expr_->GetType(types);
   assert(type->IsRawPtr());
@@ -303,6 +309,7 @@ Result CastExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Data::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result EnumConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprList::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ExprWithStmt::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result SmartToRawPtr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result DoStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result DoubleConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }

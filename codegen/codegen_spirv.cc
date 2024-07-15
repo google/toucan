@@ -937,6 +937,12 @@ Result CodeGenSPIRV::Visit(Initializer* node) {
   return resultId;
 }
 
+Result CodeGenSPIRV::Visit(ExprWithStmt* node) {
+  auto result = GenerateSPIRV(node->GetExpr());
+  GenerateSPIRV(node->GetStmt());
+  return result;
+}
+
 Result CodeGenSPIRV::Visit(SmartToRawPtr* node) { return GenerateSPIRV(node->GetExpr()); }
 
 Result CodeGenSPIRV::Visit(RawToWeakPtr* node) { return GenerateSPIRV(node->GetExpr()); }
@@ -1304,25 +1310,6 @@ Result CodeGenSPIRV::Visit(StoreStmt* stmt) {
   uint32_t pointerId = GenerateSPIRV(stmt->GetLHS());
   AppendCode(spv::Op::OpStore, {pointerId, objectId});
   return 0u;
-}
-
-Result CodeGenSPIRV::Visit(IncDecExpr* node) {
-  Type*    type = node->GetType(types_);
-  uint32_t typeId = ConvertType(type);
-  uint32_t ptr = GenerateSPIRV(node->GetExpr());
-  uint32_t value = AppendCode(spv::Op::OpLoad, typeId, {ptr});
-  uint32_t one;
-  spv::Op  op;
-  if (type->IsInteger()) {
-    one = GetIntConstant(1);
-    op = node->GetOp() == IncDecExpr::Op::Inc ? spv::OpIAdd : spv::OpISub;
-  } else {
-    one = GetFloatConstant(1.0f);
-    op = node->GetOp() == IncDecExpr::Op::Inc ? spv::OpFAdd : spv::OpFSub;
-  }
-  uint32_t result = AppendCode(op, typeId, {value, one});
-  AppendCode(spv::Op::OpStore, {ptr, result});
-  return node->returnOrigValue() ? value : result;
 }
 
 Result CodeGenSPIRV::Visit(WhileStatement* whileStmt) {

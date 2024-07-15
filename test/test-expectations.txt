@@ -162,6 +162,7 @@ test/new.t
 test/no-terminator-error.t
 test/overload.t
 test/override.t
+test/post-increment-with-side-effects.t
 test/really-simple.t
 test/scope-test.t
 test/shader.t

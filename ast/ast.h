@@ -534,6 +534,19 @@ class ExprStmt : public Stmt {
   Expr* expr_;
 };
 
+class ExprWithStmt : public Expr {
+ public:
+  ExprWithStmt(Expr* expr, Stmt* stmt);
+  Result Accept(Visitor* visitor) override;
+  Type*  GetType(TypeTable* types) override;
+  Expr*  GetExpr() const { return expr_; }
+  Stmt*  GetStmt() const { return stmt_; }
+
+ private:
+  Expr* expr_;
+  Stmt* stmt_;
+};
+
 class StoreStmt : public Stmt {
  public:
   StoreStmt(Expr* lhs, Expr* rhs);
@@ -752,6 +765,7 @@ class Visitor {
   virtual Result Visit(DoubleConstant* node) { return Default(node); }
   virtual Result Visit(ExprList* node) { return Default(node); }
   virtual Result Visit(ExprStmt* node) { return Default(node); }
+  virtual Result Visit(ExprWithStmt* node) { return Default(node); }
   virtual Result Visit(ExtractElementExpr* node) { return Default(node); }
   virtual Result Visit(FieldAccess* node) { return Default(node); }
   virtual Result Visit(FloatConstant* node) { return Default(node); }

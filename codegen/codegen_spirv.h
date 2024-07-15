@@ -91,6 +91,7 @@ class CodeGenSPIRV : public Visitor {
   Result   Visit(SmartToRawPtr* node) override;
   Result   Visit(DoStatement* stmt) override;
   Result   Visit(ExprStmt* exprStmt) override;
+  Result   Visit(ExprWithStmt* exprStmt) override;
   Result   Visit(FieldAccess* expr) override;
   Result   Visit(FloatConstant* expr) override;
   Result   Visit(ForStatement* stmt) override;
@@ -104,7 +105,6 @@ class CodeGenSPIRV : public Visitor {
   Result   Visit(ReturnStatement* stmt) override;
   Result   Visit(MethodCall* node) override;
   Result   Visit(Stmts* stmts) override;
-  Result   Visit(IncDecExpr* exprStmt) override;
   Result   Visit(InsertElementExpr* expr) override;
   Result   Visit(ExtractElementExpr* expr) override;
   Result   Visit(LoadExpr* expr) override;

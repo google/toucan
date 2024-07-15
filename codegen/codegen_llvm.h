@@ -114,6 +114,7 @@ class CodeGenLLVM : public Visitor {
   Result                Visit(DoubleConstant* stmt) override;
   Result                Visit(EnumConstant* node) override;
   Result                Visit(ExprStmt* exprStmt) override;
+  Result                Visit(ExprWithStmt* node) override;
   Result                Visit(ExtractElementExpr* expr) override;
   Result                Visit(FieldAccess* loadExpr) override;
   Result                Visit(FloatConstant* node) override;
@@ -133,7 +134,6 @@ class CodeGenLLVM : public Visitor {
   Result                Visit(Stmts* stmts) override;
   Result                Visit(TempVarExpr* expr) override;
   Result                Visit(VarExpr* expr) override;
-  Result                Visit(IncDecExpr* expr) override;
   Result                Visit(StoreStmt* expr) override;
   Result                Visit(ZeroInitStmt* expr) override;
   Result                Visit(UIntConstant* expr) override;
