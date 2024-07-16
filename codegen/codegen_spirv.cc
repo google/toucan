@@ -20,6 +20,7 @@
 #include <spirv/unified1/spirv.hpp>
 
 #include <ast/native_class.h>
+#include <ast/shader_prep_pass.h>
 
 #define NOTIMPLEMENTED() assert(false)
 
@@ -777,6 +778,10 @@ uint32_t CodeGenSPIRV::GetFunctionType(const Code& signature) {
 }
 
 void CodeGenSPIRV::GenCodeForMethod(Method* method, uint32_t resultId) {
+  NodeVector nodes;
+  ShaderPrepPass shaderPrepPass(&nodes, types_);
+  auto stmts = shaderPrepPass.Resolve(method->stmts);
+
   uint32_t resultType = ConvertType(method->returnType);
   Code     argTypes{resultType};
   for (auto arg : method->formalArgList) {
@@ -793,13 +798,13 @@ void CodeGenSPIRV::GenCodeForMethod(Method* method, uint32_t resultId) {
   AppendCode(spv::Op::OpLabel, {NextId()});
   assert(!method->classType->IsNative());
 
-  if (method->stmts) {
+  if (stmts) {
     // Create function-local storage for any non-pointer arguments.
     for (auto arg : method->formalArgList) {
       if (!arg->type->IsPtr()) { DeclareVar(arg.get()); }
     }
     VarDeclVisitor varDeclVisitor(this);
-    method->stmts->Accept(&varDeclVisitor);
+    stmts->Accept(&varDeclVisitor);
     auto fp = fps.begin();
     // Store non-pointer arguments into function-local variables.
     for (auto arg : method->formalArgList) {
@@ -809,7 +814,7 @@ void CodeGenSPIRV::GenCodeForMethod(Method* method, uint32_t resultId) {
         arg->spirv = *fp++;
       }
     }
-    GenerateSPIRV(method->stmts);
+    GenerateSPIRV(stmts);
   }
 
   AppendCode(spv::Op::OpFunctionEnd, {});

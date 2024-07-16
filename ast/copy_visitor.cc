@@ -34,6 +34,14 @@ Result CopyVisitor::Visit(CastExpr* node) {
   return Make<CastExpr>(type, expr);
 }
 
+Result CopyVisitor::Visit(ExprWithStmt* node) {
+  return Make<ExprWithStmt>(Resolve(node->GetExpr()), Resolve(node->GetStmt()));
+}
+
+Result CopyVisitor::Visit(ExtractElementExpr* node) {
+  return Make<ExtractElementExpr>(Resolve(node->GetExpr()), node->GetIndex());
+}
+
 Result CopyVisitor::Visit(Initializer* node) {
   Type*     type = ResolveType(node->GetType());
   ExprList* argList = Resolve(node->GetArgList());
@@ -63,6 +71,9 @@ Result CopyVisitor::Visit(Stmts* stmts) {
   for (Stmt* const& it : stmts->GetStmts()) {
     Stmt* stmt = Resolve(it);
     if (stmt) newStmts->Append(Resolve(stmt));
+  }
+  for (auto var : stmts->GetVars()) {
+    newStmts->AppendVar(var);
   }
   return newStmts;
 }
@@ -202,6 +213,18 @@ Result CopyVisitor::Visit(UnresolvedStaticMethodCall* node) {
 
 Result CopyVisitor::Visit(UnresolvedIdentifier* node) {
   return Make<UnresolvedIdentifier>(node->GetID());
+}
+
+Result CopyVisitor::Visit(ZeroInitStmt* node) {
+  return Make<ZeroInitStmt>(Resolve(node->GetLHS()));
+}
+
+Result CopyVisitor::Visit(VarExpr* node) {
+  return Make<VarExpr>(node->GetVar());
+}
+
+Result CopyVisitor::Visit(FieldAccess* node) {
+  return Make<FieldAccess>(Resolve(node->GetExpr()), node->GetField());
 }
 
 Result CopyVisitor::Default(ASTNode* node) {

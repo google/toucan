@@ -36,6 +36,8 @@ test/class-constructor-calls-constructor.t
 test/class-constructor.t
 test/class-initializer.t
 test/complex-method.t
+test/compute-pass-ptr-to-element.t
+Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/constructor-with-default-arg.t
 test/constructor-with-explicit-initializer.t
 test/constructor.t

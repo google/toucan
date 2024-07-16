@@ -75,6 +75,7 @@ class Expr : public ASTNode {
   Expr();
   virtual Type* GetType(TypeTable* types) = 0;
   virtual bool  IsArrayAccess() const { return false; }
+  virtual bool  IsFieldAccess() const { return false; }
   virtual bool  IsUnresolvedSwizzleExpr() const { return false; }
   virtual bool  IsUnresolvedListExpr() const { return false; }
   virtual bool  IsIntConstant() const { return false; }
@@ -441,6 +442,7 @@ class FieldAccess : public Expr {
   Type*  GetType(TypeTable* types) override;
   Expr*  GetExpr() { return expr_; }
   Field* GetField() { return field_; }
+  bool   IsFieldAccess() const override { return true; }
 
  private:
   Expr*  expr_;

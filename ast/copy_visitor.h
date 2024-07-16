@@ -35,6 +35,9 @@ class CopyVisitor : public Visitor {
   Result        Visit(EnumConstant* node) override;
   Result        Visit(ExprList* node) override;
   Result        Visit(ExprStmt* exprStmt) override;
+  Result        Visit(ExprWithStmt* node) override;
+  Result        Visit(ExtractElementExpr* node) override;
+  Result        Visit(FieldAccess* node) override;
   Result        Visit(FloatConstant* constant) override;
   Result        Visit(ForStatement* forStmt) override;
   Result        Visit(IfStatement* stmt) override;
@@ -61,6 +64,8 @@ class CopyVisitor : public Visitor {
   Result        Visit(UnresolvedStaticMethodCall* node) override;
   Result        Visit(VarDeclaration* decl) override;
   Result        Visit(WhileStatement* stmt) override;
+  Result        Visit(VarExpr* node) override;
+  Result        Visit(ZeroInitStmt* node) override;
   Result        Default(ASTNode* node) override;
   template <typename T>
   T* Resolve(T* t) {

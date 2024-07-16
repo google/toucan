@@ -323,7 +323,7 @@ static wgpu::BufferUsage toDawnBufferUsage(int qualifiers) {
     gpu = true;
   }
   if (gpu) {
-    result |= wgpu::BufferUsage::CopyDst;
+    result |= wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
     // F*XME: handle readonly, writeonly, readwrite storage
   } else {
     if (qualifiers & (Type::Qualifier::ReadOnly | Type::Qualifier::ReadWrite)) {
