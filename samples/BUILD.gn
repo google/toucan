@@ -49,6 +49,10 @@ toucan_app("shiny") {
   sources = [ "shiny.t" ]
 }
 
+toucan_app("shiny-anim") {
+  sources = [ "shiny-anim.t" ]
+}
+
 toucan_app("triangle") {
   sources = [ "triangle.t" ]
 }

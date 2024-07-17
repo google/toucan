@@ -662,6 +662,7 @@ static llvm::Value* GenerateBinOpFloat(LLVMBuilder* builder,
     case BinOpNode::GE: return builder->CreateFCmpOGE(lhs, rhs, "fcmp");
     case BinOpNode::GT: return builder->CreateFCmpOGT(lhs, rhs, "fcmp");
     case BinOpNode::NE: return builder->CreateFCmpONE(lhs, rhs, "fcmp");
+    case BinOpNode::MOD: return builder->CreateFRem(lhs, rhs, "frem");
     default: assert(false); return 0;
   }
 }
