@@ -116,6 +116,7 @@ syntax-error.t:2: syntax error
 test/include-twice-by-different-paths.t
 test/include-twice.t
 test/include.t
+test/increment-with-side-effects.t
 test/indexed-bracketed-expr.t
 test/indexed-method-return.t
 test/inherited-field.t
@@ -170,6 +171,7 @@ test/short.t
 test/simple.t
 6
 test/spirv-call-graph.t
+test/spirv-if-stmt.t
 test/stack-method-call.t
 test/static-method-with-args.t
 test/static-method.t

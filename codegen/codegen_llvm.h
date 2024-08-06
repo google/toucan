@@ -163,27 +163,28 @@ class CodeGenLLVM : public Visitor {
   llvm::Value* CreateTypePtr(Type* type);
 
  private:
-  llvm::LLVMContext*                 context_;
-  TypeTable*                         types_;
-  llvm::Module*                      module_;
-  LLVMBuilder*                       builder_;
-  llvm::legacy::FunctionPassManager* fpm_;
-  DataVars                           dataVars_;
-  llvm::Type*                        intType_;
-  llvm::Type*                        floatType_;
-  llvm::Type*                        doubleType_;
-  llvm::Type*                        boolType_;
-  llvm::Type*                        byteType_;
-  llvm::Type*                        shortType_;
-  llvm::Type*                        funcPtrType_;
-  llvm::PointerType*                 voidPtrType_;
-  llvm::Type*                        controlBlockType_;
-  llvm::PointerType*                 controlBlockPtrType_;
-  llvm::Type*                        vtableType_;
-  bool                               debugOutput_;
-  DerefList                          temporaries_;
-  llvm::Type*                        typeListType_;
-  llvm::GlobalValue*                 typeList_;
+  llvm::LLVMContext*                      context_;
+  TypeTable*                              types_;
+  llvm::Module*                           module_;
+  LLVMBuilder*                            builder_;
+  llvm::legacy::FunctionPassManager*      fpm_;
+  DataVars                                dataVars_;
+  llvm::Type*                             intType_;
+  llvm::Type*                             floatType_;
+  llvm::Type*                             doubleType_;
+  llvm::Type*                             boolType_;
+  llvm::Type*                             byteType_;
+  llvm::Type*                             shortType_;
+  llvm::Type*                             funcPtrType_;
+  llvm::PointerType*                      voidPtrType_;
+  llvm::Type*                             controlBlockType_;
+  llvm::PointerType*                      controlBlockPtrType_;
+  llvm::Type*                             vtableType_;
+  bool                                    debugOutput_;
+  DerefList                               temporaries_;
+  llvm::Type*                             typeListType_;
+  llvm::GlobalValue*                      typeList_;
+  std::unordered_map<Expr*, llvm::Value*> exprCache_;
 };
 
 };  // namespace Toucan

@@ -64,16 +64,16 @@ class CopyVisitor : public Visitor {
   Result        Default(ASTNode* node) override;
   template <typename T>
   T* Resolve(T* t) {
-    if (t) {
-      if (copyFileLocation_) {
-        ScopedFileLocation scopedFile(&fileLocation_, t->GetFileLocation());
-        return static_cast<T*>(t->Accept(this).p);
-      } else {
-        return static_cast<T*>(t->Accept(this).p);
-      }
-    } else {
-      return nullptr;
-    }
+    if (!t) { return nullptr; }
+
+    if (!copyFileLocation_) { return static_cast<T*>(t->Accept(this).p); }
+
+    if (ASTNode* result = nodeCache_[t]) { return static_cast<T*>(result); }
+
+    ScopedFileLocation scopedFile(&fileLocation_, t->GetFileLocation());
+    T*                 result = static_cast<T*>(t->Accept(this).p);
+    nodeCache_[t] = result;
+    return result;
   }
 
  protected:
@@ -83,9 +83,10 @@ class CopyVisitor : public Visitor {
     node->SetFileLocation(fileLocation_);
     return node;
   }
-  FileLocation fileLocation_;
-  bool         copyFileLocation_ = true;
-  NodeVector*  nodes_;
+  FileLocation                           fileLocation_;
+  bool                                   copyFileLocation_ = true;
+  NodeVector*                            nodes_;
+  std::unordered_map<ASTNode*, ASTNode*> nodeCache_;
 };
 
 };  // namespace Toucan

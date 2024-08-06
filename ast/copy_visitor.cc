@@ -162,7 +162,7 @@ Result CopyVisitor::Visit(ForStatement* node) {
 }
 
 Result CopyVisitor::Visit(MethodCall* node) {
-  return Make<MethodCall>(node->GetMethod(), node->GetArgList());
+  return Make<MethodCall>(node->GetMethod(), Resolve(node->GetArgList()));
 }
 
 Result CopyVisitor::Visit(NewArrayExpr* expr) {
