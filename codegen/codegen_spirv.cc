@@ -894,10 +894,6 @@ uint32_t CodeGenSPIRV::CreateCast(Type*    srcType,
     return AppendCode(spv::Op::OpConvertSToF, resultType, {valueId});
   } else if (dstType->IsInt() && srcType->IsFloat()) {
     return AppendCode(spv::Op::OpConvertFToS, resultType, {valueId});
-  } else if (dstType->IsFloat() && srcType->IsUInt()) {
-    return AppendCode(spv::Op::OpConvertUToF, resultType, {valueId});
-  } else if (dstType->IsUInt() && srcType->IsFloat()) {
-    return AppendCode(spv::Op::OpConvertFToU, resultType, {valueId});
   } else if (dstType->IsInt() && srcType->IsUInt()) {
     return valueId;
   } else if (dstType->IsUInt() && srcType->IsInt()) {
