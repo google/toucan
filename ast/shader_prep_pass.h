@@ -29,9 +29,12 @@ class ShaderPrepPass : public CopyVisitor {
   Result Visit(Stmts* node) override;
   Result Visit(ZeroInitStmt* node) override;
   Result Default(ASTNode* node) override;
+
+  const VarVector& GetVars() { return vars_; }
+
  private:
   TypeTable* types_;
-  Stmts*     enclosingStmts_;
+  VarVector  vars_;
 };
 
 };  // namespace Toucan

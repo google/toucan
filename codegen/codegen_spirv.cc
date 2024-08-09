@@ -167,40 +167,6 @@ spv::Op binOpToOpcode(BinOpNode::Op op,
   return spv::OpNop;
 }
 
-class VarDeclVisitor : public Visitor {
- public:
-  VarDeclVisitor(CodeGenSPIRV* codegen) : codegen_(codegen) {}
-  Result Default(ASTNode*) override { return {}; }
-  Result Visit(Stmts* stmts) override {
-    for (auto var : stmts->GetVars()) {
-      codegen_->DeclareVar(var.get());
-    }
-    for (Stmt* const& i : stmts->GetStmts()) {
-      i->Accept(this);
-    }
-    return {};
-  }
-  Result Visit(IfStatement* stmt) override {
-    stmt->GetStmt()->Accept(this);
-    if (stmt->GetOptElse()) stmt->GetOptElse()->Accept(this);
-    return {};
-  }
-  Result Visit(WhileStatement* stmt) override {
-    if (stmt->GetBody()) stmt->GetBody()->Accept(this);
-    return {};
-  }
-  Result Visit(DoStatement* stmt) override {
-    if (stmt->GetBody()) stmt->GetBody()->Accept(this);
-    return {};
-  }
-  Result Visit(ForStatement* stmt) override {
-    if (stmt->GetInitStmt()) stmt->GetInitStmt()->Accept(this);
-    stmt->GetBody()->Accept(this);
-    return {};
-  }
-  CodeGenSPIRV* codegen_;
-};
-
 spv::ExecutionModel toExecutionModel(ShaderType shaderType) {
   if (shaderType == ShaderType::Vertex) {
     return spv::ExecutionModelVertex;
@@ -778,9 +744,9 @@ uint32_t CodeGenSPIRV::GetFunctionType(const Code& signature) {
 }
 
 void CodeGenSPIRV::GenCodeForMethod(Method* method, uint32_t resultId) {
-  NodeVector nodes;
+  NodeVector     nodes;
   ShaderPrepPass shaderPrepPass(&nodes, types_);
-  auto stmts = shaderPrepPass.Resolve(method->stmts);
+  auto           stmts = shaderPrepPass.Resolve(method->stmts);
 
   uint32_t resultType = ConvertType(method->returnType);
   Code     argTypes{resultType};
@@ -803,8 +769,9 @@ void CodeGenSPIRV::GenCodeForMethod(Method* method, uint32_t resultId) {
     for (auto arg : method->formalArgList) {
       if (!arg->type->IsPtr()) { DeclareVar(arg.get()); }
     }
-    VarDeclVisitor varDeclVisitor(this);
-    stmts->Accept(&varDeclVisitor);
+    for (auto var : shaderPrepPass.GetVars()) {
+      DeclareVar(var.get());
+    }
     auto fp = fps.begin();
     // Store non-pointer arguments into function-local variables.
     for (auto arg : method->formalArgList) {
@@ -1265,7 +1232,7 @@ Result CodeGenSPIRV::Visit(VarExpr* expr) {
   } else if (type->IsClass() && isBuiltInClass(static_cast<ClassType*>(type))) {
     return kBuiltIns;
   } else {
-    // The storage for these is allocated by the VarDeclVisitor.
+    // The storage for these is allocated by the DeclareVar() loop in GenCodeForMethod().
     return expr->GetVar()->spirv;
   }
 }
