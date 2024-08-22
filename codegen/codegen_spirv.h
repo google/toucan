@@ -82,6 +82,7 @@ class CodeGenSPIRV : public Visitor {
   uint32_t ConvertPointerToType(Type* type);
   uint32_t GetIntConstant(int32_t value);
   uint32_t GetFloatConstant(float value);
+  uint32_t GetBoolConstant(bool value);
   uint32_t GetZeroConstant(Type* type);
   Result   Visit(ArgList* list) override;
   Result   Visit(ArrayAccess* node) override;
@@ -152,7 +153,7 @@ class CodeGenSPIRV : public Visitor {
   std::unordered_map<Code, uint32_t, HashCode> spirvFunctionTypes_;
   std::unordered_map<int32_t, uint32_t>        intConstants_;
   std::unordered_map<float, uint32_t>          floatConstants_;
-  std::unordered_map<Type*, uint32_t>          zeroConstants_;
+  uint32_t                                     boolConstants_[2];
   std::unordered_map<Method*, uint32_t>        functions_;
   std::list<Method*>                           pendingMethods_;
   PtrType*                                     thisPtrType_ = nullptr;

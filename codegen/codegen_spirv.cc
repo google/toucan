@@ -195,7 +195,7 @@ uint32_t CodeGenSPIRV::DeclareAndLoadInputVar(Type*      type,
 }
 
 uint32_t CodeGenSPIRV::GetStorageClass(Type* type) {
-  if (type->IsRawPtr()) { type = static_cast<RawPtrType*>(type)->GetBaseType(); }
+  assert(!type->IsPtr());
   int qualifiers;
   type = types_->GetUnqualifiedType(type, &qualifiers);
   if (type->IsClass()) {
@@ -491,17 +491,13 @@ Result CodeGenSPIRV::Visit(ArgList* list) {
 }
 
 Result CodeGenSPIRV::Visit(ArrayAccess* node) {
-  Type* type = node->GetExpr()->GetType(types_);
-  if (type->IsRawPtr()) { type = static_cast<RawPtrType*>(type)->GetBaseType(); }
-  assert(type->IsArray());
-  ArrayType* arrayType = static_cast<ArrayType*>(type);
-
-  uint32_t storageClass = GetStorageClass(node->GetType(types_));
-  uint32_t resultType = ConvertPointerToType(arrayType->GetElementType(), storageClass);
+  uint32_t resultType = ConvertType(node->GetType(types_));
   uint32_t base = GenerateSPIRV(node->GetExpr());
   uint32_t index = GenerateSPIRV(node->GetIndex());
-  if (type->IsUnsizedArray()) {
-    base = AppendCode(spv::Op::OpAccessChain, ConvertPointerToType(arrayType),
+  Type* type = node->GetExpr()->GetType(types_);
+  assert(type->IsPtr());
+  if (static_cast<PtrType*>(type)->GetBaseType()->IsUnsizedArray()) {
+    base = AppendCode(spv::Op::OpAccessChain, ConvertType(type),
                       {base, GetIntConstant(0)});
   }
   uint32_t resultId = AppendCode(spv::Op::OpAccessChain, resultType, {base, index});
@@ -600,7 +596,7 @@ uint32_t CodeGenSPIRV::DeclareVar(Var* var) {
     return 0;
   }
   uint32_t storageClass = GetStorageClass(var->type);
-  uint32_t varType = ConvertPointerToType(var->type, storageClass);
+  uint32_t varType = ConvertPointerToType(var->type);
   uint32_t varId = AppendCode(spv::Op::OpVariable, varType, {storageClass});
   var->spirv = varId;
   return varId;
@@ -629,7 +625,7 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
   uint32_t resultId;
   if (type->IsPtr()) {
     Type* baseType = static_cast<PtrType*>(type)->GetBaseType();
-    resultId = ConvertPointerToType(baseType);
+    return ConvertPointerToType(baseType);
   } else if (type->IsArray()) {
     ArrayType* a = static_cast<ArrayType*>(type);
     uint32_t   elementType = ConvertType(a->GetElementType());
@@ -638,7 +634,7 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
     } else {
       uint32_t intType = ConvertType(types_->GetInt());
       uint32_t value = a->GetNumElements();
-      uint32_t numElementsId = AppendDecl(spv::Op::OpConstant, intType, {value});
+      uint32_t numElementsId = GetIntConstant(value);
       resultId = AppendTypeDecl(spv::Op::OpTypeArray, {elementType, numElementsId});
     }
     Append(spv::OpDecorate,
@@ -654,9 +650,9 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
           // The current vertex, as a variable of the vertex buffer element type via Get().
           baseType = static_cast<ArrayType*>(baseType)->GetElementType();
         }
-        resultId = ConvertPointerToType(baseType);
+        return ConvertPointerToType(baseType);
       } else if (isColorAttachment(classType)) {
-        resultId = ConvertPointerToType(GetSampledType(classType));
+        return ConvertPointerToType(GetSampledType(classType));
       } else if (isSampler(classType)) {
         resultId = AppendTypeDecl(spv::Op::OpTypeSampler, {});
       } else if (isSampleableTexture1D(classType)) {
@@ -681,7 +677,7 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
         uint32_t typeId;
         if (builtin) {
           if (field->type->IsReadable()) {
-            typeId = ConvertType(field->type);
+            typeId = ConvertPointerToType(field->type, spv::StorageClassInput);
           } else if (field->type->IsWriteable()) {
             typeId = ConvertPointerToType(field->type, spv::StorageClassOutput);
           }
@@ -792,7 +788,6 @@ uint32_t CodeGenSPIRV::ConvertPointerToType(Type* type) {
 }
 
 uint32_t CodeGenSPIRV::ConvertPointerToType(Type* type, uint32_t storageClass) {
-  if (type->IsPtr()) { type = static_cast<PtrType*>(type)->GetBaseType(); }
   PtrTypeKey key(types_->GetUnqualifiedType(type), storageClass);
   if (spirvPtrTypes_[key] != 0) { return spirvPtrTypes_[key]; }
   uint32_t typeId = ConvertType(type);
@@ -845,10 +840,7 @@ Result CodeGenSPIRV::Visit(UnaryOp* node) {
 }
 
 Result CodeGenSPIRV::Visit(BoolConstant* expr) {
-  uint32_t resultType = ConvertType(expr->GetType(types_));
-  uint32_t op = expr->GetValue() ? spv::Op::OpConstantTrue : spv::Op::OpConstantFalse;
-  uint32_t resultId = AppendDecl(op, resultType, {});
-  return resultId;
+  return GetBoolConstant(expr->GetValue());
 }
 
 uint32_t CodeGenSPIRV::CreateCast(Type*    srcType,
@@ -963,12 +955,27 @@ uint32_t CodeGenSPIRV::GetFloatConstant(float value) {
   return resultId;
 }
 
-uint32_t CodeGenSPIRV::GetZeroConstant(Type* type) {
-  if (zeroConstants_[type]) { return zeroConstants_[type]; }
-  uint32_t resultType = ConvertType(type);
-  uint32_t resultId = AppendDecl(spv::Op::OpConstant, resultType, {0});
-  zeroConstants_[type] = resultId;
+uint32_t CodeGenSPIRV::GetBoolConstant(bool value) {
+  int index = value ? 1 : 0;
+  if (boolConstants_[index]) { return boolConstants_[index]; }
+  uint32_t resultType = ConvertType(types_->GetBool());
+  uint32_t op = value ? spv::Op::OpConstantTrue : spv::Op::OpConstantFalse;
+  uint32_t resultId = AppendDecl(op, resultType, {});
+  boolConstants_[index] = resultId;
   return resultId;
+}
+
+uint32_t CodeGenSPIRV::GetZeroConstant(Type* type) {
+  if (type->IsFloatingPoint()) {
+    return GetFloatConstant(0.0);
+  } else if (type->IsInteger()) {
+    return GetIntConstant(0);
+  } else if (type->IsBool()) {
+    return GetBoolConstant(false);
+  } else {
+    assert(false);
+    return 0;
+  }
 }
 
 Result CodeGenSPIRV::Visit(FieldAccess* expr) {
@@ -989,8 +996,7 @@ Result CodeGenSPIRV::Visit(FieldAccess* expr) {
     return builtInVars_[field->index]->spirv;
   }
 
-  uint32_t storageClass = GetStorageClass(expr->GetType(types_));
-  uint32_t resultType = ConvertPointerToType(field->type, storageClass);
+  uint32_t resultType = ConvertType(expr->GetType(types_));
   uint32_t index = GetIntConstant(field->index);
   uint32_t resultId = AppendCode(spv::Op::OpAccessChain, resultType, {base, index});
   return resultId;
@@ -999,9 +1005,7 @@ Result CodeGenSPIRV::Visit(FieldAccess* expr) {
 Result CodeGenSPIRV::Visit(FloatConstant* expr) {
   uint32_t resultType = ConvertType(expr->GetType(types_));
   float    value = expr->GetValue();
-  uint32_t ivalue = *reinterpret_cast<int*>(&value);
-  uint32_t resultId = AppendDecl(spv::Op::OpConstant, resultType, {ivalue});
-  return resultId;
+  return GetFloatConstant(expr->GetValue());
 }
 
 Result CodeGenSPIRV::Visit(ForStatement* forStmt) {
