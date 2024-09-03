@@ -308,23 +308,23 @@ enum class ShaderType {
 
 struct Method {
   Method(int modifiers, Type* returnType, std::string name, ClassType* classType);
-  std::string           ToString() const;
-  std::string           GetMangledName() const;
-  void                  AddFormalArg(std::string id, Type* type, Expr* defaultValue);
-  int                   modifiers;
-  Type*                 returnType;
-  std::string           name;
-  ClassType*            classType;
-  Method*               templateMethod = nullptr;
-  ShaderType            shaderType = ShaderType::None;
-  uint32_t              workgroupSize[3] = {1, 1, 1};
-  VarVector             formalArgList;
-  std::vector<Expr*>    defaultArgs;
-  Stmts*                stmts = nullptr;
-  void*                 data = nullptr;
-  std::vector<uint32_t> spirv;
-  std::string           wgsl;
-  int                   index = -1;
+  std::string             ToString() const;
+  std::string             GetMangledName() const;
+  void                    AddFormalArg(std::string id, Type* type, Expr* defaultValue);
+  int                     modifiers;
+  Type*                   returnType;
+  std::string             name;
+  ClassType*              classType;
+  Method*                 templateMethod = nullptr;
+  ShaderType              shaderType = ShaderType::None;
+  std::array<uint32_t, 3> workgroupSize = {1, 1, 1};
+  VarVector               formalArgList;
+  std::vector<Expr*>      defaultArgs;
+  Stmts*                  stmts = nullptr;
+  void*                   data = nullptr;
+  std::vector<uint32_t>   spirv;
+  std::string             wgsl;
+  int                     index = -1;
   enum { STATIC = 0x01, VIRTUAL = 0x02, DEVICEONLY = 0x04 } Modifiers;
 };
 

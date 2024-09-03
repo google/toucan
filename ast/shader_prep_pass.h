@@ -19,22 +19,22 @@
 
 namespace Toucan {
 
-class SymbolTable;
+using MethodMap = std::unordered_map<Method*, std::unique_ptr<Method>>;
 
 class ShaderPrepPass : public CopyVisitor {
  public:
   ShaderPrepPass(NodeVector* nodes, TypeTable* types);
-  Result Visit(MethodCall* node) override;
-  Result Visit(RawToWeakPtr* node) override;
-  Result Visit(Stmts* node) override;
-  Result Visit(ZeroInitStmt* node) override;
-  Result Default(ASTNode* node) override;
-
-  const VarVector& GetVars() { return vars_; }
+  Method* Run(Method* method);
+  Result  Visit(MethodCall* node) override;
+  Result  Visit(RawToWeakPtr* node) override;
+  Result  Visit(Stmts* node) override;
+  Result  Visit(ZeroInitStmt* node) override;
+  Result  Default(ASTNode* node) override;
 
  private:
   TypeTable* types_;
-  VarVector  vars_;
+  Stmts*     rootStmts_ = nullptr;
+  MethodMap  methodMap_;
 };
 
 };  // namespace Toucan

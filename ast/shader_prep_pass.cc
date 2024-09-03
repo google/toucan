@@ -20,9 +20,13 @@ ShaderPrepPass::ShaderPrepPass(NodeVector* nodes, TypeTable* types)
     : CopyVisitor(nodes), types_(types) {}
 
 Result ShaderPrepPass::Visit(Stmts* stmts) {
-  for (auto var : stmts->GetVars()) vars_.push_back(var);
-
   Stmts* newStmts = Make<Stmts>();
+
+  if (!rootStmts_) { rootStmts_ = newStmts; }
+
+  for (auto var : stmts->GetVars()) {
+    rootStmts_->AppendVar(var);
+  }
 
   for (Stmt* const& it : stmts->GetStmts()) {
     Stmt* stmt = Resolve(it);
@@ -31,8 +35,22 @@ Result ShaderPrepPass::Visit(Stmts* stmts) {
   return newStmts;
 }
 
+Method* ShaderPrepPass::Run(Method* method) {
+  if (methodMap_[method]) { return methodMap_[method].get(); }
+
+  auto    newMethod = std::make_unique<Method>(*method);
+  Method* result = newMethod.get();
+  methodMap_[method] = std::move(newMethod);
+  Stmts* prevRootStmts = rootStmts_;
+  rootStmts_ = nullptr;
+  result->stmts = Resolve(method->stmts);
+  rootStmts_ = prevRootStmts;
+
+  return result;
+}
+
 Result ShaderPrepPass::Visit(MethodCall* node) {
-  Method*                   method = node->GetMethod();
+  Method*                   method = Run(node->GetMethod());
   const std::vector<Expr*>& args = node->GetArgList()->Get();
   auto*                     newArgs = Make<ExprList>();
   Stmts*                    writeStmts = nullptr;
@@ -42,7 +60,7 @@ Result ShaderPrepPass::Visit(MethodCall* node) {
     if (type->IsPtr() && arg->IsFieldAccess() || arg->IsArrayAccess()) {
       auto* baseType = static_cast<PtrType*>(type)->GetBaseType();
       auto  var = std::make_shared<Var>("temp", baseType);
-      vars_.push_back(var);
+      rootStmts_->AppendVar(var);
       VarExpr* varExpr = Make<VarExpr>(var.get());
       if (baseType->IsWriteable()) {
         if (!writeStmts) writeStmts = Make<Stmts>();

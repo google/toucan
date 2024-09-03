@@ -405,6 +405,9 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
   uint32_t functionId = NextId();
   // Note: we're going to butcher the arg list, so reference the old one for
   // the duration of this method.
+  NodeVector     nodes;
+  ShaderPrepPass shaderPrepPass(&nodes, types_);
+  entryPoint = shaderPrepPass.Run(entryPoint);
   auto argsBackup = entryPoint->formalArgList;
 
   Code interface;
@@ -477,7 +480,7 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
   if (entryPoint->shaderType == ShaderType::Fragment) {
     Append(spv::OpExecutionMode, {entryPointId, spv::ExecutionModeOriginUpperLeft}, &header_);
   } else if (entryPoint->shaderType == ShaderType::Compute) {
-    const uint32_t* ws = entryPoint->workgroupSize;
+    auto ws = entryPoint->workgroupSize;
     Append(spv::OpExecutionMode, {entryPointId, spv::ExecutionModeLocalSize, ws[0], ws[1], ws[2]},
            &header_);
   }
@@ -494,11 +497,10 @@ Result CodeGenSPIRV::Visit(ArrayAccess* node) {
   uint32_t resultType = ConvertType(node->GetType(types_));
   uint32_t base = GenerateSPIRV(node->GetExpr());
   uint32_t index = GenerateSPIRV(node->GetIndex());
-  Type* type = node->GetExpr()->GetType(types_);
+  Type*    type = node->GetExpr()->GetType(types_);
   assert(type->IsPtr());
   if (static_cast<PtrType*>(type)->GetBaseType()->IsUnsizedArray()) {
-    base = AppendCode(spv::Op::OpAccessChain, ConvertType(type),
-                      {base, GetIntConstant(0)});
+    base = AppendCode(spv::Op::OpAccessChain, ConvertType(type), {base, GetIntConstant(0)});
   }
   uint32_t resultId = AppendCode(spv::Op::OpAccessChain, resultType, {base, index});
   return resultId;
@@ -740,10 +742,7 @@ uint32_t CodeGenSPIRV::GetFunctionType(const Code& signature) {
 }
 
 void CodeGenSPIRV::GenCodeForMethod(Method* method, uint32_t resultId) {
-  NodeVector     nodes;
-  ShaderPrepPass shaderPrepPass(&nodes, types_);
-  auto           stmts = shaderPrepPass.Resolve(method->stmts);
-
+  auto     stmts = method->stmts;
   uint32_t resultType = ConvertType(method->returnType);
   Code     argTypes{resultType};
   for (auto arg : method->formalArgList) {
@@ -765,7 +764,7 @@ void CodeGenSPIRV::GenCodeForMethod(Method* method, uint32_t resultId) {
     for (auto arg : method->formalArgList) {
       if (!arg->type->IsPtr()) { DeclareVar(arg.get()); }
     }
-    for (auto var : shaderPrepPass.GetVars()) {
+    for (auto var : stmts->GetVars()) {
       DeclareVar(var.get());
     }
     auto fp = fps.begin();
@@ -839,9 +838,7 @@ Result CodeGenSPIRV::Visit(UnaryOp* node) {
   return resultId;
 }
 
-Result CodeGenSPIRV::Visit(BoolConstant* expr) {
-  return GetBoolConstant(expr->GetValue());
-}
+Result CodeGenSPIRV::Visit(BoolConstant* expr) { return GetBoolConstant(expr->GetValue()); }
 
 uint32_t CodeGenSPIRV::CreateCast(Type*    srcType,
                                   Type*    dstType,
