@@ -59,21 +59,10 @@ Type* ShaderPrepPass::GetAndQualifyUnderlyingType(Type* type) {
   return type;
 }
 
-void ShaderPrepPass::ExtractPipelineVars(Method* entryPoint) {
-  if (entryPoint->modifiers & Method::STATIC) { return; }
-  assert(entryPoint->formalArgList.size() > 0);
-  ExtractPipelineVars(entryPoint->classType);
-  assert(bindGroups_.size() <= kMaxBindGroups);
-  // Remove this "this" pointer.
-  entryPoint->formalArgList.erase(entryPoint->formalArgList.begin());
-  entryPoint->modifiers |= Method::STATIC;
-}
-
 void ShaderPrepPass::ExtractPipelineVars(ClassType* classType) {
   if (classType->GetParent()) { ExtractPipelineVars(classType->GetParent()); }
   for (const auto& field : classType->GetFields()) {
-    Type*    type = field->type;
-    uint32_t pipelineVar = 0;
+    Type* type = field->type;
 
     assert(type->IsPtr());
     type = static_cast<PtrType*>(type)->GetBaseType();
@@ -86,7 +75,7 @@ void ShaderPrepPass::ExtractPipelineVars(ClassType* classType) {
         type = classType->GetTemplateArgs()[0];
         type = static_cast<ClassType*>(type)->FindType("SampledType");
         type = types_->GetVector(type, 4);
-        outputs_.push_back(type);
+        outputs_.push_back(std::make_shared<Var>(field->name, type));
         outputIndices_.push_back(field->index);
       }
     } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment) {
@@ -97,7 +86,7 @@ void ShaderPrepPass::ExtractPipelineVars(ClassType* classType) {
         Type* arg = classType->GetTemplateArgs()[0];
         assert(arg->IsArray());
         Type* elementType = static_cast<ArrayType*>(arg)->GetElementType();
-        inputs_.push_back(elementType);
+        inputs_.push_back(std::make_shared<Var>(field->name, elementType));
         inputIndices_.push_back(field->index);
       }
     } else if (classType->GetTemplate() == NativeClass::Buffer &&
@@ -124,15 +113,96 @@ void ShaderPrepPass::ExtractPipelineVars(ClassType* classType) {
   }
 }
 
+void ShaderPrepPass::ExtractBuiltInVars(Type* type) {
+  assert(type->IsClass());
+  auto classType = static_cast<ClassType*>(type);
+  for (const auto& field : classType->GetFields()) {
+    auto var = std::make_shared<Var>(field->name, field->type);
+    builtInVars_.push_back(var);
+  }
+}
+
+Expr* ShaderPrepPass::LoadInputVar(Type* type, std::string name) {
+  auto var = std::make_shared<Var>(name, type);
+  inputs_.push_back(var);
+  inputIndices_.push_back(-1);
+  return Make<LoadExpr>(Make<VarExpr>(var.get()));
+}
+
+// Given a class, creates Vars for each of its fields and adds them to inputss_.
+// Loads the globals and constructs an instance of the class via Initialize().
+Expr* ShaderPrepPass::LoadInputVars(Type* type) {
+  if (type->IsClass()) {
+    auto classType = static_cast<ClassType*>(type);
+    auto args = Make<ExprList>();
+    for (auto& i : classType->GetFields()) {
+      Field* field = i.get();
+      args->Append(LoadInputVar(field->type, field->name));
+    }
+    return Make<Initializer>(type, args);
+  } else {
+    return LoadInputVar(type, "singleinput");
+  }
+}
+
+Stmt* ShaderPrepPass::StoreOutputVar(Type* type, std::string name, Expr* value) {
+  auto var = std::make_shared<Var>(name, type);
+  outputs_.push_back(var);
+  outputIndices_.push_back(-1);
+  return Make<StoreStmt>(Make<VarExpr>(var.get()), value);
+}
+
+// Given a type, adds corresponding Output vars. For class types, do so for
+// each of its fields.
+void ShaderPrepPass::StoreOutputVars(Type* type, Expr* value, Stmts* stmts) {
+  if (type->IsVoid()) {
+    stmts->Append(Make<ExprStmt>(value));
+  } else if (type->IsClass()) {
+    auto var = std::make_shared<Var>("temp", type);
+    stmts->AppendVar(var);
+    auto varExpr = Make<VarExpr>(var.get());
+    stmts->Append(Make<StoreStmt>(varExpr, value));
+    auto classType = static_cast<ClassType*>(type);
+    for (auto& field : classType->GetFields()) {
+      Expr* fieldValue = Make<FieldAccess>(varExpr, field.get());
+      fieldValue = Make<LoadExpr>(fieldValue);
+      stmts->Append(StoreOutputVar(field->type, field->name, fieldValue));
+    }
+  } else {
+    stmts->Append(StoreOutputVar(type, "singleoutput", value));
+  }
+}
+
 Method* ShaderPrepPass::Run(Method* entryPoint) {
   shaderType_ = entryPoint->shaderType;
-  Method* newEntryPoint = PrepMethod(entryPoint);
+  const auto& formalArgList = entryPoint->formalArgList;
+  assert(formalArgList.size() >= 2 && formalArgList.size() <= 3);
+  entryPoint = PrepMethod(entryPoint);
 
-  ExtractPipelineVars(entryPoint);
-  return newEntryPoint;
+  if (!(entryPoint->modifiers & Method::STATIC)) { ExtractPipelineVars(entryPoint->classType); }
+
+  entryPointWrapper_ = std::make_unique<Method>(entryPoint->modifiers, types_->GetVoid(), "main",
+                                                entryPoint->classType);
+  entryPointWrapper_->workgroupSize = entryPoint->workgroupSize;
+  auto newArgs = Make<ExprList>();
+  ExtractBuiltInVars(formalArgList[1]->type);
+  entryPoint->formalArgList.clear();
+  if (formalArgList.size() > 2) {
+    Expr* input = LoadInputVars(formalArgList[2]->type);
+    entryPoint->formalArgList.push_back(formalArgList[2]);
+    newArgs->Append(input);
+  }
+  auto  stmts = Make<Stmts>();
+  Expr* methodCall = Make<MethodCall>(entryPoint, newArgs);
+  StoreOutputVars(entryPoint->returnType, methodCall, stmts);
+  stmts->Append(Make<ReturnStatement>(nullptr, nullptr));
+  entryPointWrapper_->stmts = stmts;
+  return entryPointWrapper_.get();
 }
 
 Method* ShaderPrepPass::PrepMethod(Method* method) {
+  if (method->classType->IsNative()) { return method; }
+
   if (methodMap_[method]) { return methodMap_[method].get(); }
 
   auto    newMethod = std::make_unique<Method>(*method);

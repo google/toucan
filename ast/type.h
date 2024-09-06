@@ -17,6 +17,8 @@
 
 #include <assert.h>
 #include <stdio.h>
+
+#include <array>
 #include <memory>
 #include <string>
 #include <unordered_map>

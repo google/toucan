@@ -32,30 +32,37 @@ class ShaderPrepPass : public CopyVisitor {
   Result               Visit(Stmts* node) override;
   Result               Visit(ZeroInitStmt* node) override;
   Result               Default(ASTNode* node) override;
-  const TypeVector&    GetInputs() const { return inputs_; }
-  const TypeVector&    GetOutputs() const { return outputs_; }
+  const VarVector&     GetInputs() const { return inputs_; }
+  const VarVector&     GetOutputs() const { return outputs_; }
   const BindGroupList& GetBindGroups() const { return bindGroups_; }
 
   const std::vector<int>& GetInputIndices() const { return inputIndices_; }
   const std::vector<int>& GetOutputIndices() const { return outputIndices_; }
   const std::vector<int>& GetBindGroupIndices() const { return bindGroupIndices_; }
+  const VarVector&        GetBuiltInVars() const { return builtInVars_; }
 
  private:
   Method* PrepMethod(Method* method);
-  void    ExtractPipelineVars(Method* entryPoint);
-  void    ExtractPipelineVars(ClassType* classType);
   Type*   GetAndQualifyUnderlyingType(Type* type);
+  void    ExtractPipelineVars(ClassType* classType);
+  void    ExtractBuiltInVars(Type* type);
+  Expr*   LoadInputVar(Type* type, std::string name);
+  Expr*   LoadInputVars(Type* type);
+  Stmt*   StoreOutputVar(Type* type, std::string name, Expr* value);
+  void    StoreOutputVars(Type* type, Expr* value, Stmts* stmts);
 
-  TypeTable*       types_;
-  Stmts*           rootStmts_ = nullptr;
-  MethodMap        methodMap_;
-  ShaderType       shaderType_;
-  TypeVector       inputs_;
-  TypeVector       outputs_;
-  BindGroupList    bindGroups_;
-  std::vector<int> inputIndices_;
-  std::vector<int> outputIndices_;
-  std::vector<int> bindGroupIndices_;
+  TypeTable*              types_;
+  Stmts*                  rootStmts_ = nullptr;
+  MethodMap               methodMap_;
+  std::unique_ptr<Method> entryPointWrapper_;
+  ShaderType              shaderType_;
+  VarVector               inputs_;
+  VarVector               outputs_;
+  BindGroupList           bindGroups_;
+  VarVector               builtInVars_;
+  std::vector<int>        inputIndices_;
+  std::vector<int>        outputIndices_;
+  std::vector<int>        bindGroupIndices_;
 };
 
 };  // namespace Toucan

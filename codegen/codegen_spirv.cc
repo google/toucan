@@ -179,21 +179,6 @@ spv::ExecutionModel toExecutionModel(ShaderType shaderType) {
   return spv::ExecutionModelFragment;
 }
 
-uint32_t CodeGenSPIRV::DeclareAndLoadInputVar(Type*      type,
-                                              ShaderType shaderType,
-                                              Code*      interface,
-                                              uint32_t   location) {
-  uint32_t ptrToType = ConvertPointerToType(type, spv::StorageClassInput);
-  uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {spv::StorageClassInput});
-  interface->push_back(ptrId);
-  uint32_t varId = AppendCode(spv::Op::OpLoad, ConvertType(type), {ptrId});
-  Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, location}, &annotations_);
-  if (shaderType == ShaderType::Fragment && type->IsInteger()) {
-    Append(spv::OpDecorate, {ptrId, spv::DecorationFlat}, &annotations_);
-  }
-  return varId;
-}
-
 uint32_t CodeGenSPIRV::GetStorageClass(Type* type) {
   assert(!type->IsPtr());
   int qualifiers;
@@ -212,78 +197,18 @@ uint32_t CodeGenSPIRV::GetStorageClass(Type* type) {
   return spv::StorageClassFunction;
 }
 
-void CodeGenSPIRV::DeclareBuiltInVars(Type* type, Code* interface) {
-  assert(type->IsClass());
-  auto classType = static_cast<ClassType*>(type);
-  for (const auto& field : classType->GetFields()) {
+void CodeGenSPIRV::DeclareBuiltInVars(const VarVector& builtInVars, Code* interface) {
+  for (auto var : builtInVars) {
     uint32_t storageClass =
-        field->type->IsWriteable() ? spv::StorageClassOutput : spv::StorageClassInput;
-    uint32_t typeId = ConvertPointerToType(field->type, storageClass);
+        var->type->IsWriteable() ? spv::StorageClassOutput : spv::StorageClassInput;
+    uint32_t typeId = ConvertPointerToType(var->type, storageClass);
     uint32_t ptrId = AppendDecl(spv::Op::OpVariable, typeId, {storageClass});
-    uint32_t builtinId = builtinNameToID(field->name);
+    uint32_t builtinId = builtinNameToID(var->name);
     Append(spv::OpDecorate, {ptrId, spv::DecorationBuiltIn, builtinId}, &annotations_);
-    auto var = std::make_shared<Var>(field->name, field->type);
     var->spirv = ptrId;
-    builtInVars_.push_back(var);
     interface->push_back(ptrId);
   }
-}
-
-// Given a struct, declares Input globals for each of its fields,
-// Loads the globals and Constructs in instance of the struct from the vars.
-uint32_t CodeGenSPIRV::DeclareAndLoadInputVars(Type* type, ShaderType shaderType, Code* interface) {
-  if (type->IsClass()) {
-    auto     classType = static_cast<ClassType*>(type);
-    Code     args;
-    uint32_t location = 0;
-    for (auto& i : classType->GetFields()) {
-      Field* field = i.get();
-      args.push_back(DeclareAndLoadInputVar(field->type, shaderType, interface, location));
-      location++;
-    }
-    return AppendCode(spv::Op::OpCompositeConstruct, ConvertType(type), args);
-  } else {
-    return DeclareAndLoadInputVar(type, shaderType, interface, 0);
-  }
-}
-
-void CodeGenSPIRV::DeclareAndStoreOutputVar(Type*      type,
-                                            uint32_t   valueId,
-                                            ShaderType shaderType,
-                                            Code*      interface,
-                                            uint32_t   location) {
-  uint32_t ptrToType = ConvertPointerToType(type, spv::StorageClassOutput);
-  uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {spv::StorageClassOutput});
-  AppendCode(spv::Op::OpStore, {ptrId, valueId});
-  interface->push_back(ptrId);
-  Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, location}, &annotations_);
-  if (shaderType == ShaderType::Vertex && type->IsInteger()) {
-    Append(spv::OpDecorate, {ptrId, spv::DecorationFlat}, &annotations_);
-  }
-}
-
-// Given a type, declares corresponding Input or Output globals. For class types, do so for
-// each of its fields.
-// Also builds Loads (for Input) or Stores (for output) to populate an instance of the struct
-// from the IO vars.
-void CodeGenSPIRV::DeclareAndStoreOutputVars(Type*      type,
-                                             uint32_t   valueId,
-                                             ShaderType shaderType,
-                                             Code*      interface) {
-  if (type->IsVoid()) { return; }
-  if (type->IsClass()) {
-    uint32_t location = 0;
-    auto     classType = static_cast<ClassType*>(type);
-    for (auto& i : classType->GetFields()) {
-      Field*   field = i.get();
-      uint32_t type = ConvertType(field->type);
-      uint32_t fieldId = AppendCode(spv::Op::OpCompositeExtract, type, {valueId, location});
-      DeclareAndStoreOutputVar(field->type, fieldId, shaderType, interface, location);
-      location++;
-    }
-  } else {
-    DeclareAndStoreOutputVar(type, valueId, shaderType, interface, 0);
-  }
+  builtInVars_ = builtInVars;
 }
 
 uint32_t CodeGenSPIRV::GetSampledImageType(Type* type) {
@@ -294,65 +219,30 @@ uint32_t CodeGenSPIRV::GetSampledImageType(Type* type) {
   return sampledImageType;
 }
 
-void CodeGenSPIRV::CreatePipelineVars(Method*               entryPoint,
-                                      const ShaderPrepPass& prepPass,
-                                      Code*                 interface) {
-  assert(entryPoint->formalArgList.size() > 0);
-  thisPtrType_ = static_cast<PtrType*>(entryPoint->formalArgList[0]->type);
-  assert(thisPtrType_->IsPtr());
-  ClassType* classType = static_cast<ClassType*>(thisPtrType_->GetBaseType());
-  pipelineVars_.resize(classType->GetTotalFields());
-  CreatePipelineVars(prepPass, interface);
-  assert(bindGroups_.size() <= kMaxBindGroups);
-  // Remove this "this" pointer.
-  entryPoint->formalArgList.erase(entryPoint->formalArgList.begin());
-  entryPoint->modifiers |= Method::STATIC;
+void CodeGenSPIRV::DeclareInterfaceVars(const VarVector& vars, const std::vector<int>& indices, uint32_t storageClass, Code* interface) {
+  for (uint32_t i = 0; i < vars.size(); ++i) {
+    Type*    type = vars[i]->type;
+    uint32_t ptrToType = ConvertPointerToType(type, storageClass);
+    uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {storageClass});
+    vars[i]->spirv = ptrId;
+    interface->push_back(ptrId);
+    Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, i}, &annotations_);
+    if (type->IsInteger()) {
+      if (((storageClass == spv::StorageClassInput && shaderType_ == ShaderType::Fragment) ||
+           (storageClass == spv::StorageClassOutput && shaderType_ == ShaderType::Vertex))) {
+        Append(spv::OpDecorate, {ptrId, spv::DecorationFlat}, &annotations_);
+      }
+    }
+    if (indices[i] >= 0) { pipelineVars_[indices[i]] = ptrId; }
+  }
 }
 
-void CodeGenSPIRV::CreatePipelineVars(const ShaderPrepPass& prepPass, Code* interface) {
-  const TypeVector&       inputs = prepPass.GetInputs();
-  const std::vector<int>& inputIndices = prepPass.GetInputIndices();
-  for (uint32_t i = 0; i < inputs.size(); ++i) {
-    uint32_t ptrToType = ConvertPointerToType(inputs[i], spv::StorageClassInput);
-    uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {spv::StorageClassInput});
-    interface->push_back(ptrId);
-    Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, i}, &annotations_);
-    pipelineVars_[inputIndices[i]] = ptrId;
-  }
-
-  const TypeVector&       outputs = prepPass.GetOutputs();
-  const std::vector<int>& outputIndices = prepPass.GetOutputIndices();
-  for (uint32_t i = 0; i < outputs.size(); ++i) {
-    uint32_t ptrToType = ConvertPointerToType(outputs[i], spv::StorageClassOutput);
-    uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {spv::StorageClassOutput});
-    interface->push_back(ptrId);
-    Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, i}, &annotations_);
-    pipelineVars_[outputIndices[i]] = ptrId;
-  }
-
-  const BindGroupList&   bindGroups = prepPass.GetBindGroups();
-  const std::vector<int> bindGroupIndices = prepPass.GetBindGroupIndices();
-  bindGroups_.resize(bindGroups.size());
-  for (size_t i = 0; i < bindGroups.size(); ++i) {
-    bindGroups_[i] = bindGroups[i];
+void CodeGenSPIRV::DeclareBindGroupVars(const BindGroupList& bindGroups, const std::vector<int>& bindGroupIndices) {
+  for (size_t i = 0; i < bindGroupIndices.size(); ++i) {
     pipelineVars_[bindGroupIndices[i]] = kBindGroupsStart + i;
   }
-}
-
-void CodeGenSPIRV::Run(Method* entryPoint) {
-  glslStd450Import_ = NextId();
-  uint32_t functionId = NextId();
-  // Note: we're going to butcher the arg list, so reference the old one for
-  // the duration of this method.
-  NodeVector     nodes;
-  ShaderPrepPass shaderPrepPass(&nodes, types_);
-  entryPoint = shaderPrepPass.Run(entryPoint);
-  auto argsBackup = entryPoint->formalArgList;
-
-  Code interface;
-  CreatePipelineVars(entryPoint, shaderPrepPass, &interface);
   uint32_t group = 0;
-  for (auto& bindGroup : bindGroups_) {
+  for (auto& bindGroup : bindGroups) {
     uint32_t binding = 0;
     for (auto& var : bindGroup) {
       uint32_t varId = DeclareVar(var.get());
@@ -367,33 +257,29 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
     }
     group++;
   }
-  const auto& args = entryPoint->formalArgList;
-  assert(args.size() >= 1 && args.size() <= 2);
-  Var* builtins = args[0].get();
-  DeclareBuiltInVars(builtins->type, &interface);
-  // Keep only the inputs. Get rid of the Builtins arg
-  entryPoint->formalArgList.erase(entryPoint->formalArgList.begin());
+  bindGroups_ = bindGroups;
+}
+
+void CodeGenSPIRV::Run(Method* entryPoint) {
+  glslStd450Import_ = NextId();
+  uint32_t functionId = NextId();
+  shaderType_ = entryPoint->shaderType;
+  assert(entryPoint->formalArgList.size() > 0);
+  thisPtrType_ = static_cast<PtrType*>(entryPoint->formalArgList[0]->type);
+  assert(thisPtrType_->IsPtr());
+
+  NodeVector     nodes;
+  ShaderPrepPass shaderPrepPass(&nodes, types_);
+  entryPoint = shaderPrepPass.Run(entryPoint);
+
+  Code interface;
+  ClassType* classType = static_cast<ClassType*>(thisPtrType_->GetBaseType());
+  pipelineVars_.resize(classType->GetTotalFields());
+  DeclareInterfaceVars(shaderPrepPass.GetInputs(), shaderPrepPass.GetInputIndices(), spv::StorageClassInput, &interface);
+  DeclareInterfaceVars(shaderPrepPass.GetOutputs(), shaderPrepPass.GetOutputIndices(), spv::StorageClassOutput, &interface);
+  DeclareBuiltInVars(shaderPrepPass.GetBuiltInVars(), &interface);
+  DeclareBindGroupVars(shaderPrepPass.GetBindGroups(), shaderPrepPass.GetBindGroupIndices());
   GenCodeForMethod(entryPoint, functionId);
-  // Generate the code for an entry point function which wraps the given Toucan function.
-  // Turn all the arguments to the function into Input variables.
-  uint32_t resultType = ConvertType(types_->GetVoid());
-  uint32_t functionTypeId = GetFunctionType({resultType});
-  uint32_t entryPointId =
-      AppendCode(spv::Op::OpFunction, resultType, {spv::FunctionControlMaskNone, functionTypeId});
-  AppendCode(spv::Op::OpLabel, {NextId()});
-  uint32_t executionModel = toExecutionModel(entryPoint->shaderType);
-  Code     functionArgs;
-  functionArgs.push_back(functionId);
-  if (args.size() > 0) {
-    uint32_t inputId = DeclareAndLoadInputVars(args[0]->type, entryPoint->shaderType, &interface);
-    functionArgs.push_back(inputId);
-  }
-  uint32_t returnValueId =
-      AppendCode(spv::Op::OpFunctionCall, ConvertType(entryPoint->returnType), functionArgs);
-  DeclareAndStoreOutputVars(entryPoint->returnType, returnValueId, entryPoint->shaderType,
-                            &interface);
-  AppendCode(spv::Op::OpReturn, {});
-  AppendCode(spv::Op::OpFunctionEnd, {});
   while (!pendingMethods_.empty()) {
     Method* m = pendingMethods_.front();
     pendingMethods_.pop_front();
@@ -415,12 +301,13 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
   header_.push_back(glslStd450Import_);
   header_.insert(header_.end(), importName.begin(), importName.end());
   Append(spv::OpMemoryModel, {spv::AddressingModelLogical, spv::MemoryModelGLSL450}, &header_);
-  AppendEntryPoint(executionModel, entryPointId, "main", interface);
-  if (entryPoint->shaderType == ShaderType::Fragment) {
-    Append(spv::OpExecutionMode, {entryPointId, spv::ExecutionModeOriginUpperLeft}, &header_);
-  } else if (entryPoint->shaderType == ShaderType::Compute) {
+  uint32_t executionModel = toExecutionModel(shaderType_);
+  AppendEntryPoint(executionModel, functionId, "main", interface);
+  if (shaderType_ == ShaderType::Fragment) {
+    Append(spv::OpExecutionMode, {functionId, spv::ExecutionModeOriginUpperLeft}, &header_);
+  } else if (shaderType_ == ShaderType::Compute) {
     auto ws = entryPoint->workgroupSize;
-    Append(spv::OpExecutionMode, {entryPointId, spv::ExecutionModeLocalSize, ws[0], ws[1], ws[2]},
+    Append(spv::OpExecutionMode, {functionId, spv::ExecutionModeLocalSize, ws[0], ws[1], ws[2]},
            &header_);
   }
 }

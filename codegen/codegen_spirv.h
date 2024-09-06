@@ -24,7 +24,6 @@
 namespace Toucan {
 
 class SymbolTable;
-class ShaderPrepPass;
 using Code = std::vector<uint32_t>;
 
 struct HashCode {
@@ -58,23 +57,7 @@ class CodeGenSPIRV : public Visitor {
   uint32_t AppendCode(uint32_t opCode, uint32_t resultType, const Code& args);
   uint32_t AppendDecl(uint32_t opCode, uint32_t resultType, const Code& args);
   uint32_t AppendExtInst(uint32_t extInst, uint32_t resultType, ExprList* argList);
-  uint32_t DeclareVar(Var* var);
-  void     DeclareBuiltInVars(Type* type, Code* interface);
   uint32_t GetStorageClass(Type* type);
-  uint32_t DeclareAndLoadInputVar(Type*      type,
-                                  ShaderType shaderType,
-                                  Code*      interface,
-                                  uint32_t   location);
-  uint32_t DeclareAndLoadInputVars(Type* type, ShaderType shaderType, Code* interface);
-  void     DeclareAndStoreOutputVar(Type*      type,
-                                    uint32_t   valueId,
-                                    ShaderType shaderType,
-                                    Code*      interface,
-                                    uint32_t   location);
-  void     DeclareAndStoreOutputVars(Type*      type,
-                                     uint32_t   structId,
-                                     ShaderType shaderType,
-                                     Code*      interface);
   uint32_t AppendImageDecl(uint32_t dim, bool array, int qualifiers, const TypeList& templateArgs);
   uint32_t ConvertType(Type* type);
   uint32_t GetFunctionType(const Code& signature);
@@ -128,8 +111,10 @@ class CodeGenSPIRV : public Visitor {
   TypeTable*  types() const { return types_; }
 
  private:
-  void     CreatePipelineVars(const ShaderPrepPass& prepPass, Code* interface);
-  void     CreatePipelineVars(Method* entryPoint, const ShaderPrepPass& prepPass, Code* interface);
+  uint32_t DeclareVar(Var* var);
+  void     DeclareInterfaceVars(const VarVector& vars, const std::vector<int>& indices, uint32_t storageClass, Code* interface);
+  void     DeclareBindGroupVars(const BindGroupList& bindGroups, const std::vector<int>& bindGroupIndices);
+  void     DeclareBuiltInVars(const VarVector& builtInVars, Code* interface);
   uint32_t CreateVectorSplat(uint32_t value, VectorType* type);
   uint32_t CreateCast(Type* srcType, Type* dstType, uint32_t resultType, uint32_t valueId);
   uint32_t GetSampledImageType(Type* imageType);
@@ -155,6 +140,7 @@ class CodeGenSPIRV : public Visitor {
   BindGroupList                                bindGroups_;
   std::vector<uint32_t>                        pipelineVars_;
   VarVector                                    builtInVars_;
+  ShaderType                                   shaderType_;
 };
 
 };  // namespace Toucan
