@@ -24,6 +24,7 @@
 namespace Toucan {
 
 class SymbolTable;
+class ShaderPrepPass;
 using Code = std::vector<uint32_t>;
 
 struct HashCode {
@@ -59,7 +60,6 @@ class CodeGenSPIRV : public Visitor {
   uint32_t AppendExtInst(uint32_t extInst, uint32_t resultType, ExprList* argList);
   uint32_t DeclareVar(Var* var);
   void     DeclareBuiltInVars(Type* type, Code* interface);
-  Type*    GetSampledType(ClassType* colorAttachment);
   uint32_t GetStorageClass(Type* type);
   uint32_t DeclareAndLoadInputVar(Type*      type,
                                   ShaderType shaderType,
@@ -128,13 +128,8 @@ class CodeGenSPIRV : public Visitor {
   TypeTable*  types() const { return types_; }
 
  private:
-  Type*    GetAndQualifyUnderlyingType(Type* type);
-  void     ExtractPipelineVars(Method* entryPoint, Code* interface);
-  void     ExtractPipelineVars(ClassType* classType,
-                               ShaderType shaderType,
-                               Code*      interface,
-                               uint32_t*  inputCount,
-                               uint32_t*  outputCount);
+  void     CreatePipelineVars(const ShaderPrepPass& prepPass, Code* interface);
+  void     CreatePipelineVars(Method* entryPoint, const ShaderPrepPass& prepPass, Code* interface);
   uint32_t CreateVectorSplat(uint32_t value, VectorType* type);
   uint32_t CreateCast(Type* srcType, Type* dstType, uint32_t resultType, uint32_t valueId);
   uint32_t GetSampledImageType(Type* imageType);

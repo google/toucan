@@ -14,7 +14,11 @@
 
 #include "shader_prep_pass.h"
 
+#include <ast/native_class.h>
+
 namespace Toucan {
+
+constexpr uint32_t kMaxBindGroups = 4;
 
 ShaderPrepPass::ShaderPrepPass(NodeVector* nodes, TypeTable* types)
     : CopyVisitor(nodes), types_(types) {}
@@ -35,7 +39,100 @@ Result ShaderPrepPass::Visit(Stmts* stmts) {
   return newStmts;
 }
 
-Method* ShaderPrepPass::Run(Method* method) {
+Type* ShaderPrepPass::GetAndQualifyUnderlyingType(Type* type) {
+  assert(type->IsPtr());
+  type = static_cast<PtrType*>(type)->GetBaseType();
+  int   qualifiers;
+  Type* unqualifiedType = types_->GetUnqualifiedType(type, &qualifiers);
+  assert(unqualifiedType->IsClass());
+  ClassType* classType = static_cast<ClassType*>(unqualifiedType);
+  if (classType->GetTemplate() == NativeClass::Buffer) {
+    assert(classType->GetTemplateArgs().size() == 1);
+    Type* templateArgType = classType->GetTemplateArgs()[0];
+    type = types_->GetQualifiedType(templateArgType, qualifiers);
+    if (templateArgType->IsUnsizedArray()) {
+      type = types_->GetWrapperClass(type);
+      type = types_->GetQualifiedType(type, qualifiers);
+    }
+    return type;
+  }
+  return type;
+}
+
+void ShaderPrepPass::ExtractPipelineVars(Method* entryPoint) {
+  if (entryPoint->modifiers & Method::STATIC) { return; }
+  assert(entryPoint->formalArgList.size() > 0);
+  ExtractPipelineVars(entryPoint->classType);
+  assert(bindGroups_.size() <= kMaxBindGroups);
+  // Remove this "this" pointer.
+  entryPoint->formalArgList.erase(entryPoint->formalArgList.begin());
+  entryPoint->modifiers |= Method::STATIC;
+}
+
+void ShaderPrepPass::ExtractPipelineVars(ClassType* classType) {
+  if (classType->GetParent()) { ExtractPipelineVars(classType->GetParent()); }
+  for (const auto& field : classType->GetFields()) {
+    Type*    type = field->type;
+    uint32_t pipelineVar = 0;
+
+    assert(type->IsPtr());
+    type = static_cast<PtrType*>(type)->GetBaseType();
+    int   qualifiers;
+    Type* unqualifiedType = type->GetUnqualifiedType(&qualifiers);
+    assert(unqualifiedType->IsClass());
+    ClassType* classType = static_cast<ClassType*>(unqualifiedType);
+    if (classType->GetTemplate() == NativeClass::ColorAttachment) {
+      if (shaderType_ == ShaderType::Fragment) {
+        type = classType->GetTemplateArgs()[0];
+        type = static_cast<ClassType*>(type)->FindType("SampledType");
+        type = types_->GetVector(type, 4);
+        outputs_.push_back(type);
+        outputIndices_.push_back(field->index);
+      }
+    } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment) {
+      // Do nothing; depth/stencil variables are inaccessible from device code.
+    } else if (classType->GetTemplate() == NativeClass::Buffer &&
+               qualifiers == Type::Qualifier::Vertex) {
+      if (shaderType_ == ShaderType::Vertex) {
+        Type* arg = classType->GetTemplateArgs()[0];
+        assert(arg->IsArray());
+        Type* elementType = static_cast<ArrayType*>(arg)->GetElementType();
+        inputs_.push_back(elementType);
+        inputIndices_.push_back(field->index);
+      }
+    } else if (classType->GetTemplate() == NativeClass::Buffer &&
+               qualifiers == Type::Qualifier::Index) {
+      // Do nothing; index buffers are inaccessible from device code.
+    } else if (classType->GetTemplate() == NativeClass::BindGroup) {
+      Type*     argType = classType->GetTemplateArgs()[0];
+      VarVector bindGroup;
+      if (argType->IsClass()) {
+        auto* bindGroupClass = static_cast<ClassType*>(argType);
+        for (auto& subField : bindGroupClass->GetFields()) {
+          Type* type = GetAndQualifyUnderlyingType(subField->type);
+          auto  var = std::make_shared<Var>(subField->name, type);
+          bindGroup.push_back(var);
+        }
+      } else {
+        Type* type = GetAndQualifyUnderlyingType(argType);
+        auto  var = std::make_shared<Var>(field->name, type);
+        bindGroup.push_back(var);
+      }
+      bindGroups_.push_back(bindGroup);
+      bindGroupIndices_.push_back(field->index);
+    }
+  }
+}
+
+Method* ShaderPrepPass::Run(Method* entryPoint) {
+  shaderType_ = entryPoint->shaderType;
+  Method* newEntryPoint = PrepMethod(entryPoint);
+
+  ExtractPipelineVars(entryPoint);
+  return newEntryPoint;
+}
+
+Method* ShaderPrepPass::PrepMethod(Method* method) {
   if (methodMap_[method]) { return methodMap_[method].get(); }
 
   auto    newMethod = std::make_unique<Method>(*method);
@@ -50,7 +147,7 @@ Method* ShaderPrepPass::Run(Method* method) {
 }
 
 Result ShaderPrepPass::Visit(MethodCall* node) {
-  Method*                   method = Run(node->GetMethod());
+  Method*                   method = PrepMethod(node->GetMethod());
   const std::vector<Expr*>& args = node->GetArgList()->Get();
   auto*                     newArgs = Make<ExprList>();
   Stmts*                    writeStmts = nullptr;

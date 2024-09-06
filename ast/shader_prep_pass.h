@@ -21,20 +21,41 @@ namespace Toucan {
 
 using MethodMap = std::unordered_map<Method*, std::unique_ptr<Method>>;
 
+using BindGroupList = std::vector<VarVector>;
+
 class ShaderPrepPass : public CopyVisitor {
  public:
   ShaderPrepPass(NodeVector* nodes, TypeTable* types);
-  Method* Run(Method* method);
-  Result  Visit(MethodCall* node) override;
-  Result  Visit(RawToWeakPtr* node) override;
-  Result  Visit(Stmts* node) override;
-  Result  Visit(ZeroInitStmt* node) override;
-  Result  Default(ASTNode* node) override;
+  Method*              Run(Method* entryPoint);
+  Result               Visit(MethodCall* node) override;
+  Result               Visit(RawToWeakPtr* node) override;
+  Result               Visit(Stmts* node) override;
+  Result               Visit(ZeroInitStmt* node) override;
+  Result               Default(ASTNode* node) override;
+  const TypeVector&    GetInputs() const { return inputs_; }
+  const TypeVector&    GetOutputs() const { return outputs_; }
+  const BindGroupList& GetBindGroups() const { return bindGroups_; }
+
+  const std::vector<int>& GetInputIndices() const { return inputIndices_; }
+  const std::vector<int>& GetOutputIndices() const { return outputIndices_; }
+  const std::vector<int>& GetBindGroupIndices() const { return bindGroupIndices_; }
 
  private:
-  TypeTable* types_;
-  Stmts*     rootStmts_ = nullptr;
-  MethodMap  methodMap_;
+  Method* PrepMethod(Method* method);
+  void    ExtractPipelineVars(Method* entryPoint);
+  void    ExtractPipelineVars(ClassType* classType);
+  Type*   GetAndQualifyUnderlyingType(Type* type);
+
+  TypeTable*       types_;
+  Stmts*           rootStmts_ = nullptr;
+  MethodMap        methodMap_;
+  ShaderType       shaderType_;
+  TypeVector       inputs_;
+  TypeVector       outputs_;
+  BindGroupList    bindGroups_;
+  std::vector<int> inputIndices_;
+  std::vector<int> outputIndices_;
+  std::vector<int> bindGroupIndices_;
 };
 
 };  // namespace Toucan

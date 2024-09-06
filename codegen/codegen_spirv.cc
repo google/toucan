@@ -286,32 +286,6 @@ void CodeGenSPIRV::DeclareAndStoreOutputVars(Type*      type,
   }
 }
 
-Type* CodeGenSPIRV::GetAndQualifyUnderlyingType(Type* type) {
-  assert(type->IsPtr());
-  type = static_cast<PtrType*>(type)->GetBaseType();
-  int   qualifiers;
-  Type* unqualifiedType = types_->GetUnqualifiedType(type, &qualifiers);
-  assert(unqualifiedType->IsClass());
-  ClassType* classType = static_cast<ClassType*>(unqualifiedType);
-  if (isBuffer(classType)) {
-    assert(classType->GetTemplateArgs().size() == 1);
-    Type* templateArgType = classType->GetTemplateArgs()[0];
-    type = types_->GetQualifiedType(templateArgType, qualifiers);
-    if (templateArgType->IsUnsizedArray()) {
-      type = types_->GetWrapperClass(type);
-      type = types_->GetQualifiedType(type, qualifiers);
-    }
-    return type;
-  }
-  return type;
-}
-
-Type* CodeGenSPIRV::GetSampledType(ClassType* colorAttachment) {
-  Type* argType = colorAttachment->GetTemplateArgs()[0];
-  Type* sampledType = static_cast<ClassType*>(argType)->FindType("SampledType");
-  return types_->GetVector(sampledType, 4);
-}
-
 uint32_t CodeGenSPIRV::GetSampledImageType(Type* type) {
   auto t = sampledImageTypes_.find(type);
   if (t != sampledImageTypes_.end()) { return t->second; }
@@ -320,83 +294,48 @@ uint32_t CodeGenSPIRV::GetSampledImageType(Type* type) {
   return sampledImageType;
 }
 
-void CodeGenSPIRV::ExtractPipelineVars(Method* entryPoint, Code* interface) {
-  if (entryPoint->modifiers & Method::STATIC) { return; }
+void CodeGenSPIRV::CreatePipelineVars(Method*               entryPoint,
+                                      const ShaderPrepPass& prepPass,
+                                      Code*                 interface) {
   assert(entryPoint->formalArgList.size() > 0);
   thisPtrType_ = static_cast<PtrType*>(entryPoint->formalArgList[0]->type);
   assert(thisPtrType_->IsPtr());
-  uint32_t inputCount = 0, outputCount = 0;
-  ExtractPipelineVars(entryPoint->classType, entryPoint->shaderType, interface, &inputCount,
-                      &outputCount);
+  ClassType* classType = static_cast<ClassType*>(thisPtrType_->GetBaseType());
+  pipelineVars_.resize(classType->GetTotalFields());
+  CreatePipelineVars(prepPass, interface);
   assert(bindGroups_.size() <= kMaxBindGroups);
   // Remove this "this" pointer.
   entryPoint->formalArgList.erase(entryPoint->formalArgList.begin());
   entryPoint->modifiers |= Method::STATIC;
 }
 
-void CodeGenSPIRV::ExtractPipelineVars(ClassType* classType,
-                                       ShaderType shaderType,
-                                       Code*      interface,
-                                       uint32_t*  inputCount,
-                                       uint32_t*  outputCount) {
-  if (classType->GetParent()) {
-    ExtractPipelineVars(classType->GetParent(), shaderType, interface, inputCount, outputCount);
+void CodeGenSPIRV::CreatePipelineVars(const ShaderPrepPass& prepPass, Code* interface) {
+  const TypeVector&       inputs = prepPass.GetInputs();
+  const std::vector<int>& inputIndices = prepPass.GetInputIndices();
+  for (uint32_t i = 0; i < inputs.size(); ++i) {
+    uint32_t ptrToType = ConvertPointerToType(inputs[i], spv::StorageClassInput);
+    uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {spv::StorageClassInput});
+    interface->push_back(ptrId);
+    Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, i}, &annotations_);
+    pipelineVars_[inputIndices[i]] = ptrId;
   }
-  for (const auto& field : classType->GetFields()) {
-    Type*    type = field->type;
-    uint32_t pipelineVar = 0;
 
-    assert(type->IsPtr());
-    type = static_cast<PtrType*>(type)->GetBaseType();
-    int   qualifiers;
-    Type* unqualifiedType = type->GetUnqualifiedType(&qualifiers);
-    assert(unqualifiedType->IsClass());
-    ClassType* classType = static_cast<ClassType*>(unqualifiedType);
-    if (classType->GetTemplate() == NativeClass::ColorAttachment) {
-      if (shaderType == ShaderType::Fragment) {
-        Type*    sampledType = GetSampledType(classType);
-        uint32_t ptrToType = ConvertPointerToType(sampledType, spv::StorageClassOutput);
-        uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {spv::StorageClassOutput});
-        interface->push_back(ptrId);
-        Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, (*outputCount)++}, &annotations_);
-        pipelineVar = ptrId;
-      }
-    } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment) {
-      // Do nothing; depth/stencil variables are inaccessible from device code.
-    } else if (classType->GetTemplate() == NativeClass::Buffer &&
-               qualifiers == Type::Qualifier::Vertex) {
-      if (shaderType == ShaderType::Vertex) {
-        Type* arg = classType->GetTemplateArgs()[0];
-        assert(arg->IsArray());
-        Type*    elementType = static_cast<ArrayType*>(arg)->GetElementType();
-        uint32_t ptrToType = ConvertPointerToType(elementType, spv::StorageClassInput);
-        uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {spv::StorageClassInput});
-        interface->push_back(ptrId);
-        Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, (*inputCount)++}, &annotations_);
-        pipelineVar = ptrId;
-      }
-    } else if (classType->GetTemplate() == NativeClass::Buffer &&
-               qualifiers == Type::Qualifier::Index) {
-      // Do nothing; index buffers are inaccessible from device code.
-    } else if (classType->GetTemplate() == NativeClass::BindGroup) {
-      Type*     argType = classType->GetTemplateArgs()[0];
-      VarVector bindGroup;
-      if (argType->IsClass()) {
-        auto* bindGroupClass = static_cast<ClassType*>(argType);
-        for (auto& subField : bindGroupClass->GetFields()) {
-          Type* type = GetAndQualifyUnderlyingType(subField->type);
-          auto  var = std::make_shared<Var>(subField->name, type);
-          bindGroup.push_back(var);
-        }
-      } else {
-        Type* type = GetAndQualifyUnderlyingType(argType);
-        auto  var = std::make_shared<Var>(field->name, type);
-        bindGroup.push_back(var);
-      }
-      pipelineVar = kBindGroupsStart + bindGroups_.size();
-      bindGroups_.push_back(bindGroup);
-    }
-    pipelineVars_.push_back(pipelineVar);
+  const TypeVector&       outputs = prepPass.GetOutputs();
+  const std::vector<int>& outputIndices = prepPass.GetOutputIndices();
+  for (uint32_t i = 0; i < outputs.size(); ++i) {
+    uint32_t ptrToType = ConvertPointerToType(outputs[i], spv::StorageClassOutput);
+    uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {spv::StorageClassOutput});
+    interface->push_back(ptrId);
+    Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, i}, &annotations_);
+    pipelineVars_[outputIndices[i]] = ptrId;
+  }
+
+  const BindGroupList&   bindGroups = prepPass.GetBindGroups();
+  const std::vector<int> bindGroupIndices = prepPass.GetBindGroupIndices();
+  bindGroups_.resize(bindGroups.size());
+  for (size_t i = 0; i < bindGroups.size(); ++i) {
+    bindGroups_[i] = bindGroups[i];
+    pipelineVars_[bindGroupIndices[i]] = kBindGroupsStart + i;
   }
 }
 
@@ -411,7 +350,7 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
   auto argsBackup = entryPoint->formalArgList;
 
   Code interface;
-  ExtractPipelineVars(entryPoint, &interface);
+  CreatePipelineVars(entryPoint, shaderPrepPass, &interface);
   uint32_t group = 0;
   for (auto& bindGroup : bindGroups_) {
     uint32_t binding = 0;
@@ -645,17 +584,7 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
   } else if (type->IsClass()) {
     ClassType* classType = static_cast<ClassType*>(type);
     if (classType->IsNative()) {
-      if (isBuffer(classType)) {
-        assert(classType->GetTemplateArgs().size() == 1);
-        Type* baseType = classType->GetTemplateArgs()[0];
-        if (qualifiers & Type::Qualifier::Vertex) {
-          // The current vertex, as a variable of the vertex buffer element type via Get().
-          baseType = static_cast<ArrayType*>(baseType)->GetElementType();
-        }
-        return ConvertPointerToType(baseType);
-      } else if (isColorAttachment(classType)) {
-        return ConvertPointerToType(GetSampledType(classType));
-      } else if (isSampler(classType)) {
+      if (isSampler(classType)) {
         resultId = AppendTypeDecl(spv::Op::OpTypeSampler, {});
       } else if (isSampleableTexture1D(classType)) {
         resultId = AppendImageDecl(spv::Dim1D, false, qualifiers, classType->GetTemplateArgs());
@@ -667,8 +596,6 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
         resultId = AppendImageDecl(spv::Dim2D, true, qualifiers, classType->GetTemplateArgs());
       } else if (isSampleableTextureCube(classType)) {
         resultId = AppendImageDecl(spv::DimCube, false, qualifiers, classType->GetTemplateArgs());
-      } else if (isBindGroup(classType)) {
-        return ConvertType(classType->GetTemplateArgs()[0]);
       } else {
         assert(!"unsupported native class type in shader");
       }
