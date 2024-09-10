@@ -293,7 +293,7 @@ struct Var {
 
   std::string name;
   Type*       type;
-  uint32_t    spirv;
+  uint32_t    spirv = 0;
   void*       data;
 };
 

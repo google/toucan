@@ -17,10 +17,35 @@
 
 #include "copy_visitor.h"
 
+#include <unordered_set>
+
 namespace Toucan {
 
-using MethodMap = std::unordered_map<Method*, std::unique_ptr<Method>>;
+using VarAliasMap = std::unordered_map<Var*, Expr*>;
+using UnfoldedVarMap = std::unordered_map<Var*, VarVector>;
+using UnfoldedPtrMap = std::unordered_map<Var*, std::shared_ptr<Var>>;
 using WrapperMap = std::unordered_map<Type*, Type*>;
+using WrapperSet = std::unordered_set<Type*>;
+
+struct MethodKey {
+  Method*           method;
+  std::vector<Var*> globalArgs;
+  bool operator==(const MethodKey& other) const {
+    return method == other.method && globalArgs == other.globalArgs;
+  }
+
+  struct Hash {
+    std::size_t operator()(const MethodKey& key) const {
+      std::size_t r = std::hash<void*>()(key.method);
+      for (auto globalArg : key.globalArgs) {
+        r ^= std::hash<void*>()(globalArg);
+      }
+      return r;
+    }
+  };
+};
+
+using MethodMap = std::unordered_map<MethodKey, std::unique_ptr<Method>, MethodKey::Hash>;
 
 using BindGroupList = std::vector<VarVector>;
 
@@ -28,45 +53,54 @@ class ShaderPrepPass : public CopyVisitor {
  public:
   ShaderPrepPass(NodeVector* nodes, TypeTable* types);
   Method*              Run(Method* entryPoint);
+  Result               Visit(CastExpr* node) override;
+  Result               Visit(FieldAccess* node) override;
+  Result               Visit(LoadExpr* node) override;
   Result               Visit(MethodCall* node) override;
   Result               Visit(RawToWeakPtr* node) override;
+  Result               Visit(SmartToRawPtr* node) override;
   Result               Visit(Stmts* node) override;
+  Result               Visit(StoreStmt* node) override;
+  Result               Visit(VarExpr* node) override;
   Result               Visit(ZeroInitStmt* node) override;
   Result               Default(ASTNode* node) override;
   const VarVector&     GetInputs() const { return inputs_; }
   const VarVector&     GetOutputs() const { return outputs_; }
   const BindGroupList& GetBindGroups() const { return bindGroups_; }
-
-  const std::vector<int>& GetInputIndices() const { return inputIndices_; }
-  const std::vector<int>& GetOutputIndices() const { return outputIndices_; }
-  const std::vector<int>& GetBindGroupIndices() const { return bindGroupIndices_; }
-  const VarVector&        GetBuiltInVars() const { return builtInVars_; }
+  const VarVector&     GetBuiltInVars() const { return builtInVars_; }
 
  private:
+  Expr*   ResolveVar(Var* var);
+  bool    TypeIsValidForShaderType(Type*) const;
+  Type*   ConvertType(Type* type);
   Result  ResolveNativeMethodCall(MethodCall* node);
-  Method* PrepMethod(Method* method);
+  Method* PrepMethod(Method* method, std::vector<Var*> globalArgs);
+  void    UnfoldClass(ClassType* classType, VarVector* vars, VarVector* localVars, VarVector* globalVars);
+  void    UnfoldVar(std::shared_ptr<Var> var, VarVector* localVars, VarVector* globalVars);
   Type*   GetAndQualifyUnderlyingType(Type* type);
-  void    ExtractPipelineVars(ClassType* classType);
-  void    ExtractBuiltInVars(Type* type);
+  void    ExtractPipelineVars(ClassType* classType, std::vector<Var*>* globalVars);
+  Expr*   ExtractBuiltInVars(Type* type, Stmts* stmts, Stmts* postStmts);
   Expr*   CreateAndLoadInputVar(Type* type, std::string name);
   Expr*   CreateAndLoadInputVars(Type* type);
   Stmt*   CreateAndStoreOutputVar(Type* type, std::string name, Expr* value);
   void    CreateAndStoreOutputVars(Type* type, Expr* value, Stmts* stmts);
   Type*   GetWrapper(Type* type, int qualifiers);
+  bool    IsWrapper(Type* type) const;
 
   TypeTable*              types_;
   Stmts*                  rootStmts_ = nullptr;
   MethodMap               methodMap_;
+  VarAliasMap             varAliases_;
+  UnfoldedVarMap          unfoldedVars_;
+  UnfoldedPtrMap          unfoldedPtrs_;
   std::unique_ptr<Method> entryPointWrapper_;
   ShaderType              shaderType_;
   VarVector               inputs_;
   VarVector               outputs_;
   BindGroupList           bindGroups_;
   VarVector               builtInVars_;
-  std::vector<int>        inputIndices_;
-  std::vector<int>        outputIndices_;
-  std::vector<int>        bindGroupIndices_;
   WrapperMap              wrapper_;
+  WrapperSet              wrappers_;
 };
 
 };  // namespace Toucan

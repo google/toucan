@@ -79,6 +79,7 @@ class Expr : public ASTNode {
   virtual bool  IsUnresolvedSwizzleExpr() const { return false; }
   virtual bool  IsUnresolvedListExpr() const { return false; }
   virtual bool  IsIntConstant() const { return false; }
+  virtual bool  IsVarExpr() const { return false; }
 };
 
 class Data : public Expr {
@@ -395,6 +396,7 @@ class VarExpr : public Expr {
   Result Accept(Visitor* visitor) override;
   Type*  GetType(TypeTable* types) override;
   Var*   GetVar() const { return var_; }
+  bool   IsVarExpr() const override { return true; }
 
  private:
   Var* var_;

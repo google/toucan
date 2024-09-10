@@ -67,7 +67,6 @@ class CodeGenSPIRV : public Visitor {
   uint32_t GetFloatConstant(float value);
   uint32_t GetBoolConstant(bool value);
   uint32_t GetZeroConstant(Type* type);
-  Result   Visit(ArgList* list) override;
   Result   Visit(ArrayAccess* node) override;
   Result   Visit(BinOpNode* node) override;
   Result   Visit(BoolConstant* expr) override;
@@ -82,10 +81,6 @@ class CodeGenSPIRV : public Visitor {
   Result   Visit(IfStatement* stmt) override;
   Result   Visit(Initializer* node) override;
   Result   Visit(IntConstant* intConstant) override;
-  Result   Visit(LengthExpr* expr) override;
-  Result   Visit(NewArrayExpr* expr) override;
-  Result   Visit(NewExpr* expr) override;
-  Result   Visit(NullConstant* expr) override;
   Result   Visit(ReturnStatement* stmt) override;
   Result   Visit(MethodCall* node) override;
   Result   Visit(Stmts* stmts) override;
@@ -112,8 +107,8 @@ class CodeGenSPIRV : public Visitor {
 
  private:
   uint32_t DeclareVar(Var* var);
-  void     DeclareInterfaceVars(const VarVector& vars, const std::vector<int>& indices, uint32_t storageClass, Code* interface);
-  void     DeclareBindGroupVars(const BindGroupList& bindGroups, const std::vector<int>& bindGroupIndices);
+  void     DeclareInterfaceVars(const VarVector& vars, uint32_t storageClass, Code* interface);
+  void     DeclareBindGroupVars(const BindGroupList& bindGroups);
   void     DeclareBuiltInVars(const VarVector& builtInVars, Code* interface);
   uint32_t CreateVectorSplat(uint32_t value, VectorType* type);
   uint32_t CreateCast(Type* srcType, Type* dstType, uint32_t resultType, uint32_t valueId);
@@ -136,10 +131,7 @@ class CodeGenSPIRV : public Visitor {
   uint32_t                                     boolConstants_[2];
   std::unordered_map<Method*, uint32_t>        functions_;
   std::list<Method*>                           pendingMethods_;
-  PtrType*                                     thisPtrType_ = nullptr;
   BindGroupList                                bindGroups_;
-  std::vector<uint32_t>                        pipelineVars_;
-  VarVector                                    builtInVars_;
   ShaderType                                   shaderType_;
 };
 

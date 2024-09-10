@@ -71,7 +71,7 @@ native class ComputePipeline<T> {
 native class BindGroup<T> {
   BindGroup(Device* device, T^ data);
  ~BindGroup();
-  deviceonly T^ Get();
+  deviceonly T Get();
 }
 
 enum AddressMode { Repeat, MirrorRepeat, ClampToEdge };
@@ -289,7 +289,6 @@ class VertexBuiltins {
   readonly int       vertexIndex;
   readonly int       instanceIndex;
   writeonly float<4> position;
-  writeonly float    pointSize;
 }
 
 class FragmentBuiltins {
