@@ -43,6 +43,7 @@ class ShaderPrepPass : public CopyVisitor {
   const VarVector&        GetBuiltInVars() const { return builtInVars_; }
 
  private:
+  Result  ResolveNativeMethodCall(MethodCall* node);
   Method* PrepMethod(Method* method);
   Type*   GetAndQualifyUnderlyingType(Type* type);
   void    ExtractPipelineVars(ClassType* classType);

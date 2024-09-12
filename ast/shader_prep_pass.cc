@@ -215,8 +215,31 @@ Method* ShaderPrepPass::PrepMethod(Method* method) {
   return result;
 }
 
+Result ShaderPrepPass::ResolveNativeMethodCall(MethodCall* node) {
+  Method*    method = node->GetMethod();
+  auto       args = node->GetArgList()->Get();
+  ClassType* classType = method->classType;
+  if (classType->GetTemplate() == NativeClass::ColorAttachment && method->name == "Set") {
+    auto store = Make<StoreStmt>(Resolve(args[0]), Resolve(args[1]));
+    return Make<ExprWithStmt>(nullptr, store);
+  } else if (classType->GetTemplate() == NativeClass::Buffer) {
+    if (method->name == "Get") {
+      auto type = types_->GetRawPtrType(method->returnType);
+      return Make<LoadExpr>(Make<CastExpr>(type, Resolve(args[0])));
+    } else if (method->name == "MapReadUniform" || method->name == "MapWriteStorage" ||
+               method->name == "MapReadWriteStorage") {
+      return Make<CastExpr>(node->GetType(types_), Resolve(args[0]));
+    }
+  } else if (classType->GetTemplate() == NativeClass::BindGroup && method->name == "Get") {
+    return Resolve(args[0]);
+  }
+  return CopyVisitor::Visit(node);
+}
+
 Result ShaderPrepPass::Visit(MethodCall* node) {
-  Method*                   method = PrepMethod(node->GetMethod());
+  if (node->GetMethod()->classType->IsNative()) { return ResolveNativeMethodCall(node); }
+  Method* method = PrepMethod(node->GetMethod());
+
   const std::vector<Expr*>& args = node->GetArgList()->Get();
   auto*                     newArgs = Make<ExprList>();
   Stmts*                    writeStmts = nullptr;

@@ -36,16 +36,6 @@ constexpr uint32_t kBindGroupsEnd = kBindGroupsStart + kMaxBindGroups - 1;
 
 namespace Toucan {
 
-bool isBindGroup(ClassType* classType) {
-  return classType->GetTemplate() == NativeClass::BindGroup;
-}
-
-bool isBuffer(ClassType* classType) { return classType->GetTemplate() == NativeClass::Buffer; }
-
-bool isColorAttachment(ClassType* classType) {
-  return classType->GetTemplate() == NativeClass::ColorAttachment;
-}
-
 bool isSampler(ClassType* classType) { return classType == NativeClass::Sampler; }
 
 bool isSampleableTexture1D(ClassType* classType) {
@@ -717,7 +707,7 @@ Result CodeGenSPIRV::Visit(Initializer* node) {
 }
 
 Result CodeGenSPIRV::Visit(ExprWithStmt* node) {
-  auto result = GenerateSPIRV(node->GetExpr());
+  auto result = node->GetExpr() ? GenerateSPIRV(node->GetExpr()) : 0u;
   GenerateSPIRV(node->GetStmt());
   return result;
 }
@@ -917,16 +907,7 @@ Result CodeGenSPIRV::Visit(ReturnStatement* stmt) {
 Result CodeGenSPIRV::Visit(MethodCall* expr) {
   Method*                   method = expr->GetMethod();
   const std::vector<Expr*>& args = expr->GetArgList()->Get();
-  if (isBuffer(method->classType)) {
-    if (method->name == "MapReadUniform" || method->name == "MapReadStoreage" ||
-        method->name == "MapWriteStorage" || method->name == "MapReadWriteStorage") {
-      return GenerateSPIRV(args[0]);
-    } else if (method->name == "Get") {
-      uint32_t resultType = ConvertType(expr->GetType(types_));
-      uint32_t vertexBufferVar = GenerateSPIRV(args[0]);
-      return AppendCode(spv::Op::OpLoad, resultType, {vertexBufferVar});
-    }
-  } else if (isTextureView(method->classType)) {
+  if (isTextureView(method->classType)) {
     if (method->name == "Sample") {
       uint32_t resultType = ConvertType(expr->GetType(types_));
       Type*    textureType = static_cast<PtrType*>(args[0]->GetType(types_))->GetBaseType();
@@ -949,16 +930,6 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
       }
       return AppendCode(spv::Op::OpImageSampleImplicitLod, resultType, {sampledImage, coord});
     }
-  } else if (isColorAttachment(method->classType)) {
-    if (method->name == "Set") {
-      assert(args.size() == 2);
-      uint32_t colorAttachment = GenerateSPIRV(args[0]);
-      uint32_t valueId = GenerateSPIRV(args[1]);
-      AppendCode(spv::Op::OpStore, {colorAttachment, valueId});
-      return {};
-    }
-  } else if (isBindGroup(method->classType)) {
-    if (method->name == "Get") { return GenerateSPIRV(args[0]); }
   } else if (isMath(method->classType)) {
     uint32_t resultType = ConvertType(expr->GetType(types_));
     if (method->name == "sqrt") {
