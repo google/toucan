@@ -51,8 +51,7 @@ Type* ShaderPrepPass::GetAndQualifyUnderlyingType(Type* type) {
     Type* templateArgType = classType->GetTemplateArgs()[0];
     type = types_->GetQualifiedType(templateArgType, qualifiers);
     if (templateArgType->IsUnsizedArray()) {
-      type = types_->GetWrapperClass(type);
-      type = types_->GetQualifiedType(type, qualifiers);
+      type = GetWrapper(type, qualifiers);
     }
     return type;
   }
@@ -248,6 +247,16 @@ Result ShaderPrepPass::Visit(MethodCall* node) {
   Expr* result = Make<MethodCall>(method, newArgs);
   if (writeStmts) result = Make<ExprWithStmt>(result, writeStmts);
   return result;
+}
+
+Type* ShaderPrepPass::GetWrapper(Type* type, int qualifiers) {
+  if (Type* result = wrapper_[type]) { return result; }
+
+  std::string name = "{" + type->ToString() + "}";
+  ClassType* wrapper = types_->Make<ClassType>(name);
+  wrapper->AddField("_", type, nullptr);
+  Type* result = types_->GetQualifiedType(wrapper, qualifiers);
+  return wrapper_[type] = result;
 }
 
 Result ShaderPrepPass::Visit(RawToWeakPtr* node) {

@@ -743,15 +743,6 @@ Type* TypeTable::GetUnresolvedScopedType(FormalTemplateArg* baseType, std::strin
   return result;
 }
 
-ClassType* TypeTable::GetWrapperClass(Type* type) {
-  if (ClassType* wrapper = wrapperClasses_[type]) { return wrapper; }
-
-  std::string name = "{" + type->ToString() + "}";
-  ClassType*  wrapper = Make<ClassType>(name);
-  wrapper->AddField("_", type, nullptr);
-  return wrapper;
-}
-
 ClassType* TypeTable::GetClassTemplateInstance(ClassTemplate*  classTemplate,
                                                const TypeList& templateArgs) {
   for (ClassType* const& i : classTemplate->GetInstances()) {

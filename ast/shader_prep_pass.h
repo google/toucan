@@ -20,6 +20,7 @@
 namespace Toucan {
 
 using MethodMap = std::unordered_map<Method*, std::unique_ptr<Method>>;
+using WrapperMap = std::unordered_map<Type*, Type*>;
 
 using BindGroupList = std::vector<VarVector>;
 
@@ -50,6 +51,7 @@ class ShaderPrepPass : public CopyVisitor {
   Expr*   LoadInputVars(Type* type);
   Stmt*   StoreOutputVar(Type* type, std::string name, Expr* value);
   void    StoreOutputVars(Type* type, Expr* value, Stmts* stmts);
+  Type*   GetWrapper(Type* type, int qualifiers);
 
   TypeTable*              types_;
   Stmts*                  rootStmts_ = nullptr;
@@ -63,6 +65,7 @@ class ShaderPrepPass : public CopyVisitor {
   std::vector<int>        inputIndices_;
   std::vector<int>        outputIndices_;
   std::vector<int>        bindGroupIndices_;
+  WrapperMap              wrapper_;
 };
 
 };  // namespace Toucan

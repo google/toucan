@@ -581,7 +581,6 @@ class TypeTable {
   ArrayType*         GetArrayType(Type* elementType, int size, MemoryLayout layout);
   FormalTemplateArg* GetFormalTemplateArg(std::string name);
   ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs);
-  ClassType*  GetWrapperClass(Type* type);
   Type*       GetQualifiedType(Type* type, int qualifiers);
   Type*       GetUnqualifiedType(Type* type, int* qualifiers = nullptr);
   Type*       GetUnresolvedScopedType(FormalTemplateArg* baseType, std::string id);
@@ -617,7 +616,6 @@ class TypeTable {
   VoidType*                                            void_;
   AutoType*                                            auto_;
   NullType*                                            null_;
-  std::unordered_map<Type*, ClassType*>                wrapperClasses_;
   std::vector<ClassType*>                              instanceQueue_;
 };
 
