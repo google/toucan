@@ -172,7 +172,7 @@ spv::ExecutionModel toExecutionModel(ShaderType shaderType) {
 uint32_t CodeGenSPIRV::GetStorageClass(Type* type) {
   assert(!type->IsPtr());
   int qualifiers;
-  type = types_->GetUnqualifiedType(type, &qualifiers);
+  type = type->GetUnqualifiedType(&qualifiers);
   if (type->IsClass()) {
     auto classType = static_cast<ClassType*>(type);
     if (isSampler(classType) || isTextureView(classType)) {
@@ -239,7 +239,7 @@ void CodeGenSPIRV::DeclareBindGroupVars(const BindGroupList& bindGroups, const s
       Append(spv::OpDecorate, {varId, spv::DecorationDescriptorSet, group}, &annotations_);
       Append(spv::OpDecorate, {varId, spv::DecorationBinding, binding}, &annotations_);
       int qualifiers;
-      types_->GetUnqualifiedType(var->type, &qualifiers);
+      var->type->GetUnqualifiedType(&qualifiers);
       if (qualifiers & Type::Qualifier::Coherent) {
         Append(spv::OpDecorate, {varId, spv::DecorationCoherent}, &annotations_);
       }
@@ -440,7 +440,7 @@ uint32_t CodeGenSPIRV::AppendImageDecl(uint32_t        dim,
 
 uint32_t CodeGenSPIRV::ConvertType(Type* type) {
   int qualifiers;
-  type = types_->GetUnqualifiedType(type, &qualifiers);
+  type = type->GetUnqualifiedType(&qualifiers);
   bool isInterfaceBlock = qualifiers & (Type::Qualifier::Uniform | Type::Qualifier::Storage);
   if (spirvTypes_[type] != 0) { return spirvTypes_[type]; }
   uint32_t resultId;
@@ -594,7 +594,7 @@ uint32_t CodeGenSPIRV::ConvertPointerToType(Type* type) {
 }
 
 uint32_t CodeGenSPIRV::ConvertPointerToType(Type* type, uint32_t storageClass) {
-  PtrTypeKey key(types_->GetUnqualifiedType(type), storageClass);
+  PtrTypeKey key(type->GetUnqualifiedType(), storageClass);
   if (spirvPtrTypes_[key] != 0) { return spirvPtrTypes_[key]; }
   uint32_t typeId = ConvertType(type);
   uint32_t resultId = AppendTypeDecl(spv::Op::OpTypePointer, {storageClass, typeId});

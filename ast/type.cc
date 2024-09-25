@@ -713,25 +713,11 @@ FormalTemplateArg* TypeTable::GetFormalTemplateArg(std::string name) {
 
 Type* TypeTable::GetQualifiedType(Type* type, int qualifiers) {
   if (qualifiers == 0) { return type; }
-  if (type->IsArray()) {
-    auto arrayType = static_cast<ArrayType*>(type);
-    auto elementType = GetQualifiedType(arrayType->GetElementType(), qualifiers);
-    return GetArrayType(elementType, arrayType->GetNumElements(), arrayType->GetMemoryLayout());
-  }
   TypeAndInt key(type, qualifiers);
   if (auto result = qualifiedTypes_[key]) { return result; }
   QualifiedType* result = Make<QualifiedType>(type, qualifiers);
   qualifiedTypes_[key] = result;
   return result;
-}
-
-Type* TypeTable::GetUnqualifiedType(Type* type, int* qualifiers) {
-  if (type->IsArray()) {
-    auto arrayType = static_cast<ArrayType*>(type);
-    auto elementType = GetUnqualifiedType(arrayType->GetElementType(), qualifiers);
-    return GetArrayType(elementType, arrayType->GetNumElements(), arrayType->GetMemoryLayout());
-  }
-  return type->GetUnqualifiedType(qualifiers);
 }
 
 Type* TypeTable::GetUnresolvedScopedType(FormalTemplateArg* baseType, std::string id) {

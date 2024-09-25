@@ -582,7 +582,6 @@ class TypeTable {
   FormalTemplateArg* GetFormalTemplateArg(std::string name);
   ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs);
   Type*       GetQualifiedType(Type* type, int qualifiers);
-  Type*       GetUnqualifiedType(Type* type, int* qualifiers = nullptr);
   Type*       GetUnresolvedScopedType(FormalTemplateArg* baseType, std::string id);
   TypeList*   AppendTypeList(TypeList* type);
   int         GetTypeID(Type* type) const;

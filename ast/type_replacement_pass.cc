@@ -73,6 +73,11 @@ Type* TypeReplacementPass::PushQualifiers(Type* type, int qualifiers) {
   } else if (type->IsWeakPtr()) {
     return types_->GetWeakPtrType(
         PushQualifiers(static_cast<PtrType*>(type)->GetBaseType(), qualifiers));
+  } else if (type->IsArray()) {
+    auto arrayType = static_cast<ArrayType*>(type);
+    return types_->GetArrayType(
+        PushQualifiers(arrayType->GetElementType(), qualifiers),
+        arrayType->GetNumElements(), arrayType->GetMemoryLayout());
   } else {
     return types_->GetQualifiedType(type, qualifiers);
   }

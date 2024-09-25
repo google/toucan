@@ -43,7 +43,7 @@ Type* ShaderPrepPass::GetAndQualifyUnderlyingType(Type* type) {
   assert(type->IsPtr());
   type = static_cast<PtrType*>(type)->GetBaseType();
   int   qualifiers;
-  Type* unqualifiedType = types_->GetUnqualifiedType(type, &qualifiers);
+  Type* unqualifiedType = type->GetUnqualifiedType(&qualifiers);
   assert(unqualifiedType->IsClass());
   ClassType* classType = static_cast<ClassType*>(unqualifiedType);
   if (classType->GetTemplate() == NativeClass::Buffer) {
