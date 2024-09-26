@@ -48,10 +48,10 @@ class ShaderPrepPass : public CopyVisitor {
   Type*   GetAndQualifyUnderlyingType(Type* type);
   void    ExtractPipelineVars(ClassType* classType);
   void    ExtractBuiltInVars(Type* type);
-  Expr*   LoadInputVar(Type* type, std::string name);
-  Expr*   LoadInputVars(Type* type);
-  Stmt*   StoreOutputVar(Type* type, std::string name, Expr* value);
-  void    StoreOutputVars(Type* type, Expr* value, Stmts* stmts);
+  Expr*   CreateAndLoadInputVar(Type* type, std::string name);
+  Expr*   CreateAndLoadInputVars(Type* type);
+  Stmt*   CreateAndStoreOutputVar(Type* type, std::string name, Expr* value);
+  void    CreateAndStoreOutputVars(Type* type, Expr* value, Stmts* stmts);
   Type*   GetWrapper(Type* type, int qualifiers);
 
   TypeTable*              types_;

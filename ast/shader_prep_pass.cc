@@ -123,30 +123,30 @@ void ShaderPrepPass::ExtractBuiltInVars(Type* type) {
   }
 }
 
-Expr* ShaderPrepPass::LoadInputVar(Type* type, std::string name) {
+Expr* ShaderPrepPass::CreateAndLoadInputVar(Type* type, std::string name) {
   auto var = std::make_shared<Var>(name, type);
   inputs_.push_back(var);
   inputIndices_.push_back(-1);
   return Make<LoadExpr>(Make<VarExpr>(var.get()));
 }
 
-// Given a class, creates Vars for each of its fields and adds them to inputss_.
-// Loads the globals and constructs an instance of the class via Initialize().
-Expr* ShaderPrepPass::LoadInputVars(Type* type) {
+// Given a class, creates Vars for each of its fields.
+// Loads the globals and constructs an instance of the class via list Initializer.
+Expr* ShaderPrepPass::CreateAndLoadInputVars(Type* type) {
   if (type->IsClass()) {
     auto classType = static_cast<ClassType*>(type);
     auto args = Make<ExprList>();
     for (auto& i : classType->GetFields()) {
       Field* field = i.get();
-      args->Append(LoadInputVar(field->type, field->name));
+      args->Append(CreateAndLoadInputVar(field->type, field->name));
     }
     return Make<Initializer>(type, args);
   } else {
-    return LoadInputVar(type, "singleinput");
+    return CreateAndLoadInputVar(type, "singleinput");
   }
 }
 
-Stmt* ShaderPrepPass::StoreOutputVar(Type* type, std::string name, Expr* value) {
+Stmt* ShaderPrepPass::CreateAndStoreOutputVar(Type* type, std::string name, Expr* value) {
   auto var = std::make_shared<Var>(name, type);
   outputs_.push_back(var);
   outputIndices_.push_back(-1);
@@ -155,7 +155,7 @@ Stmt* ShaderPrepPass::StoreOutputVar(Type* type, std::string name, Expr* value) 
 
 // Given a type, adds corresponding Output vars. For class types, do so for
 // each of its fields.
-void ShaderPrepPass::StoreOutputVars(Type* type, Expr* value, Stmts* stmts) {
+void ShaderPrepPass::CreateAndStoreOutputVars(Type* type, Expr* value, Stmts* stmts) {
   if (type->IsVoid()) {
     stmts->Append(Make<ExprStmt>(value));
   } else if (type->IsClass()) {
@@ -167,10 +167,10 @@ void ShaderPrepPass::StoreOutputVars(Type* type, Expr* value, Stmts* stmts) {
     for (auto& field : classType->GetFields()) {
       Expr* fieldValue = Make<FieldAccess>(varExpr, field.get());
       fieldValue = Make<LoadExpr>(fieldValue);
-      stmts->Append(StoreOutputVar(field->type, field->name, fieldValue));
+      stmts->Append(CreateAndStoreOutputVar(field->type, field->name, fieldValue));
     }
   } else {
-    stmts->Append(StoreOutputVar(type, "singleoutput", value));
+    stmts->Append(CreateAndStoreOutputVar(type, "singleoutput", value));
   }
 }
 
@@ -189,13 +189,13 @@ Method* ShaderPrepPass::Run(Method* entryPoint) {
   ExtractBuiltInVars(formalArgList[1]->type);
   entryPoint->formalArgList.clear();
   if (formalArgList.size() > 2) {
-    Expr* input = LoadInputVars(formalArgList[2]->type);
+    Expr* input = CreateAndLoadInputVars(formalArgList[2]->type);
     entryPoint->formalArgList.push_back(formalArgList[2]);
     newArgs->Append(input);
   }
   auto  stmts = Make<Stmts>();
   Expr* methodCall = Make<MethodCall>(entryPoint, newArgs);
-  StoreOutputVars(entryPoint->returnType, methodCall, stmts);
+  CreateAndStoreOutputVars(entryPoint->returnType, methodCall, stmts);
   stmts->Append(Make<ReturnStatement>(nullptr, nullptr));
   entryPointWrapper_->stmts = stmts;
   return entryPointWrapper_.get();

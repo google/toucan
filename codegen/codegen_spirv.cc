@@ -316,6 +316,9 @@ Result CodeGenSPIRV::Visit(ArrayAccess* node) {
   Type*    type = node->GetExpr()->GetType(types_);
   assert(type->IsPtr());
   if (static_cast<PtrType*>(type)->GetBaseType()->IsUnsizedArray()) {
+    int qualifiers;
+    node->GetType(types_)->GetUnqualifiedType(&qualifiers);
+    type = types_->GetQualifiedType(type, qualifiers);
     base = AppendCode(spv::Op::OpAccessChain, ConvertType(type), {base, GetIntConstant(0)});
   }
   uint32_t resultId = AppendCode(spv::Op::OpAccessChain, resultType, {base, index});
