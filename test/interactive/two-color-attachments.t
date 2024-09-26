@@ -8,8 +8,8 @@ verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
 verts[2] = float<4>( 1.0, -1.0, 0.0, 1.0);
 auto vb = new vertex Buffer<Vertex[]>(device, verts);
 class RTTPipeline {
-  void vertexShader(VertexBuiltins vb) vertex { vb.position = vert.Get(); }
-  void fragmentShader(FragmentBuiltins fb) fragment {
+  void vertexShader(VertexBuiltins^ vb) vertex { vb.position = vert.Get(); }
+  void fragmentShader(FragmentBuiltins^ fb) fragment {
     red.Set(float<4>(1.0, 0.0, 0.0, 1.0));
     green.Set(float<4>(0.0, 1.0, 0.0, 1.0));
   }
@@ -25,8 +25,8 @@ class Bindings {
 }
 
 class Pipeline {
-  void vertexShader(VertexBuiltins vb) vertex { vb.position = vert.Get(); }
-  void fragmentShader(FragmentBuiltins fb) fragment {
+  void vertexShader(VertexBuiltins^ vb) vertex { vb.position = vert.Get(); }
+  void fragmentShader(FragmentBuiltins^ fb) fragment {
     auto b = bindings.Get();
     auto onehalf = float<2>(0.5, 0.5);
     fragColor.Set(b.red.Sample(b.sampler, onehalf) + b.green.Sample(b.sampler, onehalf));

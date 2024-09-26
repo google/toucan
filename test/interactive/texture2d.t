@@ -32,14 +32,14 @@ class Bindings {
 }
 
 class Pipeline {
-    Varyings vertexShader(VertexBuiltins vb) vertex {
+    Varyings vertexShader(VertexBuiltins^ vb) vertex {
         Vertex v = vert.Get();
         vb.position = v.position;
         Varyings varyings;
         varyings.texCoord = v.texCoord;
         return varyings;
     }
-    void fragmentShader(FragmentBuiltins fb, Varyings varyings) fragment {
+    void fragmentShader(FragmentBuiltins^ fb, Varyings varyings) fragment {
       auto b = bindings.Get();
       fragColor.Set(b.textureView.Sample(b.sampler, varyings.texCoord));
     }

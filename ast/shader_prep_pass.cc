@@ -113,6 +113,8 @@ void ShaderPrepPass::ExtractPipelineVars(ClassType* classType) {
 }
 
 void ShaderPrepPass::ExtractBuiltInVars(Type* type) {
+  assert(type->IsPtr());
+  type = static_cast<PtrType*>(type)->GetBaseType();
   assert(type->IsClass());
   auto classType = static_cast<ClassType*>(type);
   for (const auto& field : classType->GetFields()) {

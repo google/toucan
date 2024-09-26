@@ -5,7 +5,7 @@ class ComputeBindings {
 }
 
 class BumpCompute {
-  void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
+  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     auto verts = bindings.Get().vertStorage.MapReadWriteStorage();
     uint pos = cb.globalInvocationId.x;
     verts[pos] += float<4>( 0.005,  0.0, 0.0, 0.0);
@@ -22,8 +22,8 @@ verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
 verts[2] = float<4>( 1.0, -1.0, 0.0, 1.0);
 auto vb = new vertex storage Buffer<Vertex[]>(device, verts);
 class Pipeline {
-  void vertexShader(VertexBuiltins vb) vertex { vb.position = vert.Get(); }
-  void fragmentShader(FragmentBuiltins fb) fragment { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
+  void vertexShader(VertexBuiltins^ vb) vertex { vb.position = vert.Get(); }
+  void fragmentShader(FragmentBuiltins^ fb) fragment { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
   vertex Buffer<Vertex[]>* vert;
 }

@@ -4,8 +4,8 @@ auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 float<4>[3] triVerts = { { 0.0,  1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 }};
 auto triVB = new vertex Buffer<float<4>[]>(device, &triVerts);
 class GreenPipeline {
-    void vertexShader(VertexBuiltins vb) vertex { vb.position = position.Get(); }
-    void fragmentShader(FragmentBuiltins fb) fragment { renderTex.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
+    void vertexShader(VertexBuiltins^ vb) vertex { vb.position = position.Get(); }
+    void fragmentShader(FragmentBuiltins^ fb) fragment { renderTex.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
     vertex Buffer<float<4>[]>* position;
     ColorAttachment<RGBA8unorm>* renderTex;
 }
@@ -21,12 +21,12 @@ class Bindings {
 }
 
 class TexPipeline {
-    float<2> vertexShader(VertexBuiltins vb) vertex {
+    float<2> vertexShader(VertexBuiltins^ vb) vertex {
         QuadVertex v = vertices.Get();
         vb.position = v.position;
         return v.texCoord;
     }
-    void fragmentShader(FragmentBuiltins fb, float<2> texCoord) fragment {
+    void fragmentShader(FragmentBuiltins^ fb, float<2> texCoord) fragment {
       auto b = bindings.Get();
       fragColor.Set(b.textureView.Sample(b.sampler, texCoord));
     }

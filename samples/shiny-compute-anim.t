@@ -120,7 +120,7 @@ class ComputeBindings {
 }
 
 class BicubicComputePipeline {
-  void computeShader(ComputeBuiltins cb) compute(8, 8, 1) {
+  void computeShader(ComputeBuiltins^ cb) compute(8, 8, 1) {
     auto controlPoints = bindings.Get().controlPoints.MapReadWriteStorage();
     auto controlIndices = bindings.Get().controlIndices.MapReadWriteStorage();
     auto vertices = bindings.Get().vertices.MapReadWriteStorage();
@@ -148,14 +148,14 @@ class BicubicComputePipeline {
 }
 
 class SkyboxPipeline : DrawPipeline {
-    float<3> vertexShader(VertexBuiltins vb) vertex {
+    float<3> vertexShader(VertexBuiltins^ vb) vertex {
         auto v = position.Get();
         auto uniforms = bindings.Get().uniforms.MapReadUniform();
         auto pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
-    void fragmentShader(FragmentBuiltins fb, float<3> position) fragment {
+    void fragmentShader(FragmentBuiltins^ fb, float<3> position) fragment {
       float<3> p = Math.normalize(position);
       auto b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped
@@ -165,7 +165,7 @@ class SkyboxPipeline : DrawPipeline {
 };
 
 class ReflectionPipeline : DrawPipeline {
-    Vertex vertexShader(VertexBuiltins vb) vertex {
+    Vertex vertexShader(VertexBuiltins^ vb) vertex {
         auto v = vert.Get();
         auto n = Math.normalize(v.normal);
         auto uniforms = bindings.Get().uniforms.MapReadUniform();
@@ -178,7 +178,7 @@ class ReflectionPipeline : DrawPipeline {
         varyings.normal = float<3>(normal.x, normal.y, normal.z);
         return varyings;
     }
-    void fragmentShader(FragmentBuiltins fb, Vertex varyings) fragment {
+    void fragmentShader(FragmentBuiltins^ fb, Vertex varyings) fragment {
       auto b = bindings.Get();
       auto uniforms = b.uniforms.MapReadUniform();
       float<3> p = Math.normalize(varyings.position);

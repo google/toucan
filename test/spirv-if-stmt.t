@@ -5,7 +5,7 @@ class ComputeBindings {
 }
 
 class BumpCompute {
-  void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
+  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     auto verts = bindings.Get().vertStorage.MapReadWriteStorage();
     uint pos = cb.globalInvocationId.x;
     if (pos % 2 == 1) {

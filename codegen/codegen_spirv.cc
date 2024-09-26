@@ -1015,12 +1015,14 @@ Result CodeGenSPIRV::Visit(VarExpr* expr) {
   // FIXME: why is the field argument being deref'ed?
   if (type == thisPtrType_ || thisPtrType_ && type == thisPtrType_->GetBaseType()) {
     return kThis;
-  } else if (type->IsClass() && isBuiltInClass(static_cast<ClassType*>(type))) {
-    return kBuiltIns;
-  } else {
-    // The storage for these is allocated by the DeclareVar() loop in GenCodeForMethod().
-    return expr->GetVar()->spirv;
+  } else if (type->IsPtr()) {
+    auto baseType = static_cast<PtrType*>(type)->GetBaseType();
+    if (baseType->IsClass() && isBuiltInClass(static_cast<ClassType*>(baseType))) {
+      return kBuiltIns;
+    }
   }
+  // The storage for these is allocated by the DeclareVar() loop in GenCodeForMethod().
+  return expr->GetVar()->spirv;
 }
 
 Result CodeGenSPIRV::Visit(LoadExpr* expr) {

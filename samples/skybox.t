@@ -52,14 +52,14 @@ class Bindings {
 }
 
 class SkyboxPipeline {
-    float<3> vertexShader(VertexBuiltins vb) vertex {
+    float<3> vertexShader(VertexBuiltins^ vb) vertex {
         auto v = vertices.Get();
         auto uniforms = bindings.Get().uniforms.MapReadUniform();
         auto pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
-    void fragmentShader(FragmentBuiltins fb, float<3> position) fragment {
+    void fragmentShader(FragmentBuiltins^ fb, float<3> position) fragment {
       float<3> p = Math.normalize(position);
       auto b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped

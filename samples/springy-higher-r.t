@@ -78,7 +78,7 @@ class ComputeBase {
 }
 
 class ComputeForces : ComputeBase {
-  void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
+  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     auto springs = bindings.Get().springStorage.MapReadWriteStorage();
     auto u = bindings.Get().uniforms.MapReadUniform();
@@ -91,7 +91,7 @@ class ComputeForces : ComputeBase {
 }
 
 class ApplyForces : ComputeBase {
-  void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
+  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     auto springs = bindings.Get().springStorage.MapReadWriteStorage();
     auto u = bindings.Get().uniforms.MapReadUniform();
@@ -108,7 +108,7 @@ class ApplyForces : ComputeBase {
 }
 
 class UpdateBodyVerts : ComputeBase {
-  void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
+  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     uint i = cb.globalInvocationId.x;
     auto p = bodies[i].position;
@@ -120,7 +120,7 @@ class UpdateBodyVerts : ComputeBase {
 }
 
 class UpdateSpringVerts : ComputeBase {
-  void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
+  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     auto springs = bindings.Get().springStorage.MapReadWriteStorage();
     auto sv = bindings.Get().springVerts.MapReadWriteStorage();
@@ -135,11 +135,11 @@ class DrawBindings {
 }
 
 class DrawPipeline {
-  void vertexShader(VertexBuiltins vb) vertex {
+  void vertexShader(VertexBuiltins^ vb) vertex {
     auto matrix = bindings.Get().uniforms.MapReadUniform().matrix;
     vb.position = matrix * Utils.makeFloat4(vertices.Get());
   }
-  void fragmentShader(FragmentBuiltins fb) fragment {
+  void fragmentShader(FragmentBuiltins^ fb) fragment {
     fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
   }
   vertex Buffer<Vector[]>* vertices;

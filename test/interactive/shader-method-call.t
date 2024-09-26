@@ -8,9 +8,9 @@ verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
 verts[2] = float<4>( 1.0, -1.0, 0.0, 1.0);
 auto vb = new vertex Buffer<Vertex[]>(device, verts);
 class Pipeline {
-  void vertexShader(VertexBuiltins vb) vertex { vb.position = position.Get(); }
+  void vertexShader(VertexBuiltins^ vb) vertex { vb.position = position.Get(); }
   static float<4> green() { return float<4>(0.0, 1.0, 0.0, 1.0); }
-  void fragmentShader(FragmentBuiltins fb) fragment { fragColor.Set(Pipeline.green()); }
+  void fragmentShader(FragmentBuiltins^ fb) fragment { fragColor.Set(Pipeline.green()); }
   vertex Buffer<Vertex[]>* position;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
 }

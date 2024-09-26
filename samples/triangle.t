@@ -5,8 +5,8 @@ auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 Vertex[3] verts = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 } };
 auto vb = new vertex Buffer<Vertex[]>(device, &verts);
 class Pipeline {
-  void vertexShader(VertexBuiltins vb) vertex { vb.position = vertices.Get(); }
-  void fragmentShader(FragmentBuiltins fb) fragment { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
+  void vertexShader(VertexBuiltins^ vb) vertex { vb.position = vertices.Get(); }
+  void fragmentShader(FragmentBuiltins^ fb) fragment { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
   vertex Buffer<Vertex[]>*                   vertices;
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
 }

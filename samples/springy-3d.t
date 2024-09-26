@@ -89,11 +89,11 @@ class Bindings {
 }
 
 class DrawPipeline {
-  void vertexShader(VertexBuiltins vb) vertex {
+  void vertexShader(VertexBuiltins^ vb) vertex {
     auto matrix = bindings.Get().uniforms.MapReadUniform().matrix;
     vb.position = matrix * Utils.makeFloat4(vert.Get());
   }
-  void fragmentShader(FragmentBuiltins fb) fragment {
+  void fragmentShader(FragmentBuiltins^ fb) fragment {
     fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
   }
   vertex Buffer<Vector[]>* vert;

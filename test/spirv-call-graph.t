@@ -7,7 +7,7 @@ class Pipeline {
   static float b() {
     return Pipeline.a();
   }
-  void computeShader(ComputeBuiltins cb) compute(1, 1, 1) {
+  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     auto temp = Pipeline.b();
   }
 }

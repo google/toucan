@@ -13,12 +13,12 @@ colors[1] = float<3>(0.0, 1.0, 0.0);
 colors[2] = float<3>(0.0, 0.0, 1.0);
 
 class Pipeline {
-  float<3> vertexShader(VertexBuiltins vb) vertex {
+  float<3> vertexShader(VertexBuiltins^ vb) vertex {
     float<2> v = position.Get();
     vb.position = float<4>(v.x, v.y, 0.0, 1.0);
     return color.Get();
   }
-  void fragmentShader(FragmentBuiltins fb, float<3> varyings) fragment {
+  void fragmentShader(FragmentBuiltins^ fb, float<3> varyings) fragment {
     fragColor.Set(float<4>(varyings.r, varyings.g, varyings.b, 1.0));
   }
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
