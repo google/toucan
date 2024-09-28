@@ -34,11 +34,6 @@
 
 namespace Toucan {
 
-namespace {
-
-llvm::AllocaInst* GetAllocaInst(Var* var) { return static_cast<llvm::AllocaInst*>(var->data); }
-}  // namespace
-
 CodeGenLLVM::CodeGenLLVM(llvm::LLVMContext*                 context,
                          TypeTable*                         types,
                          llvm::Module*                      module,
@@ -194,15 +189,12 @@ llvm::Type* CodeGenLLVM::ConvertTypeToNative(Type* type) {
 llvm::Constant* CodeGenLLVM::Int(int value) { return llvm::ConstantInt::get(intType_, value); }
 
 llvm::GlobalVariable* CodeGenLLVM::GetOrCreateVTable(ClassType* classType) {
-  if (classType->GetData()) {
-    return static_cast<llvm::GlobalVariable*>(classType->GetData());
-  } else {
-    llvm::ArrayType* arrayType = llvm::ArrayType::get(funcPtrType_, classType->GetVTableSize());
-    llvm::GlobalVariable* vtable = new llvm::GlobalVariable(
-        *module_, arrayType, true, llvm::GlobalVariable::ExternalLinkage, nullptr, "vtable");
-    classType->SetData(vtable);
-    return vtable;
-  }
+  if (auto vtable = vtables_[classType]) return vtable;
+
+  llvm::ArrayType*      arrayType = llvm::ArrayType::get(funcPtrType_, classType->GetVTableSize());
+  llvm::GlobalVariable* vtable = new llvm::GlobalVariable(
+      *module_, arrayType, true, llvm::GlobalVariable::ExternalLinkage, nullptr, "vtable");
+  return vtables_[classType] = vtable;
 }
 
 void CodeGenLLVM::FillVTable(ClassType* classType) {
@@ -336,10 +328,9 @@ void CodeGenLLVM::UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type) {
   UnrefWeakPtr(ptr);
 }
 
-void CodeGenLLVM::CreateEntryBlockAlloca(llvm::Function* function, Var* var) {
+llvm::AllocaInst* CodeGenLLVM::CreateEntryBlockAlloca(llvm::Function* function, Var* var) {
   LLVMBuilder builder(&function->getEntryBlock(), function->getEntryBlock().begin());
-  llvm::Type* type = ConvertType(var->type);
-  var->data = builder.CreateAlloca(type, 0, var->name.c_str());
+  return allocas_[var] = builder.CreateAlloca(ConvertType(var->type), 0, var->name.c_str());
 }
 
 void CodeGenLLVM::RefWeakPtr(llvm::Value* ptr) {
@@ -375,7 +366,7 @@ void CodeGenLLVM::UnrefWeakPtr(llvm::Value* ptr) {
 }
 
 llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
-  if (method->data) { return static_cast<llvm::Function*>(method->data); }
+  if (auto function = functions_[method]) { return function; }
   std::vector<llvm::Type*> params;
   llvm::Intrinsic::ID      intrinsic = llvm::Intrinsic::not_intrinsic;
   if (method->classType->IsNative()) {
@@ -417,8 +408,7 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
   }
 
   function->setCallingConv(llvm::CallingConv::C);
-  method->data = function;
-  return function;
+  return functions_[method] = function;
 }
 
 llvm::Intrinsic::ID CodeGenLLVM::FindIntrinsic(Method* method) {
@@ -511,8 +501,8 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
        ai != function->arg_end() && it != method->formalArgList.end(); ai++, it++) {
     Var* var = it->get();
     ai->setName(var->name.c_str());
-    CreateEntryBlockAlloca(function, var);
-    builder_->CreateStore(&*ai, GetAllocaInst(var));
+    auto allocaInst = CreateEntryBlockAlloca(function, var);
+    builder_->CreateStore(&*ai, allocaInst);
   }
   if (method->stmts) { method->stmts->Accept(this); }
   verifyFunction(*function);
@@ -1028,7 +1018,7 @@ Result CodeGenLLVM::Visit(ForStatement* forStmt) {
 }
 
 void CodeGenLLVM::GenerateDestructor(Var* var) {
-  llvm::Value* value = static_cast<llvm::Value*>(var->data);
+  llvm::Value* value = allocas_[var];
   if (var->type->IsStrongPtr()) {
     value = builder_->CreateLoad(ConvertType(var->type), value);
     UnrefStrongPtr(value, static_cast<StrongPtrType*>(var->type));
@@ -1062,12 +1052,7 @@ Result CodeGenLLVM::Visit(EnumConstant* node) {
   return llvm::ConstantInt::get(intType_, node->GetValue()->value, true);
 }
 
-Result CodeGenLLVM::Visit(VarExpr* expr) {
-  Var*              var = expr->GetVar();
-  llvm::AllocaInst* inst = GetAllocaInst(var);
-  assert(inst);
-  return inst;
-}
+Result CodeGenLLVM::Visit(VarExpr* expr) { return allocas_[expr->GetVar()]; }
 
 Result CodeGenLLVM::Visit(TempVarExpr* node) {
   llvm::Type* type = ConvertType(node->GetType());

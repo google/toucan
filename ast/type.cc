@@ -313,7 +313,7 @@ std::string Method::GetMangledName() const {
 }
 
 ClassType::ClassType(std::string name)
-    : name_(name), parent_(nullptr), template_(nullptr), data_(nullptr), numFields_(0) {
+    : name_(name), parent_(nullptr), template_(nullptr), numFields_(0) {
   vtable_.resize(1);
 }
 

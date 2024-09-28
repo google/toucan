@@ -289,12 +289,10 @@ struct Field {
 typedef std::vector<std::unique_ptr<Field>> FieldVector;
 
 struct Var {
-  Var(const std::string& n, Type* t) : name(n), type(t), data(0) {}
+  Var(const std::string& n, Type* t) : name(n), type(t) {}
 
   std::string name;
   Type*       type;
-  uint32_t    spirv = 0;
-  void*       data;
 };
 
 class VarVector : public std::vector<std::shared_ptr<Var>> {};
@@ -323,7 +321,6 @@ struct Method {
   VarVector               formalArgList;
   std::vector<Expr*>      defaultArgs;
   Stmts*                  stmts = nullptr;
-  void*                   data = nullptr;
   std::vector<uint32_t>   spirv;
   std::string             wgsl;
   int                     index = -1;
@@ -431,8 +428,6 @@ class ClassType : public Type {
   bool        IsNative() const;
   void        SetNative(bool native) { native_ = native; }
   ClassType*  GetParent() const { return parent_; }
-  void*       GetData() const { return data_; }
-  void        SetData(void* data) { data_ = data; }
   int         GetVTableSize() const { return vtable_.size(); }
   const std::vector<Method*>& GetVTable() { return vtable_; }
   Type*                       FindType(const std::string& id);
@@ -450,7 +445,6 @@ class ClassType : public Type {
   ClassTemplate*       template_;
   TypeList             templateArgs_;
   std::vector<Method*> vtable_;
-  void*                data_;
   int                  numFields_;  // includes inherited fields
   bool                 isDefined_ = false;
   bool                 native_ = false;

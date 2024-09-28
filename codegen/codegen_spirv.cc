@@ -184,7 +184,7 @@ void CodeGenSPIRV::DeclareBuiltInVars(const VarVector& builtInVars, Code* interf
     uint32_t ptrId = AppendDecl(spv::Op::OpVariable, typeId, {storageClass});
     uint32_t builtinId = builtinNameToID(var->name);
     Append(spv::OpDecorate, {ptrId, spv::DecorationBuiltIn, builtinId}, &annotations_);
-    var->spirv = ptrId;
+    vars_[var.get()] = ptrId;
     interface->push_back(ptrId);
   }
 }
@@ -204,7 +204,7 @@ void CodeGenSPIRV::DeclareInterfaceVars(const VarVector& vars,
     Type*    type = vars[i]->type;
     uint32_t ptrToType = ConvertPointerToType(type, storageClass);
     uint32_t ptrId = AppendDecl(spv::Op::OpVariable, ptrToType, {storageClass});
-    vars[i]->spirv = ptrId;
+    vars_[vars[i].get()] = ptrId;
     interface->push_back(ptrId);
     Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, i}, &annotations_);
     if (type->IsInteger()) {
@@ -383,9 +383,7 @@ uint32_t CodeGenSPIRV::DeclareVar(Var* var) {
   assert(!var->type->IsPtr());
   uint32_t storageClass = GetStorageClass(var->type);
   uint32_t varType = ConvertPointerToType(var->type);
-  uint32_t varId = AppendCode(spv::Op::OpVariable, varType, {storageClass});
-  var->spirv = varId;
-  return varId;
+  return vars_[var] = AppendCode(spv::Op::OpVariable, varType, {storageClass});
 }
 
 uint32_t CodeGenSPIRV::AppendImageDecl(uint32_t        dim,
@@ -530,11 +528,11 @@ void CodeGenSPIRV::GenCodeForMethod(Method* method, uint32_t resultId) {
     // Store non-pointer arguments into function-local variables.
     for (auto arg : method->formalArgList) {
       if (!arg->type->IsPtr()) {
-        AppendCode(spv::Op::OpStore, {arg->spirv, *fp++});
+        AppendCode(spv::Op::OpStore, {vars_[arg.get()], *fp++});
       } else {
-        arg->spirv = *fp++;
+        vars_[arg.get()] = *fp++;
       }
-      assert(arg->spirv != 0);
+      assert(vars_[arg.get()] != 0);
     }
     GenerateSPIRV(stmts);
   }
@@ -912,7 +910,7 @@ Result CodeGenSPIRV::Visit(InsertElementExpr* expr) {
   return AppendCode(spv::Op::OpCompositeInsert, resultType, {compositeId, newElementId, index});
 }
 
-Result CodeGenSPIRV::Visit(VarExpr* expr) { return expr->GetVar()->spirv; }
+Result CodeGenSPIRV::Visit(VarExpr* expr) { return vars_[expr->GetVar()]; }
 
 Result CodeGenSPIRV::Visit(LoadExpr* expr) {
   uint32_t exprId = GenerateSPIRV(expr->GetExpr());
