@@ -666,6 +666,8 @@ Result CodeGenSPIRV::Visit(SmartToRawPtr* node) { return GenerateSPIRV(node->Get
 
 Result CodeGenSPIRV::Visit(RawToWeakPtr* node) { return GenerateSPIRV(node->GetExpr()); }
 
+Result CodeGenSPIRV::Visit(DestroyStmt* node) { return 0u; }
+
 Result CodeGenSPIRV::Visit(DoStatement* doStmt) {
   uint32_t loopBody = NextId();
   uint32_t next = NextId();

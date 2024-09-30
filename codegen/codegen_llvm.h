@@ -82,7 +82,6 @@ class CodeGenLLVM : public Visitor {
   void                  UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type);
   void                  RefWeakPtr(llvm::Value* ptr);
   void                  UnrefWeakPtr(llvm::Value* ptr);
-  void                  GenerateDestructor(Var* var);
   llvm::Value*          ConvertToNative(Type* type, llvm::Value* value);
   llvm::Value*          ConvertFromNative(Type* type, llvm::Value* value);
   llvm::Intrinsic::ID   FindIntrinsic(Method* method);
@@ -110,6 +109,7 @@ class CodeGenLLVM : public Visitor {
   Result                Visit(CastExpr* expr) override;
   Result                Visit(Data* expr) override;
   Result                Visit(SmartToRawPtr* stmt) override;
+  Result                Visit(DestroyStmt* stmt) override;
   Result                Visit(DoStatement* stmt) override;
   Result                Visit(DoubleConstant* stmt) override;
   Result                Visit(EnumConstant* node) override;

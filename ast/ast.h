@@ -558,6 +558,16 @@ class StoreStmt : public Stmt {
   Expr* rhs_;
 };
 
+class DestroyStmt : public Stmt {
+ public:
+  DestroyStmt(Expr* expr);
+  Result Accept(Visitor* visitor) override;
+  Expr*  GetExpr() const { return expr_; }
+
+ private:
+  Expr*     expr_;
+};
+
 class IncDecExpr : public Expr {
  public:
   enum class Op { Inc, Dec };
@@ -655,15 +665,13 @@ class ForStatement : public Stmt {
 
 class ReturnStatement : public Stmt {
  public:
-  ReturnStatement(Expr* expr, Scope* scope);
+  ReturnStatement(Expr* expr);
   Result Accept(Visitor* visitor) override;
   bool   ContainsReturn() const override { return true; }
   Expr*  GetExpr() { return expr_; }
-  Scope* GetScope() const { return scope_; }
 
  private:
   Expr*  expr_;
-  Scope* scope_;
 };
 
 class NewArrayExpr : public Expr {
@@ -784,6 +792,7 @@ class Visitor {
   virtual Result Visit(Stmts* node) { return Default(node); }
   virtual Result Visit(TempVarExpr* node) { return Default(node); }
   virtual Result Visit(UnaryOp* node) { return Default(node); }
+  virtual Result Visit(DestroyStmt* node) { return Default(node); }
   virtual Result Visit(UnresolvedInitializer* node) { return Default(node); }
   virtual Result Visit(UnresolvedDot* node) { return Default(node); }
   virtual Result Visit(UnresolvedIdentifier* node) { return Default(node); }

@@ -171,6 +171,8 @@ LoadExpr::LoadExpr(Expr* expr) : expr_(expr) {}
 
 StoreStmt::StoreStmt(Expr* lhs, Expr* rhs) : lhs_(lhs), rhs_(rhs) {}
 
+DestroyStmt::DestroyStmt(Expr* expr) : expr_(expr) {}
+
 IncDecExpr::IncDecExpr(Op op, Expr* expr, bool returnOrigValue)
     : op_(op), expr_(expr), returnOrigValue_(returnOrigValue) {}
 
@@ -277,7 +279,7 @@ DoStatement::DoStatement(Stmt* body, Expr* cond) : body_(body), cond_(cond) {}
 ForStatement::ForStatement(Stmt* initStmt, Expr* cond, Stmt* loopStmt, Stmt* body)
     : initStmt_(initStmt), cond_(cond), loopStmt_(loopStmt), body_(body) {}
 
-ReturnStatement::ReturnStatement(Expr* expr, Scope* scope) : expr_(expr), scope_(scope) {}
+ReturnStatement::ReturnStatement(Expr* expr) : expr_(expr) {}
 
 NewArrayExpr::NewArrayExpr(Type* elementType, Expr* sizeExpr)
     : elementType_(elementType), sizeExpr_(sizeExpr) {}
@@ -333,6 +335,7 @@ Result Stmts::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result TempVarExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UIntConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnaryOp::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result DestroyStmt::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedDot::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedIdentifier::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedListExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }

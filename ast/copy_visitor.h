@@ -56,6 +56,7 @@ class CopyVisitor : public Visitor {
   Result        Visit(StoreStmt* node) override;
   Result        Visit(UIntConstant* constant) override;
   Result        Visit(UnaryOp* node) override;
+  Result        Visit(DestroyStmt* node) override;
   Result        Visit(UnresolvedInitializer* node) override;
   Result        Visit(UnresolvedDot* node) override;
   Result        Visit(UnresolvedIdentifier* node) override;

@@ -178,9 +178,9 @@ Result DumpAsSourcePass::Visit(UnaryOp* node) {
 Result DumpAsSourcePass::Visit(ReturnStatement* stmt) {
   if (stmt->GetExpr()) {
     int expr = Resolve(stmt->GetExpr());
-    Output(stmt, "Make<ReturnStatement>(exprs[%d], nullptr)", expr);
+    Output(stmt, "Make<ReturnStatement>(exprs[%d])", expr);
   } else {
-    Output(stmt, "Make<ReturnStatement>(nullptr, nullptr)");
+    Output(stmt, "Make<ReturnStatement>(nullptr)");
   }
   return {};
 }

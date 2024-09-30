@@ -43,6 +43,7 @@ test/constructor.t
 test/control-flow.t
 test/decl-test.t
 test/dereference.t
+test/destructor-set-null.t
 test/destructor.t
 test/do-test.t
 test/double.t

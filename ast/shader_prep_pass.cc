@@ -386,7 +386,7 @@ Method* ShaderPrepPass::Run(Method* entryPoint) {
   Expr* methodCall = Make<MethodCall>(entryPoint, newArgs);
   CreateAndStoreOutputVars(entryPoint->returnType, methodCall, stmts);
   stmts->Append(postStmts);
-  stmts->Append(Make<ReturnStatement>(nullptr, nullptr));
+  stmts->Append(Make<ReturnStatement>(nullptr));
   entryPointWrapper_->stmts = stmts;
   return entryPointWrapper_.get();
 }

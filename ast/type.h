@@ -76,6 +76,7 @@ class Type {
   virtual bool  IsPOD() const = 0;
   virtual bool  IsReadable() const { return true; }
   virtual bool  IsWriteable() const { return true; }
+  virtual bool  NeedsDestruction() const { return false; }
   virtual Type* GetUnqualifiedType(int* qualifiers = nullptr) {
     if (qualifiers) *qualifiers = 0;
     return this;
@@ -250,6 +251,7 @@ class ArrayType : public Type {
   void         SetMemoryLayout(MemoryLayout memoryLayout) { memoryLayout_ = memoryLayout; }
   bool         CanWidenTo(Type* type) const override;
   bool         CanInitFrom(const ListType* type) const override;
+  bool         NeedsDestruction() const override { return elementType_->NeedsDestruction(); }
 
  private:
   Type*        elementType_;
@@ -269,6 +271,7 @@ class QualifiedType : public Type {
   int           GetQualifiers() const { return qualifiers_; }
   std::string   ToString() const override;
   int           GetSizeInBytes() const override { return baseType_->GetSizeInBytes(); }
+  bool          NeedsDestruction() const override { return baseType_->NeedsDestruction(); }
   bool          CanWidenTo(Type* type) const override;
 
  private:
@@ -438,6 +441,7 @@ class ClassType : public Type {
   void                        SetMemoryLayout(MemoryLayout memoryLayout, TypeTable* types);
   int                         GetPadding() const { return padding_; }
   bool                        IsFullySpecified() const override;
+  bool                        NeedsDestruction() const override;
 
  private:
   std::string          name_;
@@ -489,6 +493,7 @@ class StrongPtrType : public PtrType {
   std::string ToString() const override;
   bool        IsStrongPtr() const override { return true; }
   bool        CanWidenTo(Type* type) const override;
+  bool        NeedsDestruction() const override { return true; }
 };
 
 class WeakPtrType : public PtrType {
@@ -497,6 +502,7 @@ class WeakPtrType : public PtrType {
   std::string ToString() const override;
   bool        IsWeakPtr() const override { return true; }
   bool        CanWidenTo(Type* type) const override;
+  bool        NeedsDestruction() const override { return true; }
   bool CanInitFrom(const ListType* type) const override { return GetBaseType()->CanInitFrom(type); }
 };
 

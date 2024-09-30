@@ -177,8 +177,7 @@ statement:
   | for_statement
   | while_statement 
   | do_statement
-  | T_RETURN expr ';'                       { $$ = MakeReturnStatement($2); }
-  | T_RETURN ';'                            { $$ = MakeReturnStatement(0); }
+  | T_RETURN opt_expr ';'                   { $$ = MakeReturnStatement($2); }
   | var_decl_statement ';'                  { $$ = $1; }
   | class_decl
   | class_forward_decl
@@ -680,7 +679,7 @@ static Stmt* Store(Expr* lhs, Expr* rhs) {
 }
 
 static Stmt* MakeReturnStatement(Expr* expr) {
-  return Make<ReturnStatement>(expr, symbols_->PeekScope());
+  return Make<ReturnStatement>(expr);
 }
 
 static Expr* MakeStaticMethodCall(Type* type, const char* id, ArgList* arguments) {
@@ -872,7 +871,7 @@ static Type* GetScopedType(Type* type, const char* id) {
 
 static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
   if (stmts) {
-    stmts->Append(Make<ReturnStatement>(Load(ThisExpr()), symbols_->PeekScope()));
+    stmts->Append(Make<ReturnStatement>(Load(ThisExpr())));
   }
   Method* method = EndMethod(stmts);
   if (method->stmts) {
@@ -936,7 +935,7 @@ int ParseProgram(const char* filename,
   yyparse();
   if (numSyntaxErrors == 0) {
     if (!(*rootStmts_)->ContainsReturn()) {
-      (*rootStmts_)->Append(Make<ReturnStatement>(nullptr, symbols_->PeekScope()));
+      (*rootStmts_)->Append(Make<ReturnStatement>(nullptr));
     }
     InstantiateClassTemplates();
   }

@@ -72,6 +72,7 @@ class CodeGenSPIRV : public Visitor {
   Result   Visit(BoolConstant* expr) override;
   Result   Visit(CastExpr* expr) override;
   Result   Visit(SmartToRawPtr* node) override;
+  Result   Visit(DestroyStmt* stmt) override;
   Result   Visit(DoStatement* stmt) override;
   Result   Visit(ExprStmt* exprStmt) override;
   Result   Visit(ExprWithStmt* exprStmt) override;

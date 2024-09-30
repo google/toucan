@@ -130,12 +130,16 @@ Result CopyVisitor::Visit(UnaryOp* node) {
   return Make<UnaryOp>(node->GetOp(), rhs);
 }
 
+Result CopyVisitor::Visit(DestroyStmt* node) {
+  return Make<DestroyStmt>(Resolve(node->GetExpr()));
+}
+
 Result CopyVisitor::Visit(RawToWeakPtr* node) {
   return Make<RawToWeakPtr>(Resolve(node->GetExpr()));
 }
 
 Result CopyVisitor::Visit(ReturnStatement* stmt) {
-  return Make<ReturnStatement>(Resolve(stmt->GetExpr()), stmt->GetScope());
+  return Make<ReturnStatement>(Resolve(stmt->GetExpr()));
 }
 
 Result CopyVisitor::Visit(NewExpr* expr) {

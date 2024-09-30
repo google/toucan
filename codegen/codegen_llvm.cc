@@ -908,11 +908,6 @@ Result CodeGenLLVM::Visit(Stmts* stmts) {
   for (Stmt* const& i : stmts->GetStmts()) {
     i->Accept(this);
   }
-  if (!stmts->ContainsReturn()) {
-    for (auto p : stmts->GetVars()) {
-      GenerateDestructor(p.get());
-    }
-  }
   return nullptr;
 }
 
@@ -940,14 +935,23 @@ Result CodeGenLLVM::Visit(ExprStmt* stmt) {
   return nullptr;
 }
 
+Result CodeGenLLVM::Visit(DestroyStmt* node) {
+  auto type = node->GetExpr()->GetType(types_);
+  assert(type->IsRawPtr());
+  type = static_cast<RawPtrType*>(type)->GetBaseType();
+  auto value = GenerateLLVM(node->GetExpr());
+  if (type->IsStrongPtr()) {
+    value = builder_->CreateLoad(ConvertType(type), value);
+    UnrefStrongPtr(value, static_cast<StrongPtrType*>(type));
+  } else if (type->IsWeakPtr()) {
+    value = builder_->CreateLoad(ConvertType(type), value);
+    UnrefWeakPtr(value);
+  }
+  return nullptr;
+}
+
 Result CodeGenLLVM::Visit(ReturnStatement* stmt) {
   llvm::Value* expr = stmt->GetExpr() ? GenerateLLVM(stmt->GetExpr()) : nullptr;
-  for (Scope* scope = stmt->GetScope(); scope != nullptr && scope->method == nullptr;
-       scope = scope->parent) {
-    for (auto p : scope->vars) {
-      GenerateDestructor(p.second.get());
-    }
-  }
   DestroyTemporaries();
   builder_->CreateRet(expr);
   return nullptr;
@@ -1022,17 +1026,6 @@ Result CodeGenLLVM::Visit(ForStatement* forStmt) {
   builder_->SetInsertPoint(afterBlock);
   DestroyTemporaries();
   return nullptr;
-}
-
-void CodeGenLLVM::GenerateDestructor(Var* var) {
-  llvm::Value* value = allocas_[var];
-  if (var->type->IsStrongPtr()) {
-    value = builder_->CreateLoad(ConvertType(var->type), value);
-    UnrefStrongPtr(value, static_cast<StrongPtrType*>(var->type));
-  } else if (var->type->IsWeakPtr()) {
-    value = builder_->CreateLoad(ConvertType(var->type), value);
-    UnrefWeakPtr(value);
-  }
 }
 
 Result CodeGenLLVM::Visit(BoolConstant* node) {

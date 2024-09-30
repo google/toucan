@@ -36,6 +36,7 @@ class SemanticPass : public CopyVisitor {
   Result Visit(IfStatement* stmt) override;
   Result Visit(NewArrayExpr* expr) override;
   Result Visit(LoadExpr* node) override;
+  Result Visit(ReturnStatement* node) override;
   Result Visit(SmartToRawPtr* expr) override;
   Result Visit(Stmts* stmts) override;
   Result Visit(IncDecExpr* node) override;
@@ -53,6 +54,7 @@ class SemanticPass : public CopyVisitor {
   int    GetNumErrors() const { return numErrors_; }
 
  private:
+  void    UnwindStack(Scope* scope, Stmts* stmts);
   Expr*   MakeConstantOne(Type* type);
   Result  ResolveMethodCall(Expr* expr, ClassType* classType, std::string id, ArgList* arglist);
   Expr*   ResolveListExpr(UnresolvedListExpr* node, Type* dstType);

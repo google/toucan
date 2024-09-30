@@ -91,11 +91,16 @@ Result SemanticPass::Visit(Stmts* stmts) {
     if (stmt) newStmts->Append(stmt);
   }
   if (scope) {
+    bool containsReturn = stmts->ContainsReturn();
     // Append vars to new stmts for any vars in this scope.  Also
     // append destructor calls for any vars that need it.
     symbols_->PopScope();
     for (auto p : scope->vars) {
-      newStmts->AppendVar(p.second);
+      auto var = p.second;
+      newStmts->AppendVar(var);
+      if (var->type->NeedsDestruction() && !containsReturn) {
+        newStmts->Append(Make<DestroyStmt>(Make<VarExpr>(var.get())));
+      }
     }
   }
   return newStmts;
@@ -487,10 +492,15 @@ Result SemanticPass::Visit(StoreStmt* node) {
   } else if (!rhsType->CanWidenTo(lhsType)) {
     return Error("cannot store a value of type \"%s\" to a location of type \"%s\"",
                  rhsType->ToString().c_str(), lhsType->ToString().c_str());
-  } else {
-    rhs = Widen(rhs, lhsType);
-    return Make<StoreStmt>(lhs, rhs);
   }
+  rhs = Widen(rhs, lhsType);
+  if (lhsType->NeedsDestruction()) {
+    auto stmts = Make<Stmts>();
+    stmts->Append(Make<DestroyStmt>(lhs));
+    stmts->Append(Make<StoreStmt>(lhs, rhs));
+    return stmts;
+  }
+  return Make<StoreStmt>(lhs, rhs);
 }
 
 namespace {
@@ -688,8 +698,8 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
         if (method->returnType != types_->GetVoid()) {
           return Error("implicit void return, in method returning non-void.");
         } else {
-          Stmt* last = Make<ReturnStatement>(nullptr, nullptr);
-          method->stmts->Append(last);
+          UnwindStack(method->stmts->GetScope(), method->stmts);
+          method->stmts->Append(Make<ReturnStatement>(nullptr));
         }
       }
     }
@@ -712,7 +722,7 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
 
   if (!destructor->stmts) {
     Stmts* stmts = Make<Stmts>();
-    stmts->Append(Make<ReturnStatement>(nullptr, nullptr));
+    stmts->Append(Make<ReturnStatement>(nullptr));
     destructor->stmts = stmts;
   }
 
@@ -730,6 +740,24 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   symbols_->PopScope();
   // FIXME:  generate class destructor here?
   return nullptr;
+}
+
+void SemanticPass::UnwindStack(Scope* scope, Stmts* stmts) {
+  for(; scope && !scope->method && !scope->classType; scope = scope->parent) {
+    for (auto p : scope->vars) {
+      auto var = p.second;
+      if (var->type->NeedsDestruction()) {
+        stmts->Append(Make<DestroyStmt>(Make<VarExpr>(var.get())));
+      }
+    }
+  }
+}
+
+Result SemanticPass::Visit(ReturnStatement* stmt) {
+  auto stmts = Make<Stmts>();
+  UnwindStack(symbols_->PeekScope(), stmts);
+  stmts->Append(Make<ReturnStatement>(Resolve(stmt->GetExpr())));
+  return stmts;
 }
 
 int SemanticPass::FindFormalArg(Arg* arg, Method* m, TypeTable* types) {
