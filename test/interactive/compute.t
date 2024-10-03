@@ -25,7 +25,7 @@ class Pipeline {
   vertex main(vb : &VertexBuiltins) { vb.position = vert.Get(); }
   fragment main(fb : &FragmentBuiltins) { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
-  var vert : *vertex Buffer<[]Vertex>;
+  var vert : *VertexInput<Vertex>;
 }
 
 var pipeline = new RenderPipeline<Pipeline>(device);
@@ -42,7 +42,7 @@ while (System.IsRunning()) {
   computePass.Dispatch(verts.length, 1, 1);
   computePass.End();
   var p : Pipeline;
-  p.vert = vb;
+  p.vert = new VertexInput<Vertex>(vb);
   p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
   var renderPass = new RenderPass<Pipeline>(encoder, &p);
   renderPass.SetPipeline(pipeline);

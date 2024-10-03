@@ -121,13 +121,7 @@ Type* TypeReplacementPass::ResolveType(Type* type) {
   } else if (type->IsUnresolvedScopedType()) {
     auto  ust = static_cast<UnresolvedScopedType*>(type);
     Type* newType = ResolveType(ust->GetBaseType());
-    if (ust->GetID() == "ElementType") {
-      if (newType->IsArray()) {
-        newType = static_cast<ArrayType*>(newType)->GetElementType();
-      } else {
-        newType = types_->GetVoid();
-      }
-    } else if (newType->IsClass()) {
+    if (newType->IsClass()) {
       auto classType = static_cast<ClassType*>(newType);
       if (ust->GetID() == "BaseClass") {
         if (auto parent = classType->GetParent()) { newType = parent; }

@@ -23,12 +23,13 @@ class Pipeline {
     fragColor.Set(float<4>(varyings.r, varyings.g, varyings.b, 1.0));
   }
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
-  var vertices : *vertex Buffer<[]Vertex>;
+  var vertices : *VertexInput<Vertex>;
 }
 var pipeline = new RenderPipeline<Pipeline>(device);
 var encoder = new CommandEncoder(device);
+var vi = new VertexInput<Vertex>(vb);
 var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
-var renderPass = new RenderPass<Pipeline>(encoder, { vertices = vb, fragColor = fb });
+var renderPass = new RenderPass<Pipeline>(encoder, { vertices = vi, fragColor = fb });
 renderPass.SetPipeline(pipeline);
 renderPass.Draw(3, 1, 0, 0);
 renderPass.End();

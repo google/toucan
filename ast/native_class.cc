@@ -46,6 +46,7 @@ ClassType* NativeClass::Texture2D;
 ClassType* NativeClass::Texture2DArray;
 ClassType* NativeClass::Texture3D;
 ClassType* NativeClass::TextureCube;
+ClassType* NativeClass::VertexInput;
 ClassType* NativeClass::Window;
 
 }  // namespace Toucan

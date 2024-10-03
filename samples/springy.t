@@ -96,7 +96,7 @@ class DrawPipeline {
   fragment main(fb : &FragmentBuiltins) {
     fragColor.Set(bindings.Get().uniforms.Map().color);
   }
-  var vertices : *vertex Buffer<[]Vector>;
+  var vertices : *VertexInput<Vector>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var bindings : *BindGroup<Bindings>;
 }
@@ -141,9 +141,11 @@ var physicsSystem = new ParticleSystem(bodies, springs);
 
 var bodyVerts = [bodies.length * 3] new Vector;
 var bodyVBO = new vertex Buffer<[]Vector>(device, bodyVerts.length);
+var bodyInput = new VertexInput<Vector>(bodyVBO);
 
 var springVerts = [springs.length * 2] new Vector;
 var springVBO = new vertex Buffer<[]Vector>(device, springVerts.length);
+var springInput = new VertexInput<Vector>(springVBO);
 
 var bodyPipeline = new RenderPipeline<DrawPipeline>(device);
 var springPipeline = new RenderPipeline<DrawPipeline>(device, PrimitiveTopology.LineList);
@@ -198,11 +200,11 @@ while(System.IsRunning()) {
   var renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = colorAttachment });
 
   renderPass.SetPipeline(springPipeline);
-  renderPass.Set({vertices = springVBO, bindings = springBG});
+  renderPass.Set({vertices = springInput, bindings = springBG});
   renderPass.Draw(springVerts.length, 1, 0, 0);
 
   renderPass.SetPipeline(bodyPipeline);
-  renderPass.Set({vertices = bodyVBO, bindings = bodyBG});
+  renderPass.Set({vertices = bodyInput, bindings = bodyBG});
   renderPass.Draw(bodyVerts.length, 1, 0, 0);
 
   renderPass.End();

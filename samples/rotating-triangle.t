@@ -37,7 +37,7 @@ class Pipeline {
   fragment main(fb : &FragmentBuiltins, varyings : float<4>) {
     fragColor.Set(varyings * bindings.Get().uniformBuffer.Map().alpha);
   }
-  var vertices : *vertex Buffer<[]Vertex>;
+  var vertices : *VertexInput<Vertex>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var bindings : *BindGroup<Bindings>;
 }
@@ -56,7 +56,8 @@ while (System.IsRunning()) {
   uniformBuffer.SetData(&uniformData);
   var encoder = new CommandEncoder(device);
   var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
-  var renderPass = new RenderPass<Pipeline>(encoder, {vertices = vb, fragColor = fb, bindings = bg});
+  var vi = new VertexInput<Vertex>(vb);
+  var renderPass = new RenderPass<Pipeline>(encoder, {vertices = vi, fragColor = fb, bindings = bg});
   renderPass.SetPipeline(pipeline);
   renderPass.Draw(3, 1, 0, 0);
   renderPass.End();

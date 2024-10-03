@@ -102,7 +102,6 @@ test/error-include-not-found.t
 error-include-not-found.t:1: file "include/bogus.t" not found
 test/error-index-buffer-get.t
 error-index-buffer-get.t:4:  class Buffer<[]uint> has no method Get()
-error-index-buffer-get.t:4:  Buffer<[]uint>.Get() vertex : uint
 test/error-int-literal-too-large.t
 test/error-invalid-class-casts.t
 error-invalid-class-casts.t:14:  cannot store a value of type "null" to a location of type "int"

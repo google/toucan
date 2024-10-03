@@ -15,7 +15,7 @@ class RTTPipeline {
   }
   var red : *ColorAttachment<RGBA8unorm>;
   var green : *ColorAttachment<RGBA8unorm>;
-  var vert : *vertex Buffer<[]Vertex>;
+  var vert : *VertexInput<Vertex>;
 }
 
 class Bindings {
@@ -32,7 +32,7 @@ class Pipeline {
     fragColor.Set(b.red.Sample(b.sampler, onehalf) + b.green.Sample(b.sampler, onehalf));
   }
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
-  var vert : *vertex Buffer<[]Vertex>;
+  var vert : *VertexInput<Vertex>;
   var bindings : *BindGroup<Bindings>;
 }
 var encoder = new CommandEncoder(device);
@@ -41,7 +41,7 @@ var greenTex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.Ge
 var rp : RTTPipeline;
 rp.red = redTex.CreateColorAttachment(LoadOp.Clear);
 rp.green = greenTex.CreateColorAttachment(LoadOp.Clear);
-rp.vert = vb;
+rp.vert = new VertexInput<Vertex>(vb);
 var rttPass = new RenderPass<RTTPipeline>(encoder, &rp);
 var rttPipeline = new RenderPipeline<RTTPipeline>(device);
 rttPass.SetPipeline(rttPipeline);
@@ -49,7 +49,7 @@ rttPass.Draw(3, 1, 0, 0);
 rttPass.End();
 var pipeline = new RenderPipeline<Pipeline>(device);
 var p : Pipeline;
-p.vert = vb;
+p.vert = new VertexInput<Vertex>(vb);
 p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
 var b : Bindings;
 b.sampler = new Sampler(device);

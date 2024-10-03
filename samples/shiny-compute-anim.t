@@ -166,7 +166,7 @@ class SkyboxPipeline : DrawPipeline {
       // TODO: figure out why the skybox is X-flipped
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
-    var position : *vertex Buffer<[]float<3>>;
+    var position : *VertexInput<float<3>>;
 };
 
 class ReflectionPipeline : DrawPipeline {
@@ -192,7 +192,7 @@ class ReflectionPipeline : DrawPipeline {
       var r4 = uniforms.viewInverse * float<4>(r.x, r.y, r.z, 0.0);
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-r4.x, r4.y, r4.z)));
     }
-    var vert : *vertex Buffer<[]Vertex>;
+    var vert : *VertexInput<Vertex>;
 };
 
 var tessPipeline = new ComputePipeline<BicubicComputePipeline>(device);
@@ -204,7 +204,8 @@ cubeBindings.sampler = new Sampler(device);
 cubeBindings.textureView = texture.CreateSampleableView();
 
 var cubeData : SkyboxPipeline;
-cubeData.position = new vertex Buffer<[]float<3>>(device, &cubeVerts);
+var cubeVB = new vertex Buffer<[]float<3>>(device, &cubeVerts);
+cubeData.position = new VertexInput<float<3>>(cubeVB);
 cubeData.indexBuffer = new index Buffer<[]uint>(device, &cubeIndices);
 cubeData.bindings = new BindGroup<Bindings>(device, &cubeBindings);
 
@@ -215,18 +216,18 @@ teapotBindings.textureView = cubeBindings.textureView;
 teapotBindings.uniforms = new uniform Buffer<Uniforms>(device);
 
 var numVerticesPerPatch = patchWidth * patchWidth;
-var teapotVertices = new vertex storage Buffer<[]Vertex>(device, numPatches * numVerticesPerPatch);
+var teapotVB = new vertex storage Buffer<[]Vertex>(device, numPatches * numVerticesPerPatch);
 
 var teapotControlPointsBuffer = new storage Buffer<[]float<3>>(device, teapotControlPoints.length);
 var computeBindings = new BindGroup<ComputeBindings>(device, {
   controlPoints = teapotControlPointsBuffer,
   controlIndices = new storage Buffer<[]uint>(device, &teapotControlIndices),
-  vertices = teapotVertices,
+  vertices = teapotVB,
   uniforms = new uniform Buffer<ComputeUniforms>(device, { patchWidth = patchWidth, scale = 1.0 / (float) level } )
 });
 
 var teapotData : ReflectionPipeline;
-teapotData.vert = teapotVertices;
+teapotData.vert = new VertexInput<Vertex>(teapotVB);
 teapotData.indexBuffer = new index Buffer<[]uint>(device, tessTeapotIndices);
 teapotData.bindings = new BindGroup<Bindings>(device, &teapotBindings);
 

@@ -51,7 +51,7 @@ class Pipeline {
     fragment main(fb : &FragmentBuiltins, texCoord : float<2>) {
       fragColor.Set(bindings.Get().textureView.Sample(bindings.Get().sampler, texCoord));
     }
-    var vert : *vertex Buffer<[]Vertex>;
+    var vert : *VertexInput<Vertex>;
     var indexBuffer : *index Buffer<[]uint>;
     var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
     var bindings : *BindGroup<Bindings>;
@@ -65,7 +65,7 @@ bindings.textureView = texView;
 var bindGroup = new BindGroup<Bindings>(device, &bindings);
 var encoder = new CommandEncoder(device);
 var p : Pipeline;
-p.vert = vb;
+p.vert = new VertexInput<Vertex>(vb);
 p.indexBuffer = ib;
 p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
 p.bindings = bindGroup;

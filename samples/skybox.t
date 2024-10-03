@@ -38,6 +38,7 @@ var window = new Window({0, 0}, System.GetScreenSize());
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 var cubeVB = new vertex Buffer<[]float<3>>(device, &cubeVerts);
+var cubeInput = new VertexInput<float<3>>(cubeVB);
 var cubeIB = new index Buffer<[]uint>(device, &cubeIndices);
 
 class Uniforms {
@@ -66,7 +67,7 @@ class SkyboxPipeline {
       // TODO: figure out why the skybox is X-flipped
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
-    var vertices : *vertex Buffer<[]float<3>>;
+    var vertices : *VertexInput<float<3>>;
     var indices : *index Buffer<[]uint>;
     var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
     var depth : *DepthStencilAttachment<Depth24Plus>;
@@ -102,7 +103,7 @@ while (System.IsRunning()) {
   var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
   var db = depthBuffer.CreateDepthStencilAttachment(LoadOp.Clear);
   var renderPass = new RenderPass<SkyboxPipeline>(encoder,
-    { fragColor = fb, depth = db, vertices = cubeVB, indices = cubeIB, bindings = cubeBindGroup }
+    { fragColor = fb, depth = db, vertices = cubeInput, indices = cubeIB, bindings = cubeBindGroup }
   );
 
   renderPass.SetPipeline(cubePipeline);

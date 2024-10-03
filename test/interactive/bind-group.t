@@ -20,7 +20,7 @@ class Pipeline {
     var u = objectData.Get().uniforms.Map();
     fragColor.Set(u.color);
   }
-  var vert : *vertex Buffer<[]Vertex>;
+  var vert : *VertexInput<Vertex>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var objectData : *BindGroup<ObjectData>;
 }
@@ -33,7 +33,7 @@ while (System.IsRunning()) {
   var encoder = new CommandEncoder(device);
   objectData.uniforms.CopyFromBuffer(encoder, stagingBuffer);
   var p : Pipeline;
-  p.vert = vb;
+  p.vert = new VertexInput<Vertex>(vb);
   p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
   p.objectData = bg;
   var renderPass = new RenderPass<Pipeline>(encoder, &p);

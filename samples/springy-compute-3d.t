@@ -142,7 +142,7 @@ class DrawPipeline {
   fragment main(fb : &FragmentBuiltins) {
     fragColor.Set(bindings.Get().uniforms.Map().color);
   }
-  var vertices : *vertex Buffer<[]Vector>;
+  var vertices : *VertexInput<Vector>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var bindings : *BindGroup<DrawBindings>;
 }
@@ -214,8 +214,11 @@ var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 var numBodyVerts = bodies.length * 3;
 var bodyVBO = new vertex storage Buffer<[]Vector>(device, numBodyVerts);
+var bodyInput = new VertexInput<Vector>(bodyVBO);
+
 var numSpringVerts = springs.length * 2;
 var springVBO = new vertex storage Buffer<[]Vector>(device, numSpringVerts);
+var springInput = new VertexInput<Vector>(springVBO);
 
 var computeUBO = new uniform Buffer<ComputeUniforms>(device);
 
@@ -295,11 +298,11 @@ while(System.IsRunning()) {
   var renderPass = new RenderPass<DrawPipeline>(encoder, &p);
 
   renderPass.SetPipeline(springPipeline);
-  renderPass.Set({vertices = springVBO, bindings = springBG});
+  renderPass.Set({vertices = springInput, bindings = springBG});
   renderPass.Draw(numSpringVerts, 1, 0, 0);
 
   renderPass.SetPipeline(bodyPipeline);
-  renderPass.Set({vertices = bodyVBO, bindings = bodyBG});
+  renderPass.Set({vertices = bodyInput, bindings = bodyBG});
   renderPass.Draw(numBodyVerts, 1, 0, 0);
 
   renderPass.End();

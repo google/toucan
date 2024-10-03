@@ -32,14 +32,15 @@ class Pipeline {
     return v.color;
   }
   fragment main(fb : &FragmentBuiltins, v : Varyings) { fragColor.Set(v); }
-  var vertices : *vertex Buffer<[]Vertex>;
+  var vertices : *VertexInput<Vertex>;
   var indices : *index Buffer<[]ushort>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
 }
 var pipeline = new RenderPipeline<Pipeline>(device);
 var encoder = new CommandEncoder(device);
+var vi = new VertexInput<Vertex>(vb);
 var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
-var renderPass = new RenderPass<Pipeline>(encoder, { vertices = vb, indices = ib, fragColor = fb });
+var renderPass = new RenderPass<Pipeline>(encoder, { vertices = vi, indices = ib, fragColor = fb });
 renderPass.SetPipeline(pipeline);
 renderPass.DrawIndexed(6, 1, 0, 0, 0);
 renderPass.End();

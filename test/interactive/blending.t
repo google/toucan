@@ -11,7 +11,7 @@ class Bindings {
 class Pipeline {
   vertex main(vb : &VertexBuiltins) { vb.position = vertices.Get(); }
   fragment main(fb : &FragmentBuiltins) { fragColor.Set(bindings.Get().color.Map():); }
-  var vertices :  *vertex Buffer<[]Vertex>;
+  var vertices :  *VertexInput<Vertex>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var bindings :  *BindGroup<Bindings>;
 }
@@ -25,7 +25,8 @@ var redUBO = new uniform Buffer<float<4>>(device, { 1.0, 0.0, 0.0, 1.0 });
 var redBG = new BindGroup<Bindings>(device, { color = redUBO });
 var translucentBlueUBO = new uniform Buffer<float<4>>(device, { 0.0, 0.0, 1.0, 0.5 });
 var translucentBlueBG = new BindGroup<Bindings>(device, { color = translucentBlueUBO });
-var drawPass = new RenderPass<Pipeline>(encoder, { fragColor = fb, vertices = vb });
+var vi = new VertexInput<Vertex>(vb);
+var drawPass = new RenderPass<Pipeline>(encoder, { fragColor = fb, vertices = vi });
 drawPass.SetPipeline(pipeline);
 drawPass.Set({ bindings = redBG });
 drawPass.Draw(3, 1, 0, 0);

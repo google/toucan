@@ -7,18 +7,19 @@ verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
 verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
 verts[2] = float<4>( 1.0, -1.0, 0.0, 1.0);
 var vb = new vertex Buffer<[]Vertex>(device, verts);
+var vi = new VertexInput<Vertex>(vb);
 class Pipeline {
   vertex main(vb : &VertexBuiltins) { vb.position = position.Get(); }
   static green() : float<4> { return float<4>(0.0, 1.0, 0.0, 1.0); }
   fragment main(fb : &FragmentBuiltins) { fragColor.Set(Pipeline.green()); }
-  var position : *vertex Buffer<[]Vertex>;
+  var position : *VertexInput<Vertex>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
 }
 
 var pipeline = new RenderPipeline<Pipeline>(device);
 var encoder = new CommandEncoder(device);
 var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
-var renderPass = new RenderPass<Pipeline>(encoder, { position = vb, fragColor = fb });
+var renderPass = new RenderPass<Pipeline>(encoder, { position = vi, fragColor = fb });
 renderPass.SetPipeline(pipeline);
 renderPass.Draw(3, 1, 0, 0);
 renderPass.End();

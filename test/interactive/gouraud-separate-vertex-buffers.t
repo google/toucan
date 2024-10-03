@@ -2,15 +2,17 @@ var device = new Device();
 var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
-var positions : [3]float<2>;
-positions[0] = { 0.0,  1.0};
-positions[1] = {-1.0, -1.0};
-positions[2] = { 1.0, -1.0};
+var positions : [3]float<2> = {
+  { 0.0,  1.0 },
+  {-1.0, -1.0 },
+  { 1.0, -1.0 }
+};
 
-var colors : [3]float<3>;
-colors[0] = {1.0, 0.0, 0.0};
-colors[1] = {0.0, 1.0, 0.0};
-colors[2] = {0.0, 0.0, 1.0};
+var colors : [3]float<3> = {
+  {1.0, 0.0, 0.0},
+  {0.0, 1.0, 0.0},
+  {0.0, 0.0, 1.0}
+};
 
 class Pipeline {
   vertex main(vb : &VertexBuiltins) : float<3> {
@@ -22,16 +24,18 @@ class Pipeline {
     fragColor.Set(float<4>(varyings.r, varyings.g, varyings.b, 1.0));
   }
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
-  var position : *vertex Buffer<[]float<2>>;
-  var color : *vertex Buffer<[]float<3>>;
+  var position : *VertexInput<float<2>>;
+  var color : *VertexInput<float<3>>;
 }
 
 var pipeline = new RenderPipeline<Pipeline>(device);
 var encoder = new CommandEncoder(device);
+var positionsVB = new vertex Buffer<[]float<2>>(device, &positions);
+var colorsVB = new vertex Buffer<[]float<3>>(device, &colors);
 var p : Pipeline;
 p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
-p.position = new vertex Buffer<[]float<2>>(device, &positions);
-p.color = new vertex Buffer<[]float<3>>(device, &colors);
+p.position = new VertexInput<float<2>>(positionsVB);
+p.color = new VertexInput<float<3>>(colorsVB);
 var renderPass = new RenderPass<Pipeline>(encoder, &p);
 renderPass.SetPipeline(pipeline);
 renderPass.Draw(3, 1, 0, 0);

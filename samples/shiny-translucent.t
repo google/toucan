@@ -149,7 +149,7 @@ class SkyboxPipeline : DrawPipeline {
       // TODO: figure out why the skybox is X-flipped
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
-    var position : *vertex Buffer<[]float<3>>;
+    var position : *VertexInput<float<3>>;
 };
 
 class ReflectionPipeline : DrawPipeline {
@@ -177,7 +177,7 @@ class ReflectionPipeline : DrawPipeline {
       c = { c.x, c.y, c.z, 0.4 };
       fragColor.Set(c);
     }
-    var vert : *vertex Buffer<[]Vertex>;
+    var vert : *VertexInput<Vertex>;
 };
 
 var cubePipeline = new RenderPipeline<SkyboxPipeline>(device);
@@ -187,7 +187,8 @@ cubeBindings.sampler = new Sampler(device);
 cubeBindings.textureView = texture.CreateSampleableView();
 
 var cubeData : SkyboxPipeline;
-cubeData.position = new vertex Buffer<[]float<3>>(device, &cubeVerts);
+var cubeVB = new vertex Buffer<[]float<3>>(device, &cubeVerts);
+cubeData.position = new VertexInput<float<3>>(cubeVB);
 cubeData.indexBuffer = new index Buffer<[]uint>(device, &cubeIndices);
 cubeData.bindings = new BindGroup<Bindings>(device, &cubeBindings);
 
@@ -201,8 +202,9 @@ teapotBindings.sampler = cubeBindings.sampler;
 teapotBindings.textureView = cubeBindings.textureView;
 teapotBindings.uniforms = new uniform Buffer<Uniforms>(device);
 
+var teapotVB = new vertex Buffer<[]Vertex>(device, tessTeapot.vertices);
 var teapotData : ReflectionPipeline;
-teapotData.vert = new vertex Buffer<[]Vertex>(device, tessTeapot.vertices);
+teapotData.vert = new VertexInput<Vertex>(teapotVB);
 teapotData.indexBuffer = new index Buffer<[]uint>(device, tessTeapot.indices);
 teapotData.bindings = new BindGroup<Bindings>(device, &teapotBindings);
 
