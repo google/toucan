@@ -1328,9 +1328,9 @@ wgpu::Device CreateDawnDevice(wgpu::BackendType type, wgpu::ErrorCallback errorC
   desc.uncapturedErrorCallbackInfo.callback = errorCallback;
 
   for (auto adapter : nativeInstance->EnumerateAdapters()) {
-    wgpu::AdapterProperties properties;
-    adapter.GetProperties(&properties);
-    if (properties.backendType == type) { return adapter.CreateDevice(&desc); }
+    wgpu::AdapterInfo info;
+    adapter.GetInfo(&info);
+    if (info.backendType == type) { return adapter.CreateDevice(&desc); }
   }
   return nullptr;
 }

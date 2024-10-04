@@ -30,8 +30,12 @@
 #undef Always
 #undef None
 #undef Bool
+#undef True
+#undef False
 
 #include <webgpu/webgpu_cpp.h>
+#define True 1
+#define False 0
 
 #include "api_internal.h"
 
