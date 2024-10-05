@@ -235,7 +235,6 @@ std::string QualifiedType::ToString() const {
   if (qualifiers_ & Qualifier::Renderable) { result += "renderable "; }
   if (qualifiers_ & Qualifier::ReadOnly) { result += "readonly "; }
   if (qualifiers_ & Qualifier::WriteOnly) { result += "writeonly "; }
-  if (qualifiers_ & Qualifier::ReadWrite) { result += "readwrite "; }
   if (qualifiers_ & Qualifier::Coherent) { result += "coherent "; }
   return result + baseType_->ToString();
 }

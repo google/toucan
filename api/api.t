@@ -39,10 +39,9 @@ native class Buffer<T> {
   deviceonly T::ElementType Get();
   readonly T^ MapRead();
   writeonly T^ MapWrite();
-  readwrite T^ MapReadWrite();
   deviceonly readonly uniform T^ MapReadUniform();
   deviceonly writeonly storage T^ MapWriteStorage();
-  deviceonly readwrite storage T^ MapReadWriteStorage();
+  deviceonly storage T^ MapReadWriteStorage();
   void Unmap();
 }
 

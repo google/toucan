@@ -95,8 +95,7 @@ class Type {
     Renderable = 0x0020,
     ReadOnly = 0x0040,
     WriteOnly = 0x0080,
-    ReadWrite = 0x0100,
-    Coherent = 0x0200,
+    Coherent = 0x0100,
   };
 };
 

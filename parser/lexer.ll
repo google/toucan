@@ -112,7 +112,6 @@ native  { return T_NATIVE; }
 this    { return T_THIS; }
 readonly { return T_READONLY; }
 writeonly { return T_WRITEONLY; }
-readwrite { return T_READWRITE; }
 deviceonly { return T_DEVICEONLY; }
 coherent { return T_COHERENT; }
 using   { return T_USING; }
