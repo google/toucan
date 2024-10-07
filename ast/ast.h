@@ -17,6 +17,7 @@
 
 #include <assert.h>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include "type.h"
@@ -28,13 +29,7 @@ struct Scope;
 
 class Visitor;
 
-union Result {
-  void*    p;
-  uint32_t i;
-  Result(uint32_t i_) : i(i_) {}
-  Result(void* p_) : p(p_) {}
-  Result() : i(0) {}
-};
+using Result = std::variant<void*, uint32_t>;
 
 struct FileLocation {
   FileLocation();

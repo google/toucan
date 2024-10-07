@@ -553,7 +553,8 @@ void CodeGenLLVM::GenerateFree(llvm::Value* value) {
 
 llvm::Value* CodeGenLLVM::GenerateLLVM(Expr* expr) {
   if (auto result = exprCache_[expr]) { return result; }
-  return exprCache_[expr] = static_cast<llvm::Value*>(expr->Accept(this).p);
+  auto value = static_cast<llvm::Value*>(std::get<void*>(expr->Accept(this)));
+  return exprCache_[expr] = value;
 }
 
 llvm::Value* CodeGenLLVM::ConvertToNative(Type* type, llvm::Value* value) {

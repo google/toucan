@@ -284,7 +284,7 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
   }
 }
 
-uint32_t CodeGenSPIRV::GenerateSPIRV(ASTNode* node) { return node->Accept(this).i; }
+uint32_t CodeGenSPIRV::GenerateSPIRV(ASTNode* node) { return std::get<uint32_t>(node->Accept(this)); }
 
 Result CodeGenSPIRV::Visit(ArrayAccess* node) {
   uint32_t resultType = ConvertType(node->GetType(types_));

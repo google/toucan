@@ -71,12 +71,12 @@ class CopyVisitor : public Visitor {
   T* Resolve(T* t) {
     if (!t) { return nullptr; }
 
-    if (!copyFileLocation_) { return static_cast<T*>(t->Accept(this).p); }
+    if (!copyFileLocation_) { return static_cast<T*>(std::get<void*>(t->Accept(this))); }
 
     if (ASTNode* result = nodeCache_[t]) { return static_cast<T*>(result); }
 
     ScopedFileLocation scopedFile(&fileLocation_, t->GetFileLocation());
-    T*                 result = static_cast<T*>(t->Accept(this).p);
+    T*                 result = static_cast<T*>(std::get<void*>(t->Accept(this)));
     nodeCache_[t] = result;
     return result;
   }

@@ -23,7 +23,6 @@
 #include <iostream>
 #include <unordered_map>
 
-#include "constant_folder.h"
 #include "symbol.h"
 #include "type_replacement_pass.h"
 
@@ -59,11 +58,8 @@ Result SemanticPass::Visit(ArrayAccess* node) {
   Type* indexType = index->GetType(types_);
   if (!indexType->IsInt() && !indexType->IsUInt()) {
     return Error("array index must be integer");
-  } else if (exprType->IsArray() || exprType->IsMatrix()) {
+  } else if (exprType->IsArray() || exprType->IsMatrix() || exprType->IsVector()) {
     return Make<ArrayAccess>(expr, index);
-  } else if (exprType->IsVector()) {
-    ConstantFolder cf;
-    return Make<UnresolvedSwizzleExpr>(expr, cf.Resolve(index));
   } else {
     return Error("expression is not of indexable type");
   }

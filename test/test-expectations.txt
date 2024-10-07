@@ -144,6 +144,7 @@ test/list-init-vector.t
 test/local-var-do.t
 test/local-var-while.t
 test/loop.t
+test/matrix-array-access.t
 test/matrix-constructor.t
 test/matrix-initializer.t
 test/matrix.t
@@ -207,6 +208,7 @@ unknown-return-type.t:2: syntax error
 test/unspecified-template-destructor.t
 test/ushort-vector.t
 test/ushort.t
+test/vector-array-access.t
 test/vector-constructors.t
 test/vector-constructors3.t
 test/vector-constructors4.t
