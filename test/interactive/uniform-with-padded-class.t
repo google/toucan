@@ -1,9 +1,9 @@
 using Vertex = float<4>;
 Device* device = new Device();
 Window* window = new Window({0, 0}, {640, 480});
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 Vertex[3] verts = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 } };
-auto vb = new vertex Buffer<Vertex[]>(device, &verts);
+var vb = new vertex Buffer<Vertex[]>(device, &verts);
 class Padding {
   float pad1;
 }
@@ -25,14 +25,14 @@ class Pipeline {
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
   BindGroup<Bindings>* bindings;
 }
-auto uniforms = new uniform Buffer<Uniforms>(device, { color = { 0.0, 1.0, 0.0, 1.0 } });
-auto bg = new BindGroup<Bindings>(device, { uniforms });
-auto stagingBuffer = new writeonly Buffer<Uniforms>(device);
-auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
-auto framebuffer = swapChain.GetCurrentTexture();
-auto encoder = new CommandEncoder(device);
-auto fb = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
-auto renderPass = new RenderPass<Pipeline>(encoder,
+var uniforms = new uniform Buffer<Uniforms>(device, { color = { 0.0, 1.0, 0.0, 1.0 } });
+var bg = new BindGroup<Bindings>(device, { uniforms });
+var stagingBuffer = new writeonly Buffer<Uniforms>(device);
+var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
+var framebuffer = swapChain.GetCurrentTexture();
+var encoder = new CommandEncoder(device);
+var fb = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+var renderPass = new RenderPass<Pipeline>(encoder,
   {vertices = vb, fragColor = fb, bindings = bg }
 );
 renderPass.SetPipeline(pipeline);

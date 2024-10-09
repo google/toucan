@@ -7,7 +7,7 @@ class Foo {
   int count;
 }
 
-auto foo = new Foo();
+var foo = new Foo();
 foo.self().a++;
 
 Test.Expect(foo.a == 1);

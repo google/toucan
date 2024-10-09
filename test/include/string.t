@@ -12,7 +12,7 @@ class String {
     if (value > table[len]) len += 1;
     len += 1;
     if (negative) len += 1;
-    auto b = new ubyte[len];
+    var b = new ubyte[len];
     for (int j = len - 1; j >= 0; j--) {
       b[j] = (ubyte) (value % 10) + 48ub;
       value /= 10;

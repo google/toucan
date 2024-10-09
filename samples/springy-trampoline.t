@@ -96,9 +96,9 @@ class ComputeBase {
 
 class ComputeForces : ComputeBase {
   void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
-    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
-    auto springs = bindings.Get().springStorage.MapReadWriteStorage();
-    auto u = bindings.Get().uniforms.MapReadUniform();
+    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    var springs = bindings.Get().springStorage.MapReadWriteStorage();
+    var u = bindings.Get().uniforms.MapReadUniform();
     uint i = cb.globalInvocationId.x;
     Spring spring = springs[i];
     Body b1 = bodies[spring.body1];
@@ -109,9 +109,9 @@ class ComputeForces : ComputeBase {
 
 class ApplyForces : ComputeBase {
   void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
-    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
-    auto springs = bindings.Get().springStorage.MapReadWriteStorage();
-    auto u = bindings.Get().uniforms.MapReadUniform();
+    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    var springs = bindings.Get().springStorage.MapReadWriteStorage();
+    var u = bindings.Get().uniforms.MapReadUniform();
     uint<3> pos = cb.globalInvocationId;
     uint i = cb.globalInvocationId.x;
     Body body = bodies[i];
@@ -125,16 +125,16 @@ class ApplyForces : ComputeBase {
 
 class FinalizeBodies : ComputeBase {
   void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
-    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
-    auto u = bindings.Get().uniforms.MapReadUniform();
+    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    var u = bindings.Get().uniforms.MapReadUniform();
     float deltaT = u.deltaT;
     uint i = cb.globalInvocationId.x;
     Body body = bodies[i];
     body.computeAcceleration();
     body.position += body.velocity * deltaT * (1.0 - body.nailed);
     body.velocity += body.acceleration * deltaT * (1.0 - body.nailed);
-    auto p = bodies[i].position;
-    auto bv = bindings.Get().bodyVerts.MapReadWriteStorage();
+    var p = bodies[i].position;
+    var bv = bindings.Get().bodyVerts.MapReadWriteStorage();
     bodies[i] = body;
     bv[i*3]   = p + Vector( u.particleSize.x * 0.5,  0.0);
     bv[i*3+1] = p + Vector(-u.particleSize.x * 0.5,  0.0);
@@ -144,9 +144,9 @@ class FinalizeBodies : ComputeBase {
 
 class FinalizeSprings : ComputeBase {
   void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
-    auto bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
-    auto springs = bindings.Get().springStorage.MapReadWriteStorage();
-    auto sv = bindings.Get().springVerts.MapReadWriteStorage();
+    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    var springs = bindings.Get().springStorage.MapReadWriteStorage();
+    var sv = bindings.Get().springVerts.MapReadWriteStorage();
     uint i = cb.globalInvocationId.x;
     sv[i*2] = bodies[springs[i].body1].position;
     sv[i*2+1] = bodies[springs[i].body2].position;
@@ -155,9 +155,9 @@ class FinalizeSprings : ComputeBase {
 
 Device* device = new Device();
 Window* window = new Window({0, 0}, {960, 960});
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-auto bodies = new Body[width * height * depth];
-auto springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var bodies = new Body[width * height * depth];
+var springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
 Vector count = Utils.makeVector((float) width, (float) height, (float) depth, Vector(0.0));
 Vector pSpacing = Vector(2.0) / count;
 int spring = 0;
@@ -233,13 +233,13 @@ for (uint i = 0; i < bodies.length; ++i) {
 
 
 int numBodyVerts = bodies.length * 3;
-auto bodyVBO = new vertex storage Buffer<Vector[]>(device, numBodyVerts);
+var bodyVBO = new vertex storage Buffer<Vector[]>(device, numBodyVerts);
 int numSpringVerts = springs.length * 2;
-auto springVBO = new vertex storage Buffer<Vector[]>(device, numSpringVerts);
+var springVBO = new vertex storage Buffer<Vector[]>(device, numSpringVerts);
 
-auto computeUBO = new uniform Buffer<Uniforms>(device);
+var computeUBO = new uniform Buffer<Uniforms>(device);
 
-auto computeBindGroup = new BindGroup<ComputeBindings>(device, {
+var computeBindGroup = new BindGroup<ComputeBindings>(device, {
   bodyVerts = bodyVBO,
   springVerts = springVBO,
   uniforms = computeUBO,
@@ -261,12 +261,12 @@ class SpringShaders : Shaders {
   void fragmentShader(FragmentBuiltins^ fb) fragment { fragColor.Set(float<4>(1.0, 1.0, 1.0, 1.0)); }
 }
 
-auto bodyPipeline = new RenderPipeline<BodyShaders>(device, null, TriangleList);
-auto springPipeline = new RenderPipeline<SpringShaders>(device, null, LineList);
-auto computeForces = new ComputePipeline<ComputeForces>(device);
-auto applyForces = new ComputePipeline<ApplyForces>(device);
-auto finalizeBodies = new ComputePipeline<FinalizeBodies>(device);
-auto finalizeSprings = new ComputePipeline<FinalizeSprings>(device);
+var bodyPipeline = new RenderPipeline<BodyShaders>(device, null, TriangleList);
+var springPipeline = new RenderPipeline<SpringShaders>(device, null, LineList);
+var computeForces = new ComputePipeline<ComputeForces>(device);
+var applyForces = new ComputePipeline<ApplyForces>(device);
+var finalizeBodies = new ComputePipeline<FinalizeBodies>(device);
+var finalizeSprings = new ComputePipeline<FinalizeSprings>(device);
 float frequency = 240.0; // physics sim at 240Hz
 System.GetNextEvent();
 Uniforms* u = new Uniforms();
@@ -277,10 +277,10 @@ while(System.IsRunning()) {
   u.wind = Vector(Math.rand() * 0.00, 0.0);
   computeUBO.SetData(u);
 
-  auto framebuffer = swapChain.GetCurrentTexture();
-  auto encoder = new CommandEncoder(device);
+  var framebuffer = swapChain.GetCurrentTexture();
+  var encoder = new CommandEncoder(device);
 
-  auto computePass = new ComputePass<ComputeBase>(encoder, {bindings = computeBindGroup} );
+  var computePass = new ComputePass<ComputeBase>(encoder, {bindings = computeBindGroup} );
 
   computePass.SetPipeline(computeForces);
   computePass.Dispatch(springs.length, 1, 1);
@@ -295,15 +295,15 @@ while(System.IsRunning()) {
   computePass.Dispatch(springs.length, 1, 1);
 
   computePass.End();
-  auto colorAttachment = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
-  auto renderPass = new RenderPass<Shaders>(encoder, { fragColor = colorAttachment });
+  var colorAttachment = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  var renderPass = new RenderPass<Shaders>(encoder, { fragColor = colorAttachment });
 
-  auto bodyPass = new RenderPass<BodyShaders>(renderPass);
+  var bodyPass = new RenderPass<BodyShaders>(renderPass);
   bodyPass.SetPipeline(bodyPipeline);
   bodyPass.Set({vert = bodyVBO});
   bodyPass.Draw(numBodyVerts, 1, 0, 0);
 
-  auto springPass = new RenderPass<SpringShaders>(renderPass);
+  var springPass = new RenderPass<SpringShaders>(renderPass);
   springPass.SetPipeline(springPipeline);
   springPass.Set({vert = springVBO});
   springPass.Draw(numSpringVerts, 1, 0, 0);

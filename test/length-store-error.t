@@ -1,2 +1,2 @@
-auto f = new float[5];
+var f = new float[5];
 f.length = 0;

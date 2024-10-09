@@ -6,7 +6,7 @@ class ComputeBindings {
 
 class Compute {
   void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
-    auto buffer = bindings.Get().buffer.MapWriteStorage();
+    var buffer = bindings.Get().buffer.MapWriteStorage();
     buffer[0] = 42;
   }
   BindGroup<ComputeBindings>* bindings;
@@ -16,13 +16,13 @@ Device* device = new Device();
 
 ComputePipeline* computePipeline = new ComputePipeline<Compute>(device);
 
-auto storageBuf = new writeonly storage Buffer<int[]>(device, 1);
-auto hostBuf = new readonly Buffer<int[]>(device, 1);
+var storageBuf = new writeonly storage Buffer<int[]>(device, 1);
+var hostBuf = new readonly Buffer<int[]>(device, 1);
 
-auto bg = new BindGroup<ComputeBindings>(device, {buffer = storageBuf});
+var bg = new BindGroup<ComputeBindings>(device, {buffer = storageBuf});
 
-auto encoder = new CommandEncoder(device);
-auto computePass = new ComputePass<Compute>(encoder, null);
+var encoder = new CommandEncoder(device);
+var computePass = new ComputePass<Compute>(encoder, null);
 computePass.SetPipeline(computePipeline);
 computePass.Set({bindings = bg});
 computePass.Dispatch(1, 1, 1);

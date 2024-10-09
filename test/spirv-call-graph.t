@@ -8,9 +8,9 @@ class Pipeline {
     return Pipeline.a();
   }
   void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
-    auto temp = Pipeline.b();
+    var temp = Pipeline.b();
   }
 }
 
 // This passes by generating valid SPIR-V during codegen.
-auto tessPipeline = new ComputePipeline<Pipeline>(device);
+var tessPipeline = new ComputePipeline<Pipeline>(device);

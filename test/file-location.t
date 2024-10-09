@@ -1,6 +1,6 @@
 include "include/string.t"
 
-auto filename = System.GetSourceFile();
+var filename = System.GetSourceFile();
 int line = System.GetSourceLine();
 
 System.Print(filename);

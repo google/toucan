@@ -10,9 +10,9 @@ class Uniforms {
 
 Device* device = new Device();
 Window* window = new Window({0, 0}, {640, 480});
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
-auto verts = new Vertex[3];
+var verts = new Vertex[3];
 verts[0].position = float<2>( 0.0,  1.0);
 verts[1].position = float<2>(-1.0, -1.0);
 verts[2].position = float<2>( 1.0, -1.0);
@@ -20,7 +20,7 @@ verts[0].color = float<3>(1.0, 0.0, 0.0);
 verts[1].color = float<3>(0.0, 1.0, 0.0);
 verts[2].color = float<3>(0.0, 0.0, 1.0);
 
-auto vb = new vertex Buffer<Vertex[]>(device, verts);
+var vb = new vertex Buffer<Vertex[]>(device, verts);
 
 class Bindings {
   uniform Buffer<Uniforms>* uniformBuffer;
@@ -28,9 +28,9 @@ class Bindings {
 
 class Pipeline {
   float<4> vertexShader(VertexBuiltins^ vb) vertex {
-    auto uniforms = bindings.Get().uniformBuffer.MapReadUniform();
-    auto v = vertices.Get();
-    auto position = float<4>(v.position.x, v.position.y, 0.0, 1.0);
+    var uniforms = bindings.Get().uniformBuffer.MapReadUniform();
+    var v = vertices.Get();
+    var position = float<4>(v.position.x, v.position.y, 0.0, 1.0);
     vb.position = uniforms.mvpMatrix * position;
     return float<4>(v.color.r, v.color.g, v.color.b, 1.0);
   }
@@ -42,24 +42,24 @@ class Pipeline {
   BindGroup<Bindings>* bindings;
 }
 
-auto uniformBuffer = new uniform Buffer<Uniforms>(device);
+var uniformBuffer = new uniform Buffer<Uniforms>(device);
 Uniforms uniformData;
 uniformData.mvpMatrix = float<4, 4>(float<4>(1.0, 0.0, 0.0, 0.0),
                                     float<4>(0.0, 1.0, 0.0, 0.0),
                                     float<4>(0.0, 0.0, 1.0, 0.0),
                                     float<4>(0.0, 0.0, 0.0, 1.0));
 uniformData.alpha = 0.5;
-auto bg = new BindGroup<Bindings>(device, { uniformBuffer } );
-auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
+var bg = new BindGroup<Bindings>(device, { uniformBuffer } );
+var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 float theta = 0.0;
 while (System.IsRunning()) {
   uniformBuffer.SetData(&uniformData);
   while (System.HasPendingEvents()) {
     System.GetNextEvent();
   }
-  auto encoder = new CommandEncoder(device);
-  auto fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
-  auto renderPass = new RenderPass<Pipeline>(encoder, {vertices = vb, fragColor = fb, bindings = bg});
+  var encoder = new CommandEncoder(device);
+  var fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  var renderPass = new RenderPass<Pipeline>(encoder, {vertices = vb, fragColor = fb, bindings = bg});
   renderPass.SetPipeline(pipeline);
   renderPass.Draw(3, 1, 0, 0);
   renderPass.End();

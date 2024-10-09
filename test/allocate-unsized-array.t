@@ -1,1 +1,1 @@
-auto a = new int[][3];
+var a = new int[][3];

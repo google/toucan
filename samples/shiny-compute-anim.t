@@ -14,13 +14,13 @@ using Format = RGBA8unorm;
 
 class CubeLoader {
   static void Load(Device* device, ubyte[]^ data, TextureCube<Format>^ texture, uint face) {
-    auto image = new ImageDecoder<Format>(data);
-    auto size = image.GetSize();
-    auto buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * size.y);
+    var image = new ImageDecoder<Format>(data);
+    var size = image.GetSize();
+    var buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * size.y);
     writeonly Format::MemoryType[]^ b = buffer.MapWrite();
     image.Decode(b, texture.MinBufferWidth());
     buffer.Unmap();
-    auto encoder = new CommandEncoder(device);
+    var encoder = new CommandEncoder(device);
     texture.CopyFromBuffer(encoder, buffer, {size.x, size.y, 1}, uint<3>(0, 0, face));
     device.GetQueue().Submit(encoder.Finish());
   }
@@ -28,7 +28,7 @@ class CubeLoader {
 
 Device* device = new Device();
 
-auto texture = new sampleable TextureCube<RGBA8unorm>(device, {2176, 2176});
+var texture = new sampleable TextureCube<RGBA8unorm>(device, {2176, 2176});
 CubeLoader.Load(device, inline("third_party/home-cube/right.jpg"), texture, 0);
 CubeLoader.Load(device, inline("third_party/home-cube/left.jpg"), texture, 1);
 CubeLoader.Load(device, inline("third_party/home-cube/top.jpg"), texture, 2);
@@ -37,7 +37,7 @@ CubeLoader.Load(device, inline("third_party/home-cube/front.jpg"), texture, 4);
 CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 
 Window* window = new Window({0, 0}, System.GetScreenSize());
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 class BicubicPatch {
   Vertex Evaluate(float u, float v) {
@@ -51,8 +51,8 @@ class BicubicPatch {
     vCubic.FromBezier(pv);
     Vertex result;
     result.position = uCubic.Evaluate(u);
-    auto uTangent = uCubic.EvaluateTangent(u);
-    auto vTangent = vCubic.EvaluateTangent(v);
+    var uTangent = uCubic.EvaluateTangent(u);
+    var vTangent = vCubic.EvaluateTangent(v);
     if (vTangent.x == 0.0 && vTangent.y == 0.0 && vTangent.z == 0.0) {
       if (result.position.z <= 0.0) {
         result.normal = { 0.0, 0.0, -1.0 };
@@ -70,7 +70,7 @@ class BicubicPatch {
 uint level = 64;
 uint patchWidth = level + 1;
 uint numPatches = teapotControlIndices.length / 16;
-auto tessTeapotIndices = new uint[numPatches * level * level * 6];
+var tessTeapotIndices = new uint[numPatches * level * level * 6];
 
 int vi = 0, ii = 0;
 for (int k = 0; k < numPatches; ++k) {
@@ -121,10 +121,10 @@ class ComputeBindings {
 
 class BicubicComputePipeline {
   void computeShader(ComputeBuiltins^ cb) compute(8, 8, 1) {
-    auto controlPoints = bindings.Get().controlPoints.MapReadWriteStorage();
-    auto controlIndices = bindings.Get().controlIndices.MapReadWriteStorage();
-    auto vertices = bindings.Get().vertices.MapReadWriteStorage();
-    auto uniforms = bindings.Get().uniforms.MapReadUniform();
+    var controlPoints = bindings.Get().controlPoints.MapReadWriteStorage();
+    var controlIndices = bindings.Get().controlIndices.MapReadWriteStorage();
+    var vertices = bindings.Get().vertices.MapReadWriteStorage();
+    var uniforms = bindings.Get().uniforms.MapReadUniform();
     float u = (float) cb.globalInvocationId.x * uniforms.scale;
     float v = (float) cb.globalInvocationId.y * uniforms.scale;
     if (u > 1.0 || v > 1.0) {
@@ -149,15 +149,15 @@ class BicubicComputePipeline {
 
 class SkyboxPipeline : DrawPipeline {
     float<3> vertexShader(VertexBuiltins^ vb) vertex {
-        auto v = position.Get();
-        auto uniforms = bindings.Get().uniforms.MapReadUniform();
-        auto pos = float<4>(v.x, v.y, v.z, 1.0);
+        var v = position.Get();
+        var uniforms = bindings.Get().uniforms.MapReadUniform();
+        var pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
     void fragmentShader(FragmentBuiltins^ fb, float<3> position) fragment {
       float<3> p = Math.normalize(position);
-      auto b = bindings.Get();
+      var b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
@@ -166,12 +166,12 @@ class SkyboxPipeline : DrawPipeline {
 
 class ReflectionPipeline : DrawPipeline {
     Vertex vertexShader(VertexBuiltins^ vb) vertex {
-        auto v = vert.Get();
-        auto n = Math.normalize(v.normal);
-        auto uniforms = bindings.Get().uniforms.MapReadUniform();
-        auto viewModel = uniforms.view * uniforms.model;
-        auto pos = viewModel * float<4>(v.position.x, v.position.y, v.position.z, 1.0);
-        auto normal = viewModel * float<4>(n.x, n.y, n.z, 0.0);
+        var v = vert.Get();
+        var n = Math.normalize(v.normal);
+        var uniforms = bindings.Get().uniforms.MapReadUniform();
+        var viewModel = uniforms.view * uniforms.model;
+        var pos = viewModel * float<4>(v.position.x, v.position.y, v.position.z, 1.0);
+        var normal = viewModel * float<4>(n.x, n.y, n.z, 0.0);
         vb.position = uniforms.projection * pos;
         Vertex varyings;
         varyings.position = float<3>(pos.x, pos.y, pos.z);
@@ -179,22 +179,22 @@ class ReflectionPipeline : DrawPipeline {
         return varyings;
     }
     void fragmentShader(FragmentBuiltins^ fb, Vertex varyings) fragment {
-      auto b = bindings.Get();
-      auto uniforms = b.uniforms.MapReadUniform();
+      var b = bindings.Get();
+      var uniforms = b.uniforms.MapReadUniform();
       float<3> p = Math.normalize(varyings.position);
       float<3> n = Math.normalize(varyings.normal);
       float<3> r = Math.reflect(p, n);
-      auto r4 = uniforms.viewInverse * float<4>(r.x, r.y, r.z, 0.0);
+      var r4 = uniforms.viewInverse * float<4>(r.x, r.y, r.z, 0.0);
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-r4.x, r4.y, r4.z)));
     }
     vertex Buffer<Vertex[]>* vert;
 };
 
-auto tessPipeline = new ComputePipeline<BicubicComputePipeline>(device);
+var tessPipeline = new ComputePipeline<BicubicComputePipeline>(device);
 
-auto depthState = new DepthStencilState<Depth24Plus>();
+var depthState = new DepthStencilState<Depth24Plus>();
 
-auto cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, TriangleList);
+var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, TriangleList);
 Bindings cubeBindings;
 cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
 cubeBindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
@@ -205,17 +205,17 @@ cubeData.position = new vertex Buffer<float<3>[]>(device, &cubeVerts);
 cubeData.indexBuffer = new index Buffer<uint[]>(device, &cubeIndices);
 cubeData.bindings = new BindGroup<Bindings>(device, &cubeBindings);
 
-auto teapotPipeline = new RenderPipeline<ReflectionPipeline>(device, depthState, TriangleList);
+var teapotPipeline = new RenderPipeline<ReflectionPipeline>(device, depthState, TriangleList);
 Bindings teapotBindings;
 teapotBindings.sampler = cubeBindings.sampler;
 teapotBindings.textureView = cubeBindings.textureView;
 teapotBindings.uniforms = new uniform Buffer<Uniforms>(device);
 
 uint numVerticesPerPatch = patchWidth * patchWidth;
-auto teapotVertices = new vertex storage Buffer<Vertex[]>(device, numPatches * numVerticesPerPatch);
+var teapotVertices = new vertex storage Buffer<Vertex[]>(device, numPatches * numVerticesPerPatch);
 
-auto teapotControlPointsBuffer = new storage Buffer<float<3>[]>(device, teapotControlPoints.length);
-auto computeBindings = new BindGroup<ComputeBindings>(device, {
+var teapotControlPointsBuffer = new storage Buffer<float<3>[]>(device, teapotControlPoints.length);
+var computeBindings = new BindGroup<ComputeBindings>(device, {
   controlPoints = teapotControlPointsBuffer,
   controlIndices = new storage Buffer<uint[]>(device, &teapotControlIndices),
   vertices = teapotVertices,
@@ -230,12 +230,12 @@ teapotData.bindings = new BindGroup<Bindings>(device, &teapotBindings);
 EventHandler handler;
 handler.rotation = float<2>(0.0, 0.0);
 handler.distance = 10.0;
-auto teapotQuat = Quaternion(float<3>(1.0, 0.0, 0.0), -3.1415926 / 2.0);
+var teapotQuat = Quaternion(float<3>(1.0, 0.0, 0.0), -3.1415926 / 2.0);
 teapotQuat.normalize();
-auto teapotRotation = teapotQuat.toMatrix();
-auto depthBuffer = new renderable Texture2D<Depth24Plus>(device, window.GetSize());
+var teapotRotation = teapotQuat.toMatrix();
+var depthBuffer = new renderable Texture2D<Depth24Plus>(device, window.GetSize());
 Uniforms uniforms;
-auto prevWindowSize = uint<2>{0, 0};
+var prevWindowSize = uint<2>{0, 0};
 double startTime = System.GetCurrentTime();
 Cubic<float>[4] animCurves;
 animCurves[0].FromBezier({1.0, 1.0, 1.5, 1.5});
@@ -244,7 +244,7 @@ animCurves[2].FromBezier({1.0, 1.0, 0.5, 0.5});
 animCurves[3].FromBezier({0.5, 0.5, 1.0, 1.0});
 float[4] keyTimes = { 0.0, 0.5, 1.5, 1.7 };
 float duration = 2.0;
-auto animTeapotControlPoints = new float<3>[teapotControlPoints.length];
+var animTeapotControlPoints = new float<3>[teapotControlPoints.length];
 while (System.IsRunning()) {
   float animTime = (float) ((System.GetCurrentTime() - startTime) % duration);
   int key = keyTimes.length - 1;
@@ -273,7 +273,7 @@ while (System.IsRunning()) {
   Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
-  auto newSize = window.GetSize();
+  var newSize = window.GetSize();
   // FIXME: relationals should work on vectors
   if (newSize.x != prevWindowSize.x || newSize.y != prevWindowSize.y) {
     swapChain.Resize(newSize);
@@ -289,23 +289,23 @@ while (System.IsRunning()) {
   cubeBindings.uniforms.SetData(&uniforms);
   uniforms.model = teapotRotation * Transform.scale(2.0, 2.0, 2.0);
   teapotBindings.uniforms.SetData(&uniforms);
-  auto encoder = new CommandEncoder(device);
+  var encoder = new CommandEncoder(device);
 
-  auto tessPass = new ComputePass<BicubicComputePipeline>(encoder, { bindings = computeBindings });
+  var tessPass = new ComputePass<BicubicComputePipeline>(encoder, { bindings = computeBindings });
   tessPass.SetPipeline(tessPipeline);
   tessPass.Dispatch((patchWidth + 7) / 8, (patchWidth + 7) / 8, numPatches);
   tessPass.End();
 
-  auto fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
-  auto db = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
-  auto renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = fb, depth = db });
+  var fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  var db = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
+  var renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = fb, depth = db });
 
-  auto cubePass = new RenderPass<SkyboxPipeline>(renderPass);
+  var cubePass = new RenderPass<SkyboxPipeline>(renderPass);
   cubePass.SetPipeline(cubePipeline);
   cubePass.Set(&cubeData);
   cubePass.DrawIndexed(cubeIndices.length, 1, 0, 0, 0);
 
-  auto teapotPass = new RenderPass<ReflectionPipeline>(renderPass);
+  var teapotPass = new RenderPass<ReflectionPipeline>(renderPass);
   teapotPass.SetPipeline(teapotPipeline);
   teapotPass.Set(&teapotData);
   teapotPass.DrawIndexed(tessTeapotIndices.length, 1, 0, 0, 0);

@@ -3,5 +3,5 @@ class Foo<T, U> {
   U u;
 }
 
-auto partial = new Foo<int>();
-auto noargs = new Foo();
+var partial = new Foo<int>();
+var noargs = new Foo();

@@ -90,7 +90,7 @@ class Bindings {
 
 class DrawPipeline {
   void vertexShader(VertexBuiltins^ vb) vertex {
-    auto matrix = bindings.Get().uniforms.MapReadUniform().matrix;
+    var matrix = bindings.Get().uniforms.MapReadUniform().matrix;
     vb.position = matrix * Utils.makeFloat4(vert.Get());
   }
   void fragmentShader(FragmentBuiltins^ fb) fragment {
@@ -101,8 +101,8 @@ class DrawPipeline {
   BindGroup<Bindings>* bindings;
 }
 
-auto bodies = new Body[width * height * depth];
-auto springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
+var bodies = new Body[width * height * depth];
+var springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
 int spring = 0;
 for (int i = 0; i < bodies.length; ++i) {
   int x = i % width;
@@ -136,27 +136,27 @@ for (int i = 0; i < bodies.length; ++i) {
 
 Device* device = new Device();
 Window* window = new Window({0, 0}, {960, 960});
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-auto physicsSystem = new ParticleSystem(bodies, springs);
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var physicsSystem = new ParticleSystem(bodies, springs);
 
-auto bodyVerts = new Vector[bodies.length * 3];
-auto bodyVBO = new vertex Buffer<Vector[]>(device, bodyVerts.length);
+var bodyVerts = new Vector[bodies.length * 3];
+var bodyVBO = new vertex Buffer<Vector[]>(device, bodyVerts.length);
 
-auto springVerts = new Vector[springs.length * 2];
-auto springVBO = new vertex Buffer<Vector[]>(device, springVerts.length);
+var springVerts = new Vector[springs.length * 2];
+var springVBO = new vertex Buffer<Vector[]>(device, springVerts.length);
 
-auto bodyPipeline = new RenderPipeline<DrawPipeline>(device, null, TriangleList);
-auto springPipeline = new RenderPipeline<DrawPipeline>(device, null, LineList);
+var bodyPipeline = new RenderPipeline<DrawPipeline>(device, null, TriangleList);
+var springPipeline = new RenderPipeline<DrawPipeline>(device, null, LineList);
 Bindings bodyBindings;
 bodyBindings.uniforms = new uniform Buffer<DrawUniforms>(device);
-auto bodyBG = new BindGroup<Bindings>(device, &bodyBindings);
+var bodyBG = new BindGroup<Bindings>(device, &bodyBindings);
 Bindings springBindings;
 springBindings.uniforms = new uniform Buffer<DrawUniforms>(device);
-auto springBG = new BindGroup<Bindings>(device, &springBindings);
+var springBG = new BindGroup<Bindings>(device, &springBindings);
 EventHandler handler;
 handler.rotation = float<2>(0.0, 0.0);
 handler.distance = 0.5 * (float) width;
-auto drawUniforms = new DrawUniforms();
+var drawUniforms = new DrawUniforms();
 float<4,4> projection = Transform.projection(1.0, 100.0, -1.0, 1.0, -1.0, 1.0);
 double startTime = System.GetCurrentTime();
 float frequency = 480.0;
@@ -174,7 +174,7 @@ while(System.IsRunning()) {
   drawUniforms.color = float<4>(0.0, 1.0, 0.0, 1.0);
   bodyBindings.uniforms.SetData(drawUniforms);
   for (int i = 0; i < bodies.length; ++i) {
-    auto p = bodies[i].position;
+    var p = bodies[i].position;
     bodyVerts[i*3  ] = p + Vector( 0.1,  0.0);
     bodyVerts[i*3+1] = p + Vector(-0.1,  0.0);
     bodyVerts[i*3+2] = p + Vector( 0.0, -0.2);
@@ -193,10 +193,10 @@ while(System.IsRunning()) {
     physicsSystem.eulerStep(8.0 / frequency);
     stepsDone++;
   }
-  auto framebuffer = swapChain.GetCurrentTexture();
-  auto encoder = new CommandEncoder(device);
-  auto colorAttachment = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
-  auto renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = colorAttachment });
+  var framebuffer = swapChain.GetCurrentTexture();
+  var encoder = new CommandEncoder(device);
+  var colorAttachment = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  var renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = colorAttachment });
 
   renderPass.SetPipeline(springPipeline);
   renderPass.Set({vert = springVBO, bindings = springBG});

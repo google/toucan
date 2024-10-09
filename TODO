@@ -1,4 +1,3 @@
-- rename 'auto' -> 'let'
 - implement window resize event
 - implement raw ptr optimization (or explicit raw ptrs?)
 - implement foreach

@@ -3,7 +3,7 @@ include "include/test.t"
 class Foo<T> {
   T mine;
   Foo(T t) {
-    auto s = t;
+    var s = t;
     mine = s;
   }
 }

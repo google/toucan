@@ -1,11 +1,11 @@
 include "include/test.t"
 
-auto f = new float();
+var f = new float();
 *f = 3.0;
-auto v = new float<3>();
+var v = new float<3>();
 *v = float<3>(2.0, 4.0, 6.0);
 float<3> temp = *v;
-auto a = new float[3]();
+var a = new float[3]();
 *a = float[3](3.0, 2.0, 1.0);
 float[3] atemp = *a;
 Test.Expect(*f == 3.0);

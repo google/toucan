@@ -1,6 +1,6 @@
 Device* device = new Device();
 Window* window = new Window({0, 0}, {640, 480});
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 float<2>[3] positions;
 positions[0] = float<2>( 0.0,  1.0);
@@ -29,13 +29,13 @@ class Pipeline : BasePipeline {
   vertex Buffer<float<3>[]>* color;
 }
 
-auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
-auto encoder = new CommandEncoder(device);
+var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
+var encoder = new CommandEncoder(device);
 Pipeline p;
 p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
 p.position = new vertex Buffer<float<2>[]>(device, &positions);
 p.color = new vertex Buffer<float<3>[]>(device, &colors);
-auto renderPass = new RenderPass<Pipeline>(encoder, &p);
+var renderPass = new RenderPass<Pipeline>(encoder, &p);
 renderPass.SetPipeline(pipeline);
 renderPass.Draw(3, 1, 0, 0);
 renderPass.End();

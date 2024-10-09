@@ -1,12 +1,12 @@
 using Vertex = float<4>;
 Device* device = new Device();
 Window* window = new Window({0, 0}, {640, 480});
-auto swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-auto verts = new Vertex[3];
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var verts = new Vertex[3];
 verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
 verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
 verts[2] = float<4>( 1.0, -1.0, 0.0, 1.0);
-auto vb = new vertex Buffer<Vertex[]>(device, verts);
+var vb = new vertex Buffer<Vertex[]>(device, verts);
 class RTTPipeline {
   void vertexShader(VertexBuiltins^ vb) vertex { vb.position = vert.Get(); }
   void fragmentShader(FragmentBuiltins^ fb) fragment {
@@ -27,27 +27,27 @@ class Bindings {
 class Pipeline {
   void vertexShader(VertexBuiltins^ vb) vertex { vb.position = vert.Get(); }
   void fragmentShader(FragmentBuiltins^ fb) fragment {
-    auto b = bindings.Get();
-    auto onehalf = float<2>(0.5, 0.5);
+    var b = bindings.Get();
+    var onehalf = float<2>(0.5, 0.5);
     fragColor.Set(b.red.Sample(b.sampler, onehalf) + b.green.Sample(b.sampler, onehalf));
   }
   ColorAttachment<PreferredSwapChainFormat>* fragColor;
   vertex Buffer<Vertex[]>* vert;
   BindGroup<Bindings>* bindings;
 }
-auto encoder = new CommandEncoder(device);
-auto redTex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());
-auto greenTex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());
+var encoder = new CommandEncoder(device);
+var redTex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());
+var greenTex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());
 RTTPipeline rp;
 rp.red = new ColorAttachment<RGBA8unorm>(redTex, Clear, Store);
 rp.green = new ColorAttachment<RGBA8unorm>(greenTex, Clear, Store);
 rp.vert = vb;
-auto rttPass = new RenderPass<RTTPipeline>(encoder, &rp);
-auto rttPipeline = new RenderPipeline<RTTPipeline>(device, null, TriangleList);
+var rttPass = new RenderPass<RTTPipeline>(encoder, &rp);
+var rttPipeline = new RenderPipeline<RTTPipeline>(device, null, TriangleList);
 rttPass.SetPipeline(rttPipeline);
 rttPass.Draw(3, 1, 0, 0);
 rttPass.End();
-auto pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 Pipeline p;
 p.vert = vb;
 p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
@@ -56,7 +56,7 @@ b.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, L
 b.red = redTex.CreateSampleableView();
 b.green = greenTex.CreateSampleableView();
 p.bindings = new BindGroup<Bindings>(device, &b);
-auto drawPass = new RenderPass<Pipeline>(encoder, &p);
+var drawPass = new RenderPass<Pipeline>(encoder, &p);
 drawPass.SetPipeline(pipeline);
 drawPass.Draw(3, 1, 0, 0);
 drawPass.End();

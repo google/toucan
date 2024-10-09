@@ -12,4 +12,4 @@ class Shader {
 RenderPipelineDescriptor descriptor;
 descriptor.vertexModule = device.CreateShaderModule("Shader", "vertex");
 descriptor.fragmentModule = device.CreateShaderModule("Shader", "fragment");
-auto pipeline = new RenderPipeline<RenderPipelineDescriptor>(device, null, TriangleList);
+var pipeline = new RenderPipeline<RenderPipelineDescriptor>(device, null, TriangleList);
