@@ -42,7 +42,6 @@ auto cubeIB = new index Buffer<uint[]>(device, &cubeIndices);
 
 class Uniforms {
   float<4,4>  model, view, projection;
-//  float<4,4>  viewInverse;
 }
 
 class Bindings {
@@ -97,7 +96,6 @@ while (System.IsRunning()) {
   uniforms.view = Transform.translate(0.0, 0.0, -handler.distance);
   uniforms.view *= orientation.toMatrix();
   uniforms.model = Transform.scale(100.0, 100.0, 100.0);
-//  uniforms.viewInverse = Transform.invert(uniforms.view);
   cubeBindings.uniforms.SetData(&uniforms);
   auto encoder = new CommandEncoder(device);
   SkyboxPipeline p;

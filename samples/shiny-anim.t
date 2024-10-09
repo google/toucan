@@ -126,7 +126,7 @@ tessTeapot.Tessellate(&teapotControlPoints, &teapotControlIndices);
 
 class Uniforms {
   float<4,4>  model, view, projection;
-//  float<4,4>  viewInverse;
+  float<4,4>  viewInverse;
 }
 
 class Bindings {
@@ -179,7 +179,7 @@ class ReflectionPipeline : DrawPipeline {
       float<3> p = Math.normalize(varyings.position);
       float<3> n = Math.normalize(varyings.normal);
       float<3> r = Math.reflect(p, n);
-      auto r4 = Math.inverse(uniforms.view) * float<4>(r.x, r.y, r.z, 0.0);
+      auto r4 = uniforms.viewInverse * float<4>(r.x, r.y, r.z, 0.0);
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-r4.x, r4.y, r4.z)));
     }
     vertex Buffer<Vertex[]>* vert;
@@ -266,7 +266,7 @@ while (System.IsRunning()) {
   uniforms.view = Transform.translate(0.0, 0.0, -handler.distance);
   uniforms.view *= orientation.toMatrix();
   uniforms.model = Transform.scale(100.0, 100.0, 100.0);
-//  uniforms.viewInverse = Transform.invert(uniforms.view);
+  uniforms.viewInverse = Transform.invert(uniforms.view);
   cubeBindings.uniforms.SetData(&uniforms);
   uniforms.model = teapotRotation * Transform.scale(2.0, 2.0, 2.0);
   teapotBindings.uniforms.SetData(&uniforms);
