@@ -1,13 +1,13 @@
 var device = new Device();
 
 class Pipeline {
-  static float a() {
+  static a() : float {
     return 5.0;
   }
-  static float b() {
+  static b() : float {
     return Pipeline.a();
   }
-  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
+  computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     var temp = Pipeline.b();
   }
 }

@@ -13,8 +13,8 @@ class Bindings {
   var uniforms : uniform Buffer<Uniforms>*;
 }
 class Pipeline {
-  void vertexShader(VertexBuiltins^ vb) vertex { vb.position = vertices.Get(); }
-  void fragmentShader(FragmentBuiltins^ fb) fragment {
+  vertexShader(VertexBuiltins^ vb) vertex { vb.position = vertices.Get(); }
+  fragmentShader(FragmentBuiltins^ fb) fragment {
     fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
   }
   var vertices : vertex Buffer<Vertex[]>*;

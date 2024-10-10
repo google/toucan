@@ -72,7 +72,7 @@ error-partial-template.t:7:  cannot allocate partially-specified template class 
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
 error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(CommandEncoder*, Buffer<float<4>[]>*, int)
-error-texture-from-buffer-incorrect-format.t:9:  void Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint, uint)
+error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint, uint)
 test/error-uint-literal-too-large.t
 test/error-wrong-named-param.t
 error-wrong-named-param.t:7:  class Bar has no method Foo(b = float, a = int)
@@ -83,8 +83,7 @@ test/fabs.t
 test/fail-allocate-class-with-unsized-array.t
 fail-allocate-class-with-unsized-array.t:5:  class with unsized array must be allocated with size
 test/fail-invalid-storage-types.t
-fail-invalid-storage-types.t:1:  cannot create storage of type void
-fail-invalid-storage-types.t:2:  cannot create storage of type int[]
+fail-invalid-storage-types.t:1:  cannot create storage of type int[]
 test/fail-unsized-array-not-last-in-class.t
 fail-unsized-array-not-last-in-class.t:4:  Unsized arrays are only allwed as the last field of a class
 test/field-access-from-static-method-error.t
@@ -218,10 +217,6 @@ test/virtual-function.t
 test/virtual-override-error.t
 virtual-override-error.t:10: override of virtual method must be virtual
 virtual-override-error.t:13: attempt to override a non-virtual method
-test/void-array.t
-void-array.t:3: invalid array element type "void"
-void-array.t:3: invalid array element type "void"
-test/void-ptr-return.t
 test/void-value-error.t
 void-value-error.t:4:  implicit void return, in method returning non-void.
 test/vtable.t

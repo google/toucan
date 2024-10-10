@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class Foo {
-  static float whee() {
+  static whee() : float {
     return -1234.0;
   }
 };

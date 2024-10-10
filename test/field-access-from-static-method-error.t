@@ -1,5 +1,5 @@
 class Foo {
-  static float bar() {
+  static bar() : float {
     return baz;
   }
   var baz : float;

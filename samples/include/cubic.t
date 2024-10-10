@@ -1,16 +1,16 @@
 class Cubic<T> {
-  void FromBezier(T[4] p) {
+  FromBezier(T[4] p) {
     a =        p[0];
     b = -3.0 * p[0] + 3.0 * p[1];
     c =  3.0 * p[0] - 6.0 * p[1] + 3.0 * p[2];
     d =       -p[0] + 3.0 * p[1] - 3.0 * p[2] + p[3];
   }
 
-  T Evaluate(float p) {
+  Evaluate(float p) : T {
     return a + p * (b + p * (c + p * d));
   }
 
-  T EvaluateTangent(float p) {
+  EvaluateTangent(float p) : T {
     return b + p * (2.0 * c + 3.0 * p * d);
   }
 

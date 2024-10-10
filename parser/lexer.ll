@@ -97,7 +97,6 @@ return  { return T_RETURN; }
 new     { return T_NEW; }
 class   { return T_CLASS; }
 enum    { return T_ENUM; }
-void    { return T_VOID; }
 static  { return T_STATIC; }
 virtual { return T_VIRTUAL; }
 vertex  { return T_VERTEX; }

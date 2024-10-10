@@ -3,7 +3,7 @@ include "include/test.t"
 class Template<T> {
   var foo : T<4>;
   Template(T<4> t) { foo = t; }
-  T<4> get() { return foo; }
+  get() : T<4> { return foo; }
 }
 
 var temp  = new Template<float>(float<4>(1.0, 2.0, 3.0, 4.0));

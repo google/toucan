@@ -2,12 +2,12 @@ include "include/test.t"
 
 class Foo {
   var value : float;
-  Foo plusOne() {
+  plusOne() : Foo {
     var f : Foo;
     f.value = value + 1.0;
     return f;
   }
-  static Foo zero() {
+  static zero() : Foo {
     var f : Foo;
     f.value = 0.0;
     return f;

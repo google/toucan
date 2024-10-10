@@ -43,12 +43,12 @@ class Bindings {
 }
 
 class Pipeline {
-    float<2> vertexShader(VertexBuiltins^ vb) vertex {
+    vertexShader(VertexBuiltins^ vb) vertex : float<2> {
         var v = vert.Get();
         vb.position = v.position;
         return v.texCoord;
     }
-    void fragmentShader(FragmentBuiltins^ fb, float<2> texCoord) fragment {
+    fragmentShader(FragmentBuiltins^ fb, float<2> texCoord) fragment {
       fragColor.Set(bindings.Get().textureView.Sample(bindings.Get().sampler, texCoord));
     }
     var vert : vertex Buffer<Vertex[]>*;

@@ -1,7 +1,7 @@
 include "include/string.t"
 
 class C {
-  static void f(ubyte[]* filename = System.GetSourceFile(), int line = System.GetSourceLine()) {
+  static f(ubyte[]* filename = System.GetSourceFile(), int line = System.GetSourceLine()) {
     System.Print(filename);
     System.Print(":");
     System.Print(String.From(line).Get());

@@ -266,8 +266,9 @@ Method::Method(int m, Type* r, std::string n, ClassType* c)
     : modifiers(m), returnType(r), name(n), classType(c) {}
 
 std::string Method::ToString() const {
-  std::string result = returnType->ToString() + " " + classType->ToString();
-  result += "." + name + "(";
+  std::string result;
+  if (!returnType->IsVoid()) { result += returnType->ToString() + " "; }
+  result += classType->ToString() + "." + name + "(";
   for (const auto& arg : formalArgList) {
     if (arg == formalArgList.front() && !(modifiers & Method::STATIC)) { continue; }
     result += arg->type->ToString();

@@ -2,7 +2,7 @@ include "include/test.t"
 
 class Bar {
   Bar() { x = 2.0; }
-  float bump() {
+  bump() : float {
     x += 1.0;
     return x;
   }
@@ -10,7 +10,7 @@ class Bar {
 }
 
 class Foo {
-  Bar* bar() {
+  bar() : Bar* {
     return new Bar();
   }
 };

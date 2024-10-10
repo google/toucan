@@ -5,7 +5,7 @@ class Foo {
 };
 class Bar : Foo {
   var g : float;
-  float sum() {
+  sum() : float {
     return f + g;
   }
 };

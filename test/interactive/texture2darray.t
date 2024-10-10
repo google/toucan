@@ -1,13 +1,13 @@
 class Vertex {
-    float<4> position;
-    float<2> texCoord;
+    var position : float<4>;
+    var texCoord : float<2>;
 };
 class Varyings {
-    float<2> texCoord;
+    var texCoord : float<2>;
 };
 
-Device* device = new Device();
-Window* window = new Window({0, 0}, {640, 480});
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var verts = new Vertex[4];
 verts[0].position = float<4>(-1.0, -1.0, 0.0, 1.0);
@@ -27,26 +27,26 @@ indices[4] = 2;
 indices[5] = 3;
 
 class Bindings {
-  Sampler* sampler;
-  SampleableTexture2DArray<float>* textureView;
+  var sampler : Sampler*;
+  var textureView : SampleableTexture2DArray<float>*;
 }
 
 class Pipeline {
-    Varyings vertexShader(VertexBuiltins^ vb) vertex {
-        Vertex v = vert.Get();
+    vertexShader(VertexBuiltins^ vb) vertex : Varyings {
+        var v = vert.Get();
         vb.position = v.position;
-        Varyings varyings;
+        var varyings : Varyings;
         varyings.texCoord = v.texCoord;
         return varyings;
     }
-    void fragmentShader(FragmentBuiltins^ fb, Varyings varyings) fragment {
+    fragmentShader(FragmentBuiltins^ fb, Varyings varyings) fragment {
       var b = bindings.Get();
       fragColor.Set(b.textureView.Sample(b.sampler, varyings.texCoord, 1));
     }
-    vertex Buffer<Vertex[]>* vert;
-    index Buffer<uint[]>*    indices;
-    ColorAttachment<PreferredSwapChainFormat>* fragColor;
-    BindGroup<Bindings>*     bindings;
+    var vert : vertex Buffer<Vertex[]>*;
+    var indices : index Buffer<uint[]>*;
+    var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
+    var bindings : BindGroup<Bindings>*;
 };
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 var tex = new sampleable Texture2DArray<RGBA8unorm>(device, {2, 2, 2});
@@ -64,13 +64,13 @@ buffer.Unmap();
 var copyEncoder = new CommandEncoder(device);
 tex.CopyFromBuffer(copyEncoder, buffer, {2, 2, 2});
 device.GetQueue().Submit(copyEncoder.Finish());
-Bindings bindings;
+var bindings : Bindings;
 bindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
 bindings.textureView = tex.CreateSampleableView();
 var bindGroup = new BindGroup<Bindings>(device, &bindings);
 
 var encoder = new CommandEncoder(device);
-Pipeline p;
+var p : Pipeline;
 p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
 p.vert = new vertex Buffer<Vertex[]>(device, verts);
 p.indices = new index Buffer<uint[]>(device, indices);

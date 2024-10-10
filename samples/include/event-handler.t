@@ -1,10 +1,10 @@
 include "utils.t"
 
 class EventHandler {
-  void Rotate(int<2> diff) {
+  Rotate(int<2> diff) {
     rotation += (float<2>) diff / 200.0;
   }
-  void Handle(Event* event) {
+  Handle(Event* event) {
     if (event.type == MouseDown) {
       mouseDown = true;
     } else if (event.type == MouseUp) {

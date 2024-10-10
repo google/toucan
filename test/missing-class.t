@@ -1,5 +1,5 @@
 class Foo {
-  void baz() {
+  baz() {
     Blargh b = new Blargh();
   }
 };

@@ -14,12 +14,12 @@ var verts : Vertex[3] = {
 
 var vb = new vertex Buffer<Vertex[]>(device, &verts);
 class Pipeline {
-  float<3> vertexShader(VertexBuiltins^ vb) vertex {
+  vertexShader(VertexBuiltins^ vb) vertex : float<3> {
     var v = vertices.Get();
     vb.position = v.position;
     return v.color;
   }
-  void fragmentShader(FragmentBuiltins^ fb, float<3> varyings) fragment {
+  fragmentShader(FragmentBuiltins^ fb, float<3> varyings) fragment {
     fragColor.Set(float<4>(varyings.r, varyings.g, varyings.b, 1.0));
   }
   var fragColor : ColorAttachment<PreferredSwapChainFormat>*;

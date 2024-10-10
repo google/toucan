@@ -1,5 +1,5 @@
 class C {
-  static float m() {
+  static m() : float {
     return 5.0;
   }
 }

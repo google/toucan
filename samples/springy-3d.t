@@ -17,11 +17,11 @@ class Body {
   var mass : float;
   var movable : float;
 
-  void computeAcceleration() {
+  computeAcceleration() {
     acceleration = force / mass;
   }
 
-  void eulerStep(float deltaT) {
+  eulerStep(float deltaT) {
     position += velocity * deltaT * movable;
     velocity += acceleration * deltaT * movable;
   }
@@ -34,7 +34,7 @@ class Spring {
   var kd : float;
   var r : float;
 
-  Vector computeForce(Body b1, Body b2) {
+  computeForce(Body b1, Body b2) : Vector {
     var dp = b1.position - b2.position;
     var dv = b1.velocity - b2.velocity;
     var dplen = Utils.length(dp);
@@ -59,7 +59,7 @@ class ParticleSystem {
     springs = s;
   }
 
-  void eulerStep(float deltaT) {
+  eulerStep(float deltaT) {
     var gravity = Vector(0.0, -0.25);
     var wind = Vector(Math.rand() * 0.05, 0.0);
     for (var i = 0; i < bodies.length; ++i) {
@@ -89,11 +89,11 @@ class Bindings {
 }
 
 class DrawPipeline {
-  void vertexShader(VertexBuiltins^ vb) vertex {
+  vertexShader(VertexBuiltins^ vb) vertex {
     var matrix = bindings.Get().uniforms.MapReadUniform().matrix;
     vb.position = matrix * Utils.makeFloat4(vertices.Get());
   }
-  void fragmentShader(FragmentBuiltins^ fb) fragment {
+  fragmentShader(FragmentBuiltins^ fb) fragment {
     fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
   }
   var vertices : vertex Buffer<Vector[]>*;

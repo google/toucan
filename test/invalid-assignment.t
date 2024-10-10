@@ -3,7 +3,7 @@ class Foo {
   int bar() {
     return 0;
   }
-  void baz() {
+  baz() {
     this = this;
   }
 }

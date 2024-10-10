@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class Foo {
-  static float dot(float<4> arg1, float<4> arg2) {
+  static dot(float<4> arg1, float<4> arg2) : float {
     var tmp = arg1 * arg2;
     return tmp.x + tmp.y + tmp.z + tmp.w;
   }

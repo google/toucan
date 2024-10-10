@@ -1,8 +1,8 @@
 class Shader {
-    float<4> vertexMain(float<4> pos) vertex {
+    vertexMain(float<4> pos) vertex : float<4> {
         return matrix * pos;
     }
-    float<4> fragmentMain (float<4> pos) fragment {
+    fragmentMain (float<4> pos) fragment : float<4> {
         return float<4>(0.0, 1.0, 0.0, 1.0);
     }
     class {

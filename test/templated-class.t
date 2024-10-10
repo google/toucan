@@ -1,15 +1,15 @@
 include "include/test.t"
 
 class Bar {
-  float get() {
+  get() : float {
     return 3.0;
   }
 }
 
 class Template<T> {
   var foo : T*;
-  void set(T* t) { foo = t; }
-  float get() { return foo.get(); }
+  set(T* t) { foo = t; }
+  get() : float { return foo.get(); }
 }
 
 var templateBar = new Template<Bar>();

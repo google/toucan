@@ -11,9 +11,9 @@ class Quaternion {
     q.z = scaledAxis.z;
     q.w = Math.cos(angle * 0.5);
   }
-  float len() { return Math.sqrt(Utils.dot(q, q)); }
-  void normalize() { q = q / this.len(); }
-  Quaternion mul(Quaternion other) {
+  len() : float { return Math.sqrt(Utils.dot(q, q)); }
+  normalize() { q = q / this.len(); }
+  mul(Quaternion other) : Quaternion {
     var p = other.q;
     var r : Quaternion;
 
@@ -24,7 +24,7 @@ class Quaternion {
 
     return r;
   }
-  float<4,4> toMatrix() {
+  toMatrix() : float<4,4> {
     var x = q.x;
     var y = q.y;
     var z = q.z;

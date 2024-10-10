@@ -1,14 +1,14 @@
 class Foo {
-  virtual void bar() {
+  virtual bar() {
   }
-  float baz() {
+  baz() : float {
     return 0.0;
   }
 };
 class Bar : Foo {
-  void bar() {
+  bar() {
   }
-  virtual float baz() {
+  virtual baz() : float {
     return 1.0;
   }
 };

@@ -19,11 +19,11 @@ class Body {
   var spring : int[6];
   var springWeight : float[6];
 
-  void computeAcceleration() {
+  computeAcceleration() {
     acceleration = force / mass;
   }
 
-  void eulerStep(float deltaT) {
+  eulerStep(float deltaT) {
     position += velocity * deltaT * movable;
     velocity += acceleration * deltaT * movable;
   }
@@ -37,7 +37,7 @@ class Spring {
   var r : float;
   var force : Vector;
 
-  Vector computeForce(Body b1, Body b2) {
+  computeForce(Body b1, Body b2) : Vector {
     var dp = b1.position - b2.position;
     var dv = b1.velocity - b2.velocity;
     var dplen = Utils.length(dp);
@@ -78,7 +78,7 @@ class ComputeBase {
 }
 
 class ComputeForces : ComputeBase {
-  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
+  computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var springs = bindings.Get().springStorage.MapReadWriteStorage();
     var u = bindings.Get().uniforms.MapReadUniform();
@@ -91,7 +91,7 @@ class ComputeForces : ComputeBase {
 }
 
 class ApplyForces : ComputeBase {
-  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
+  computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var springs = bindings.Get().springStorage.MapReadWriteStorage();
     var u = bindings.Get().uniforms.MapReadUniform();
@@ -108,7 +108,7 @@ class ApplyForces : ComputeBase {
 }
 
 class UpdateBodyVerts : ComputeBase {
-  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
+  computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var i = cb.globalInvocationId.x;
     var p = bodies[i].position;
@@ -120,7 +120,7 @@ class UpdateBodyVerts : ComputeBase {
 }
 
 class UpdateSpringVerts : ComputeBase {
-  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
+  computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var springs = bindings.Get().springStorage.MapReadWriteStorage();
     var sv = bindings.Get().springVerts.MapReadWriteStorage();
@@ -135,11 +135,11 @@ class DrawBindings {
 }
 
 class DrawPipeline {
-  void vertexShader(VertexBuiltins^ vb) vertex {
+  vertexShader(VertexBuiltins^ vb) vertex {
     var matrix = bindings.Get().uniforms.MapReadUniform().matrix;
     vb.position = matrix * Utils.makeFloat4(vertices.Get());
   }
-  void fragmentShader(FragmentBuiltins^ fb) fragment {
+  fragmentShader(FragmentBuiltins^ fb) fragment {
     fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
   }
   var vertices : vertex Buffer<Vector[]>*;

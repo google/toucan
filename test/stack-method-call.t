@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class Foo {
-  void inc() {
+  inc() {
     x = x + 1.0;
     return;
   }

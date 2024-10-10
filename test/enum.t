@@ -2,7 +2,7 @@ include "include/test.t"
 
 enum Enum1 { FOO, BAR, BAZ };
 class A {
-  void init() {
+  init() {
     f = FOO;
   }
   var f : Enum1;

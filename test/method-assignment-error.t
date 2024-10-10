@@ -1,5 +1,5 @@
 class Foo {
-  float bar() {
+  bar() : float {
     return 0.0;
   }
 };

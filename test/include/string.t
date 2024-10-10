@@ -1,7 +1,7 @@
 class String {
   String(ubyte[]* b) { buffer = b; }
-  static int IntLog2(int value) { return 31 - Math.clz(value | 1); }
-  static String* From(int value) {
+  static IntLog2(int value) : int { return 31 - Math.clz(value | 1); }
+  static From(int value) : String* {
     var table = int[9](9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999);
     var negative = false;
     if (value < 0) {
@@ -20,6 +20,6 @@ class String {
     if (negative) b[0] = 45ub;
     return new String(b);
   }
-  ubyte[]* Get() { return buffer; }
+  Get() : ubyte[]* { return buffer; }
   var buffer : ubyte[]*;
 }

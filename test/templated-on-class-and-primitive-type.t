@@ -9,7 +9,7 @@ class Foo<T> {
 }
 
 class Bar {
-  static float GetFloat() {
+  static GetFloat() : float {
     return 5.0;
   }
 }

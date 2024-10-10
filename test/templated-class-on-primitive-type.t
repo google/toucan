@@ -2,8 +2,8 @@ include "include/test.t"
 
 class Template<T> {
   var foo : T;
-  void set(T t) { foo = t; }
-  T get() { return foo; }
+  set(T t) { foo = t; }
+  get() : T { return foo; }
 }
 
 var t = new Template<float>();

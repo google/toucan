@@ -1,5 +1,5 @@
 class Foo {
-  int foo() {
+  foo() : int {
   }
 };
 

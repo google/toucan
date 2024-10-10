@@ -9,10 +9,10 @@ class Struct {
 }
 
 class Compute {
-  static void set(int^ p, int value) {
+  static set(int^ p, int value) {
     *p = value;
   }
-  void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
+  computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     var buffer = bindings.Get().buffer.MapReadWriteStorage();
     var i : int;
     var array : int[1];

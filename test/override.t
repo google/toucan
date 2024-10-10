@@ -1,13 +1,13 @@
 include "include/test.t"
 
 class Foo {
-  float func() {
+  func() : float {
     return 1234.0;
   }
 };
 
 class Bar : Foo {
-  float func() {
+  func() : float {
     return 2345.0;
   }
 };

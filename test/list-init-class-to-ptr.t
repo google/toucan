@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class C {
-  void clobber(C^ c)
+  clobber(C^ c)
   {
     f = c.f;
   }
