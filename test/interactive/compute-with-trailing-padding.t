@@ -1,23 +1,23 @@
 class Vertex {
-  float<4> position;
-  float    pad;
+  var position : float<4>;
+  var pad : float;
 }
 
 class ComputeBindings {
-  storage Buffer<Vertex[]>* vertStorage;
+  var vertStorage : storage Buffer<Vertex[]>*;
 }
 
 class BumpCompute {
   void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     var verts = bindings.Get().vertStorage.MapReadWriteStorage();
-    uint pos = cb.globalInvocationId.x;
+    var pos = cb.globalInvocationId.x;
     verts[pos].position += float<4>( 0.005,  0.0, 0.0, 0.0);
   }
-  BindGroup<ComputeBindings>* bindings;
+  var bindings : BindGroup<ComputeBindings>*;
 }
 
-Device* device = new Device();
-Window* window = new Window({0, 0}, {640, 480});
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var verts = new Vertex[3];
 verts[0].position = float<4>( 0.0,  1.0, 0.0, 1.0);
@@ -27,26 +27,26 @@ var vb = new vertex storage Buffer<Vertex[]>(device, verts);
 class Pipeline {
   void vertexShader(VertexBuiltins^ vb) vertex { var v = vert.Get(); vb.position = v.position; }
   void fragmentShader(FragmentBuiltins^ fb) fragment { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
-  ColorAttachment<PreferredSwapChainFormat>* fragColor;
-  vertex Buffer<Vertex[]>* vert;
+  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
+  var vert : vertex Buffer<Vertex[]>*;
 }
 
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
-ComputePipeline* computePipeline = new ComputePipeline<BumpCompute>(device);
+var computePipeline = new ComputePipeline<BumpCompute>(device);
 
-ComputeBindings cb;
+var cb : ComputeBindings;
 cb.vertStorage = vb;
 var storageBG = new BindGroup<ComputeBindings>(device, &cb);
 
 while (System.IsRunning()) {
   var encoder = new CommandEncoder(device);
-  BumpCompute bc;
+  var bc : BumpCompute;
   bc.bindings = storageBG;
   var computePass = new ComputePass<BumpCompute>(encoder, &bc);
   computePass.SetPipeline(computePipeline);
   computePass.Dispatch(verts.length, 1, 1);
   computePass.End();
-  Pipeline p;
+  var p : Pipeline;
   p.vert = vb;
   p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
   var renderPass = new RenderPass<Pipeline>(encoder, &p);

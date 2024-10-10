@@ -7,11 +7,11 @@ class Bar {
 }
 
 class Template<T> {
-  T* foo;
+  var foo : T*;
   void set(T* t) { foo = t; }
   float get() { return foo.get(); }
 }
 
-Template<Bar>* templateBar = new Template<Bar>();
+var templateBar = new Template<Bar>();
 templateBar.set(new Bar());
 Test.Expect(templateBar.get() == 3.0);

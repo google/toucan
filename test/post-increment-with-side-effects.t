@@ -3,8 +3,8 @@ include "include/test.t"
 class Foo {
   Foo() {}
   Foo^ self() { count += 1; return this; }
-  int a;
-  int count;
+  var a : int;
+  var count : int;
 }
 
 var foo = new Foo();

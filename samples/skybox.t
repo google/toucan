@@ -4,8 +4,8 @@ include "quaternion.t"
 include "transform.t"
 
 class Vertex {
-  float<3> position;
-  float<3> normal;
+  var position : float<3>;
+  var normal : float<3>;
 }
 
 using Format = RGBA8unorm;
@@ -15,7 +15,7 @@ class CubeLoader {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
     var buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * size.y);
-    writeonly Format::MemoryType[]^ b = buffer.MapWrite();
+    var b = buffer.MapWrite();
     image.Decode(b, texture.MinBufferWidth());
     buffer.Unmap();
     var encoder = new CommandEncoder(device);
@@ -24,7 +24,7 @@ class CubeLoader {
   }
 }
 
-Device* device = new Device();
+var device = new Device();
 
 var texture = new sampleable TextureCube<RGBA8unorm>(device, {2176, 2176});
 CubeLoader.Load(device, inline("third_party/home-cube/right.jpg"), texture, 0);
@@ -34,20 +34,22 @@ CubeLoader.Load(device, inline("third_party/home-cube/bottom.jpg"), texture, 3);
 CubeLoader.Load(device, inline("third_party/home-cube/front.jpg"), texture, 4);
 CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 
-Window* window = new Window({0, 0}, System.GetScreenSize());
+var window = new Window({0, 0}, System.GetScreenSize());
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 var cubeVB = new vertex Buffer<float<3>[]>(device, &cubeVerts);
 var cubeIB = new index Buffer<uint[]>(device, &cubeIndices);
 
 class Uniforms {
-  float<4,4>  model, view, projection;
+  var model       : float<4,4>;
+  var view        : float<4,4>;
+  var projection  : float<4,4>;
 }
 
 class Bindings {
-  Sampler* sampler;
-  SampleableTextureCube<float>* textureView;
-  uniform Buffer<Uniforms>* uniforms;
+  var sampler : Sampler*;
+  var textureView : SampleableTextureCube<float>*;
+  var uniforms : uniform Buffer<Uniforms>*;
 }
 
 class SkyboxPipeline {
@@ -59,46 +61,46 @@ class SkyboxPipeline {
         return v;
     }
     void fragmentShader(FragmentBuiltins^ fb, float<3> position) fragment {
-      float<3> p = Math.normalize(position);
+      var p = Math.normalize(position);
       var b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
-    vertex Buffer<float<3>[]>* vertices;
-    index Buffer<uint[]>* indices;
-    ColorAttachment<PreferredSwapChainFormat>* fragColor;
-    DepthStencilAttachment<Depth24Plus>* depth;
-    BindGroup<Bindings>* bindings;
+    var vertices : vertex Buffer<float<3>[]>*;
+    var indices : index Buffer<uint[]>*;
+    var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
+    var depth : DepthStencilAttachment<Depth24Plus>*;
+    var bindings : BindGroup<Bindings>*;
 };
 
 var depthState = new DepthStencilState<Depth24Plus>();
 
 var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, TriangleList);
-var cubeBindings = new Bindings();
+var cubeBindings : Bindings;
 cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
 cubeBindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
 cubeBindings.textureView = texture.CreateSampleableView();
-var cubeBindGroup = new BindGroup<Bindings>(device, cubeBindings);
+var cubeBindGroup = new BindGroup<Bindings>(device, &cubeBindings);
 
-EventHandler handler;
+var handler : EventHandler;
 handler.rotation = float<2>(0.0, 0.0);
 handler.distance = 10.0;
 var windowSize = window.GetSize();
-float aspectRatio = (float) windowSize.x / (float) windowSize.y;
-float<4, 4> projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
+var aspectRatio = (float) windowSize.x / (float) windowSize.y;
+var projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
 var depthBuffer = new renderable Texture2D<Depth24Plus>(device, window.GetSize());
 while (System.IsRunning()) {
-  Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
+  var orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
-  Uniforms uniforms;
+  var uniforms : Uniforms;
   uniforms.projection = projection;
   uniforms.view = Transform.translate(0.0, 0.0, -handler.distance);
   uniforms.view *= orientation.toMatrix();
   uniforms.model = Transform.scale(100.0, 100.0, 100.0);
   cubeBindings.uniforms.SetData(&uniforms);
   var encoder = new CommandEncoder(device);
-  SkyboxPipeline p;
+  var p : SkyboxPipeline;
   var fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
   var db = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
   var renderPass = new RenderPass<SkyboxPipeline>(encoder,
@@ -109,7 +111,7 @@ while (System.IsRunning()) {
   renderPass.DrawIndexed(cubeIndices.length, 1, 0, 0, 0);
 
   renderPass.End();
-  CommandBuffer* cb = encoder.Finish();
+  var cb = encoder.Finish();
   device.GetQueue().Submit(cb);
   swapChain.Present();
 

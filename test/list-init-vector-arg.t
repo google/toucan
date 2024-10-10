@@ -6,5 +6,5 @@ class C {
   }
 }
 
-float r = C.M({3.0, 0.0, 1.0, 2.0});
+var r = C.M({3.0, 0.0, 1.0, 2.0});
 Test.Expect(r == 3.0);

@@ -6,8 +6,8 @@ include "transform.t"
 include "teapot.t"
 
 class Vertex {
-  float<3> position;
-  float<3> normal;
+  var position : float<3>;
+  var normal : float<3>;
 }
 
 using Format = RGBA8unorm;
@@ -17,7 +17,7 @@ class CubeLoader {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
     var buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * size.y);
-    writeonly Format::MemoryType[]^ b = buffer.MapWrite();
+    var b = buffer.MapWrite();
     image.Decode(b, texture.MinBufferWidth());
     buffer.Unmap();
     var encoder = new CommandEncoder(device);
@@ -26,7 +26,7 @@ class CubeLoader {
   }
 }
 
-Device* device = new Device();
+var device = new Device();
 
 var texture = new sampleable TextureCube<RGBA8unorm>(device, {2176, 2176});
 CubeLoader.Load(device, inline("third_party/home-cube/right.jpg"), texture, 0);
@@ -36,20 +36,21 @@ CubeLoader.Load(device, inline("third_party/home-cube/bottom.jpg"), texture, 3);
 CubeLoader.Load(device, inline("third_party/home-cube/front.jpg"), texture, 4);
 CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 
-Window* window = new Window({0, 0}, System.GetScreenSize());
+var window = new Window({0, 0}, System.GetScreenSize());
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 class BicubicPatch {
   Vertex Evaluate(float u, float v) {
-    float<3>[4] pu, pv;
-    for (int i = 0; i < 4; ++i) {
+    var pu : float<3>[4], pv : float<3>[4];
+    for (var i = 0; i < 4; ++i) {
       pu[i] = vCubics[i].Evaluate(v);
       pv[i] = uCubics[i].Evaluate(u);
     }
-    Cubic<float<3>> uCubic, vCubic;
+    var uCubic : Cubic<float<3>>;
+    var vCubic : Cubic<float<3>>;
     uCubic.FromBezier(pu);
     vCubic.FromBezier(pv);
-    Vertex result;
+    var result : Vertex;
     result.position = uCubic.Evaluate(u);
     var uTangent = uCubic.EvaluateTangent(u);
     var vTangent = vCubic.EvaluateTangent(v);
@@ -64,33 +65,35 @@ class BicubicPatch {
     }
     return result;
   }
-  Cubic<float<3>>[4] uCubics, vCubics;
+  var uCubics : Cubic<float<3>>[4];
+  var vCubics : Cubic<float<3>>[4];
 }
 
 class BicubicTessellator {
   BicubicTessellator(float<3>[]^ controlPoints, uint[]^ controlIndices, int level) {
-    int numPatches = controlIndices.length / 16;
-    int patchWidth = level + 1;
-    int verticesPerPatch = patchWidth * patchWidth;
+    var numPatches = controlIndices.length / 16;
+    var patchWidth = level + 1;
+    var verticesPerPatch = patchWidth * patchWidth;
     vertices = new Vertex[numPatches * verticesPerPatch];
     indices = new uint[numPatches * level * level * 6];
-    int vi = 0, ii = 0;
-    float scale = 1.0 / (float) level;
-    for (int k = 0; k < controlIndices.length; k += 16) {
-      BicubicPatch patch;
-      for (int i = 0; i < 4; ++i) {
-        float<3>[4] pu, pv;
-        for (int j = 0; j < 4; ++j) {
+    var vi = 0, ii = 0;
+    var scale = 1.0 / (float) level;
+    for (var k = 0; k < controlIndices.length; k += 16) {
+      var patch : BicubicPatch;
+      for (var i = 0; i < 4; ++i) {
+        var pu : float<3>[4];
+        var pv : float<3>[4];
+        for (var j = 0; j < 4; ++j) {
           pu[j] = controlPoints[controlIndices[k + i + j * 4]];
           pv[j] = controlPoints[controlIndices[k + i * 4 + j]];
         }
         patch.uCubics[i].FromBezier(pu);
         patch.vCubics[i].FromBezier(pv);
       }
-      for (int i = 0; i <= level; ++i) {
-        float v = (float) i * scale;
-        for (int j = 0; j <= level; ++j) {
-          float u = (float) j * scale;
+      for (var i = 0; i <= level; ++i) {
+        var v = (float) i * scale;
+        for (var j = 0; j <= level; ++j) {
+          var u = (float) j * scale;
           vertices[vi] = patch.Evaluate(u, v);
           if (i < level && j < level) {
             indices[ii] = vi;
@@ -106,28 +109,30 @@ class BicubicTessellator {
       }
     }
   }
-  Vertex[]* vertices;
-  uint[]* indices;
+  var vertices : Vertex[]*;
+  var indices : uint[]*;
 }
 
 var tessTeapot = new BicubicTessellator(&teapotControlPoints, &teapotControlIndices, 8);
 
 class Uniforms {
-  float<4,4>  model, view, projection;
-  float<4,4>  viewInverse;
+  var model       : float<4,4>;
+  var view        : float<4,4>;
+  var projection  : float<4,4>;
+  var viewInverse : float<4,4>;
 }
 
 class Bindings {
-  Sampler* sampler;
-  SampleableTextureCube<float>* textureView;
-  uniform Buffer<Uniforms>* uniforms;
+  var sampler : Sampler*;
+  var textureView : SampleableTextureCube<float>*;
+  var uniforms : uniform Buffer<Uniforms>*;
 }
 
 class DrawPipeline {
-  index Buffer<uint[]>* indexBuffer;
-  ColorAttachment<PreferredSwapChainFormat>* fragColor;
-  DepthStencilAttachment<Depth24Plus>* depth;
-  BindGroup<Bindings>* bindings;
+  var indexBuffer : index Buffer<uint[]>*;
+  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
+  var depth : DepthStencilAttachment<Depth24Plus>*;
+  var bindings : BindGroup<Bindings>*;
 }
 
 class SkyboxPipeline : DrawPipeline {
@@ -139,12 +144,12 @@ class SkyboxPipeline : DrawPipeline {
         return v;
     }
     void fragmentShader(FragmentBuiltins^ fb, float<3> position) fragment {
-      float<3> p = Math.normalize(position);
+      var p = Math.normalize(position);
       var b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
-    vertex Buffer<float<3>[]>* position;
+    var position : vertex Buffer<float<3>[]>*;
 };
 
 class ReflectionPipeline : DrawPipeline {
@@ -156,7 +161,7 @@ class ReflectionPipeline : DrawPipeline {
         var pos = viewModel * float<4>(v.position.x, v.position.y, v.position.z, 1.0);
         var normal = viewModel * float<4>(n.x, n.y, n.z, 0.0);
         vb.position = uniforms.projection * pos;
-        Vertex varyings;
+        var varyings : Vertex;
         varyings.position = float<3>(pos.x, pos.y, pos.z);
         varyings.normal = float<3>(normal.x, normal.y, normal.z);
         return varyings;
@@ -164,50 +169,50 @@ class ReflectionPipeline : DrawPipeline {
     void fragmentShader(FragmentBuiltins^ fb, Vertex varyings) fragment {
       var b = bindings.Get();
       var uniforms = b.uniforms.MapReadUniform();
-      float<3> p = Math.normalize(varyings.position);
-      float<3> n = Math.normalize(varyings.normal);
-      float<3> r = Math.reflect(p, n);
+      var p = Math.normalize(varyings.position);
+      var n = Math.normalize(varyings.normal);
+      var r = Math.reflect(p, n);
       var r4 = uniforms.viewInverse * float<4>(r.x, r.y, r.z, 0.0);
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-r4.x, r4.y, r4.z)));
     }
-    vertex Buffer<Vertex[]>* vert;
+    var vert : vertex Buffer<Vertex[]>*;
 };
 
 var depthState = new DepthStencilState<Depth24Plus>();
 
 var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, TriangleList);
-Bindings cubeBindings;
+var cubeBindings : Bindings;
 cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
 cubeBindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
 cubeBindings.textureView = texture.CreateSampleableView();
 
-SkyboxPipeline cubeData;
+var cubeData : SkyboxPipeline;
 cubeData.position = new vertex Buffer<float<3>[]>(device, &cubeVerts);
 cubeData.indexBuffer = new index Buffer<uint[]>(device, &cubeIndices);
 cubeData.bindings = new BindGroup<Bindings>(device, &cubeBindings);
 
 var teapotPipeline = new RenderPipeline<ReflectionPipeline>(device, depthState, TriangleList);
-Bindings teapotBindings;
+var teapotBindings : Bindings;
 teapotBindings.sampler = cubeBindings.sampler;
 teapotBindings.textureView = cubeBindings.textureView;
 teapotBindings.uniforms = new uniform Buffer<Uniforms>(device);
 
-ReflectionPipeline teapotData;
+var teapotData : ReflectionPipeline;
 teapotData.vert = new vertex Buffer<Vertex[]>(device, tessTeapot.vertices);
 teapotData.indexBuffer = new index Buffer<uint[]>(device, tessTeapot.indices);
 teapotData.bindings = new BindGroup<Bindings>(device, &teapotBindings);
 
-EventHandler handler;
+var handler : EventHandler;
 handler.rotation = float<2>(0.0, 0.0);
 handler.distance = 10.0;
 var teapotQuat = Quaternion(float<3>(1.0, 0.0, 0.0), -3.1415926 / 2.0);
 teapotQuat.normalize();
 var teapotRotation = teapotQuat.toMatrix();
 var depthBuffer = new renderable Texture2D<Depth24Plus>(device, window.GetSize());
-Uniforms uniforms;
+var uniforms : Uniforms;
 var prevWindowSize = uint<2>{0, 0};
 while (System.IsRunning()) {
-  Quaternion orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
+  var orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
   var newSize = window.GetSize();
@@ -215,7 +220,7 @@ while (System.IsRunning()) {
   if (newSize.x != prevWindowSize.x || newSize.y != prevWindowSize.y) {
     swapChain.Resize(newSize);
     depthBuffer = new renderable Texture2D<Depth24Plus>(device, newSize);
-    float aspectRatio = (float) newSize.x / (float) newSize.y;
+    var aspectRatio = (float) newSize.x / (float) newSize.y;
     uniforms.projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
     prevWindowSize = newSize;
   }
@@ -242,7 +247,7 @@ while (System.IsRunning()) {
   teapotPass.DrawIndexed(tessTeapot.indices.length, 1, 0, 0, 0);
 
   renderPass.End();
-  CommandBuffer* cb = encoder.Finish();
+  var cb = encoder.Finish();
   device.GetQueue().Submit(cb);
   swapChain.Present();
 

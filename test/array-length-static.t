@@ -1,4 +1,4 @@
 include "include/test.t"
 
-float[5] f;
+var f : float[5];
 Test.Expect(f.length == 5);

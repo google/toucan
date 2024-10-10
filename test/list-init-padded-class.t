@@ -1,11 +1,11 @@
 include "include/test.t"
 
 class C {
-  float f;
-  float<4> v;
+  var f : float;
+  var v : float<4>;
 }
 
-C c = { 0.0, { 1.0, 2.0, 3.0, 4.0 } };
+var c : C = { 0.0, { 1.0, 2.0, 3.0, 4.0 } };
 
 Test.Expect(c.f == 0.0);
 Test.Expect(c.v.x == 1.0);

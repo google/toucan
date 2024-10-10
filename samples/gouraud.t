@@ -1,12 +1,12 @@
 class Vertex {
-  float<4> position;
-  float<3> color;
+  var position : float<4>;
+  var color : float<3>;
 }
 
-Device* device = new Device();
-Window* window = new Window({0, 0}, {640, 480});
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-Vertex[3] verts = {
+var verts : Vertex[3] = {
   { position = { 0.0,  1.0, 0.0, 1.0 }, color = { 1.0, 0.0, 0.0 } },
   { position = {-1.0, -1.0, 0.0, 1.0 }, color = { 0.0, 1.0, 0.0 } },
   { position = { 1.0, -1.0, 0.0, 1.0 }, color = { 0.0, 0.0, 1.0 } }
@@ -15,15 +15,15 @@ Vertex[3] verts = {
 var vb = new vertex Buffer<Vertex[]>(device, &verts);
 class Pipeline {
   float<3> vertexShader(VertexBuiltins^ vb) vertex {
-    Vertex v = vertices.Get();
+    var v = vertices.Get();
     vb.position = v.position;
     return v.color;
   }
   void fragmentShader(FragmentBuiltins^ fb, float<3> varyings) fragment {
     fragColor.Set(float<4>(varyings.r, varyings.g, varyings.b, 1.0));
   }
-  ColorAttachment<PreferredSwapChainFormat>* fragColor;
-  vertex Buffer<Vertex[]>* vertices;
+  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
+  var vertices : vertex Buffer<Vertex[]>*;
 }
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 var encoder = new CommandEncoder(device);

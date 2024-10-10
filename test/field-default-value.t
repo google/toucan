@@ -1,9 +1,9 @@
 include "include/test.t"
 
 class Foo {
-  int i;
-  float f = 42.0;
+  var i : int;
+  var f = 42.0;
 };
 
-Foo foo;
+var foo : Foo;
 Test.Expect(foo.f == 42.0);

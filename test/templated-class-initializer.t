@@ -4,11 +4,11 @@ class S {
   S(float v) {
     value = v;
   }
-  float value;
+  var value : float;
 }
 
 class Template<T> {
-  T value = T(5.0);
+  var value : T = T(5.0);
 }
-Template<S> foo;
+var foo : Template<S>;
 Test.Expect(foo.value.value == 5.0);

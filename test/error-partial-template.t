@@ -1,6 +1,6 @@
 class Foo<T, U> {
-  T t;
-  U u;
+  var t : T;
+  var u : U;
 }
 
 var partial = new Foo<int>();

@@ -1,9 +1,9 @@
 include "include/test.t"
 
-short a = 3s;
-short b = 2s;
-short c = 0s;
-short d = 1s;
+var a = 3s;
+var b = 2s;
+var c = 0s;
+var d = 1s;
 Test.Expect((int) a++ == 3);
 Test.Expect((int) --b == 1);
 Test.Expect((int) ++c == 1);

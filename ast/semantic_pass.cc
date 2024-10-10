@@ -668,7 +668,10 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
 
   const auto& fields = classType->GetFields();
   for (const auto& field : fields) {
-    if (field->type->IsUnsizedArray()) {
+    if (field->type->IsAuto()) {
+      assert(field->defaultValue);
+      field->type = field->defaultValue->GetType(types_);
+    } else if (field->type->IsUnsizedArray()) {
       if (field != fields.back()) {
         return Error("Unsized arrays are only allwed as the last field of a class");
       }

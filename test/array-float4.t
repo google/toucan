@@ -1,14 +1,14 @@
 include "include/test.t"
 
-int count = 200;
-float<4>[256] a;
-float<4> mul = float<4>(1.00001, 1.00001, 1.00001, 1.00001);
-float<4> add = float<4>(1.0, 1.0, 1.0, 1.0);
-for (int i = 0; i < a.length; ++i) {
+var count = 200;
+var a : float<4>[256];
+var mul = float<4>(1.00001, 1.00001, 1.00001, 1.00001);
+var add = float<4>(1.0, 1.0, 1.0, 1.0);
+for (var i = 0; i < a.length; ++i) {
  a[i] = float<4>(2000000.0, 2000000.0, 2000000.0, 2000000.0);
 }
-for (int j = 0; j < count; ++j) {
-  for (int i = 0; i < a.length; ++i) {
+for (var j = 0; j < count; ++j) {
+  for (var i = 0; i < a.length; ++i) {
     a[i] = a[i] * mul + add;
   }
 }

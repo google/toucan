@@ -1,7 +1,7 @@
 include "include/string.t"
 
 var filename = System.GetSourceFile();
-int line = System.GetSourceLine();
+var line = System.GetSourceLine();
 
 System.Print(filename);
 System.Print(":");

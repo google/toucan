@@ -1,11 +1,11 @@
 include "include/test.t"
 
 class ComputeBindings {
-  writeonly storage Buffer<int[]>* buffer;
+  var buffer : writeonly storage Buffer<int[]>*;
 }
 
 class Struct {
-  int a;
+  var a : int;
 }
 
 class Compute {
@@ -14,9 +14,9 @@ class Compute {
   }
   void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     var buffer = bindings.Get().buffer.MapReadWriteStorage();
-    int i;
-    int[1] array;
-    Struct struct;
+    var i : int;
+    var array : int[1];
+    var struct : Struct;
     this.set(&i, 7);
     this.set(&array[0], 21);
     this.set(&struct.a, 42);
@@ -24,12 +24,12 @@ class Compute {
     buffer[1] = array[0];
     buffer[2] = struct.a;
   }
-  BindGroup<ComputeBindings>* bindings;
+  var bindings : BindGroup<ComputeBindings>*;
 }
 
-Device* device = new Device();
+var device = new Device();
 
-ComputePipeline* computePipeline = new ComputePipeline<Compute>(device);
+var computePipeline = new ComputePipeline<Compute>(device);
 
 var storageBuf = new writeonly storage Buffer<int[]>(device, 3);
 var hostBuf = new readonly Buffer<int[]>(device, 3);

@@ -1,4 +1,4 @@
-Device* device = new Device();
+var device = new Device();
 
 class Pipeline {
   static float a() {

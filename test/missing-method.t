@@ -1,5 +1,5 @@
 class Foo {
 };
 
-Foo* foo = new Foo();
-float r = foo.zzz();
+var foo = new Foo();
+var r = foo.zzz();

@@ -1,21 +1,21 @@
 using Vertex = float<4>;
 
 class ComputeBindings {
-  storage Buffer<Vertex[]>* vertStorage;
+  var vertStorage : storage Buffer<Vertex[]>*;
 }
 
 class BumpCompute {
   void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     var verts = bindings.Get().vertStorage.MapReadWriteStorage();
-    uint pos = cb.globalInvocationId.x;
+    var pos = cb.globalInvocationId.x;
     if (pos % 2 == 1) {
       verts[pos] += float<4>( 1.0, 0.0, 0.0, 0.0);
     }
   }
-  BindGroup<ComputeBindings>* bindings;
+  var bindings : BindGroup<ComputeBindings>*;
 }
 
-Device* device = new Device();
+var device = new Device();
 
 // This test passes by producing valid SPIR-V.
 var pipeline = new ComputePipeline<BumpCompute>(device);

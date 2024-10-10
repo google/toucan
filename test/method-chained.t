@@ -6,7 +6,7 @@ class Bar {
     x += 1.0;
     return x;
   }
-  float x;
+  var x : float;
 }
 
 class Foo {
@@ -18,5 +18,5 @@ class Foo {
 class Bump {
 }
 
-Foo* foo = new Foo();
+var foo = new Foo();
 Test.Expect(foo.bar().bump() == 3.0);

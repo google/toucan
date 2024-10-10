@@ -1,2 +1,2 @@
-void invalid;
-int[] invalidArray;
+var invalid : void;
+var invalidArray : int[];

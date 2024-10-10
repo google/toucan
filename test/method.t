@@ -5,10 +5,10 @@ class Foo {
     x = x + 1.0;
     return;
   }
-  float x;
+  var x : float;
 };
 
-Foo* foo = new Foo();
+var foo = new Foo();
 foo.x = 0.0;
 foo.inc();
 foo.inc();

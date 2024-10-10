@@ -1,25 +1,25 @@
 using Vertex = float<4>;
-Device* device = new Device();
-Window* window = new Window({0, 0}, {640, 480});
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-Vertex[3] verts = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 } };
+var verts : Vertex[3] = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 } };
 var vb = new vertex Buffer<Vertex[]>(device, &verts);
 class Uniforms {
-  float[1] padding;
-  int intPadding;
-  float<4> color;
+  var padding : float[1];
+  var intPadding : int;
+  var color : float<4>;
 }
 class Bindings {
-  uniform Buffer<Uniforms>* uniforms;
+  var uniforms : uniform Buffer<Uniforms>*;
 }
 class Pipeline {
   void vertexShader(VertexBuiltins^ vb) vertex { vb.position = vertices.Get(); }
   void fragmentShader(FragmentBuiltins^ fb) fragment {
     fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
   }
-  vertex Buffer<Vertex[]>* vertices;
-  ColorAttachment<PreferredSwapChainFormat>* fragColor;
-  BindGroup<Bindings>* bindings;
+  var vertices : vertex Buffer<Vertex[]>*;
+  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
+  var bindings : BindGroup<Bindings>*;
 }
 var uniforms = new uniform Buffer<Uniforms>(device, { color = { 0.0, 1.0, 0.0, 1.0 } });
 var bg = new BindGroup<Bindings>(device, { uniforms });

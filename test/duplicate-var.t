@@ -1,4 +1,4 @@
 class Foo {
-  int x;
-  int x;
+  var x : int;
+  var x : int;
 };

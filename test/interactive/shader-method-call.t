@@ -1,6 +1,6 @@
 using Vertex = float<4>;
-Device* device = new Device();
-Window* window = new Window({0, 0}, {640, 480});
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var verts = new Vertex[3];
 verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
@@ -11,8 +11,8 @@ class Pipeline {
   void vertexShader(VertexBuiltins^ vb) vertex { vb.position = position.Get(); }
   static float<4> green() { return float<4>(0.0, 1.0, 0.0, 1.0); }
   void fragmentShader(FragmentBuiltins^ fb) fragment { fragColor.Set(Pipeline.green()); }
-  vertex Buffer<Vertex[]>* position;
-  ColorAttachment<PreferredSwapChainFormat>* fragColor;
+  var position : vertex Buffer<Vertex[]>*;
+  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
 }
 
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);

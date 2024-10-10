@@ -3,5 +3,5 @@ class Foo {
   }
 };
 
-Foo* foo = new Foo();
+var foo = new Foo();
 foo.foo();

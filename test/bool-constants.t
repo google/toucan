@@ -1,7 +1,7 @@
 include "include/test.t"
 
-bool a = true;
-bool b = false;
+var a : bool = true;
+var b : bool = false;
 Test.Expect(a != b);
 Test.Expect(b != a);
 Test.Expect(a == a);

@@ -1,6 +1,6 @@
 include "include/test.t"
 
-float f = 1.0;
+var f = 1.0;
 do {
   f += 1.0;
 } while (f < 10.0);

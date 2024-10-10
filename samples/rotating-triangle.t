@@ -1,15 +1,15 @@
 class Vertex {
-  float<2> position;
-  float<3> color;
+  var position : float<2>;
+  var color : float<3>;
 }
 
 class Uniforms {
-  float<4,4> mvpMatrix;
-  float alpha;
+  var mvpMatrix : float<4,4>;
+  var alpha : float;
 }
 
-Device* device = new Device();
-Window* window = new Window({0, 0}, {640, 480});
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 var verts = new Vertex[3];
@@ -23,7 +23,7 @@ verts[2].color = float<3>(0.0, 0.0, 1.0);
 var vb = new vertex Buffer<Vertex[]>(device, verts);
 
 class Bindings {
-  uniform Buffer<Uniforms>* uniformBuffer;
+  var uniformBuffer : uniform Buffer<Uniforms>*;
 }
 
 class Pipeline {
@@ -37,13 +37,13 @@ class Pipeline {
   void fragmentShader(FragmentBuiltins^ fb, float<4> varyings) fragment {
     fragColor.Set(varyings * bindings.Get().uniformBuffer.MapReadUniform().alpha);
   }
-  vertex Buffer<Vertex[]>* vertices;
-  ColorAttachment<PreferredSwapChainFormat>* fragColor;
-  BindGroup<Bindings>* bindings;
+  var vertices : vertex Buffer<Vertex[]>*;
+  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
+  var bindings : BindGroup<Bindings>*;
 }
 
 var uniformBuffer = new uniform Buffer<Uniforms>(device);
-Uniforms uniformData;
+var uniformData : Uniforms;
 uniformData.mvpMatrix = float<4, 4>(float<4>(1.0, 0.0, 0.0, 0.0),
                                     float<4>(0.0, 1.0, 0.0, 0.0),
                                     float<4>(0.0, 0.0, 1.0, 0.0),
@@ -51,7 +51,7 @@ uniformData.mvpMatrix = float<4, 4>(float<4>(1.0, 0.0, 0.0, 0.0),
 uniformData.alpha = 0.5;
 var bg = new BindGroup<Bindings>(device, { uniformBuffer } );
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
-float theta = 0.0;
+var theta = 0.0;
 while (System.IsRunning()) {
   uniformBuffer.SetData(&uniformData);
   while (System.HasPendingEvents()) {

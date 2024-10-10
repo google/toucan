@@ -10,7 +10,7 @@ class EventHandler {
     } else if (event.type == MouseUp) {
       mouseDown = false;
     } else if (event.type == MouseMove) {
-      int<2> diff = event.position - prevPosition;
+      var diff = event.position - prevPosition;
       if (mouseDown || (event.modifiers & Control) != 0) {
         this.Rotate(diff);
       } else if ((event.modifiers & Shift) != 0) {
@@ -24,18 +24,18 @@ class EventHandler {
       } else if (event.numTouches == 1) {
         this.Rotate(event.touches[0] - prevTouches[0]);
       } else if (event.numTouches == 2) {
-        float prevDistance = Utils.length((float<2>) (prevTouches[1] - prevTouches[0]));
-        float curDistance = Utils.length((float<2>) (event.touches[1] - event.touches[0]));
+        var prevDistance = Utils.length((float<2>) (prevTouches[1] - prevTouches[0]));
+        var curDistance = Utils.length((float<2>) (event.touches[1] - event.touches[0]));
         distance *= prevDistance / curDistance;
       }
       prevTouches = event.touches;
       prevNumTouches = event.numTouches;
     }
   }
-  bool mouseDown = false;
-  int<2> prevPosition;
-  int<2>[10] prevTouches;
-  int prevNumTouches;
-  float<2> rotation;
-  float distance;
+  var mouseDown : bool = false;
+  var prevPosition : int<2>;
+  var prevTouches : int<2>[10];
+  var prevNumTouches : int;
+  var rotation : float<2>;
+  var distance : float;
 }

@@ -759,6 +759,10 @@ Result CodeGenLLVM::Visit(BinOpNode* node) {
   llvm::Value* ret = nullptr;
   if (lhsType == rhsType) {
     ret = GenerateBinOp(node, lhs, rhs, lhsType);
+  } else if (lhsType->CanWidenTo(rhsType)) {
+    ret = GenerateBinOp(node, lhs, rhs, rhsType);
+  } else if (rhsType->CanWidenTo(lhsType)) {
+    ret = GenerateBinOp(node, lhs, rhs, lhsType);
   } else if (TypeTable::VectorScalar(lhsType, rhsType)) {
     VectorType* lhsVectorType = static_cast<VectorType*>(lhsType);
     if (lhsVectorType->GetComponentType() == rhsType) {

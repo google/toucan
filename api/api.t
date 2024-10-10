@@ -46,15 +46,12 @@ native class Buffer<T> {
 }
 
 class DepthStencilState<T> {
-  bool depthWriteEnabled = false;
-//  CompareFunction depthCompare = CompareFunction::Always;
-//  StencilFaceState stencilFront;
-//  StencilFaceState stencilBack;
-  uint stencilReadMask = 0xFFFFFFFF;
-  uint stencilWriteMask = 0xFFFFFFFF;
-  int depthBias = 0;
-  float depthBiasSlopeScale = 0.0;
-  float depthBiasClamp = 0.0;
+  var depthWriteEnabled : bool = false;
+  var stencilReadMask : int = 0xFFFFFFFF;
+  var stencilWriteMask : int = 0xFFFFFFFF;
+  var depthBias : int = 0;
+  var depthBiasSlopeScale : float = 0.0;
+  var depthBiasClamp : float = 0.0;
 }
 
 native class RenderPipeline<T> {
@@ -261,12 +258,12 @@ enum EventModifiers { Shift = 0x01, Control = 0x02, Alt = 0x04 }
 
 native class Event {
  ~Event();
-  EventType   type;
-  int<2>      position;
-  uint        button;
-  uint        modifiers;
-  int<2>[10]  touches;
-  int         numTouches;
+  var type : EventType;
+  var position : int<2>;
+  var button : uint;
+  var modifiers : uint;
+  var touches : int<2>[10];
+  var numTouches : int;
 }
 
 native class System {
@@ -285,26 +282,21 @@ native class System {
 }
 
 class VertexBuiltins {
-  readonly int       vertexIndex;
-  readonly int       instanceIndex;
-  writeonly float<4> position;
+  var vertexIndex : readonly int;
+  var instanceIndex : readonly int;
+  var position : writeonly float<4>;
 }
 
 class FragmentBuiltins {
-  readonly float<4>  fragCoord;
-  readonly bool      frontFacing;
-//  readonly uint      sampleIndex;
-//  readonly uint      sampleMaskIn;
-//  writeonly uint     sampleMaskOut;
-//  writeonly float    fragDepth;
+  var fragCoord : readonly float<4>;
+  var frontFacing : readonly bool;
 }
 
 class ComputeBuiltins {
-  readonly uint<3>   localInvocationId;
-  readonly uint      localInvocationIndex;
-  readonly uint<3>   globalInvocationId;
-  readonly uint<3>   workgroupId;
-//  readonly uint<3>   numWorkgroups;
+  var localInvocationId : readonly uint<3>;
+  var localInvocationIndex : readonly uint;
+  var globalInvocationId : readonly uint<3>;
+  var workgroupId : readonly uint<3>;
 }
 
 class PixelFormat<SampledType, MemoryType> {}

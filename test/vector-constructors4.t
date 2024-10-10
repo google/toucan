@@ -1,9 +1,9 @@
 include "include/test.t"
 
-float<4> v41 = float<4>(1.0);
-float<4> v42 = float<4>(2.0, 3.0);
-float<4> v43 = float<4>(4.0, 5.0, 6.0);
-float<4> v44 = float<4>(7.0, 8.0, 9.0, 10.0);
+var v41 = float<4>(1.0);
+var v42 = float<4>(2.0, 3.0);
+var v43 = float<4>(4.0, 5.0, 6.0);
+var v44 = float<4>(7.0, 8.0, 9.0, 10.0);
 
 Test.Expect(v41.x == 1.0);
 Test.Expect(v41.y == 1.0);

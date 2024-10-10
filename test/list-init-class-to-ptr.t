@@ -5,9 +5,9 @@ class C {
   {
     f = c.f;
   }
-  float f;
+  var f : float;
 }
 
-C c;
+var c : C;
 c.clobber({42.0});
 Test.Expect(c.f == 42.0);

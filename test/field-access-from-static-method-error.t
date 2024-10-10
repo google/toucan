@@ -2,8 +2,8 @@ class Foo {
   static float bar() {
     return baz;
   }
-  float baz;
+  var baz : float;
 };
 
-Foo* foo = new Foo();
+var foo = new Foo();
 foo.baz = -321.0;

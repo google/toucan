@@ -2,14 +2,14 @@ include "include/test.t"
 
 class Bar;
 class Foo {
-  Bar* bar;
+  var bar : Bar*;
 };
 
 class Bar {
-  float baz;
+  var baz : float;
 };
 
-Foo* foo = new Foo();
+var foo = new Foo();
 foo.bar = new Bar();
 foo.bar.baz = 2.0;
 Test.Expect(foo.bar.baz == 2.0);

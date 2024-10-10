@@ -1,4 +1,4 @@
 class C {
-  int[] array;
-  float f;
+  var array : int[];
+  var f : float;
 };

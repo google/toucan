@@ -1,8 +1,8 @@
 include "include/test.t"
 
-float<3> v31 = float<3>(1.0);
-float<3> v32 = float<3>(2.0, 3.0);
-float<3> v33 = float<3>(4.0, 5.0, 6.0);
+var v31 = float<3>(1.0);
+var v32 = float<3>(2.0, 3.0);
+var v33 = float<3>(4.0, 5.0, 6.0);
 
 Test.Expect(v31.x == 1.0);
 Test.Expect(v32.x == 2.0);

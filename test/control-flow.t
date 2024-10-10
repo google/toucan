@@ -1,7 +1,7 @@
 include "include/test.t"
 
-int i;
-float f;
+var i : int;
+var f : float;
 i = 1;
 if (i < 1) {
   f = -5.8;

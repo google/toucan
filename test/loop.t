@@ -1,8 +1,8 @@
 include "include/test.t"
 
-int i;
-float f;
-float g;
+var i : int;
+var f : float;
+var g : float;
 f = 3.0;
 g = 1.1;
 for (i = 0; i < 100; i = i + 1) {

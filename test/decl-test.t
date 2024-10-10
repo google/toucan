@@ -1,11 +1,11 @@
 include "include/test.t"
 
-float a;
+var a : float;
 a = 3.0;
-int b;
+var b : int;
 {
-  int a;
-  int[3] aa;
-  int[3] bb;
+  var a : int;
+  var aa : int[3];
+  var bb : int[3];
 }
 Test.Expect(a == 3.0);

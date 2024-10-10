@@ -1,9 +1,9 @@
 include "include/test.t"
 
-float x = 3.0;
-float y;
+var x = 3.0;
+var y : float;
 {
-  float z = x * 2.0;
+  var z = x * 2.0;
   y = z;
 }
 Test.Expect(y == 6.0);

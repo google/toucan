@@ -1,14 +1,14 @@
 class Utils {
   static float dot(float<2> v1, float<2> v2) {
-    float<2> r = v1 * v2;
+    var r = v1 * v2;
     return r.x + r.y;
   }
   static float dot(float<3> v1, float<3> v2) {
-    float<3> r = v1 * v2;
+    var r = v1 * v2;
     return r.x + r.y + r.z;
   }
   static float dot(float<4> v1, float<4> v2) {
-    float<4> r = v1 * v2;
+    var r = v1 * v2;
     return r.x + r.y + r.z + r.w;
   }
   static float length(float<2> v) {

@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class Foo {
-  float r;
+  var r : float;
 };
 class Bar {
   Bar(Foo* f) {
@@ -10,14 +10,14 @@ class Bar {
  virtual ~Bar() {
     foo.r = 1234.0;
   }
-  Foo* foo;
+  var foo : Foo*;
 };
-float r = -1.0;
+var r = -1.0;
 {
-  Foo* f = new Foo();
+  var f = new Foo();
   f.r = -1.0;
   {
-    Bar* b = new Bar(f);
+    var b = new Bar(f);
   }
   r = f.r;
 }

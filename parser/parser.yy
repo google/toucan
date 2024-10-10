@@ -82,8 +82,7 @@ static Expr* MakeNewExpr(Type* type, Expr* length, ArgList* arguments);
 static Expr* MakeNewArrayExpr(Type* type, Expr* length);
 static Expr* InlineFile(const char* filename);
 static Expr* StringLiteral(const char* str);
-static void MakeVarDeclList(Type* type, Stmts* stmts);
-static void ErrorIfMethodModifiers(int methodModifiers);
+static void CreateFieldsFromVarDecls(Stmts* stmts);
 static Type* GetArrayType(Type* elementType, int numElements);
 static Type* GetScopedType(Type* type, const char* id);
 static TypeList* AddIDToTypeList(const char* id, TypeList* list);
@@ -128,9 +127,9 @@ Type* FindType(const char* str) {
 %type <stmt> statement expr_statement for_loop_stmt
 %type <stmt> assignment
 %type <stmt> if_statement for_statement while_statement do_statement
-%type <stmt> opt_else var_decl_statement var_decl class_decl
+%type <stmt> opt_else var_decl class_decl
 %type <stmt> class_forward_decl
-%type <stmts> statements var_decl_list method_body
+%type <stmts> statements var_decl_list var_decl_statement method_body
 %type <argList> arguments non_empty_arguments opt_workgroup_size
 %type <typeList> types
 %type <typeList> template_formal_arguments
@@ -184,7 +183,7 @@ statement:
   | do_statement
   | T_RETURN expr ';'                       { $$ = MakeReturnStatement($2); }
   | T_RETURN ';'                            { $$ = MakeReturnStatement(0); }
-  | var_decl_statement ';'
+  | var_decl_statement ';'                  { $$ = $1; }
   | class_decl
   | class_forward_decl
   | enum_decl                               { $$ = 0; }
@@ -228,7 +227,7 @@ opt_expr:
 for_loop_stmt:
     assignment
   | expr_statement
-  | var_decl_statement
+  | var_decl_statement                      { $$ = $1; }
   | /* nothing */                           { $$ = 0; }
   ;
 while_statement:
@@ -238,7 +237,7 @@ do_statement:
     T_DO statement T_WHILE '(' expr ')' ';' { $$ = Make<DoStatement>($2, $5); }
   ;
 var_decl_statement:
-    type var_decl_list                      { MakeVarDeclList($1, $2); $$ = $2; }
+    T_VAR var_decl_list                     { $$ = $2; }
   ;
 
 simple_type:
@@ -263,7 +262,6 @@ type:
   | type '^'                                { $$ = types_->GetWeakPtrType($1); }
   | type '[' arith_expr ']'                 { $$ = GetArrayType($1, AsIntConstant($3)); }
   | type '[' ']'                            { $$ = GetArrayType($1, 0); }
-  | T_VAR                                   { $$ = types_->GetAuto(); }
   ;
 
 var_decl_list:
@@ -331,8 +329,7 @@ class_body_decl:
     '(' formal_arguments ')' opt_initializer method_body    { EndConstructor($7, $8); }
   | method_modifiers '~' T_TYPENAME '(' ')' { BeginDestructor($1, $3); }
     method_body                             { EndDestructor($7); }
-  | method_modifiers type var_decl_list ';' { ErrorIfMethodModifiers($1);
-                                              MakeVarDeclList($2, $3); }
+  | var_decl_statement ';'                  { CreateFieldsFromVarDecls($1); }
   | enum_decl ';'
   | using_decl
   ;
@@ -403,8 +400,9 @@ formal_argument:
   ;
 
 var_decl:
-    T_IDENTIFIER                            { $$ = Make<VarDeclaration>($1, nullptr, nullptr); }
-  | T_IDENTIFIER '=' expr_or_list           { $$ = Make<VarDeclaration>($1, nullptr, $3); }
+    T_IDENTIFIER ':' type                   { $$ = Make<VarDeclaration>($1, $3, nullptr); }
+  | T_IDENTIFIER '=' expr_or_list           { $$ = Make<VarDeclaration>($1, types_->GetAuto(), $3); }
+  | T_IDENTIFIER ':' type '=' expr_or_list  { $$ = Make<VarDeclaration>($1, $3, $5); }
   ;
 
 scalar_type:
@@ -847,18 +845,12 @@ static void AddFormalArgument(Type* type, const char* id, Expr* defaultValue) {
   method->AddFormalArg(id, type, defaultValue);
 }
 
-static void MakeVarDeclList(Type* type, Stmts* stmts) {
+static void CreateFieldsFromVarDecls(Stmts* stmts) {
+  ClassType* classType = symbols_->PeekScope()->classType;
+  assert(classType);
   for (Stmt* const& it : stmts->GetStmts()) {
     VarDeclaration* v = static_cast<VarDeclaration*>(it);
-    v->SetType(type);
-  }
-  Scope* scope = symbols_->PeekScope();
-  if (scope->classType) {
-    ClassType* classType = scope->classType;
-    for (Stmt* const& it : stmts->GetStmts()) {
-      VarDeclaration* v = static_cast<VarDeclaration*>(it);
-      classType->AddField(v->GetID(), v->GetType(), v->GetInitExpr());
-    }
+    classType->AddField(v->GetID(), v->GetType(), v->GetInitExpr());
   }
 }
 
@@ -1032,12 +1024,6 @@ static int AsIntConstant(Expr* expr) {
     yyerrorf("array size is not an integer constant");
   }
   return static_cast<IntConstant*>(expr)->GetValue();
-}
-
-static void ErrorIfMethodModifiers(int methodModifiers) {
-  if (methodModifiers != 0) {
-    yyerror("method modifiers are not allowed on a field declaration");
-  }
 }
 
 static Type* GetArrayType(Type* elementType, int numElements) {

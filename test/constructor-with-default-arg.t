@@ -4,8 +4,8 @@ class C {
   C(float v = 3.0) {
     value = v;
   }
-  float value;
+  var value : float;
 }
 
-C* c = new C();
+var c = new C();
 Test.Expect(c.value == 3.0);

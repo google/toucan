@@ -14,5 +14,5 @@ class Cubic<T> {
     return b + p * (2.0 * c + 3.0 * p * d);
   }
 
-  T a, b, c, d;
+  var a : T, b : T, c : T, d : T;
 }

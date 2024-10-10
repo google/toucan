@@ -1,15 +1,15 @@
 using Vertex = float<4>;
-Device* device = new Device();
-Window* window = new Window({0, 0}, System.GetScreenSize());
+var device = new Device();
+var window = new Window({0, 0}, System.GetScreenSize());
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-Vertex[3] verts = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 } };
+var verts : Vertex[3] = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 } };
 var vb = new vertex Buffer<Vertex[]>(device, &verts);
 class Pipeline {
   static deviceonly float<4> getCurrentVert(vertex Buffer<Vertex[]>* v) { return v.Get(); }
   void vertexShader(VertexBuiltins^ vb) vertex { vb.position = this.getCurrentVert(vertices); }
   void fragmentShader(FragmentBuiltins^ fb) fragment { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
-  vertex Buffer<Vertex[]>*                   vertices;
-  ColorAttachment<PreferredSwapChainFormat>* fragColor;
+  var vertices : vertex Buffer<Vertex[]>*;
+  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
 }
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 var encoder = new CommandEncoder(device);

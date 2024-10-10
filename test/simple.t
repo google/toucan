@@ -1,8 +1,8 @@
 include "include/string.t"
 
-int a = 2;
-int b;
-int c;
+var a = 2;
+var b : int;
+var c : int;
 b = 3;
 c = a * b;
 

@@ -1,6 +1,6 @@
 using Vertex = float<4>;
-Device* device = new Device();
-Window* window = new Window({0, 0}, {640, 480});
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var verts = new Vertex[3];
 verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
@@ -13,15 +13,15 @@ class RTTPipeline {
     red.Set(float<4>(1.0, 0.0, 0.0, 1.0));
     green.Set(float<4>(0.0, 1.0, 0.0, 1.0));
   }
-  ColorAttachment<RGBA8unorm>* red;
-  ColorAttachment<RGBA8unorm>* green;
-  vertex Buffer<Vertex[]>* vert;
+  var red : ColorAttachment<RGBA8unorm>*;
+  var green : ColorAttachment<RGBA8unorm>*;
+  var vert : vertex Buffer<Vertex[]>*;
 }
 
 class Bindings {
-  Sampler*                    sampler;
-  SampleableTexture2D<float>* red;
-  SampleableTexture2D<float>* green;
+  var sampler : Sampler*;
+  var red : SampleableTexture2D<float>*;
+  var green : SampleableTexture2D<float>*;
 }
 
 class Pipeline {
@@ -31,14 +31,14 @@ class Pipeline {
     var onehalf = float<2>(0.5, 0.5);
     fragColor.Set(b.red.Sample(b.sampler, onehalf) + b.green.Sample(b.sampler, onehalf));
   }
-  ColorAttachment<PreferredSwapChainFormat>* fragColor;
-  vertex Buffer<Vertex[]>* vert;
-  BindGroup<Bindings>* bindings;
+  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
+  var vert : vertex Buffer<Vertex[]>*;
+  var bindings : BindGroup<Bindings>*;
 }
 var encoder = new CommandEncoder(device);
 var redTex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());
 var greenTex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());
-RTTPipeline rp;
+var rp : RTTPipeline;
 rp.red = new ColorAttachment<RGBA8unorm>(redTex, Clear, Store);
 rp.green = new ColorAttachment<RGBA8unorm>(greenTex, Clear, Store);
 rp.vert = vb;
@@ -48,10 +48,10 @@ rttPass.SetPipeline(rttPipeline);
 rttPass.Draw(3, 1, 0, 0);
 rttPass.End();
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
-Pipeline p;
+var p : Pipeline;
 p.vert = vb;
 p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
-Bindings b;
+var b : Bindings;
 b.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
 b.red = redTex.CreateSampleableView();
 b.green = greenTex.CreateSampleableView();

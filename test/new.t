@@ -1,12 +1,12 @@
 include "include/test.t"
 
 class Foo {
-  int[3] zzz;
-  float a;
+  var zzz : int[3];
+  var a : float;
 };
-float r;
+var r : float;
 {
-  Foo* f = new Foo();
+  var f = new Foo();
   f.a = -1234.0;
   r = f.a;
 }

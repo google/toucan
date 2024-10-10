@@ -1,5 +1,5 @@
-int i = 5;
-int j = 6;
-int[i] b;
-int[i+j] c;
-int[3.0] d;
+var i = 5;
+var j = 6;
+var b : int[i];
+var c : int[i+j];
+var d : int[3.0];

@@ -3,7 +3,7 @@ class Q {
   Q(P* p) {
     mP = p;
   }
-  P* mP;
+  var mP : P*;
 }
-P* p = new P();
-Q* q = new Q(null);
+var p = new P();
+var q = new Q(null);

@@ -1,10 +1,10 @@
 include "include/test.t"
 
-int[3] c;
-float[3][3] e;
+var c : int[3];
+var e : float[3][3];
 e[2][1] = 5.0;
-float[]^ f = new float[3];
-float[3][]^ g = new float[3][3];
+var f = new float[3];
+var g = new float[3][3];
 f[0] = 1234.0;
 g[2][1] = 3.0;
 Test.Expect(g[2][1] == 3.0);

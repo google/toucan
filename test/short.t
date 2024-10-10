@@ -1,4 +1,4 @@
 include "include/test.t"
 
-short s = 3s;
+var s : short = 3s;
 Test.Expect((int) s == 3);

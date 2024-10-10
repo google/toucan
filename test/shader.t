@@ -6,7 +6,7 @@ class Shader {
         return float<4>(0.0, 1.0, 0.0, 1.0);
     }
     class {
-      float<4><4> matrix;
+      var matrix : float<4><4>;
     } objectdata;
 };
 RenderPipelineDescriptor descriptor;

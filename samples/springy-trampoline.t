@@ -1,9 +1,9 @@
 using Vector = float<2>;
 class Utils;
 
-uint width =  10;
-uint height = 10;
-uint depth =   1;
+var width =  10;
+var height = 10;
+var depth =   1;
 
 class Body {
   void computeAcceleration() {
@@ -13,18 +13,18 @@ class Body {
   void applyForce(Vector deltaForce) {
     force += deltaForce;
   }
-  Vector   position;
-  Vector   velocity;
-  Vector   force;
-  Vector   acceleration;
-  uint[6]  spring;
-  float[6] springWeight;
-  float    mass;
-  float    nailed;
+  var position : Vector;
+  var velocity : Vector;
+  var force : Vector;
+  var acceleration : Vector;
+  var spring : int[6];
+  var springWeight : float[6];
+  var mass : float;
+  var nailed : float;
 }
 
 class Spring {
-  Spring(uint b1, uint b2) {
+  Spring(int b1, int b2) {
     body1 = b1;
     body2 = b2;
     ks = 1.0;
@@ -32,30 +32,31 @@ class Spring {
     r = 0.0;
   }
   Vector computeForce(Body b1, Body b2) {
-    Vector dp = b1.position - b2.position;
-    Vector dv = b1.velocity - b2.velocity;
-    float dplen = Utils.length(dp);
-    float f = ks * (dplen - r) + kd * Utils.dot(dv, dp) / dplen;
+    var dp = b1.position - b2.position;
+    var dv = b1.velocity - b2.velocity;
+    var dplen = Utils.length(dp);
+    var f = ks * (dplen - r) + kd * Utils.dot(dv, dp) / dplen;
     return -dp / dplen * f;
   }
-  uint   body1;
-  uint   body2;
-  Vector force;
-  float  ks;
-  float  kd;
-  float  r;
+
+  var body1 : int;
+  var body2 : int;
+  var ks : float;
+  var kd : float;
+  var r : float;
+  var force : Vector;
 }
 
 class Utils {
   static float dot(float<2> v1, float<2> v2) {
-    float<2> r = v1 * v2;
+    var r = v1 * v2;
     return r.x + r.y;
   }
   static float length(float<2> v) {
     return Math.sqrt(Utils.dot(v, v));
   }
   static float dot(float<3> v1, float<3> v2) {
-    float<3> r = v1 * v2;
+    var r = v1 * v2;
     return r.x + r.y + r.z;
   }
   static float length(float<3> v) {
@@ -76,22 +77,22 @@ class Utils {
 }
 
 class Uniforms {
-  Vector   gravity;
-  Vector   wind;
-  Vector   particleSize;
-  float    deltaT;
+  var gravity : Vector;
+  var wind : Vector;
+  var particleSize : Vector;
+  var deltaT : float;
 }
 
 class ComputeBindings {
-  storage Buffer<Body[]>* bodyStorage;
-  storage Buffer<Spring[]>* springStorage;
-  storage Buffer<Vector[]>* bodyVerts;
-  storage Buffer<Vector[]>* springVerts;
-  uniform Buffer<Uniforms>* uniforms;
+  var bodyStorage : storage Buffer<Body[]>*;
+  var springStorage : storage Buffer<Spring[]>*;
+  var bodyVerts : storage Buffer<Vector[]>*;
+  var springVerts : storage Buffer<Vector[]>*;
+  var uniforms : uniform Buffer<Uniforms>*;
 }
 
 class ComputeBase {
-  BindGroup<ComputeBindings>* bindings;
+  var bindings : BindGroup<ComputeBindings>*;
 }
 
 class ComputeForces : ComputeBase {
@@ -99,11 +100,11 @@ class ComputeForces : ComputeBase {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var springs = bindings.Get().springStorage.MapReadWriteStorage();
     var u = bindings.Get().uniforms.MapReadUniform();
-    uint i = cb.globalInvocationId.x;
-    Spring spring = springs[i];
-    Body b1 = bodies[spring.body1];
-    Body b2 = bodies[spring.body2];
-    springs[i].force = spring.computeForce(b1, b2);
+    var i = cb.globalInvocationId.x;
+    var spring = springs[i];
+    var body1 = bodies[spring.body1];
+    var body2 = bodies[spring.body2];
+    springs[i].force = spring.computeForce(body1, body2);
   }
 }
 
@@ -112,11 +113,10 @@ class ApplyForces : ComputeBase {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var springs = bindings.Get().springStorage.MapReadWriteStorage();
     var u = bindings.Get().uniforms.MapReadUniform();
-    uint<3> pos = cb.globalInvocationId;
-    uint i = cb.globalInvocationId.x;
-    Body body = bodies[i];
-    Vector force = u.gravity + u.wind;
-    for (int i = 0; i < 6; ++i) {
+    var i = cb.globalInvocationId.x;
+    var body = bodies[i];
+    var force = u.gravity + u.wind;
+    for (var i = 0; i < 6; ++i) {
       force += springs[body.spring[i]].force * body.springWeight[i];
     }
     bodies[i].force = force;
@@ -127,9 +127,9 @@ class FinalizeBodies : ComputeBase {
   void computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var u = bindings.Get().uniforms.MapReadUniform();
-    float deltaT = u.deltaT;
-    uint i = cb.globalInvocationId.x;
-    Body body = bodies[i];
+    var deltaT = u.deltaT;
+    var i = cb.globalInvocationId.x;
+    var body = bodies[i];
     body.computeAcceleration();
     body.position += body.velocity * deltaT * (1.0 - body.nailed);
     body.velocity += body.acceleration * deltaT * (1.0 - body.nailed);
@@ -147,22 +147,22 @@ class FinalizeSprings : ComputeBase {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var springs = bindings.Get().springStorage.MapReadWriteStorage();
     var sv = bindings.Get().springVerts.MapReadWriteStorage();
-    uint i = cb.globalInvocationId.x;
+    var i = cb.globalInvocationId.x;
     sv[i*2] = bodies[springs[i].body1].position;
     sv[i*2+1] = bodies[springs[i].body2].position;
   }
 }
 
-Device* device = new Device();
-Window* window = new Window({0, 0}, {960, 960});
+var device = new Device();
+var window = new Window({0, 0}, {960, 960});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var bodies = new Body[width * height * depth];
 var springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
-Vector count = Utils.makeVector((float) width, (float) height, (float) depth, Vector(0.0));
-Vector pSpacing = Vector(2.0) / count;
-int spring = 0;
+var count = Utils.makeVector((float) width, (float) height, (float) depth, Vector(0.0));
+var pSpacing = Vector(2.0) / count;
+var spring = 0;
 
-for (uint i = 0; i < bodies.length; ++i) {
+for (var i = 0u; i < bodies.length; ++i) {
   bodies[i].springWeight[0] = 0.0;
   bodies[i].springWeight[1] = 0.0;
   bodies[i].springWeight[2] = 0.0;
@@ -171,11 +171,11 @@ for (uint i = 0; i < bodies.length; ++i) {
   bodies[i].springWeight[5] = 0.0;
 }
 
-for (uint i = 0; i < bodies.length; ++i) {
-  uint x = i % width;
-  uint y = i % (width * height) / width;
-  uint z = i / (width * height);
-  Vector pos = Utils.makeVector((float) x, (float) y, (float) z, Vector(0.0));
+for (var i = 0u; i < bodies.length; ++i) {
+  var x = i % width;
+  var y = i % (width * height) / width;
+  var z = i / (width * height);
+  var pos = Utils.makeVector((float) x, (float) y, (float) z, Vector(0.0));
   bodies[i].position = Vector(-1.0) + pSpacing * (pos + Vector(0.5));
   bodies[i].mass = Math.rand() * 0.5 + 0.25;
   bodies[i].velocity = Vector(0.0);
@@ -199,8 +199,8 @@ for (uint i = 0; i < bodies.length; ++i) {
     }
   }
 
-  uint body1 = i;
-  uint body2 = i + 1;
+  var body1 = i;
+  var body2 = i + 1;
   if (x < width - 1) {
     springs[spring] = Spring(body1, body2);
     bodies[body1].spring[0] = spring;
@@ -232,9 +232,9 @@ for (uint i = 0; i < bodies.length; ++i) {
 }
 
 
-int numBodyVerts = bodies.length * 3;
+var numBodyVerts = bodies.length * 3;
 var bodyVBO = new vertex storage Buffer<Vector[]>(device, numBodyVerts);
-int numSpringVerts = springs.length * 2;
+var numSpringVerts = springs.length * 2;
 var springVBO = new vertex storage Buffer<Vector[]>(device, numSpringVerts);
 
 var computeUBO = new uniform Buffer<Uniforms>(device);
@@ -247,8 +247,8 @@ var computeBindGroup = new BindGroup<ComputeBindings>(device, {
   springStorage = new storage Buffer<Spring[]>(device, springs)
 });
 class Shaders {
-  vertex Buffer<Vector[]>* vert;
-  ColorAttachment<PreferredSwapChainFormat>* fragColor;
+  var vert : vertex Buffer<Vector[]>*;
+  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
 }
 
 class BodyShaders : Shaders {
@@ -267,15 +267,15 @@ var computeForces = new ComputePipeline<ComputeForces>(device);
 var applyForces = new ComputePipeline<ApplyForces>(device);
 var finalizeBodies = new ComputePipeline<FinalizeBodies>(device);
 var finalizeSprings = new ComputePipeline<FinalizeSprings>(device);
-float frequency = 240.0; // physics sim at 240Hz
+var frequency = 240.0; // physics sim at 240Hz
 System.GetNextEvent();
-Uniforms* u = new Uniforms();
+var u : Uniforms;
 u.deltaT = 1.0 / frequency;
 u.gravity = Vector(0.0, 0.0);
 u.particleSize = Vector(0.5) / (float) width;
 while(System.IsRunning()) {
   u.wind = Vector(Math.rand() * 0.00, 0.0);
-  computeUBO.SetData(u);
+  computeUBO.SetData(&u);
 
   var framebuffer = swapChain.GetCurrentTexture();
   var encoder = new CommandEncoder(device);

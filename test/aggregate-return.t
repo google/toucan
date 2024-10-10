@@ -1,8 +1,8 @@
 include "include/test.t"
 class Foo {
-  float value;
+  var value : float;
   static Foo One() {
-    Foo f;
+    var f = Foo{};
     f.value = 1.0;
     return f;
   }

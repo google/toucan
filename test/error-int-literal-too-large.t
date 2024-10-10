@@ -1,2 +1,2 @@
-int a = 2147483648;
-float r = (float) a;
+var a : int = 2147483648;
+var r = (float) a;

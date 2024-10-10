@@ -1,2 +1,2 @@
-float b = a;
-float a = 3.0;
+var b : float = a;
+var a : float = 3.0;

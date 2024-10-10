@@ -1,6 +1,6 @@
 include "include/test.t"
-float<4, 4> m;
-int i0 = 0, i1 = 1, i2 = 2, i3 = 3;
+var m : float<4, 4>;
+var i0 = 0, i1 = 1, i2 = 2, i3 = 3;
 m[i0][i0] = 4.0;
 m[i0][i1] = 3.0;
 m[i0][i2] = 2.0;

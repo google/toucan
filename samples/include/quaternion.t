@@ -4,7 +4,7 @@ class Quaternion {
   Quaternion(float x, float y, float z, float w) { q = float<4>(x, y, z, w); }
   Quaternion(float<4> v) { q = v; }
   Quaternion(float<3> axis, float angle) {
-    float<3> scaledAxis = axis * Math.sin(angle * 0.5);
+    var scaledAxis = axis * Math.sin(angle * 0.5);
 
     q.x = scaledAxis.x;
     q.y = scaledAxis.y;
@@ -14,8 +14,8 @@ class Quaternion {
   float len() { return Math.sqrt(Utils.dot(q, q)); }
   void normalize() { q = q / this.len(); }
   Quaternion mul(Quaternion other) {
-    float<4> p = other.q;
-    Quaternion r;
+    var p = other.q;
+    var r : Quaternion;
 
     r.q.x = p.w * q.x + p.x * q.w + p.y * q.z - p.z * q.y;
     r.q.y = p.w * q.y + p.y * q.w + p.z * q.x - p.x * q.z;
@@ -25,14 +25,14 @@ class Quaternion {
     return r;
   }
   float<4,4> toMatrix() {
-    float x = q.x;
-    float y = q.y;
-    float z = q.z;
-    float w = q.w;
+    var x = q.x;
+    var y = q.y;
+    var z = q.z;
+    var w = q.w;
     return float<4,4>(float<4>(1.0-2.0*(y*y+z*z),     2.0*(x*y+z*w),     2.0*(x*z-y*w), 0.0),
                       float<4>(    2.0*(x*y-z*w), 1.0-2.0*(x*x+z*z),     2.0*(y*z+x*w), 0.0),
                       float<4>(    2.0*(x*z+y*w),     2.0*(y*z-x*w), 1.0-2.0*(x*x+y*y), 0.0),
                       float<4>(              0.0,               0.0,               0.0, 1.0));
   }
-  float<4> q;
+  var q : float<4>;
 }

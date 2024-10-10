@@ -1,5 +1,5 @@
 class C {
-  float f;
-  int[] array;
+  var f : float;
+  var array : int[];
 };
-C* c = new C();
+var c = new C();

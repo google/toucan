@@ -1,5 +1,5 @@
 include "include/test.t"
 
-float<4> m;
+var m : float<4>;
 m.y = 432.0;
 Test.Expect(m.y == 432.0);

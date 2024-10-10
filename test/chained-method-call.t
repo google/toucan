@@ -1,18 +1,18 @@
 include "include/test.t"
 
 class Foo {
-  float value;
+  var value : float;
   Foo plusOne() {
-    Foo f;
+    var f : Foo;
     f.value = value + 1.0;
     return f;
   }
   static Foo zero() {
-    Foo f;
+    var f : Foo;
     f.value = 0.0;
     return f;
   }
 }
 
-Foo f = Foo.zero().plusOne();
+var f = Foo.zero().plusOne();
 Test.Expect(f.value == 1.0);

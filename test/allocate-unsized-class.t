@@ -1,10 +1,10 @@
 include "include/test.t"
 
 class C {
-  float f;
-  int[] array;
+  var f : float;
+  var array : int[];
 };
-C* c = new [5]C();
+var c = new [5]C();
 c.array[2] = 42;
 
 Test.Expect(c.array[2] == 42);
