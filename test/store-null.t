@@ -1,6 +1,6 @@
 class P {}
 class Q {
-  Q(P* p) {
+  Q(p : P*) {
     mP = p;
   }
   var mP : P*;

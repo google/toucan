@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class Bar {
-  static Foo(int i = -5, float f) : float {
+  static Foo(i : int = -5, f : float) : float {
     return f - (float) i;
   }
 }

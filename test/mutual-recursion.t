@@ -2,11 +2,11 @@ include "include/test.t"
 
 class Foo {
   var y : float;
-  foo(int x) {
+  foo(x : int) {
     if (x > 0) this.bar(x - 1);
     return;
   }
-  bar(int x) {
+  bar(x : int) {
     y += 1.0;
     this.foo(x);
     return;

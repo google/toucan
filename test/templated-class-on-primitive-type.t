@@ -2,7 +2,7 @@ include "include/test.t"
 
 class Template<T> {
   var foo : T;
-  set(T t) { foo = t; }
+  set(t : T) { foo = t; }
   get() : T { return foo; }
 }
 

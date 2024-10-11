@@ -168,8 +168,6 @@ test/override.t
 test/post-increment-with-side-effects.t
 test/really-simple.t
 test/scope-test.t
-test/shader.t
-shader.t:8: syntax error
 test/short-vector.t
 test/short.t
 test/simple.t

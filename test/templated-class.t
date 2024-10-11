@@ -8,7 +8,7 @@ class Bar {
 
 class Template<T> {
   var foo : T*;
-  set(T* t) { foo = t; }
+  set(t : T*) { foo = t; }
   get() : float { return foo.get(); }
 }
 

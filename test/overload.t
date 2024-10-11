@@ -1,14 +1,14 @@
 include "include/test.t"
 
 class Foo {
-  bar(int a) : float {
+  bar(a : int) : float {
     var f = 0.0;
     for (; a > 0; --a) {
       f += 1.0;
     }
     return f;
   }
-  bar(float a) : float {
+  bar(a : float) : float {
     return 0.0-a;
   }
 };

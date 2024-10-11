@@ -66,7 +66,7 @@ static void EndEnum();
 static void BeginMethod(int modifiers, std::string id);
 static void BeginConstructor(int modifiers, Type* type);
 static void BeginDestructor(int modifiers, Type* type);
-static void AddFormalArgument(Type* type, const char* id, Expr* defaultValue);
+static void AddFormalArgument(const char* id, Type* type, Expr* defaultValue);
 static Method* EndMethod(ShaderType shaderType, ArgList* workgroupSize, Type* returnType, Stmts* stmts, int index = -1);
 static Method* EndConstructor(Expr* initializer, Stmts* stmts);
 static Method* EndDestructor(Stmts* stmts);
@@ -399,8 +399,9 @@ non_empty_formal_arguments:
   | formal_argument
   ;
 formal_argument:
-    type T_IDENTIFIER                       { AddFormalArgument($1, $2, nullptr); }
-  | type T_IDENTIFIER '=' expr_or_list      { AddFormalArgument($1, $2, $4); }
+    T_IDENTIFIER ':' type                   { AddFormalArgument($1, $3, nullptr); }
+  | T_IDENTIFIER '=' expr_or_list           { AddFormalArgument($1, nullptr, $3); }
+  | T_IDENTIFIER ':' type '=' expr_or_list  { AddFormalArgument($1, $3, $5); }
   ;
 
 var_decl:
@@ -836,7 +837,8 @@ static void BeginDestructor(int modifiers, Type* type) {
   BeginMethod(modifiers, name.c_str());
 }
 
-static void AddFormalArgument(Type* type, const char* id, Expr* defaultValue) {
+static void AddFormalArgument(const char* id, Type* type, Expr* defaultValue) {
+  if (!type) { type = types_->GetAuto(); }
   Method* method = symbols_->PeekScope()->method;
   method->AddFormalArg(id, type, defaultValue);
 }

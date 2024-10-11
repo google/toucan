@@ -13,7 +13,7 @@ class Vertex {
 using Format = RGBA8unorm;
 
 class CubeLoader {
-  static Load(Device* device, ubyte[]^ data, TextureCube<Format>^ texture, uint face) {
+  static Load(device : Device*, data : ubyte[]^, texture : TextureCube<Format>^, face : uint) {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
     var buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * size.y);
@@ -40,7 +40,7 @@ var window = new Window({0, 0}, System.GetScreenSize());
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 class BicubicPatch {
-  Evaluate(float u, float v) : Vertex {
+  Evaluate(u : float, v : float) : Vertex {
     var pu : float<3>[4], pv : float<3>[4];
     for (var i = 0; i < 4; ++i) {
       pu[i] = vCubics[i].Evaluate(v);
@@ -70,11 +70,11 @@ class BicubicPatch {
 }
 
 class BicubicTessellator {
-  BicubicTessellator(uint numPatches, uint l) : { level = l, patchWidth = l + 1 } {
+  BicubicTessellator(numPatches : uint, l : uint) : { level = l, patchWidth = l + 1 } {
     var verticesPerPatch = patchWidth * patchWidth;
     vertices = new Vertex[numPatches * verticesPerPatch];
   }
-  Tessellate(float<3>[]^ controlPoints, uint[]^ controlIndices) {
+  Tessellate(controlPoints : float<3>[]^, controlIndices : uint[]^) {
     var vi = 0, ii = 0;
     var scale = 1.0 / (float) level;
     for (var k = 0; k < controlIndices.length; k += 16) {
@@ -149,14 +149,14 @@ class DrawPipeline {
 }
 
 class SkyboxPipeline : DrawPipeline {
-    vertexShader(VertexBuiltins^ vb) vertex : float<3> {
+    vertexShader(vb : VertexBuiltins^) vertex : float<3> {
         var v = position.Get();
         var uniforms = bindings.Get().uniforms.MapReadUniform();
         var pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
-    fragmentShader(FragmentBuiltins^ fb, float<3> position) fragment {
+    fragmentShader(fb : FragmentBuiltins^, position : float<3>) fragment {
       var p = Math.normalize(position);
       var b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped
@@ -166,7 +166,7 @@ class SkyboxPipeline : DrawPipeline {
 };
 
 class ReflectionPipeline : DrawPipeline {
-    vertexShader(VertexBuiltins^ vb) vertex : Vertex {
+    vertexShader(vb : VertexBuiltins^) vertex : Vertex {
         var v = vert.Get();
         var n = Math.normalize(v.normal);
         var uniforms = bindings.Get().uniforms.MapReadUniform();
@@ -179,7 +179,7 @@ class ReflectionPipeline : DrawPipeline {
         varyings.normal = float<3>(normal.x, normal.y, normal.z);
         return varyings;
     }
-    fragmentShader(FragmentBuiltins^ fb, Vertex varyings) fragment {
+    fragmentShader(fb : FragmentBuiltins^, varyings : Vertex) fragment {
       var b = bindings.Get();
       var uniforms = b.uniforms.MapReadUniform();
       var p = Math.normalize(varyings.position);

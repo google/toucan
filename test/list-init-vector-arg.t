@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class C {
-  static M(float<4> v) : float {
+  static M(v : float<4>) : float {
     return v.x;
   }
 }

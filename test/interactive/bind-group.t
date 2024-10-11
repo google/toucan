@@ -15,8 +15,8 @@ class ObjectData {
 }
 
 class Pipeline {
-  vertexShader(VertexBuiltins^ vb) vertex { vb.position = vert.Get(); }
-  fragmentShader(FragmentBuiltins^ fb) fragment {
+  vertexShader(vb : VertexBuiltins^) vertex { vb.position = vert.Get(); }
+  fragmentShader(fb : FragmentBuiltins^) fragment {
     var u = objectData.Get().uniforms.MapReadUniform();
     fragColor.Set(u.color);
   }

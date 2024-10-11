@@ -2,7 +2,7 @@ include "include/test.t"
 
 class Foo<T> {
   var mine : T;
-  Foo(T t) {
+  Foo(t : T) {
     var s = t;
     mine = s;
   }

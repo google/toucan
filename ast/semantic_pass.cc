@@ -185,7 +185,7 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
     if (!initExpr) { return nullptr; }
   }
   if (type->IsAuto()) {
-    if (!initExpr) { return Error("auto with no initializer expression"); }
+    assert(initExpr);
     type = initExpr->GetType(types_);
   }
   if (type->IsVoid() || (type->IsArray() && static_cast<ArrayType*>(type)->GetNumElements() == 0)) {
@@ -657,6 +657,9 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
     }
     for (int i = 0; i < method->defaultArgs.size(); ++i) {
       method->defaultArgs[i] = Resolve(method->defaultArgs[i]);
+      if (method->formalArgList[i]->type->IsAuto()) {
+        method->formalArgList[i]->type = method->defaultArgs[i]->GetType(types_);
+      }
     }
   }
   Method* destructor = classType->GetVTable()[0];

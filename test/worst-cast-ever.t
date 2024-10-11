@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class Foo {
-  static cast(int x) : float {
+  static cast(x : int) : float {
     var y = 0.0;
     while (x > 0) {
       y += 1.0;

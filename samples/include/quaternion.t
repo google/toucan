@@ -1,9 +1,9 @@
 include "utils.t"
 
 class Quaternion {
-  Quaternion(float x, float y, float z, float w) { q = float<4>(x, y, z, w); }
-  Quaternion(float<4> v) { q = v; }
-  Quaternion(float<3> axis, float angle) {
+  Quaternion(x : float, y : float, z : float, w : float) { q = float<4>(x, y, z, w); }
+  Quaternion(v : float<4>) { q = v; }
+  Quaternion(axis : float<3>, angle : float) {
     var scaledAxis = axis * Math.sin(angle * 0.5);
 
     q.x = scaledAxis.x;
@@ -13,7 +13,7 @@ class Quaternion {
   }
   len() : float { return Math.sqrt(Utils.dot(q, q)); }
   normalize() { q = q / this.len(); }
-  mul(Quaternion other) : Quaternion {
+  mul(other : Quaternion) : Quaternion {
     var p = other.q;
     var r : Quaternion;
 

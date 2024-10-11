@@ -7,7 +7,7 @@ class Pipeline {
   static b() : float {
     return Pipeline.a();
   }
-  computeShader(ComputeBuiltins^ cb) compute(1, 1, 1) {
+  computeShader(cb : ComputeBuiltins^) compute(1, 1, 1) {
     var temp = Pipeline.b();
   }
 }

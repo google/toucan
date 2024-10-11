@@ -11,7 +11,7 @@ class Vertex {
 using Format = RGBA8unorm;
 
 class CubeLoader {
-  static Load(Device* device, ubyte[]^ data, TextureCube<Format>^ texture, uint face) {
+  static Load(device : Device*, data : ubyte[]^, texture : TextureCube<Format>^, face : uint) {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
     var buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * size.y);
@@ -53,14 +53,14 @@ class Bindings {
 }
 
 class SkyboxPipeline {
-    vertexShader(VertexBuiltins^ vb) vertex : float<3> {
+    vertexShader(vb : VertexBuiltins^) vertex : float<3> {
         var v = vertices.Get();
         var uniforms = bindings.Get().uniforms.MapReadUniform();
         var pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
-    fragmentShader(FragmentBuiltins^ fb, float<3> position) fragment {
+    fragmentShader(fb : FragmentBuiltins^, position : float<3>) fragment {
       var p = Math.normalize(position);
       var b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped

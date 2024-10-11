@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class C {
-  C(float v) {
+  C(v : float) {
     value = v;
   }
   var value : float;
