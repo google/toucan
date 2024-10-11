@@ -282,17 +282,21 @@ while(System.IsRunning()) {
 
   var computePass = new ComputePass<ComputeBase>(encoder, {bindings = computeBindGroup} );
 
-  computePass.SetPipeline(computeForces);
-  computePass.Dispatch(springs.length, 1, 1);
+  var computeForcesPass = new ComputePass<ComputeForces>(computePass);
+  computeForcesPass.SetPipeline(computeForces);
+  computeForcesPass.Dispatch(springs.length, 1, 1);
 
-  computePass.SetPipeline(applyForces);
-  computePass.Dispatch(bodies.length, 1, 1);
+  var applyForcesPass = new ComputePass<ApplyForces>(computePass);
+  applyForcesPass.SetPipeline(applyForces);
+  applyForcesPass.Dispatch(bodies.length, 1, 1);
 
-  computePass.SetPipeline(finalizeBodies);
-  computePass.Dispatch(bodies.length, 1, 1);
+  var finalizeBodiesPass = new ComputePass<FinalizeBodies>(computePass);
+  finalizeBodiesPass.SetPipeline(finalizeBodies);
+  finalizeBodiesPass.Dispatch(bodies.length, 1, 1);
 
-  computePass.SetPipeline(finalizeSprings);
-  computePass.Dispatch(springs.length, 1, 1);
+  var finalizeSpringsPass = new ComputePass<FinalizeSprings>(computePass);
+  finalizeSpringsPass.SetPipeline(finalizeSprings);
+  finalizeSpringsPass.Dispatch(springs.length, 1, 1);
 
   computePass.End();
   var colorAttachment = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);

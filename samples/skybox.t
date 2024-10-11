@@ -73,7 +73,7 @@ class SkyboxPipeline {
     var bindings : BindGroup<Bindings>*;
 };
 
-var depthState = new DepthStencilState<Depth24Plus>();
+var depthState = new DepthStencilState();
 
 var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, TriangleList);
 var cubeBindings : Bindings;

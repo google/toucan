@@ -722,12 +722,7 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   wgpu::RenderPipelineDescriptor rpDesc;
   wgpu::DepthStencilState        depthStencilState;
   if (depthStencil->ptr) {
-    Type* type = depthStencil->controlBlock->type;
-    assert(type->IsClass());
-    ClassType*  classType = static_cast<ClassType*>(type);
-    const auto& templateArgs = classType->GetTemplateArgs();
-    assert(templateArgs.size() == 1);
-    depthStencilState.format = ToDawnTextureFormat(templateArgs[0]);
+    depthStencilState.format = pipelineLayout.depthStencilTarget.format;
     depthStencilState.depthWriteEnabled = true;
     depthStencilState.depthCompare = wgpu::CompareFunction::Less;
   }
@@ -998,8 +993,8 @@ Sampler* Sampler_Sampler(Device*     device,
 
 void Sampler_Destroy(Sampler* This) { delete This; }
 
-void CommandEncoder_CopyBufferToBuffer(CommandEncoder* encoder, Buffer* source, Buffer* dest) {
-  encoder->encoder.CopyBufferToBuffer(source->buffer, 0, dest->buffer, 0, source->sizeInBytes);
+void Buffer_CopyFromBuffer(Buffer* This, CommandEncoder* encoder, Buffer* source) {
+  encoder->encoder.CopyBufferToBuffer(source->buffer, 0, This->buffer, 0, source->sizeInBytes);
 }
 
 #if TARGET_OS_IS_WASM
@@ -1210,10 +1205,10 @@ void RenderPass_End(RenderPass* This) { This->encoder.End(); }
 
 void RenderPass_Destroy(RenderPass* This) { delete This; }
 
-ComputePass* ComputePass_ComputePass(int             qualifiers,
-                                     Type*           type,
-                                     CommandEncoder* encoder,
-                                     Object*         data) {
+ComputePass* ComputePass_ComputePass_CommandEncoder_T(int             qualifiers,
+                                                      Type*           type,
+                                                      CommandEncoder* encoder,
+                                                      Object*         data) {
   PipelineData pipelineData;
   if (data && data->controlBlock) {
     Type* objectType = data->controlBlock->type;
@@ -1225,6 +1220,10 @@ ComputePass* ComputePass_ComputePass(int             qualifiers,
   auto                        passEncoder = encoder->encoder.BeginComputePass(&desc);
   pipelineData.Set(passEncoder);
   return new ComputePass(passEncoder);
+}
+
+ComputePass* ComputePass_ComputePass_ComputePass(int qualifiers, Type* type, ComputePass* parent) {
+  return new ComputePass(parent->encoder);
 }
 
 void ComputePass_SetPipeline(ComputePass* This, ComputePipeline* pipeline) {

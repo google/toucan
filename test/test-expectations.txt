@@ -67,8 +67,8 @@ error-named-param-missing-one.t:7:  float Bar.Foo(int, float)
 test/error-non-static-method-called-statically.t
 error-non-static-method-called-statically.t:5:  attempt to call non-static method "bar" on class "Foo"
 test/error-partial-template.t
-error-partial-template.t:6:  cannot allocate partially-specified template class Foo<int>
-error-partial-template.t:7:  cannot allocate partially-specified template class Foo
+error-partial-template.t:10:  cannot store a value of type "Foo<int, int>*" to a location of type "Foo<int>*"
+error-partial-template.t:11:  cannot store a value of type "Foo<int, int>*" to a location of type "Foo*"
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
 error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(CommandEncoder*, Buffer<float<4>[]>*, int)

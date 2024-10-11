@@ -442,7 +442,6 @@ bool ClassType::CanWidenTo(Type* type) const {
   for (const ClassType* t = this; t != nullptr; t = t->GetParent()) {
     if (t == type) { return true; }
   }
-  if (type->IsClassTemplate() && GetTemplate() == type) { return true; }
   return false;
 }
 
@@ -538,9 +537,9 @@ std::string ClassType::ToString() const {
   std::string result = name_;
   if (templateArgs_.size() > 0) {
     result += "<";
-    for (Type* const& arg : templateArgs_) {
-      result += arg->ToString();
-      if (arg != templateArgs_.back()) { result += ", "; }
+    for (size_t i = 0; i < templateArgs_.size(); ++i) {
+      if (i > 0) { result += ", "; }
+      result += templateArgs_[i]->ToString();
     }
     result += ">";
   }

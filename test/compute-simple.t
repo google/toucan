@@ -27,7 +27,7 @@ computePass.SetPipeline(computePipeline);
 computePass.Set({bindings = bg});
 computePass.Dispatch(1, 1, 1);
 computePass.End();
-encoder.CopyBufferToBuffer(storageBuf, hostBuf);
+hostBuf.CopyFromBuffer(encoder, storageBuf);
 device.GetQueue().Submit(encoder.Finish());
 
 Test.Expect(hostBuf.MapRead()[0] == 42);

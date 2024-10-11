@@ -37,7 +37,7 @@ while (System.IsRunning()) {
     stagingBuffer.Unmap();
   }
   var encoder = new CommandEncoder(device);
-  encoder.CopyBufferToBuffer(stagingBuffer, objectData.uniforms);
+  objectData.uniforms.CopyFromBuffer(encoder, stagingBuffer);
   var p : Pipeline;
   p.vert = vb;
   p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);

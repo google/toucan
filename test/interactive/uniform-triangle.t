@@ -32,7 +32,7 @@ for (var i = 0; i < 1000; ++i) {
   var f = (float) i / 1000.0;
   s.color = float<4>(1.0 - f, f, 0.0, 1.0);
   stagingBuffer.Unmap();
-  encoder.CopyBufferToBuffer(stagingBuffer, uniformBuffer);
+  uniformBuffer.CopyFromBuffer(encoder, stagingBuffer);
   var fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
   var renderPass = new RenderPass<Pipeline>(encoder, { vertices = vb, fragColor = fb, bindings = bg });
   renderPass.SetPipeline(pipeline);

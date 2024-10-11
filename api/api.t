@@ -31,11 +31,14 @@ native class Device {
   GetQueue() : Queue*;
 }
 
+native class CommandEncoder;
+
 native class Buffer<T> {
   Buffer(device : Device*, size : uint = 1u);
   Buffer(device : Device*, t : T^);
  ~Buffer();
   SetData(data : T^);
+  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<T>^);
   deviceonly Get() : T::ElementType;
   MapRead() : readonly T^;
   MapWrite() : writeonly T^;
@@ -45,7 +48,7 @@ native class Buffer<T> {
   Unmap();
 }
 
-class DepthStencilState<T> {
+class DepthStencilState {
   var depthWriteEnabled : bool = false;
   var stencilReadMask : int = 0xFFFFFFFF;
   var stencilWriteMask : int = 0xFFFFFFFF;
@@ -104,8 +107,6 @@ native class SampleableTextureCube<ST> {
   deviceonly Sample(sampler : Sampler*, coords : float<3>) : ST<4>;
 }
 
-native class CommandEncoder;
-
 native class Texture1D<PF> {
   Texture1D(device : Device*, width : uint);
  ~Texture1D();
@@ -158,7 +159,6 @@ native class CommandEncoder {
   CommandEncoder(device : Device*);
  ~CommandEncoder();
   Finish() : CommandBuffer*;
-  CopyBufferToBuffer(source : Buffer^, dest : Buffer^);
 }
 
 enum LoadOp {
@@ -197,9 +197,10 @@ native class RenderPass<T> {
 
 native class ComputePass<T> {
   ComputePass(encoder : CommandEncoder*, data : T^);
+  ComputePass(base : ComputePass<T::BaseClass>^);
  ~ComputePass();
   Dispatch(workgroupCountX : uint, workgroupCountY : uint, workgroupCountZ : uint);
-  SetPipeline(pipeline : ComputePipeline*);
+  SetPipeline(pipeline : ComputePipeline<T>*);
   Set(data : T^);
   End();
 }
