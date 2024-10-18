@@ -359,12 +359,12 @@ Method* ShaderPrepPass::Run(Method* entryPoint) {
   shaderType_ = entryPoint->shaderType;
   const auto& formalArgList = entryPoint->formalArgList;
 
-  int argIndex = entryPoint->modifiers & Method::STATIC ? 0 : 1;
+  int argIndex = entryPoint->modifiers & Method::Modifier::Static ? 0 : 1;
   auto builtins = formalArgList[argIndex];
   auto inputs = formalArgList.size() > 2 ? formalArgList[argIndex + 1] : nullptr;
 
   std::vector<Var*> globalVars;
-  if (!(entryPoint->modifiers & Method::STATIC)) {
+  if (!(entryPoint->modifiers & Method::Modifier::Static)) {
     ExtractPipelineVars(entryPoint->classType, &globalVars);
   }
 

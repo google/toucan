@@ -219,7 +219,7 @@ Result SemanticPass::ResolveMethodCall(Expr*       expr,
     }
     return nullptr;
   }
-  if (!(method->modifiers & Method::STATIC)) {
+  if (!(method->modifiers & Method::Modifier::Static)) {
     if (!expr) {
       return Error("attempt to call non-static method \"%s\" on class \"%s\"", id.c_str(),
                    classType->ToString().c_str());
@@ -701,7 +701,7 @@ bool SemanticPass::MatchArgs(ArgList*            args,
                              TypeTable*          types,
                              std::vector<Expr*>* newArgList) {
   std::vector<Expr*> result(m->formalArgList.size());
-  int                offset = m->modifiers & Method::STATIC ? 0 : 1;
+  int                offset = m->modifiers & Method::Modifier::Static ? 0 : 1;
   if (args->IsNamed()) {
     for (auto arg : args->GetArgs()) {
       int index = FindFormalArg(arg, m, types);

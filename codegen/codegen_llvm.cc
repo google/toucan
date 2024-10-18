@@ -371,7 +371,7 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
   llvm::Intrinsic::ID      intrinsic = llvm::Intrinsic::not_intrinsic;
   if (method->classType->IsNative()) {
     if (method->templateMethod) { return GetOrCreateMethodStub(method->templateMethod); }
-    if (method->modifiers & Method::STATIC) {
+    if (method->modifiers & Method::Modifier::Static) {
       if (method->classType->IsClassTemplate()) {
         // First argument is the storage qualifier (as uint)
         params.push_back(intType_);
@@ -488,7 +488,7 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
 #endif
     return;
   }
-  if (method->modifiers & Method::DEVICEONLY) { return; }
+  if (method->modifiers & Method::Modifier::DeviceOnly) { return; }
   llvm::Function* function = GetOrCreateMethodStub(method);
   if (method->classType->IsNative()) return;
   llvm::BasicBlock* whereWasI = builder_->GetInsertBlock();
@@ -1287,7 +1287,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
   std::vector<llvm::Value*> args;
   llvm::Function*           function = GetOrCreateMethodStub(method);
   if (auto builtin = FindBuiltin(method)) { return std::invoke(builtin, this, location); }
-  if (method->classType->IsNative() && (method->modifiers & Method::STATIC)) {
+  if (method->classType->IsNative() && (method->modifiers & Method::Modifier::Static)) {
     if (method->classType->GetTemplate()) {
       // Prefix the args with the qualifiers
       args.push_back(llvm::ConstantInt::get(intType_, qualifiers));
@@ -1309,7 +1309,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
     args.push_back(llvm::ConstantInt::get(boolType_, 0, true));
   }
   llvm::Value* result;
-  if (method->modifiers & Method::VIRTUAL) {
+  if (method->modifiers & Method::Modifier::Virtual) {
     llvm::Value* objPtr = *args.begin();
     int          index = method->index;
     llvm::Value* controlBlock = builder_->CreateExtractValue(objPtr, {1});

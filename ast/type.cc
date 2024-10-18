@@ -270,7 +270,7 @@ std::string Method::ToString() const {
   if (!returnType->IsVoid()) { result += returnType->ToString() + " "; }
   result += classType->ToString() + "." + name + "(";
   for (const auto& arg : formalArgList) {
-    if (arg == formalArgList.front() && !(modifiers & Method::STATIC)) { continue; }
+    if (arg == formalArgList.front() && !(modifiers & Method::Modifier::Static)) { continue; }
     result += arg->type->ToString();
     if (arg != formalArgList.back()) { result += ", "; }
   }
@@ -384,7 +384,7 @@ size_t ClassType::ComputeFieldOffsets() {
 }
 
 void ClassType::AddMethod(Method* method, int vtableIndex) {
-  if (method->modifiers & Method::VIRTUAL) {
+  if (method->modifiers & Method::Modifier::Virtual) {
     if (vtableIndex >= 0) {
       method->index = vtableIndex;
       vtable_[vtableIndex] = method;
@@ -473,7 +473,7 @@ bool ClassType::HasUnsizedArray() const {
 static bool MatchTypes(const TypeList& types, Method* m) {
   size_t             numArgs = types.size();
   const Type* const* argTypes = types.data();
-  if (m->modifiers & Method::STATIC) {
+  if (m->modifiers & Method::Modifier::Static) {
     ++argTypes;
     --numArgs;
   }

@@ -266,9 +266,9 @@ void PrintNativeType(FILE* file, Type* type) {
 void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
   fprintf(file_, "  returnType = typeList[%d];\n", typeMap_[method->returnType]);
   fprintf(file_, "  m = new Method(0");
-  if (method->modifiers & Method::STATIC) { fprintf(file_, " | Method::STATIC"); }
-  if (method->modifiers & Method::VIRTUAL) { fprintf(file_, " | Method::VIRTUAL"); }
-  if (method->modifiers & Method::DEVICEONLY) { fprintf(file_, " | Method::DEVICEONLY"); }
+  if (method->modifiers & Method::Modifier::Static) { fprintf(file_, " | Method::Modifier::Static"); }
+  if (method->modifiers & Method::Modifier::Virtual) { fprintf(file_, " | Method::Modifier::Virtual"); }
+  if (method->modifiers & Method::Modifier::DeviceOnly) { fprintf(file_, " | Method::Modifier::DeviceOnly"); }
   std::string name = method->name;
   if (name[0] == '~') { name = "Destroy"; }
   fprintf(file_, ", returnType, \"%s\", static_cast<ClassType*>(typeList[%d]));\n", name.c_str(),
@@ -294,13 +294,13 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
   }
   fprintf(file_, "  c->AddMethod(m, %d);\n", method->index);
   if (classType->IsNative()) {
-    if (header_ && !(method->modifiers & Method::DEVICEONLY)) {
+    if (header_ && !(method->modifiers & Method::Modifier::DeviceOnly)) {
 #if TARGET_OS_IS_WIN
       fprintf(header_, "__declspec(dllexport) ");
 #endif
       PrintNativeType(header_, method->returnType);
       fprintf(header_, " %s(", method->GetMangledName().c_str());
-      if (classType->IsClassTemplate() && method->modifiers & Method::STATIC) {
+      if (classType->IsClassTemplate() && method->modifiers & Method::Modifier::Static) {
         fprintf(header_, "int qualifiers, ");
         ClassTemplate* classTemplate = static_cast<ClassTemplate*>(classType);
         for (Type* arg : classTemplate->GetFormalTemplateArgs()) {

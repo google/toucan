@@ -351,9 +351,9 @@ template_formal_arguments:
   ;
 
 method_modifier:
-    T_STATIC                                { $$ = Method::STATIC; }
-  | T_VIRTUAL                               { $$ = Method::VIRTUAL; }
-  | T_DEVICEONLY                            { $$ = Method::DEVICEONLY; }
+    T_STATIC                                { $$ = Method::Modifier::Static; }
+  | T_VIRTUAL                               { $$ = Method::Modifier::Virtual; }
+  | T_DEVICEONLY                            { $$ = Method::Modifier::DeviceOnly; }
   ;
 
 opt_shader_type:
@@ -748,7 +748,7 @@ static Stmt* EndClass() {
   ClassType* classType = scope->classType;
   if (!classType->GetVTable()[0]) {
     std::string name(std::string("~") + classType->GetName());
-    Method* destructor = new Method(Method::VIRTUAL, types_->GetVoid(), name, classType);
+    Method* destructor = new Method(Method::Modifier::Virtual, types_->GetVoid(), name, classType);
     destructor->AddFormalArg("this", types_->GetWeakPtrType(classType), nullptr);
     classType->AddMethod(destructor, 0);
   }
@@ -806,7 +806,7 @@ static void BeginMethod(int modifiers, std::string id) {
   }
   ClassType* classType = classScope->classType;
   Method* method = new Method(modifiers, nullptr, id, classType);
-  if (!(modifiers & Method::STATIC)) {
+  if (!(modifiers & Method::Modifier::Static)) {
     WeakPtrType* refType = types_->GetWeakPtrType(classType);
     method->AddFormalArg("this", refType, nullptr);
   }
@@ -821,7 +821,7 @@ static void BeginConstructor(int modifiers, Type* type) {
   }
   ClassType* classType = static_cast<ClassType*>(type);
   if (classType->IsNative()) {
-    modifiers |= Method::STATIC;
+    modifiers |= Method::Modifier::Static;
   }
   BeginMethod(modifiers, classType->GetName());
 }
@@ -832,7 +832,7 @@ static void BeginDestructor(int modifiers, Type* type) {
     return;
   }
   ClassType* classType = static_cast<ClassType*>(type);
-  modifiers |= Method::VIRTUAL;
+  modifiers |= Method::Modifier::Virtual;
   std::string name(std::string("~") + classType->GetName());
   BeginMethod(modifiers, name.c_str());
 }
@@ -879,11 +879,11 @@ static Method* MatchMethod(ClassType* c, Method* method) {
 }
 
 static void CheckMethodMatch(Method* method, Method* match) {
-  if (method->modifiers & Method::VIRTUAL) {
-    if (!(match->modifiers & Method::VIRTUAL)) {
+  if (method->modifiers & Method::Modifier::Virtual) {
+    if (!(match->modifiers & Method::Modifier::Virtual)) {
       yyerror("attempt to override a non-virtual method");
     }
-  } else if (match->modifiers & Method::VIRTUAL) {
+  } else if (match->modifiers & Method::Modifier::Virtual) {
     yyerror("override of virtual method must be virtual");
   }
 }
