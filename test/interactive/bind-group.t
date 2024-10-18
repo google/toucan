@@ -40,7 +40,7 @@ while (System.IsRunning()) {
   objectData.uniforms.CopyFromBuffer(encoder, stagingBuffer);
   var p : Pipeline;
   p.vert = vb;
-  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
   p.objectData = bg;
   var renderPass = new RenderPass<Pipeline>(encoder, &p);
   renderPass.SetPipeline(pipeline);

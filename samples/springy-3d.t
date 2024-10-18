@@ -193,9 +193,8 @@ while(System.IsRunning()) {
     physicsSystem.eulerStep(8.0 / frequency);
     stepsDone++;
   }
-  var framebuffer = swapChain.GetCurrentTexture();
   var encoder = new CommandEncoder(device);
-  var colorAttachment = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  var colorAttachment = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
   var renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = colorAttachment });
 
   renderPass.SetPipeline(springPipeline);

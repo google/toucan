@@ -857,6 +857,36 @@ Texture2D* Texture2D_CreateStorageView(Texture2D* This, uint32_t mipLevel) {
   return new Texture2D(This, wgpu::TextureViewDimension::e2D, 0, mipLevel);
 }
 
+ColorAttachment* Texture2D_CreateColorAttachment(Texture2D*   This,
+                                                 LoadOp       loadOp,
+                                                 StoreOp      storeOp,
+                                                 const float* clearValue) {
+  wgpu::RenderPassColorAttachment attachment;
+  attachment.clearValue = {clearValue[0], clearValue[1], clearValue[2], clearValue[3]};
+  attachment.loadOp = ToDawnLoadOp(loadOp);
+  attachment.storeOp = ToDawnStoreOp(storeOp);
+  attachment.view = This->view;
+  return new ColorAttachment(attachment);
+}
+
+DepthStencilAttachment* Texture2D_CreateDepthStencilAttachment(Texture2D* This,
+                                                               LoadOp     depthLoadOp,
+                                                               StoreOp    depthStoreOp,
+                                                               float      depthClearValue,
+                                                               LoadOp     stencilLoadOp,
+                                                               StoreOp    stencilStoreOp,
+                                                               int stencilClearValue) {
+  wgpu::RenderPassDepthStencilAttachment attachment;
+  attachment.view = This->view;
+  attachment.depthLoadOp = ToDawnLoadOp(depthLoadOp);
+  attachment.depthStoreOp = ToDawnStoreOp(depthStoreOp);
+  attachment.depthClearValue = depthClearValue;
+  attachment.stencilLoadOp = ToDawnLoadOp(stencilLoadOp);
+  attachment.stencilStoreOp = ToDawnStoreOp(stencilStoreOp);
+  attachment.stencilClearValue = stencilClearValue;
+  return new DepthStencilAttachment(attachment);
+}
+
 uint32_t Texture2D_MinBufferWidth(Texture2D* This) { return This->MinBufferWidth(); }
 
 void Texture2D_CopyFromBuffer(Texture2D*      dest,
@@ -1108,41 +1138,7 @@ void Queue_Submit(Queue* queue, CommandBuffer* commandBuffer) {
   queue->queue.Submit(1, &commandBuffer->commandBuffer);
 }
 
-ColorAttachment* ColorAttachment_ColorAttachment(int          qualifiers,
-                                                 Type*        type,
-                                                 Texture2D*   texture,
-                                                 LoadOp       loadOp,
-                                                 StoreOp      storeOp,
-                                                 const float* clearValue) {
-  wgpu::RenderPassColorAttachment attachment;
-  attachment.clearValue = {clearValue[0], clearValue[1], clearValue[2], clearValue[3]};
-  attachment.loadOp = ToDawnLoadOp(loadOp);
-  attachment.storeOp = ToDawnStoreOp(storeOp);
-  attachment.view = texture->view;
-  return new ColorAttachment(attachment);
-}
-
 void ColorAttachment_Destroy(ColorAttachment* This) { delete This; }
-
-DepthStencilAttachment* DepthStencilAttachment_DepthStencilAttachment(int        qualifiers,
-                                                                      Type*      type,
-                                                                      Texture2D* texture,
-                                                                      LoadOp     depthLoadOp,
-                                                                      StoreOp    depthStoreOp,
-                                                                      float      depthClearValue,
-                                                                      LoadOp     stencilLoadOp,
-                                                                      StoreOp    stencilStoreOp,
-                                                                      int stencilClearValue) {
-  wgpu::RenderPassDepthStencilAttachment attachment;
-  attachment.view = texture->view;
-  attachment.depthLoadOp = ToDawnLoadOp(depthLoadOp);
-  attachment.depthStoreOp = ToDawnStoreOp(depthStoreOp);
-  attachment.depthClearValue = depthClearValue;
-  attachment.stencilLoadOp = ToDawnLoadOp(stencilLoadOp);
-  attachment.stencilStoreOp = ToDawnStoreOp(stencilStoreOp);
-  attachment.stencilClearValue = stencilClearValue;
-  return new DepthStencilAttachment(attachment);
-}
 
 void DepthStencilAttachment_Destroy(DepthStencilAttachment* This) { delete This; }
 

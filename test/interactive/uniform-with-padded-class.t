@@ -31,7 +31,7 @@ var stagingBuffer = new writeonly Buffer<Uniforms>(device);
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 var framebuffer = swapChain.GetCurrentTexture();
 var encoder = new CommandEncoder(device);
-var fb = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+var fb = framebuffer.CreateColorAttachment(Clear, Store);
 var renderPass = new RenderPass<Pipeline>(encoder,
   {vertices = vb, fragColor = fb, bindings = bg }
 );

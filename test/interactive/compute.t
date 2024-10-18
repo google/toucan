@@ -46,7 +46,7 @@ while (System.IsRunning()) {
   computePass.End();
   var p : Pipeline;
   p.vert = vb;
-  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
   var renderPass = new RenderPass<Pipeline>(encoder, &p);
   renderPass.SetPipeline(pipeline);
   renderPass.Draw(3, 1, 0, 0);

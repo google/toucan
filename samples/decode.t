@@ -67,7 +67,7 @@ var encoder = new CommandEncoder(device);
 var p : Pipeline;
 p.vert = vb;
 p.indexBuffer = ib;
-p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
 p.bindings = bindGroup;
 var renderPass = new RenderPass<Pipeline>(encoder, &p);
 renderPass.SetPipeline(pipeline);

@@ -277,7 +277,6 @@ while(System.IsRunning()) {
   u.wind = Vector(Math.rand() * 0.00, 0.0);
   computeUBO.SetData(&u);
 
-  var framebuffer = swapChain.GetCurrentTexture();
   var encoder = new CommandEncoder(device);
 
   var computePass = new ComputePass<ComputeBase>(encoder, {bindings = computeBindGroup} );
@@ -299,7 +298,7 @@ while(System.IsRunning()) {
   finalizeSpringsPass.Dispatch(springs.length, 1, 1);
 
   computePass.End();
-  var colorAttachment = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  var colorAttachment = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
   var renderPass = new RenderPass<Shaders>(encoder, { fragColor = colorAttachment });
 
   var bodyPass = new RenderPass<BodyShaders>(renderPass);

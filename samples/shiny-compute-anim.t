@@ -301,8 +301,8 @@ while (System.IsRunning()) {
   tessPass.Dispatch((patchWidth + 7) / 8, (patchWidth + 7) / 8, numPatches);
   tessPass.End();
 
-  var fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
-  var db = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
+  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
+  var db = depthBuffer.CreateDepthStencilAttachment(Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
   var renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = fb, depth = db });
 
   var cubePass = new RenderPass<SkyboxPipeline>(renderPass);

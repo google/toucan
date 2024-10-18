@@ -71,7 +71,7 @@ var bindGroup = new BindGroup<Bindings>(device, &bindings);
 
 var encoder = new CommandEncoder(device);
 var p : Pipeline;
-p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
 p.vert = new vertex Buffer<Vertex[]>(device, verts);
 p.indices = new index Buffer<uint[]>(device, indices);
 p.bindings = bindGroup;

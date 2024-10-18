@@ -13,11 +13,11 @@ class Pipeline {
 }
 var encoder = new CommandEncoder(device);
 var p1 : Pipeline;
-p1.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer1, Clear, Store, green);
+p1.fragColor = framebuffer1.CreateColorAttachment(Clear, Store, green);
 var renderPass1 = new RenderPass<Pipeline>(encoder, &p1);
 renderPass1.End();
 var p2 : Pipeline;
-p2.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer2, Clear, Store, blue);
+p2.fragColor = framebuffer2.CreateColorAttachment(Clear, Store, blue);
 var renderPass2 = new RenderPass<Pipeline>(encoder, &p2);
 renderPass2.End();
 device.GetQueue().Submit(encoder.Finish());

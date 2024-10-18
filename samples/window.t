@@ -6,7 +6,7 @@ var encoder = new CommandEncoder(device);
 class Pipeline {
   var color : ColorAttachment<PreferredSwapChainFormat>*;
 }
-var fb = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store, float<4>(0.0, 1.0, 0.0, 1.0));
+var fb = framebuffer.CreateColorAttachment(Clear, Store, float<4>(0.0, 1.0, 0.0, 1.0));
 var renderPass = new RenderPass<Pipeline>(encoder, { fb });
 renderPass.End();
 device.GetQueue().Submit(encoder.Finish());

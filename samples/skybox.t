@@ -101,8 +101,8 @@ while (System.IsRunning()) {
   cubeBindings.uniforms.SetData(&uniforms);
   var encoder = new CommandEncoder(device);
   var p : SkyboxPipeline;
-  var fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
-  var db = new DepthStencilAttachment<Depth24Plus>(depthBuffer, Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
+  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
+  var db = depthBuffer.CreateDepthStencilAttachment(Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
   var renderPass = new RenderPass<SkyboxPipeline>(encoder,
     { fragColor = fb, depth = db, vertices = cubeVB, indices = cubeIB, bindings = cubeBindGroup }
   );

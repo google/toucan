@@ -58,7 +58,7 @@ while (System.IsRunning()) {
     System.GetNextEvent();
   }
   var encoder = new CommandEncoder(device);
-  var fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
   var renderPass = new RenderPass<Pipeline>(encoder, {vertices = vb, fragColor = fb, bindings = bg});
   renderPass.SetPipeline(pipeline);
   renderPass.Draw(3, 1, 0, 0);

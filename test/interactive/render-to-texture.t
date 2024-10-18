@@ -52,7 +52,7 @@ var triPipeline = new RenderPipeline<GreenPipeline>(device, null, TriangleList);
 var encoder = new CommandEncoder(device);
 var gp : GreenPipeline;
 gp.position = triVB;
-gp.renderTex = new ColorAttachment<RGBA8unorm>(tex, Clear, Store);
+gp.renderTex = tex.CreateColorAttachment(Clear, Store);
 var renderPass = new RenderPass<GreenPipeline>(encoder, &gp);
 renderPass.SetPipeline(triPipeline);
 renderPass.Draw(3, 1, 0, 0);
@@ -60,7 +60,7 @@ renderPass.End();
 
 var quadPipeline = new RenderPipeline<TexPipeline>(device, null, TriangleList);
 var texView = tex.CreateSampleableView();
-var fb = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+var fb = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
 var quadBG = new BindGroup<Bindings>(device, { sampler = sampler, textureView = texView} );
 var drawPass = new RenderPass<TexPipeline>(encoder,
   { fragColor = fb, vertices = quadVB, indices = quadIB, bindings = quadBG }

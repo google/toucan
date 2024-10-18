@@ -29,7 +29,7 @@ class Pipeline {
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 var encoder = new CommandEncoder(device);
 var p : Pipeline;
-p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(swapChain.GetCurrentTexture(), Clear, Store);
+p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
 p.position = new vertex Buffer<float<2>[]>(device, &positions);
 p.color = new vertex Buffer<float<3>[]>(device, &colors);
 var renderPass = new RenderPass<Pipeline>(encoder, &p);

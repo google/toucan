@@ -73,6 +73,27 @@ native class BindGroup<T> {
   deviceonly Get() : T;
 }
 
+enum LoadOp {
+  LoadUndefined,
+  Clear,
+  Load
+}
+
+enum StoreOp {
+  StoreUndefined,
+  Store,
+  Discard
+}
+
+native class ColorAttachment<PF> {
+  deviceonly Set(value : PF::DeviceType<4>);
+ ~ColorAttachment();
+}
+
+native class DepthStencilAttachment<PF> {
+ ~DepthStencilAttachment();
+}
+
 enum AddressMode { Repeat, MirrorRepeat, ClampToEdge };
 
 enum FilterMode { Nearest, Linear };
@@ -121,6 +142,8 @@ native class Texture2D<PF> {
   CreateSampleableView() sampleable : SampleableTexture2D<PF::DeviceType>*;
   CreateRenderableView(mipLevel = 0u) : renderable Texture2D<PF>*;
   CreateStorageView(mipLevel = 0u) : storage Texture2D<PF>*;
+  CreateColorAttachment(loadOp : LoadOp, storeOp : StoreOp, clearValue = float<4>(0.0, 0.0, 0.0, 0.0)) renderable : ColorAttachment<PF>*;
+  CreateDepthStencilAttachment(depthLoadOp : LoadOp, depthstoreOp : StoreOp, depthClearValue = 0.0, stencilLoadOp : LoadOp, stencilStoreOp : StoreOp, stencilClearValue : int) renderable : DepthStencilAttachment<PF>*;
   MinBufferWidth() : uint;
   CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::HostType[]>^, size : uint<2>, origin : uint<2> = uint<2>(0, 0));
 }
@@ -159,29 +182,6 @@ native class CommandEncoder {
   CommandEncoder(device : Device*);
  ~CommandEncoder();
   Finish() : CommandBuffer*;
-}
-
-enum LoadOp {
-  LoadUndefined,
-  Clear,
-  Load
-}
-
-enum StoreOp {
-  StoreUndefined,
-  Store,
-  Discard
-}
-
-native class ColorAttachment<PF> {
-  ColorAttachment(texture : renderable Texture2D<PF>*, loadOp : LoadOp, storeOp : StoreOp, clearValue = float<4>(0.0, 0.0, 0.0, 0.0));
-  deviceonly Set(value : PF::DeviceType<4>);
- ~ColorAttachment();
-}
-
-native class DepthStencilAttachment<PF> {
-  DepthStencilAttachment(texture : renderable Texture2D<PF>*, depthLoadOp : LoadOp, depthstoreOp : StoreOp, depthClearValue = 0.0, stencilLoadOp : LoadOp, stencilStoreOp : StoreOp, stencilClearValue : int);
- ~DepthStencilAttachment();
 }
 
 native class RenderPass<T> {

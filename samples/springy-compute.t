@@ -290,9 +290,8 @@ while(System.IsRunning()) {
   updateSpringPass.Dispatch(springs.length, 1, 1);
 
   computePass.End();
-  var framebuffer = swapChain.GetCurrentTexture();
   var p : DrawPipeline;
-  p.fragColor = new ColorAttachment<PreferredSwapChainFormat>(framebuffer, Clear, Store);
+  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
   var renderPass = new RenderPass<DrawPipeline>(encoder, &p);
 
   renderPass.SetPipeline(springPipeline);
