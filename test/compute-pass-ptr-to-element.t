@@ -12,7 +12,7 @@ class Compute {
   static set(p : int^, value : int) {
     *p = value;
   }
-  computeShader(cb : ComputeBuiltins^) compute(1, 1, 1) {
+  compute(1, 1,1) main(cb : ComputeBuiltins^) {
     var buffer = bindings.Get().buffer.MapReadWriteStorage();
     var i : int;
     var array : int[1];

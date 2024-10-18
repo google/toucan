@@ -696,13 +696,13 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   ClassType*         classType = static_cast<ClassType*>(type);
   wgpu::ShaderModule vertexShader, fragmentShader;
   for (auto& method : classType->GetMethods()) {
-    if (method->shaderType == ShaderType::Vertex) {
+    if (method->modifiers & Method::Modifier::Vertex) {
       if (vertexShader) {
         assert(!"more than one vertex shader specified");
         return nullptr;
       }
       vertexShader = createShaderModule(device, method.get());
-    } else if (method->shaderType == ShaderType::Fragment) {
+    } else if (method->modifiers & Method::Modifier::Fragment) {
       if (fragmentShader) {
         assert(!"more than one fragment shader specified");
         return nullptr;
@@ -756,7 +756,7 @@ ComputePipeline* ComputePipeline_ComputePipeline(int     qualifiers,
   ClassType*         classType = static_cast<ClassType*>(computeLayout);
   wgpu::ShaderModule computeShader;
   for (auto& method : classType->GetMethods()) {
-    if (method->shaderType == ShaderType::Compute) {
+    if (method->modifiers & Method::Modifier::Compute) {
       if (computeShader) {
         assert(!"more than one compute shader specified");
         return nullptr;

@@ -94,7 +94,7 @@ class ShaderPrepPass : public CopyVisitor {
   UnfoldedVarMap          unfoldedVars_;
   UnfoldedPtrMap          unfoldedPtrs_;
   std::unique_ptr<Method> entryPointWrapper_;
-  ShaderType              shaderType_;
+  int                     methodModifiers_;
   VarVector               inputs_;
   VarVector               outputs_;
   BindGroupList           bindGroups_;

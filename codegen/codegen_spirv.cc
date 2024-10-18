@@ -146,12 +146,12 @@ spv::Op binOpToOpcode(BinOpNode::Op op,
   return spv::OpNop;
 }
 
-spv::ExecutionModel toExecutionModel(ShaderType shaderType) {
-  if (shaderType == ShaderType::Vertex) {
+spv::ExecutionModel toExecutionModel(int modifiers) {
+  if (modifiers & Method::Modifier::Vertex) {
     return spv::ExecutionModelVertex;
-  } else if (shaderType == ShaderType::Fragment) {
+  } else if (modifiers & Method::Modifier::Fragment) {
     return spv::ExecutionModelFragment;
-  } else if (shaderType == ShaderType::Compute) {
+  } else if (modifiers & Method::Modifier::Compute) {
     return spv::ExecutionModelGLCompute;
   }
   assert(false);
@@ -208,8 +208,8 @@ void CodeGenSPIRV::DeclareInterfaceVars(const VarVector& vars,
     interface->push_back(ptrId);
     Append(spv::OpDecorate, {ptrId, spv::DecorationLocation, i}, &annotations_);
     if (type->IsInteger()) {
-      if (((storageClass == spv::StorageClassInput && shaderType_ == ShaderType::Fragment) ||
-           (storageClass == spv::StorageClassOutput && shaderType_ == ShaderType::Vertex))) {
+      if (((storageClass == spv::StorageClassInput && (methodModifiers_ & Method::Modifier::Fragment)) ||
+           (storageClass == spv::StorageClassOutput && (methodModifiers_ & Method::Modifier::Vertex)))) {
         Append(spv::OpDecorate, {ptrId, spv::DecorationFlat}, &annotations_);
       }
     }
@@ -239,7 +239,7 @@ void CodeGenSPIRV::DeclareBindGroupVars(const BindGroupList& bindGroups) {
 void CodeGenSPIRV::Run(Method* entryPoint) {
   glslStd450Import_ = NextId();
   uint32_t functionId = NextId();
-  shaderType_ = entryPoint->shaderType;
+  methodModifiers_ = entryPoint->modifiers;
   assert(entryPoint->formalArgList.size() > 0);
 
   NodeVector     nodes;
@@ -273,11 +273,11 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
   header_.push_back(glslStd450Import_);
   header_.insert(header_.end(), importName.begin(), importName.end());
   Append(spv::OpMemoryModel, {spv::AddressingModelLogical, spv::MemoryModelGLSL450}, &header_);
-  uint32_t executionModel = toExecutionModel(shaderType_);
+  uint32_t executionModel = toExecutionModel(methodModifiers_);
   AppendEntryPoint(executionModel, functionId, "main", interface);
-  if (shaderType_ == ShaderType::Fragment) {
+  if (methodModifiers_ & Method::Modifier::Fragment) {
     Append(spv::OpExecutionMode, {functionId, spv::ExecutionModeOriginUpperLeft}, &header_);
-  } else if (shaderType_ == ShaderType::Compute) {
+  } else if (methodModifiers_ & Method::Modifier::Compute) {
     auto ws = entryPoint->workgroupSize;
     Append(spv::OpExecutionMode, {functionId, spv::ExecutionModeLocalSize, ws[0], ws[1], ws[2]},
            &header_);

@@ -236,7 +236,7 @@ void ShaderPrepPass::ExtractPipelineVars(ClassType* classType, std::vector<Var*>
     assert(unqualifiedType->IsClass());
     ClassType* classType = static_cast<ClassType*>(unqualifiedType);
     if (classType->GetTemplate() == NativeClass::ColorAttachment) {
-      if (shaderType_ == ShaderType::Fragment) {
+      if (methodModifiers_ & Method::Modifier::Fragment) {
         auto output = std::make_shared<Var>(field->name, ConvertType(field->type));
         outputs_.push_back(output);
         globalVars->push_back(output.get());
@@ -248,7 +248,7 @@ void ShaderPrepPass::ExtractPipelineVars(ClassType* classType, std::vector<Var*>
       globalVars->push_back(nullptr);
     } else if (classType->GetTemplate() == NativeClass::Buffer &&
                qualifiers & Type::Qualifier::Vertex) {
-      if (shaderType_ == ShaderType::Vertex) {
+      if (methodModifiers_ & Method::Modifier::Vertex) {
         auto input = std::make_shared<Var>(field->name, ConvertType(field->type));
         inputs_.push_back(input);
         globalVars->push_back(input.get());
@@ -356,7 +356,7 @@ void ShaderPrepPass::CreateAndStoreOutputVars(Type* type, Expr* value, Stmts* st
 }
 
 Method* ShaderPrepPass::Run(Method* entryPoint) {
-  shaderType_ = entryPoint->shaderType;
+  methodModifiers_ = entryPoint->modifiers;
   const auto& formalArgList = entryPoint->formalArgList;
 
   int argIndex = entryPoint->modifiers & Method::Modifier::Static ? 0 : 1;

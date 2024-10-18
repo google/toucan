@@ -6,8 +6,8 @@ var verts : Vertex[3] = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0
 var vb = new vertex Buffer<Vertex[]>(device, &verts);
 class Pipeline {
   static deviceonly helper(v : vertex Buffer<Vertex[]>*) : Vertex { return v.Get(); }
-  vertexShader(vb : VertexBuiltins^) vertex { vb.position = Pipeline.helper(vertices); }
-  fragmentShader(fb : FragmentBuiltins^) fragment { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
+  vertex main(vb : VertexBuiltins^) { vb.position = Pipeline.helper(vertices); }
+  fragment main(fb : FragmentBuiltins^) { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
   var vertices : vertex Buffer<Vertex[]>*;
   var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
 }

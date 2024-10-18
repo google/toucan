@@ -460,7 +460,7 @@ BuiltinCall CodeGenLLVM::FindBuiltin(Method* method) {
 }
 
 void CodeGenLLVM::GenCodeForMethod(Method* method) {
-  if (method->shaderType != ShaderType::None) {
+  if ((method->modifiers & (Method::Modifier::Vertex | Method::Modifier::Fragment | Method::Modifier::Compute)) != 0) {
     CodeGenSPIRV codeGenSPIRV(types_);
     codeGenSPIRV.Run(method);
     std::vector<uint32_t> spirv;

@@ -298,13 +298,6 @@ class VarVector : public std::vector<std::shared_ptr<Var>> {};
 
 class Stmts;
 
-enum class ShaderType {
-  None,
-  Vertex,
-  Fragment,
-  Compute,
-};
-
 struct Method {
   Method(int modifiers, Type* returnType, std::string name, ClassType* classType);
   std::string             ToString() const;
@@ -315,7 +308,6 @@ struct Method {
   std::string             name;
   ClassType*              classType;
   Method*                 templateMethod = nullptr;
-  ShaderType              shaderType = ShaderType::None;
   std::array<uint32_t, 3> workgroupSize = {1, 1, 1};
   VarVector               formalArgList;
   std::vector<Expr*>      defaultArgs;
@@ -323,7 +315,14 @@ struct Method {
   std::vector<uint32_t>   spirv;
   std::string             wgsl;
   int                     index = -1;
-  enum Modifier { Static = 0x01, Virtual = 0x02, DeviceOnly = 0x04 };
+  enum Modifier {
+    Static = 0x01,
+    Virtual = 0x02,
+    DeviceOnly = 0x04,
+    Vertex = 0x10,
+    Fragment = 0x20,
+    Compute = 0x40,
+  };
 };
 
 typedef std::vector<std::unique_ptr<Method>> MethodVector;

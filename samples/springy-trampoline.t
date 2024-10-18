@@ -96,7 +96,7 @@ class ComputeBase {
 }
 
 class ComputeForces : ComputeBase {
-  computeShader(cb : ComputeBuiltins^) compute(1, 1, 1) {
+  compute(1, 1, 1) main(cb : ComputeBuiltins^) {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var springs = bindings.Get().springStorage.MapReadWriteStorage();
     var u = bindings.Get().uniforms.MapReadUniform();
@@ -109,7 +109,7 @@ class ComputeForces : ComputeBase {
 }
 
 class ApplyForces : ComputeBase {
-  computeShader(cb : ComputeBuiltins^) compute(1, 1, 1) {
+  compute(1, 1, 1) main(cb : ComputeBuiltins^) {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var springs = bindings.Get().springStorage.MapReadWriteStorage();
     var u = bindings.Get().uniforms.MapReadUniform();
@@ -124,7 +124,7 @@ class ApplyForces : ComputeBase {
 }
 
 class FinalizeBodies : ComputeBase {
-  computeShader(cb : ComputeBuiltins^) compute(1, 1, 1) {
+  compute(1, 1, 1) main(cb : ComputeBuiltins^) {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var u = bindings.Get().uniforms.MapReadUniform();
     var deltaT = u.deltaT;
@@ -143,7 +143,7 @@ class FinalizeBodies : ComputeBase {
 }
 
 class FinalizeSprings : ComputeBase {
-  computeShader(cb : ComputeBuiltins^) compute(1, 1, 1) {
+  compute(1, 1, 1) main(cb : ComputeBuiltins^) {
     var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
     var springs = bindings.Get().springStorage.MapReadWriteStorage();
     var sv = bindings.Get().springVerts.MapReadWriteStorage();
@@ -252,13 +252,13 @@ class Shaders {
 }
 
 class BodyShaders : Shaders {
-  vertexShader(vb : VertexBuiltins^) vertex { vb.position = Utils.makeFloat4(vert.Get()); }
-  fragmentShader(fb : FragmentBuiltins^) fragment { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
+  vertex main(vb : VertexBuiltins^) { vb.position = Utils.makeFloat4(vert.Get()); }
+  fragment main(fb : FragmentBuiltins^) { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
 }
 
 class SpringShaders : Shaders {
-  vertexShader(vb : VertexBuiltins^) vertex { vb.position = Utils.makeFloat4(vert.Get()); }
-  fragmentShader(fb : FragmentBuiltins^) fragment { fragColor.Set(float<4>(1.0, 1.0, 1.0, 1.0)); }
+  vertex main(vb : VertexBuiltins^) { vb.position = Utils.makeFloat4(vert.Get()); }
+  fragment main(fb : FragmentBuiltins^) { fragColor.Set(float<4>(1.0, 1.0, 1.0, 1.0)); }
 }
 
 var bodyPipeline = new RenderPipeline<BodyShaders>(device, null, TriangleList);

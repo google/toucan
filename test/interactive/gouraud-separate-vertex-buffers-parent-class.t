@@ -17,12 +17,12 @@ class BasePipeline {
 }
 
 class Pipeline : BasePipeline {
-  vertexShader(vb : VertexBuiltins^) vertex : float<3> {
+  vertex main(vb : VertexBuiltins^) : float<3> {
     var v = position.Get();
     vb.position = float<4>(v.x, v.y, 0.0, 1.0);
     return color.Get();
   }
-  fragmentShader(fb : FragmentBuiltins^, varyings : float<3>) fragment {
+  fragment main(fb : FragmentBuiltins^, varyings : float<3>) {
     fragColor.Set(float<4>(varyings.r, varyings.g, varyings.b, 1.0));
   }
   var fragColor : ColorAttachment<PreferredSwapChainFormat>*;

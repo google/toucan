@@ -133,7 +133,7 @@ class CodeGenSPIRV : public Visitor {
   std::unordered_map<Var*, uint32_t>           vars_;
   std::list<Method*>                           pendingMethods_;
   BindGroupList                                bindGroups_;
-  ShaderType                                   shaderType_;
+  int                                          methodModifiers_;
 };
 
 };  // namespace Toucan

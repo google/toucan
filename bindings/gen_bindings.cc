@@ -269,6 +269,9 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
   if (method->modifiers & Method::Modifier::Static) { fprintf(file_, " | Method::Modifier::Static"); }
   if (method->modifiers & Method::Modifier::Virtual) { fprintf(file_, " | Method::Modifier::Virtual"); }
   if (method->modifiers & Method::Modifier::DeviceOnly) { fprintf(file_, " | Method::Modifier::DeviceOnly"); }
+  if (method->modifiers & Method::Modifier::Vertex) { fprintf(file_, " | Method::Modifier::Vertex"); }
+  if (method->modifiers & Method::Modifier::Fragment) { fprintf(file_, " | Method::Modifier::Fragment"); }
+  if (method->modifiers & Method::Modifier::Compute) { fprintf(file_, " | Method::Modifier::Compute"); }
   std::string name = method->name;
   if (name[0] == '~') { name = "Destroy"; }
   fprintf(file_, ", returnType, \"%s\", static_cast<ClassType*>(typeList[%d]));\n", name.c_str(),
@@ -323,12 +326,7 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
       fprintf(header_, ");\n");
     }
   }
-  if (method->shaderType == ShaderType::Vertex) {
-    fprintf(file_, "  m->shaderType = ShaderType::Vertex;\n");
-  } else if (method->shaderType == ShaderType::Fragment) {
-    fprintf(file_, "  m->shaderType = ShaderType::Fragment;\n");
-  } else if (method->shaderType == ShaderType::Compute) {
-    fprintf(file_, "  m->shaderType = ShaderType::Compute;\n");
+  if ((method->modifiers & (Method::Modifier::Vertex | Method::Modifier::Fragment | Method::Modifier::Compute))) {
   } else if (dumpStmtsAsSource_ && method->stmts) {
     int id = sourcePass_.Resolve(method->stmts);
     fprintf(file_, "  m->stmts = stmtss[%d];\n", id);

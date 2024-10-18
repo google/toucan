@@ -63,11 +63,11 @@ static void BeginEnum(const char *id);
 static void AppendEnum(const char* id);
 static void AppendEnum(const char* id, int value);
 static void EndEnum();
-static void BeginMethod(int modifiers, std::string id);
+static void BeginMethod(int modifiers, std::string id, ArgList* workgroupSize = nullptr);
 static void BeginConstructor(int modifiers, Type* type);
 static void BeginDestructor(int modifiers, Type* type);
 static void AddFormalArgument(const char* id, Type* type, Expr* defaultValue);
-static Method* EndMethod(ShaderType shaderType, ArgList* workgroupSize, Type* returnType, Stmts* stmts, int index = -1);
+static Method* EndMethod(Type* returnType, Stmts* stmts, int index = -1);
 static Method* EndConstructor(Expr* initializer, Stmts* stmts);
 static Method* EndDestructor(Stmts* stmts);
 static void BeginBlock();
@@ -116,7 +116,6 @@ Type* FindType(const char* str) {
     Toucan::Type*        type;
     Toucan::ClassType*   classType;
     Toucan::TypeList*    typeList;
-    Toucan::ShaderType   shaderType;
 };
 
 %type <type> scalar_type type class_header
@@ -135,7 +134,6 @@ Type* FindType(const char* str) {
 %type <typeList> template_formal_arguments
 %type <i> type_qualifier type_qualifiers
 %type <i> method_modifier method_modifiers class_or_native_class
-%type <shaderType> opt_shader_type
 %type <type> opt_parent_class
 %token <identifier> T_IDENTIFIER T_STRING_LITERAL
 %token <type> T_TYPENAME
@@ -325,9 +323,9 @@ opt_return_type:
   ;
 
 class_body_decl:
-    method_modifiers T_IDENTIFIER           { BeginMethod($1, $2); }
-    '(' formal_arguments ')' opt_shader_type opt_workgroup_size opt_return_type method_body
-                                            { EndMethod($7, $8, $9, $10); }
+    method_modifiers opt_workgroup_size T_IDENTIFIER           { BeginMethod($1, $3, $2); }
+    '(' formal_arguments ')' opt_return_type method_body
+                                            { EndMethod($8, $9); }
   | method_modifiers T_TYPENAME
                                             { BeginConstructor($1, $2); }
     '(' formal_arguments ')' opt_initializer method_body    { EndConstructor($7, $8); }
@@ -354,13 +352,9 @@ method_modifier:
     T_STATIC                                { $$ = Method::Modifier::Static; }
   | T_VIRTUAL                               { $$ = Method::Modifier::Virtual; }
   | T_DEVICEONLY                            { $$ = Method::Modifier::DeviceOnly; }
-  ;
-
-opt_shader_type:
-    T_VERTEX                                { $$ = ShaderType::Vertex; }
-  | T_FRAGMENT                              { $$ = ShaderType::Fragment; }
-  | T_COMPUTE                               { $$ = ShaderType::Compute; }
-  | /* NOTHING */                           { $$ = ShaderType::None; }
+  | T_VERTEX                                { $$ = Method::Modifier::Vertex; }
+  | T_FRAGMENT                              { $$ = Method::Modifier::Fragment; }
+  | T_COMPUTE                               { $$ = Method::Modifier::Compute; }
   ;
 
 opt_workgroup_size:
@@ -799,7 +793,7 @@ static void EndBlock(Stmts* stmts) {
   stmts->SetScope(symbols_->PopScope());
 }
 
-static void BeginMethod(int modifiers, std::string id) {
+static void BeginMethod(int modifiers, std::string id, ArgList* workgroupSize) {
   Scope* classScope = symbols_->PeekScope();
   while (!classScope->classType) {
     classScope = classScope->parent;
@@ -809,6 +803,26 @@ static void BeginMethod(int modifiers, std::string id) {
   if (!(modifiers & Method::Modifier::Static)) {
     WeakPtrType* refType = types_->GetWeakPtrType(classType);
     method->AddFormalArg("this", refType, nullptr);
+  }
+  if (workgroupSize) {
+    auto args = workgroupSize->GetArgs();
+    if (!(modifiers & Method::Modifier::Compute)) {
+      yyerror("non-compute shaders do not require a workgroup size");
+    } else if (args.size() == 0 || args.size() > 3) {
+      yyerror("workgroup size must have 1, 2, or 3 dimensions");
+    } else {
+      for (int i = 0; i < args.size(); ++i) {
+        Expr* expr = args[i]->GetExpr();
+        if (!expr->IsIntConstant()) {
+          yyerrorf("workgroup size is not an integer constant");
+          break;
+        } else {
+          method->workgroupSize[i] = static_cast<IntConstant*>(expr)->GetValue();
+        }
+      }
+    }
+  } else if (method->modifiers & Method::Modifier::Compute) {
+    yyerrorf("compute shader requires a workgroup size");
   }
   Scope* scope = symbols_->PushNewScope();
   scope->method = method;
@@ -892,7 +906,7 @@ static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
   if (stmts) {
     stmts->Append(Make<ReturnStatement>(Load(ThisExpr()), symbols_->PeekScope()));
   }
-  Method* method = EndMethod(ShaderType::None, nullptr, nullptr, stmts);
+  Method* method = EndMethod(nullptr, stmts);
   method->returnType = types_->GetWeakPtrType(method->classType);
   if (method->stmts) {
     if (!initializer) {
@@ -906,37 +920,16 @@ static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
 
 static Method* EndDestructor(Stmts* stmts) {
   Type* returnType = types_->GetVoid();
-  Method* method = EndMethod(ShaderType::None, nullptr, returnType, stmts, 0);
+  Method* method = EndMethod(returnType, stmts, 0);
   method->index = 0;
   return method;
 }
 
-static Method* EndMethod(ShaderType shaderType, ArgList* workgroupSize, Type* returnType, Stmts* stmts, int index) {
+static Method* EndMethod(Type* returnType, Stmts* stmts, int index) {
   Scope* methodScope = symbols_->PopScope();
   Method* method = methodScope->method;
   method->returnType = returnType;
   method->stmts = stmts;
-  method->shaderType = shaderType;
-  if (workgroupSize) {
-    auto args = workgroupSize->GetArgs();
-    if (shaderType != ShaderType::Compute) {
-      yyerror("non-compute shaders do not require a workgroup size");
-    } else if (args.size() == 0 || args.size() > 3) {
-      yyerror("workgroup size must have 1, 2, or 3 dimensions");
-    } else {
-      for (int i = 0; i < args.size(); ++i) {
-        Expr* expr = args[i]->GetExpr();
-        if (!expr->IsIntConstant()) {
-          yyerrorf("workgroup size is not an integer constant");
-          break;
-        } else {
-          method->workgroupSize[i] = static_cast<IntConstant*>(expr)->GetValue();
-        }
-      }
-    }
-  } else if (method->shaderType == ShaderType::Compute) {
-    yyerrorf("compute shader requires a workgroup size");
-  }
   if (stmts) stmts->SetScope(methodScope);
   Scope* scope = symbols_->PeekScope();
   if (!scope || !scope->classType) {

@@ -5,7 +5,7 @@ class ComputeBindings {
 }
 
 class Compute {
-  computeShader(cb : ComputeBuiltins^) compute(1, 1, 1) {
+  compute(1, 1, 1) main(cb : ComputeBuiltins^) {
     var buffer = bindings.Get().buffer.MapWriteStorage();
     buffer[0] = 42;
   }
