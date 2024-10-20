@@ -119,7 +119,7 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
     ClassType*         classType = static_cast<ClassType*>(type);
     TypeList           types;
     std::vector<Expr*> constructorArgs;
-    Method* constructor = FindMethod(classType, classType->GetName(), argList, &constructorArgs);
+    Method* constructor = FindMethod(nullptr, classType, classType->GetName(), argList, &constructorArgs);
     if (!constructor) {
       return Error("constructor for class \"%s\" with those arguments not found",
                    classType->GetName().c_str());
@@ -202,7 +202,7 @@ Result SemanticPass::ResolveMethodCall(Expr*       expr,
                                        std::string id,
                                        ArgList*    arglist) {
   std::vector<Expr*> newArgList;
-  Method*            method = FindMethod(classType, id, arglist, &newArgList);
+  Method*            method = FindMethod(expr, classType, id, arglist, &newArgList);
   if (!method) {
     std::string msg = "class " + classType->ToString() + " has no method " + id;
     msg += "(";
@@ -570,7 +570,7 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
                    classType->ToString().c_str());
     }
     std::vector<Expr*> exprList;
-    constructor = FindMethod(classType, classType->GetName(), arglist, &exprList);
+    constructor = FindMethod(nullptr, classType, classType->GetName(), arglist, &exprList);
     if (constructor) {
       for (int i = 1; i < exprList.size(); ++i) {
         if (!exprList[i]) {
@@ -696,7 +696,8 @@ int SemanticPass::FindFormalArg(Arg* arg, Method* m, TypeTable* types) {
   return -1;
 }
 
-bool SemanticPass::MatchArgs(ArgList*            args,
+bool SemanticPass::MatchArgs(Expr*               thisExpr,
+                             ArgList*            args,
                              Method*             m,
                              TypeTable*          types,
                              std::vector<Expr*>* newArgList) {
@@ -719,6 +720,9 @@ bool SemanticPass::MatchArgs(ArgList*            args,
       }
       result[i + offset] = expr;
     }
+    if (!(m->modifiers & Method::Modifier::Static) && thisExpr && !thisExpr->GetType(types)->CanWidenTo(m->formalArgList[0]->type)) {
+      return false;
+    }
   }
   for (int i = offset; i < result.size(); ++i) {
     if (!result[i]) {
@@ -733,7 +737,8 @@ bool SemanticPass::MatchArgs(ArgList*            args,
   return true;
 }
 
-Method* SemanticPass::FindMethod(ClassType*          classType,
+Method* SemanticPass::FindMethod(Expr*               thisExpr,
+                                 ClassType*          classType,
                                  const std::string&  name,
                                  ArgList*            args,
                                  std::vector<Expr*>* newArgList) {
@@ -741,14 +746,14 @@ Method* SemanticPass::FindMethod(ClassType*          classType,
     Method* m = it.get();
     if (m->name == name) {
       std::vector<Expr*> result;
-      if (MatchArgs(args, m, types_, &result)) {
+      if (MatchArgs(thisExpr, args, m, types_, &result)) {
         *newArgList = result;
         return m;
       }
     }
   }
   if (classType->GetParent()) {
-    return FindMethod(classType->GetParent(), name, args, newArgList);
+    return FindMethod(thisExpr, classType->GetParent(), name, args, newArgList);
   } else {
     return nullptr;
   }

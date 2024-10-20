@@ -39,7 +39,7 @@ native class Buffer<T> {
  ~Buffer();
   SetData(data : T^);
   CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<T>^);
-  deviceonly Get() : T::ElementType;
+  deviceonly Get() vertex : T::ElementType;
   MapRead() : readonly T^;
   MapWrite() : writeonly T^;
   deviceonly MapReadUniform() : readonly uniform T^;
@@ -110,7 +110,7 @@ native class SampleableTextureCube<ST> {
 native class Texture1D<PF> {
   Texture1D(device : Device*, width : uint);
  ~Texture1D();
-  CreateSampleableView() : SampleableTexture1D<PF::SampledType>*;
+  CreateSampleableView() sampleable : SampleableTexture1D<PF::SampledType>*;
   CreateStorageView(mipLevel = 0u) : storage Texture1D<PF>*;
   CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::MemoryType[]>^, width : uint, origin : uint = 0);
 }
@@ -118,7 +118,7 @@ native class Texture1D<PF> {
 native class Texture2D<PF> {
   Texture2D(device : Device*, size : uint<2>);
  ~Texture2D();
-  CreateSampleableView() : SampleableTexture2D<PF::SampledType>*;
+  CreateSampleableView() sampleable : SampleableTexture2D<PF::SampledType>*;
   CreateRenderableView(mipLevel = 0u) : renderable Texture2D<PF>*;
   CreateStorageView(mipLevel = 0u) : storage Texture2D<PF>*;
   MinBufferWidth() : uint;
@@ -128,7 +128,7 @@ native class Texture2D<PF> {
 native class Texture2DArray<PF> {
   Texture2DArray(device : Device*, size : uint<3>);
  ~Texture2D();
-  CreateSampleableView() : SampleableTexture2DArray<PF::SampledType>*;
+  CreateSampleableView() sampleable : SampleableTexture2DArray<PF::SampledType>*;
   CreateRenderableView(layer : uint, mipLevel = 0u) : renderable Texture2D<PF>*;
   CreateStorageView(layer : uint, mipLevel = 0u) : storage Texture2DArray<PF>*;
   MinBufferWidth() : uint;
@@ -138,7 +138,7 @@ native class Texture2DArray<PF> {
 native class Texture3D<PF> {
   Texture3D(device : Device*, size : uint<3>);
  ~Texture3D();
-  CreateSampleableView() : SampleableTexture3D<PF::SampledType>*;
+  CreateSampleableView() sampleable : SampleableTexture3D<PF::SampledType>*;
   CreateRenderableView(depth : uint, mipLevel = 0u) : renderable Texture2D<PF>*;
   CreateStorageView(depth : uint, mipLevel = 0u) : storage Texture3D<PF>*;
   MinBufferWidth() : uint;
@@ -148,7 +148,7 @@ native class Texture3D<PF> {
 native class TextureCube<PF> {
   TextureCube(device : Device*, size : uint<2>);
  ~TextureCube();
-  CreateSampleableView() : SampleableTextureCube<PF::SampledType>*;
+  CreateSampleableView() sampleable : SampleableTextureCube<PF::SampledType>*;
   CreateRenderableView(face : uint, mipLevel = 0u) : renderable Texture2D<PF>*;
   CreateStorageView(face : uint, mipLevel = 0u) : storage Texture2D<PF>*;
   MinBufferWidth() : uint;

@@ -67,7 +67,7 @@ static void BeginMethod(int modifiers, std::string id, ArgList* workgroupSize = 
 static void BeginConstructor(int modifiers, Type* type);
 static void BeginDestructor(int modifiers, Type* type);
 static void AddFormalArgument(const char* id, Type* type, Expr* defaultValue);
-static Method* EndMethod(Type* returnType, Stmts* stmts, int index = -1);
+static Method* EndMethod(int thisQualifiers, Type* returnType, Stmts* stmts, int index = -1);
 static Method* EndConstructor(Expr* initializer, Stmts* stmts);
 static Method* EndDestructor(Stmts* stmts);
 static void BeginBlock();
@@ -132,7 +132,7 @@ Type* FindType(const char* str) {
 %type <argList> arguments non_empty_arguments opt_workgroup_size
 %type <typeList> types
 %type <typeList> template_formal_arguments
-%type <i> type_qualifier type_qualifiers
+%type <i> type_qualifier type_qualifiers opt_type_qualifiers
 %type <i> method_modifier method_modifiers class_or_native_class
 %type <type> opt_parent_class
 %token <identifier> T_IDENTIFIER T_STRING_LITERAL
@@ -324,8 +324,8 @@ opt_return_type:
 
 class_body_decl:
     method_modifiers opt_workgroup_size T_IDENTIFIER           { BeginMethod($1, $3, $2); }
-    '(' formal_arguments ')' opt_return_type method_body
-                                            { EndMethod($8, $9); }
+    '(' formal_arguments ')' opt_type_qualifiers opt_return_type method_body
+                                            { EndMethod($8, $9, $10); }
   | method_modifiers T_TYPENAME
                                             { BeginConstructor($1, $2); }
     '(' formal_arguments ')' opt_initializer method_body    { EndConstructor($7, $8); }
@@ -355,6 +355,11 @@ method_modifier:
   | T_VERTEX                                { $$ = Method::Modifier::Vertex; }
   | T_FRAGMENT                              { $$ = Method::Modifier::Fragment; }
   | T_COMPUTE                               { $$ = Method::Modifier::Compute; }
+  ;
+
+opt_type_qualifiers:
+    type_qualifiers                         { $$ = $1; }
+  | /* NOTHING */                           { $$ = 0; }
   ;
 
 opt_workgroup_size:
@@ -906,7 +911,7 @@ static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
   if (stmts) {
     stmts->Append(Make<ReturnStatement>(Load(ThisExpr()), symbols_->PeekScope()));
   }
-  Method* method = EndMethod(nullptr, stmts);
+  Method* method = EndMethod(0, nullptr, stmts);
   method->returnType = types_->GetWeakPtrType(method->classType);
   if (method->stmts) {
     if (!initializer) {
@@ -920,16 +925,20 @@ static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
 
 static Method* EndDestructor(Stmts* stmts) {
   Type* returnType = types_->GetVoid();
-  Method* method = EndMethod(returnType, stmts, 0);
+  Method* method = EndMethod(0, returnType, stmts, 0);
   method->index = 0;
   return method;
 }
 
-static Method* EndMethod(Type* returnType, Stmts* stmts, int index) {
+static Method* EndMethod(int thisQualifiers, Type* returnType, Stmts* stmts, int index) {
   Scope* methodScope = symbols_->PopScope();
   Method* method = methodScope->method;
   method->returnType = returnType;
   method->stmts = stmts;
+  if (!(method->modifiers & Method::Static)) {
+    Type*& type = method->formalArgList[0]->type;
+    type = types_->GetQualifiedType(type, thisQualifiers);
+  }
   if (stmts) stmts->SetScope(methodScope);
   Scope* scope = symbols_->PeekScope();
   if (!scope || !scope->classType) {

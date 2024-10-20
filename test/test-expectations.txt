@@ -60,10 +60,16 @@ error-constructor-not-found.t:1:  matching constructor not found
 test/error-derefernce.t
 error-derefernce.t:2:  attempt to dereference a non-pointer
 test/error-hex-literal-too-large.t
+test/error-index-buffer-get.t
+error-index-buffer-get.t:4:  class Buffer<uint[]> has no method Get()
+error-index-buffer-get.t:4:  Buffer<uint[]>.Get() vertex : uint
 test/error-int-literal-too-large.t
+test/error-missing-sampleable-qualifier.t
+error-missing-sampleable-qualifier.t:3:  class Texture2D<RGBA8unorm> has no method CreateSampleableView()
+error-missing-sampleable-qualifier.t:3:  Texture2D<RGBA8unorm>.CreateSampleableView() sampleable : SampleableTexture2D<float>*
 test/error-named-param-missing-one.t
 error-named-param-missing-one.t:7:  class Bar has no method Foo(f = float)
-error-named-param-missing-one.t:7:  float Bar.Foo(int, float)
+error-named-param-missing-one.t:7:  Bar.Foo(int, float) : float
 test/error-non-static-method-called-statically.t
 error-non-static-method-called-statically.t:5:  attempt to call non-static method "bar" on class "Foo"
 test/error-partial-template.t
@@ -72,11 +78,11 @@ error-partial-template.t:11:  cannot store a value of type "Foo<int, int>*" to a
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
 error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(CommandEncoder*, Buffer<float<4>[]>*, int)
-error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint, uint)
+error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint, uint) 
 test/error-uint-literal-too-large.t
 test/error-wrong-named-param.t
 error-wrong-named-param.t:7:  class Bar has no method Foo(b = float, a = int)
-error-wrong-named-param.t:7:  float Bar.Foo(int, float)
+error-wrong-named-param.t:7:  Bar.Foo(int, float) : float
 test/expectation-failed.t
 test/expectation-failed.t:4: expectation failed
 test/fabs.t

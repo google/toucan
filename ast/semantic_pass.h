@@ -61,8 +61,9 @@ class SemanticPass : public CopyVisitor {
   Stmt*   InitializeVar(Expr* varExpr, Type* type, Expr* initExpr);
   Stmts*  InitializeClass(Expr* thisExpr, ClassType* classType);
   int     FindFormalArg(Arg* arg, Method* m, TypeTable* types);
-  bool    MatchArgs(ArgList* args, Method* m, TypeTable* types, std::vector<Expr*>* newArgList);
-  Method* FindMethod(ClassType*          classType,
+  bool    MatchArgs(Expr* thisExpr, ArgList* args, Method* m, TypeTable* types, std::vector<Expr*>* newArgList);
+  Method* FindMethod(Expr*               thisExpr,
+                     ClassType*          classType,
                      const std::string&  name,
                      ArgList*            args,
                      std::vector<Expr*>* newArgList);

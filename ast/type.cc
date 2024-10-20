@@ -28,6 +28,20 @@ namespace {
 
 inline int roundUpTo(int modulus, int value) { return (value + modulus - 1) / modulus * modulus; }
 
+std::string QualifiersToString(int qualifiers) {
+  std::string result;
+  if (qualifiers & Type::Qualifier::Uniform) { result += "uniform "; }
+  if (qualifiers & Type::Qualifier::Storage) { result += "storage "; }
+  if (qualifiers & Type::Qualifier::Vertex) { result += "vertex "; }
+  if (qualifiers & Type::Qualifier::Index) { result += "index "; }
+  if (qualifiers & Type::Qualifier::Sampleable) { result += "sampleable "; }
+  if (qualifiers & Type::Qualifier::Renderable) { result += "renderable "; }
+  if (qualifiers & Type::Qualifier::ReadOnly) { result += "readonly "; }
+  if (qualifiers & Type::Qualifier::WriteOnly) { result += "writeonly "; }
+  if (qualifiers & Type::Qualifier::Coherent) { result += "coherent "; }
+  return result;
+}
+
 }  // namespace
 
 BoolType::BoolType() {}
@@ -226,17 +240,7 @@ Type* QualifiedType::GetUnqualifiedType(int* qualifiers) {
 }
 
 std::string QualifiedType::ToString() const {
-  std::string result;
-  if (qualifiers_ & Qualifier::Uniform) { result += "uniform "; }
-  if (qualifiers_ & Qualifier::Storage) { result += "storage "; }
-  if (qualifiers_ & Qualifier::Vertex) { result += "vertex "; }
-  if (qualifiers_ & Qualifier::Index) { result += "index "; }
-  if (qualifiers_ & Qualifier::Sampleable) { result += "sampleable "; }
-  if (qualifiers_ & Qualifier::Renderable) { result += "renderable "; }
-  if (qualifiers_ & Qualifier::ReadOnly) { result += "readonly "; }
-  if (qualifiers_ & Qualifier::WriteOnly) { result += "writeonly "; }
-  if (qualifiers_ & Qualifier::Coherent) { result += "coherent "; }
-  return result + baseType_->ToString();
+  return QualifiersToString(qualifiers_) + baseType_->ToString();
 }
 
 UnresolvedScopedType::UnresolvedScopedType(FormalTemplateArg* baseType, std::string id)
@@ -267,14 +271,25 @@ Method::Method(int m, Type* r, std::string n, ClassType* c)
 
 std::string Method::ToString() const {
   std::string result;
-  if (!returnType->IsVoid()) { result += returnType->ToString() + " "; }
+  bool isStatic = (modifiers & Method::Modifier::Static) != 0;
   result += classType->ToString() + "." + name + "(";
   for (const auto& arg : formalArgList) {
-    if (arg == formalArgList.front() && !(modifiers & Method::Modifier::Static)) { continue; }
+    if (arg == formalArgList.front() && !isStatic) { continue; }
     result += arg->type->ToString();
     if (arg != formalArgList.back()) { result += ", "; }
   }
-  result += ")";
+  result += ") ";
+  if (!isStatic) {
+    int qualifiers;
+    Type* thisType = formalArgList.front()->type;
+    assert(thisType->IsPtr());
+    thisType = static_cast<PtrType*>(thisType)->GetBaseType();
+    thisType->GetUnqualifiedType(&qualifiers);
+    if (qualifiers) {
+      result += QualifiersToString(qualifiers);
+    }
+  }
+  if (!returnType->IsVoid()) { result += ": " + returnType->ToString(); }
   return result;
 }
 
