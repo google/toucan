@@ -446,8 +446,7 @@ Result ShaderPrepPass::ResolveNativeMethodCall(MethodCall* node) {
   } else if (classType->GetTemplate() == NativeClass::Buffer) {
     if (method->name == "Get") {
       return Make<LoadExpr>(Resolve(args[0]));
-    } else if (method->name == "MapReadUniform" || method->name == "MapWriteStorage" ||
-               method->name == "MapReadWriteStorage") {
+    } else if (method->name == "Map") {
       return Resolve(args[0]);
     }
   } else if (classType->GetTemplate() == NativeClass::BindGroup && method->name == "Get") {

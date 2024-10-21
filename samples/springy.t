@@ -90,11 +90,11 @@ class Bindings {
 
 class DrawPipeline {
   vertex main(vb : VertexBuiltins^) {
-    var matrix = bindings.Get().uniforms.MapReadUniform().matrix;
+    var matrix = bindings.Get().uniforms.Map().matrix;
     vb.position = matrix * Utils.makeFloat4(vertices.Get());
   }
   fragment main(fb : FragmentBuiltins^) {
-    fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
+    fragColor.Set(bindings.Get().uniforms.Map().color);
   }
   var vertices : vertex Buffer<Vector[]>*;
   var fragColor : ColorAttachment<PreferredSwapChainFormat>*;

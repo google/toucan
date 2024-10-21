@@ -13,7 +13,7 @@ class Bindings {
 class Pipeline {
   vertex main(vb : VertexBuiltins^) { vb.position = vertices.Get(); }
   fragment main(fb : FragmentBuiltins^) {
-    fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
+    fragColor.Set(bindings.Get().uniforms.Map().color);
   }
   var vertices : vertex Buffer<Vertex[]>*;
   var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
@@ -28,7 +28,7 @@ for (var i = 0; i < 1000; ++i) {
     System.GetNextEvent();
   }
   var encoder = new CommandEncoder(device);
-  var s = stagingBuffer.MapWrite();
+  var s = stagingBuffer.Map();
   var f = (float) i / 1000.0;
   s.color = float<4>(1.0 - f, f, 0.0, 1.0);
   stagingBuffer.Unmap();

@@ -17,7 +17,7 @@ class ObjectData {
 class Pipeline {
   vertex main(vb : VertexBuiltins^) { vb.position = vert.Get(); }
   fragment main(fb : FragmentBuiltins^) {
-    var u = objectData.Get().uniforms.MapReadUniform();
+    var u = objectData.Get().uniforms.Map();
     fragColor.Set(u.color);
   }
   var vert : vertex Buffer<Vertex[]>*;
@@ -32,7 +32,7 @@ var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 while (System.IsRunning()) {
   var event = System.GetNextEvent();
   if (event.type == MouseMove) {
-    var s = stagingBuffer.MapWrite();
+    var s = stagingBuffer.Map();
     s.color = float<4>((float) event.position.x / 640.0, (float) event.position.y / 480.0, 0.0, 1.0);
     stagingBuffer.Unmap();
   }

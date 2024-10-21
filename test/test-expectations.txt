@@ -77,7 +77,7 @@ error-partial-template.t:10:  cannot store a value of type "Foo<int, int>*" to a
 error-partial-template.t:11:  cannot store a value of type "Foo<int, int>*" to a location of type "Foo*"
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
-error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(CommandEncoder*, Buffer<float<4>[]>*, int)
+error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(CommandEncoder*, writeonly Buffer<float<4>[]>*, int)
 error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint, uint) 
 test/error-uint-literal-too-large.t
 test/error-wrong-named-param.t

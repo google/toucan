@@ -14,8 +14,8 @@ class CubeLoader {
   static Load(device : Device*, data : ubyte[]^, texture : TextureCube<Format>^, face : uint) {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
-    var buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * size.y);
-    var b = buffer.MapWrite();
+    var buffer = new writeonly Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * size.y);
+    var b = buffer.Map();
     image.Decode(b, texture.MinBufferWidth());
     buffer.Unmap();
     var encoder = new CommandEncoder(device);
@@ -55,7 +55,7 @@ class Bindings {
 class SkyboxPipeline {
     vertex main(vb : VertexBuiltins^) : float<3> {
         var v = vertices.Get();
-        var uniforms = bindings.Get().uniforms.MapReadUniform();
+        var uniforms = bindings.Get().uniforms.Map();
         var pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;

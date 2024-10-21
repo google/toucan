@@ -1068,9 +1068,9 @@ Buffer* Buffer_Buffer_Device_T(int qualifiers, Type* type, Device* device, Objec
   return result;
 }
 
-Object* Buffer_MapRead(Buffer* buffer) { return MapSync(wgpu::MapMode::Read, buffer); }
+Object* Buffer_Map_readonly_Buffer(Buffer* buffer) { return MapSync(wgpu::MapMode::Read, buffer); }
 
-Object* Buffer_MapWrite(Buffer* buffer) { return MapSync(wgpu::MapMode::Write, buffer); }
+Object* Buffer_Map_writeonly_Buffer(Buffer* buffer) { return MapSync(wgpu::MapMode::Write, buffer); }
 
 void Buffer_Unmap(Buffer* buffer) {
   buffer->buffer.Unmap();

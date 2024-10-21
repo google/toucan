@@ -936,8 +936,11 @@ static Method* EndMethod(int thisQualifiers, Type* returnType, Stmts* stmts, int
   method->returnType = returnType;
   method->stmts = stmts;
   if (!(method->modifiers & Method::Static)) {
-    Type*& type = method->formalArgList[0]->type;
+    Type* type = method->formalArgList[0]->type;
+    assert(type->IsPtr());
+    type = static_cast<PtrType*>(type)->GetBaseType();
     type = types_->GetQualifiedType(type, thisQualifiers);
+    method->formalArgList[0]->type = types_->GetWeakPtrType(type);
   }
   if (stmts) stmts->SetScope(methodScope);
   Scope* scope = symbols_->PeekScope();

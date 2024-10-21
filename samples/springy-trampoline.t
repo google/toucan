@@ -97,9 +97,9 @@ class ComputeBase {
 
 class ComputeForces : ComputeBase {
   compute(1, 1, 1) main(cb : ComputeBuiltins^) {
-    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
-    var springs = bindings.Get().springStorage.MapReadWriteStorage();
-    var u = bindings.Get().uniforms.MapReadUniform();
+    var bodies = bindings.Get().bodyStorage.Map();
+    var springs = bindings.Get().springStorage.Map();
+    var u = bindings.Get().uniforms.Map();
     var i = cb.globalInvocationId.x;
     var spring = springs[i];
     var body1 = bodies[spring.body1];
@@ -110,9 +110,9 @@ class ComputeForces : ComputeBase {
 
 class ApplyForces : ComputeBase {
   compute(1, 1, 1) main(cb : ComputeBuiltins^) {
-    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
-    var springs = bindings.Get().springStorage.MapReadWriteStorage();
-    var u = bindings.Get().uniforms.MapReadUniform();
+    var bodies = bindings.Get().bodyStorage.Map();
+    var springs = bindings.Get().springStorage.Map();
+    var u = bindings.Get().uniforms.Map();
     var i = cb.globalInvocationId.x;
     var body = bodies[i];
     var force = u.gravity + u.wind;
@@ -125,8 +125,8 @@ class ApplyForces : ComputeBase {
 
 class FinalizeBodies : ComputeBase {
   compute(1, 1, 1) main(cb : ComputeBuiltins^) {
-    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
-    var u = bindings.Get().uniforms.MapReadUniform();
+    var bodies = bindings.Get().bodyStorage.Map();
+    var u = bindings.Get().uniforms.Map();
     var deltaT = u.deltaT;
     var i = cb.globalInvocationId.x;
     var body = bodies[i];
@@ -134,7 +134,7 @@ class FinalizeBodies : ComputeBase {
     body.position += body.velocity * deltaT * (1.0 - body.nailed);
     body.velocity += body.acceleration * deltaT * (1.0 - body.nailed);
     var p = bodies[i].position;
-    var bv = bindings.Get().bodyVerts.MapReadWriteStorage();
+    var bv = bindings.Get().bodyVerts.Map();
     bodies[i] = body;
     bv[i*3]   = p + Vector( u.particleSize.x * 0.5,  0.0);
     bv[i*3+1] = p + Vector(-u.particleSize.x * 0.5,  0.0);
@@ -144,9 +144,9 @@ class FinalizeBodies : ComputeBase {
 
 class FinalizeSprings : ComputeBase {
   compute(1, 1, 1) main(cb : ComputeBuiltins^) {
-    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
-    var springs = bindings.Get().springStorage.MapReadWriteStorage();
-    var sv = bindings.Get().springVerts.MapReadWriteStorage();
+    var bodies = bindings.Get().bodyStorage.Map();
+    var springs = bindings.Get().springStorage.Map();
+    var sv = bindings.Get().springVerts.Map();
     var i = cb.globalInvocationId.x;
     sv[i*2] = bodies[springs[i].body1].position;
     sv[i*2+1] = bodies[springs[i].body2].position;

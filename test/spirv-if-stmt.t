@@ -6,7 +6,7 @@ class ComputeBindings {
 
 class BumpCompute {
   compute(1, 1, 1) main(cb : ComputeBuiltins^) {
-    var verts = bindings.Get().vertStorage.MapReadWriteStorage();
+    var verts = bindings.Get().vertStorage.Map();
     var pos = cb.globalInvocationId.x;
     if (pos % 2 == 1) {
       verts[pos] += float<4>( 1.0, 0.0, 0.0, 0.0);

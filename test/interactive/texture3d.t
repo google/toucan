@@ -50,8 +50,8 @@ class Pipeline {
 };
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 var tex = new sampleable Texture3D<RGBA8unorm>(device, {2, 2, 2});
-var buffer = new Buffer<ubyte<4>[]>(device, 64 * 2 * 2);
-var data = buffer.MapWrite();
+var buffer = new writeonly Buffer<ubyte<4>[]>(device, 64 * 2 * 2);
+var data = buffer.Map();
 data[0]   =  ubyte<4>(255ub,   0ub,   0ub, 255ub);
 data[1]   =  ubyte<4>(  0ub, 255ub,   0ub, 255ub);
 data[64]  =  ubyte<4>(  0ub,   0ub, 255ub, 255ub);

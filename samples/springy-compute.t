@@ -79,9 +79,9 @@ class ComputeBase {
 
 class ComputeForces : ComputeBase {
   compute(1, 1, 1) main(cb : ComputeBuiltins^) {
-    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
-    var springs = bindings.Get().springStorage.MapReadWriteStorage();
-    var u = bindings.Get().uniforms.MapReadUniform();
+    var bodies = bindings.Get().bodyStorage.Map();
+    var springs = bindings.Get().springStorage.Map();
+    var u = bindings.Get().uniforms.Map();
     var i = cb.globalInvocationId.x;
     var spring = springs[i];
     var body1 = bodies[spring.body1];
@@ -92,9 +92,9 @@ class ComputeForces : ComputeBase {
 
 class ApplyForces : ComputeBase {
   compute(1, 1, 1) main(cb : ComputeBuiltins^) {
-    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
-    var springs = bindings.Get().springStorage.MapReadWriteStorage();
-    var u = bindings.Get().uniforms.MapReadUniform();
+    var bodies = bindings.Get().bodyStorage.Map();
+    var springs = bindings.Get().springStorage.Map();
+    var u = bindings.Get().uniforms.Map();
     var i = cb.globalInvocationId.x;
     var body = bodies[i];
     body.force = u.gravity + u.wind;
@@ -109,10 +109,10 @@ class ApplyForces : ComputeBase {
 
 class UpdateBodyVerts : ComputeBase {
   compute(1, 1, 1) main(cb : ComputeBuiltins^) {
-    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
+    var bodies = bindings.Get().bodyStorage.Map();
     var i = cb.globalInvocationId.x;
     var p = bodies[i].position;
-    var bv = bindings.Get().bodyVerts.MapReadWriteStorage();
+    var bv = bindings.Get().bodyVerts.Map();
     bv[i*3]   = p + Vector( 0.1,  0.0);
     bv[i*3+1] = p + Vector(-0.1,  0.0);
     bv[i*3+2] = p + Vector( 0.0, -0.2);
@@ -121,9 +121,9 @@ class UpdateBodyVerts : ComputeBase {
 
 class UpdateSpringVerts : ComputeBase {
   compute(1, 1, 1) main(cb : ComputeBuiltins^) {
-    var bodies = bindings.Get().bodyStorage.MapReadWriteStorage();
-    var springs = bindings.Get().springStorage.MapReadWriteStorage();
-    var sv = bindings.Get().springVerts.MapReadWriteStorage();
+    var bodies = bindings.Get().bodyStorage.Map();
+    var springs = bindings.Get().springStorage.Map();
+    var sv = bindings.Get().springVerts.Map();
     var i = cb.globalInvocationId.x;
     sv[i*2] = bodies[springs[i].body1].position;
     sv[i*2+1] = bodies[springs[i].body2].position;
@@ -136,11 +136,11 @@ class DrawBindings {
 
 class DrawPipeline {
   vertex main(vb : VertexBuiltins^) {
-    var matrix = bindings.Get().uniforms.MapReadUniform().matrix;
+    var matrix = bindings.Get().uniforms.Map().matrix;
     vb.position = matrix * Utils.makeFloat4(vertices.Get());
   }
   fragment main(fb : FragmentBuiltins^) {
-    fragColor.Set(bindings.Get().uniforms.MapReadUniform().color);
+    fragColor.Set(bindings.Get().uniforms.Map().color);
   }
   var vertices : vertex Buffer<Vector[]>*;
   var fragColor : ColorAttachment<PreferredSwapChainFormat>*;

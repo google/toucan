@@ -40,11 +40,11 @@ native class Buffer<T> {
   SetData(data : T^);
   CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<T>^);
   deviceonly Get() vertex : T::ElementType;
-  MapRead() : readonly T^;
-  MapWrite() : writeonly T^;
-  deviceonly MapReadUniform() : readonly uniform T^;
-  deviceonly MapWriteStorage() : writeonly storage T^;
-  deviceonly MapReadWriteStorage() : storage T^;
+  deviceonly Map() uniform : uniform T^;
+  deviceonly Map() writeonly storage : writeonly storage T^;
+  deviceonly Map() storage : storage T^;
+  Map() readonly : readonly T^;
+  Map() writeonly : writeonly T^;
   Unmap();
 }
 

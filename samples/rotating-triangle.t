@@ -28,14 +28,14 @@ class Bindings {
 
 class Pipeline {
   vertex main(vb : VertexBuiltins^) : float<4> {
-    var uniforms = bindings.Get().uniformBuffer.MapReadUniform();
+    var uniforms = bindings.Get().uniformBuffer.Map();
     var v = vertices.Get();
     var position = float<4>(v.position.x, v.position.y, 0.0, 1.0);
     vb.position = uniforms.mvpMatrix * position;
     return float<4>(v.color.r, v.color.g, v.color.b, 1.0);
   }
   fragment main(fb : FragmentBuiltins^, varyings : float<4>) {
-    fragColor.Set(varyings * bindings.Get().uniformBuffer.MapReadUniform().alpha);
+    fragColor.Set(varyings * bindings.Get().uniformBuffer.Map().alpha);
   }
   var vertices : vertex Buffer<Vertex[]>*;
   var fragColor : ColorAttachment<PreferredSwapChainFormat>*;

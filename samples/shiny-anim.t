@@ -16,8 +16,8 @@ class CubeLoader {
   static Load(device : Device*, data : ubyte[]^, texture : TextureCube<Format>^, face : uint) {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
-    var buffer = new Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * size.y);
-    var b = buffer.MapWrite();
+    var buffer = new writeonly Buffer<Format::MemoryType[]>(device, texture.MinBufferWidth() * size.y);
+    var b = buffer.Map();
     image.Decode(b, texture.MinBufferWidth());
     buffer.Unmap();
     var encoder = new CommandEncoder(device);
@@ -151,7 +151,7 @@ class DrawPipeline {
 class SkyboxPipeline : DrawPipeline {
     vertex main(vb : VertexBuiltins^) : float<3> {
         var v = position.Get();
-        var uniforms = bindings.Get().uniforms.MapReadUniform();
+        var uniforms = bindings.Get().uniforms.Map();
         var pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
@@ -169,7 +169,7 @@ class ReflectionPipeline : DrawPipeline {
     vertex main(vb : VertexBuiltins^) : Vertex {
         var v = vert.Get();
         var n = Math.normalize(v.normal);
-        var uniforms = bindings.Get().uniforms.MapReadUniform();
+        var uniforms = bindings.Get().uniforms.Map();
         var viewModel = uniforms.view * uniforms.model;
         var pos = viewModel * float<4>(v.position.x, v.position.y, v.position.z, 1.0);
         var normal = viewModel * float<4>(n.x, n.y, n.z, 0.0);
@@ -181,7 +181,7 @@ class ReflectionPipeline : DrawPipeline {
     }
     fragment main(fb : FragmentBuiltins^, varyings : Vertex) {
       var b = bindings.Get();
-      var uniforms = b.uniforms.MapReadUniform();
+      var uniforms = b.uniforms.Map();
       var p = Math.normalize(varyings.position);
       var n = Math.normalize(varyings.normal);
       var r = Math.reflect(p, n);
