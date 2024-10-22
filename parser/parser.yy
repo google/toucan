@@ -63,13 +63,12 @@ static void BeginEnum(const char *id);
 static void AppendEnum(const char* id);
 static void AppendEnum(const char* id, int value);
 static void EndEnum();
-static void BeginMethod(int modifiers, std::string id, ArgList* workgroupSize = nullptr);
-static void BeginConstructor(int modifiers, Type* type);
+static void BeginMethod(int modifiers, std::string id, ArgList* workgroupSize,
+                        Stmts* formalArguments, int thisQualifiers, Type* returnType);
+static void BeginConstructor(int modifiers, Type* type, Stmts* formalArguments);
 static void BeginDestructor(int modifiers, Type* type);
-static void AddFormalArgument(const char* id, Type* type, Expr* defaultValue);
-static Method* EndMethod(int thisQualifiers, Type* returnType, Stmts* stmts, int index = -1);
+static Method* EndMethod(Stmts* stmts, int index = -1);
 static Method* EndConstructor(Expr* initializer, Stmts* stmts);
-static Method* EndDestructor(Stmts* stmts);
 static void BeginBlock();
 static void EndBlock(Stmts* stmts);
 static Expr* ThisExpr();
@@ -128,7 +127,7 @@ Type* FindType(const char* str) {
 %type <stmt> if_statement for_statement while_statement do_statement
 %type <stmt> opt_else var_decl class_decl
 %type <stmt> class_forward_decl
-%type <stmts> statements var_decl_list var_decl_statement method_body
+%type <stmts> statements var_decl_list var_decl_statement formal_arguments non_empty_formal_arguments method_body
 %type <argList> arguments non_empty_arguments opt_workgroup_size
 %type <typeList> types
 %type <typeList> template_formal_arguments
@@ -323,14 +322,14 @@ opt_return_type:
   ;
 
 class_body_decl:
-    method_modifiers opt_workgroup_size T_IDENTIFIER           { BeginMethod($1, $3, $2); }
-    '(' formal_arguments ')' opt_type_qualifiers opt_return_type method_body
-                                            { EndMethod($8, $9, $10); }
-  | method_modifiers T_TYPENAME
-                                            { BeginConstructor($1, $2); }
-    '(' formal_arguments ')' opt_initializer method_body    { EndConstructor($7, $8); }
+    method_modifiers opt_workgroup_size T_IDENTIFIER '(' formal_arguments ')'
+    opt_type_qualifiers opt_return_type     { BeginMethod($1, $3, $2, $5, $7, $8); }
+    method_body                             { EndMethod($10); }
+  | method_modifiers T_TYPENAME '(' formal_arguments ')'
+                                            { BeginConstructor($1, $2, $4); }
+    opt_initializer method_body             { EndConstructor($7, $8); }
   | method_modifiers '~' T_TYPENAME '(' ')' { BeginDestructor($1, $3); }
-    method_body                             { EndDestructor($7); }
+    method_body                             { EndMethod($7, 0); }
   | var_decl_statement ';'                  { CreateFieldsFromVarDecls($1); }
   | enum_decl ';'
   | using_decl
@@ -390,17 +389,12 @@ method_modifiers:
 
 formal_arguments:
     non_empty_formal_arguments
-  | /* nothing */
+  | /* nothing */                           { $$ = nullptr; }
   ;
 
 non_empty_formal_arguments:
-    formal_arguments ',' formal_argument
-  | formal_argument
-  ;
-formal_argument:
-    T_IDENTIFIER ':' type                   { AddFormalArgument($1, $3, nullptr); }
-  | T_IDENTIFIER '=' expr_or_list           { AddFormalArgument($1, nullptr, $3); }
-  | T_IDENTIFIER ':' type '=' expr_or_list  { AddFormalArgument($1, $3, $5); }
+    formal_arguments ',' var_decl           { $1->Append($3); $$ = $1; }
+  | var_decl                                { $$ = Make<Stmts>(); $$->Append($1); }
   ;
 
 var_decl:
@@ -798,16 +792,24 @@ static void EndBlock(Stmts* stmts) {
   stmts->SetScope(symbols_->PopScope());
 }
 
-static void BeginMethod(int modifiers, std::string id, ArgList* workgroupSize) {
+static void BeginMethod(int modifiers, std::string id, ArgList* workgroupSize,
+                        Stmts* formalArguments, int thisQualifiers, Type* returnType) {
   Scope* classScope = symbols_->PeekScope();
   while (!classScope->classType) {
     classScope = classScope->parent;
   }
   ClassType* classType = classScope->classType;
-  Method* method = new Method(modifiers, nullptr, id, classType);
+  Method* method = new Method(modifiers, returnType, id, classType);
   if (!(modifiers & Method::Modifier::Static)) {
-    WeakPtrType* refType = types_->GetWeakPtrType(classType);
-    method->AddFormalArg("this", refType, nullptr);
+    Type* thisType = types_->GetQualifiedType(classType, thisQualifiers);
+    thisType = types_->GetWeakPtrType(thisType);
+    method->AddFormalArg("this", thisType, nullptr);
+  }
+  if (formalArguments) {
+    for (Stmt* const& it : formalArguments->GetStmts()) {
+      VarDeclaration* v = static_cast<VarDeclaration*>(it);
+      method->AddFormalArg(v->GetID(), v->GetType(), v->GetInitExpr());
+    }
   }
   if (workgroupSize) {
     auto args = workgroupSize->GetArgs();
@@ -833,7 +835,7 @@ static void BeginMethod(int modifiers, std::string id, ArgList* workgroupSize) {
   scope->method = method;
 }
 
-static void BeginConstructor(int modifiers, Type* type) {
+static void BeginConstructor(int modifiers, Type* type, Stmts* formalArguments) {
   if (!type->IsClass()) {
     yyerror("constructor must be of class type");
     return;
@@ -842,7 +844,8 @@ static void BeginConstructor(int modifiers, Type* type) {
   if (classType->IsNative()) {
     modifiers |= Method::Modifier::Static;
   }
-  BeginMethod(modifiers, classType->GetName());
+  auto returnType = types_->GetWeakPtrType(classType);
+  BeginMethod(modifiers, classType->GetName(), nullptr, formalArguments, 0, returnType);
 }
 
 static void BeginDestructor(int modifiers, Type* type) {
@@ -853,13 +856,8 @@ static void BeginDestructor(int modifiers, Type* type) {
   ClassType* classType = static_cast<ClassType*>(type);
   modifiers |= Method::Modifier::Virtual;
   std::string name(std::string("~") + classType->GetName());
-  BeginMethod(modifiers, name.c_str());
-}
-
-static void AddFormalArgument(const char* id, Type* type, Expr* defaultValue) {
-  if (!type) { type = types_->GetAuto(); }
-  Method* method = symbols_->PeekScope()->method;
-  method->AddFormalArg(id, type, defaultValue);
+  Type* returnType = types_->GetVoid();
+  BeginMethod(modifiers, name.c_str(), nullptr, nullptr, 0, returnType);
 }
 
 static void CreateFieldsFromVarDecls(Stmts* stmts) {
@@ -911,8 +909,7 @@ static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
   if (stmts) {
     stmts->Append(Make<ReturnStatement>(Load(ThisExpr()), symbols_->PeekScope()));
   }
-  Method* method = EndMethod(0, nullptr, stmts);
-  method->returnType = types_->GetWeakPtrType(method->classType);
+  Method* method = EndMethod(stmts);
   if (method->stmts) {
     if (!initializer) {
       initializer = Make<UnresolvedListExpr>(Make<ArgList>());
@@ -923,25 +920,10 @@ static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
   return method;
 }
 
-static Method* EndDestructor(Stmts* stmts) {
-  Type* returnType = types_->GetVoid();
-  Method* method = EndMethod(0, returnType, stmts, 0);
-  method->index = 0;
-  return method;
-}
-
-static Method* EndMethod(int thisQualifiers, Type* returnType, Stmts* stmts, int index) {
+static Method* EndMethod(Stmts* stmts, int index) {
   Scope* methodScope = symbols_->PopScope();
   Method* method = methodScope->method;
-  method->returnType = returnType;
   method->stmts = stmts;
-  if (!(method->modifiers & Method::Static)) {
-    Type* type = method->formalArgList[0]->type;
-    assert(type->IsPtr());
-    type = static_cast<PtrType*>(type)->GetBaseType();
-    type = types_->GetQualifiedType(type, thisQualifiers);
-    method->formalArgList[0]->type = types_->GetWeakPtrType(type);
-  }
   if (stmts) stmts->SetScope(methodScope);
   Scope* scope = symbols_->PeekScope();
   if (!scope || !scope->classType) {
