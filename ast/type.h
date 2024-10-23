@@ -397,9 +397,8 @@ class ClassType : public Type {
   ClassType(std::string name);
   Field*              AddField(std::string name, Type* type, Expr* defaultValue);
   Field*              FindField(std::string name) const;
-  void                AddMethod(Method* method, int vtableIndex);
+  void                AddMethod(Method* method);
   size_t              ComputeFieldOffsets();
-  Method*             FindMethod(const std::string& name, const TypeList& args);
   void                AddEnum(std::string id, EnumType* enumType);
   const FieldVector&  GetFields() const { return fields_; }          // local fields only
   int                 GetTotalFields() const { return numFields_; }  // includes inherited fields
@@ -427,6 +426,8 @@ class ClassType : public Type {
   void        SetNative(bool native) { native_ = native; }
   ClassType*  GetParent() const { return parent_; }
   int         GetVTableSize() const { return vtable_.size(); }
+  void        SetVTable(int index, Method* method);
+  void        AppendToVTable(Method* method);
   const std::vector<Method*>& GetVTable() { return vtable_; }
   Type*                       FindType(const std::string& id);
   void                        SetMemoryLayout(MemoryLayout memoryLayout, TypeTable* types);

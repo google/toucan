@@ -67,7 +67,7 @@ static void BeginMethod(int modifiers, std::string id, ArgList* workgroupSize,
                         Stmts* formalArguments, int thisQualifiers, Type* returnType);
 static void BeginConstructor(int modifiers, Type* type, Stmts* formalArguments);
 static void BeginDestructor(int modifiers, Type* type);
-static Method* EndMethod(Stmts* stmts, int index = -1);
+static Method* EndMethod(Stmts* stmts);
 static Method* EndConstructor(Expr* initializer, Stmts* stmts);
 static void BeginBlock();
 static void EndBlock(Stmts* stmts);
@@ -329,7 +329,7 @@ class_body_decl:
                                             { BeginConstructor($1, $2, $4); }
     opt_initializer method_body             { EndConstructor($7, $8); }
   | method_modifiers '~' T_TYPENAME '(' ')' { BeginDestructor($1, $3); }
-    method_body                             { EndMethod($7, 0); }
+    method_body                             { EndMethod($7); }
   | var_decl_statement ';'                  { CreateFieldsFromVarDecls($1); }
   | enum_decl ';'
   | using_decl
@@ -739,19 +739,7 @@ static Stmt* EndClass() {
   Scope* scope = symbols_->PopScope();
   assert(scope->classType);
   ClassType* classType = scope->classType;
-  if (!classType->GetVTable()[0]) {
-    std::string name(std::string("~") + classType->GetName());
-    Method* destructor = new Method(Method::Modifier::Virtual, types_->GetVoid(), name, classType);
-    destructor->AddFormalArg("this", types_->GetWeakPtrType(classType), nullptr);
-    classType->AddMethod(destructor, 0);
-  }
-  // Native classes always need semantic analysis, in order for default args
-  // to be resolved before bindings generation. Non-native template classes don't.
-  if (classType->IsNative() || !classType->IsClassTemplate()) {
-    return Make<UnresolvedClassDefinition>(scope);
-  } else {
-    return nullptr;
-  }
+  return Make<UnresolvedClassDefinition>(scope);
 }
 
 static void BeginEnum(const char *id) {
@@ -885,26 +873,6 @@ static Type* GetScopedType(Type* type, const char* id) {
   return scopedType;
 }
 
-static Method* MatchMethod(ClassType* c, Method* method) {
-  int numArgs = method->formalArgList.size();
-  TypeList args(numArgs);
-  for (int i = 0; i < numArgs; ++i) {
-    args[i] = method->formalArgList[i]->type;
-  }
-  Method* match = c->FindMethod(method->name, args);
-  return match;
-}
-
-static void CheckMethodMatch(Method* method, Method* match) {
-  if (method->modifiers & Method::Modifier::Virtual) {
-    if (!(match->modifiers & Method::Modifier::Virtual)) {
-      yyerror("attempt to override a non-virtual method");
-    }
-  } else if (match->modifiers & Method::Modifier::Virtual) {
-    yyerror("override of virtual method must be virtual");
-  }
-}
-
 static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
   if (stmts) {
     stmts->Append(Make<ReturnStatement>(Load(ThisExpr()), symbols_->PeekScope()));
@@ -920,7 +888,7 @@ static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
   return method;
 }
 
-static Method* EndMethod(Stmts* stmts, int index) {
+static Method* EndMethod(Stmts* stmts) {
   Scope* methodScope = symbols_->PopScope();
   Method* method = methodScope->method;
   method->stmts = stmts;
@@ -930,12 +898,7 @@ static Method* EndMethod(Stmts* stmts, int index) {
     yyerror("method definition outside class?!");
     return nullptr;
   }
-  ClassType* classType = scope->classType;
-  Method* match = MatchMethod(classType, method);
-  if (match) {
-    CheckMethodMatch(method, match);
-  }
-  classType->AddMethod(method, match ? match->index : index);
+  scope->classType->AddMethod(method);
   return method;
 }
 

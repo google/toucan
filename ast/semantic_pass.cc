@@ -640,9 +640,38 @@ Result SemanticPass::Visit(NewArrayExpr* expr) {
 Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   Scope*     scope = defn->GetScope();
   ClassType* classType = scope->classType;
+  // Non-native template classes don't need semantic analysis, since
+  // their code won't be directly generated.
+  if (!classType->IsNative() && classType->IsClassTemplate()) {
+    return nullptr;
+  }
+
   symbols_->PushScope(scope);
+  Method* destructor = nullptr;
   for (const auto& mit : classType->GetMethods()) {
     Method* method = mit.get();
+    if (method->name[0] == '~') {
+      destructor = method;
+    } else {
+      Method* match = FindOverriddenMethod(classType->GetParent(), method);
+      if (match) {
+        if (method->modifiers & Method::Modifier::Virtual) {
+          if (!(match->modifiers & Method::Modifier::Virtual)) {
+            return Error("attempt to override a non-virtual method");
+          }
+        } else if (match->modifiers & Method::Modifier::Virtual) {
+          return Error("override of virtual method must be virtual");
+        }
+      }
+      if (method->modifiers & Method::Modifier::Virtual) {
+        if (match) {
+          classType->SetVTable(match->index, method);
+        } else {
+          classType->AppendToVTable(method);
+        }
+      }
+    }
+
     if (method->stmts) {
       method->stmts = Resolve(method->stmts);
       // If last statement is not a return statement,
@@ -662,7 +691,16 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
       }
     }
   }
-  Method* destructor = classType->GetVTable()[0];
+
+  if (!destructor) {
+    std::string name(std::string("~") + classType->GetName());
+    destructor = new Method(Method::Modifier::Virtual, types_->GetVoid(), name, classType);
+    destructor->AddFormalArg("this", types_->GetWeakPtrType(classType), nullptr);
+    classType->AddMethod(destructor);
+  }
+
+  classType->SetVTable(0, destructor);
+
   if (!destructor->stmts) {
     Stmts* stmts = Make<Stmts>();
     stmts->Append(Make<ReturnStatement>(nullptr, nullptr));
@@ -757,6 +795,26 @@ Method* SemanticPass::FindMethod(Expr*               thisExpr,
   } else {
     return nullptr;
   }
+}
+
+static bool MatchAllButFirst(const VarVector& v1, const VarVector& v2) {
+  if (v1.size() != v2.size()) { return false; }
+
+  for (size_t i = 1; i < v1.size(); ++i) {
+    if (v1[i]->type != v2[i]->type) { return false; }
+  }
+  return true;
+}
+
+Method* SemanticPass::FindOverriddenMethod(ClassType* classType, Method* method) {
+  if (!classType) { return nullptr; }
+
+  for (const auto& m : classType->GetMethods()) {
+    if (m->name == method->name && MatchAllButFirst(m->formalArgList, method->formalArgList)) {
+      return m.get();
+    }
+  }
+  return FindOverriddenMethod(classType->GetParent(), method);
 }
 
 Result SemanticPass::Default(ASTNode* node) {

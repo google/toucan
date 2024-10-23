@@ -67,6 +67,7 @@ class SemanticPass : public CopyVisitor {
                      const std::string&  name,
                      ArgList*            args,
                      std::vector<Expr*>* newArgList);
+  Method* FindOverriddenMethod(ClassType* classType, Method* method);
   SymbolTable* symbols_;
   TypeTable*   types_;
   int          numErrors_;

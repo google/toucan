@@ -72,6 +72,8 @@ error-named-param-missing-one.t:7:  class Bar has no method Foo(f = float)
 error-named-param-missing-one.t:7:  Bar.Foo(int, float) : float
 test/error-non-static-method-called-statically.t
 error-non-static-method-called-statically.t:5:  attempt to call non-static method "bar" on class "Foo"
+test/error-non-virtual-override.t
+error-non-virtual-override.t:10:  attempt to override a non-virtual method
 test/error-partial-template.t
 error-partial-template.t:10:  cannot store a value of type "Foo<int, int>*" to a location of type "Foo<int>*"
 error-partial-template.t:11:  cannot store a value of type "Foo<int, int>*" to a location of type "Foo*"
@@ -80,6 +82,8 @@ error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
 error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(CommandEncoder*, writeonly Buffer<float<4>[]>*, int)
 error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromBuffer(CommandEncoder^, Buffer<ubyte<4>[]>^, uint, uint) 
 test/error-uint-literal-too-large.t
+test/error-virtual-override.t
+error-virtual-override.t:8:  override of virtual method must be virtual
 test/error-wrong-named-param.t
 error-wrong-named-param.t:7:  class Bar has no method Foo(b = float, a = int)
 error-wrong-named-param.t:7:  Bar.Foo(int, float) : float
@@ -218,9 +222,6 @@ test/vector-initializer.t
 test/vector-scalar-mul-div.t
 test/vector-store-by-index.t
 test/virtual-function.t
-test/virtual-override-error.t
-virtual-override-error.t:10: override of virtual method must be virtual
-virtual-override-error.t:13: attempt to override a non-virtual method
 test/void-value-error.t
 void-value-error.t:4:  implicit void return, in method returning non-void.
 test/vtable.t

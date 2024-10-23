@@ -57,7 +57,7 @@ void TypeReplacementPass::ResolveClassInstance(ClassTemplate* classTemplate, Cla
   }
   for (const auto& i : classTemplate->GetMethods()) {
     Method* method = i.get();
-    instance->AddMethod(ResolveMethod(method), method->index);
+    instance->AddMethod(ResolveMethod(method));
   }
   for (const auto& i : classTemplate->GetFields()) {
     Field* field = i.get();

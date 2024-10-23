@@ -401,16 +401,7 @@ size_t ClassType::ComputeFieldOffsets() {
   return offset;
 }
 
-void ClassType::AddMethod(Method* method, int vtableIndex) {
-  if (method->modifiers & Method::Modifier::Virtual) {
-    if (vtableIndex >= 0) {
-      method->index = vtableIndex;
-      vtable_[vtableIndex] = method;
-    } else {
-      method->index = vtable_.size();
-      vtable_.push_back(method);
-    }
-  }
+void ClassType::AddMethod(Method* method) {
   methods_.push_back(std::unique_ptr<Method>(method));
 }
 
@@ -488,67 +479,20 @@ bool ClassType::HasUnsizedArray() const {
   return (fields_.back()->type->IsUnsizedArray());
 }
 
-static bool MatchTypes(const TypeList& types, Method* m) {
-  size_t             numArgs = types.size();
-  const Type* const* argTypes = types.data();
-  if (m->modifiers & Method::Modifier::Static) {
-    ++argTypes;
-    --numArgs;
-  }
-  if (numArgs != m->formalArgList.size()) { return false; }
-  for (int i = 0; i < numArgs; ++i) {
-    if (!argTypes[i]->CanWidenTo(m->formalArgList[i]->type)) { return false; }
-  }
-  return true;
+void ClassType::SetVTable(int index, Method* method) {
+  assert(index >= 0 && index < vtable_.size());
+  method->index = index;
+  vtable_[index] = method;
 }
 
-static bool MatchFields(ArgList*            args,
-                        ClassType*          c,
-                        TypeTable*          types,
-                        std::vector<Expr*>* newArgList) {
-  std::vector<Expr*> result;
-  for (auto& field : c->GetFields()) {
-    result.push_back(field->defaultValue);
-  }
-  if (args->IsNamed()) {
-    for (auto arg : args->GetArgs()) {
-      Field* field = c->FindField(arg->GetID());
-      if (!field) { return false; }
-      if (!arg->GetExpr()->GetType(types)->CanWidenTo(field->type)) { return false; }
-      result[field->index] = arg->GetExpr();
-    }
-  } else {
-    size_t      numArgs = args->GetArgs().size();
-    Arg* const* a = args->GetArgs().data();
-    auto&       fields = c->GetFields();
-    if (numArgs > fields.size()) { return false; }
-    for (int i = 0; i < numArgs; ++i) {
-      Expr* expr = a[i]->GetExpr();
-      if (expr && !expr->GetType(types)->CanWidenTo(fields[i]->type)) { return false; }
-      result[i] = expr;
-    }
-  }
-  *newArgList = result;
-  return true;
+void ClassType::AppendToVTable(Method* method) {
+  method->index = vtable_.size();
+  vtable_.push_back(method);
 }
 
 void Method::AddFormalArg(std::string name, Type* type, Expr* defaultValue) {
   formalArgList.push_back(std::make_shared<Var>(name, type));
   defaultArgs.push_back(defaultValue);
-}
-
-Method* ClassType::FindMethod(const std::string& name, const TypeList& args) {
-  for (const auto& it : methods_) {
-    Method* m = it.get();
-    if (m->name == name) {
-      if (MatchTypes(args, m)) { return m; }
-    }
-  }
-  if (parent_) {
-    return parent_->FindMethod(name, args);
-  } else {
-    return nullptr;
-  }
 }
 
 std::string ClassType::ToString() const {

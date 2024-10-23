@@ -273,7 +273,6 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
   if (method->modifiers & Method::Modifier::Fragment) { fprintf(file_, " | Method::Modifier::Fragment"); }
   if (method->modifiers & Method::Modifier::Compute) { fprintf(file_, " | Method::Modifier::Compute"); }
   std::string name = method->name;
-  if (name[0] == '~') { name = "Destroy"; }
   fprintf(file_, ", returnType, \"%s\", static_cast<ClassType*>(typeList[%d]));\n", name.c_str(),
           typeMap_[method->classType]);
   const VarVector& argList = method->formalArgList;
@@ -295,7 +294,11 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
     }
     fprintf(file_, ");\n");
   }
-  fprintf(file_, "  c->AddMethod(m, %d);\n", method->index);
+  fprintf(file_, "  c->AddMethod(m);\n");
+  if (method->modifiers & Method::Modifier::Virtual) {
+    assert(method->index == 0); // Destructors are the only supported virtual
+    fprintf(file_, "  c->SetVTable(0, m);\n");
+  }
   if (classType->IsNative()) {
     if (header_ && !(method->modifiers & Method::Modifier::DeviceOnly)) {
 #if TARGET_OS_IS_WIN

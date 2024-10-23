@@ -10,5 +10,5 @@ class Bar : Foo {
     return 1.0;
   }
 };
-var f = new Bar();
+var f : Foo* = new Bar();
 Test.Expect(f.baz() == 1.0);
