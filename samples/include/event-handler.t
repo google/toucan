@@ -4,7 +4,7 @@ class EventHandler {
   Rotate(diff : int<2>) {
     rotation += (float<2>) diff / 200.0;
   }
-  Handle(event : Event*) {
+  Handle(event : *Event) {
     if (event.type == MouseDown) {
       mouseDown = true;
     } else if (event.type == MouseUp) {

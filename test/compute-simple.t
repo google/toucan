@@ -1,15 +1,15 @@
 include "include/test.t"
 
 class ComputeBindings {
-  var buffer : writeonly storage Buffer<int[]>*;
+  var buffer : *writeonly storage Buffer<int[]>;
 }
 
 class Compute {
-  compute(1, 1, 1) main(cb : ComputeBuiltins^) {
+  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
     var buffer = bindings.Get().buffer.Map();
     buffer[0] = 42;
   }
-  var bindings : BindGroup<ComputeBindings>*;
+  var bindings : *BindGroup<ComputeBindings>;
 }
 
 var device = new Device();

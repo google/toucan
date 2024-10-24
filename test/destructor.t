@@ -4,13 +4,13 @@ class Foo {
   var r : float;
 };
 class Bar {
-  Bar(f : Foo*) {
+  Bar(f : *Foo) {
     foo = f;
   }
  virtual ~Bar() {
     foo.r = 1234.0;
   }
-  var foo : Foo*;
+  var foo : *Foo;
 };
 var r = -1.0;
 {

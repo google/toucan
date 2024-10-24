@@ -52,9 +52,9 @@ class Spring {
 }
 
 class ParticleSystem {
-  var bodies : Body[]*;
-  var springs : Spring[]*;
-  ParticleSystem(b : Body[]*, s : Spring[]*) {
+  var bodies : *Body[];
+  var springs : *Spring[];
+  ParticleSystem(b : *Body[], s : *Spring[]) {
     bodies = b;
     springs = s;
   }
@@ -85,20 +85,20 @@ class DrawUniforms {
 }
 
 class Bindings {
-  var uniforms : uniform Buffer<DrawUniforms>*;
+  var uniforms : *uniform Buffer<DrawUniforms>;
 }
 
 class DrawPipeline {
-  vertex main(vb : VertexBuiltins^) {
+  vertex main(vb : ^VertexBuiltins) {
     var matrix = bindings.Get().uniforms.Map().matrix;
     vb.position = matrix * Utils.makeFloat4(vertices.Get());
   }
-  fragment main(fb : FragmentBuiltins^) {
+  fragment main(fb : ^FragmentBuiltins) {
     fragColor.Set(bindings.Get().uniforms.Map().color);
   }
-  var vertices : vertex Buffer<Vector[]>*;
-  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
-  var bindings : BindGroup<Bindings>*;
+  var vertices : *vertex Buffer<Vector[]>;
+  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var bindings : *BindGroup<Bindings>;
 }
 
 var bodies = new Body[width * height * depth];

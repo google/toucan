@@ -5,11 +5,11 @@ var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var verts : Vertex[3] = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 } };
 var vb = new vertex Buffer<Vertex[]>(device, &verts);
 class Pipeline {
-  static deviceonly getCurrentVert(v : vertex Buffer<Vertex[]>*) : float<4> { return v.Get(); }
-  vertex main(vb : VertexBuiltins^) { vb.position = this.getCurrentVert(vertices); }
-  fragment main(fb : FragmentBuiltins^) { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
-  var vertices : vertex Buffer<Vertex[]>*;
-  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
+  static deviceonly getCurrentVert(v : *vertex Buffer<Vertex[]>) : float<4> { return v.Get(); }
+  vertex main(vb : ^VertexBuiltins) { vb.position = this.getCurrentVert(vertices); }
+  fragment main(fb : ^FragmentBuiltins) { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
+  var vertices : *vertex Buffer<Vertex[]>;
+  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
 }
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 var encoder = new CommandEncoder(device);

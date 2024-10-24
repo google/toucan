@@ -13,7 +13,7 @@ class Vertex {
 using Format = RGBA8unorm;
 
 class CubeLoader {
-  static Load(device : Device*, data : ubyte[]^, texture : TextureCube<Format>^, face : uint) {
+  static Load(device : *Device, data : ^ubyte[], texture : ^TextureCube<Format>, face : uint) {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
     var buffer = new writeonly Buffer<Format::HostType[]>(device, texture.MinBufferWidth() * size.y);
@@ -70,7 +70,7 @@ class BicubicPatch {
 }
 
 class BicubicTessellator {
-  BicubicTessellator(controlPoints : float<3>[]^, controlIndices : uint[]^, level : int) {
+  BicubicTessellator(controlPoints : ^float<3>[], controlIndices : ^uint[], level : int) {
     var numPatches = controlIndices.length / 16;
     var patchWidth = level + 1;
     var verticesPerPatch = patchWidth * patchWidth;
@@ -109,8 +109,8 @@ class BicubicTessellator {
       }
     }
   }
-  var vertices : Vertex[]*;
-  var indices : uint[]*;
+  var vertices : *Vertex[];
+  var indices : *uint[];
 }
 
 var tessTeapot = new BicubicTessellator(&teapotControlPoints, &teapotControlIndices, 8);
@@ -123,37 +123,37 @@ class Uniforms {
 }
 
 class Bindings {
-  var sampler : Sampler*;
-  var textureView : SampleableTextureCube<float>*;
-  var uniforms : uniform Buffer<Uniforms>*;
+  var sampler : *Sampler;
+  var textureView : *SampleableTextureCube<float>;
+  var uniforms : *uniform Buffer<Uniforms>;
 }
 
 class DrawPipeline {
-  var indexBuffer : index Buffer<uint[]>*;
-  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
-  var depth : DepthStencilAttachment<Depth24Plus>*;
-  var bindings : BindGroup<Bindings>*;
+  var indexBuffer : *index Buffer<uint[]>;
+  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var depth : *DepthStencilAttachment<Depth24Plus>;
+  var bindings : *BindGroup<Bindings>;
 }
 
 class SkyboxPipeline : DrawPipeline {
-    vertex main(vb : VertexBuiltins^) : float<3> {
+    vertex main(vb : ^VertexBuiltins) : float<3> {
         var v = position.Get();
         var uniforms = bindings.Get().uniforms.Map();
         var pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
-    fragment main(fb : FragmentBuiltins^, position : float<3>) {
+    fragment main(fb : ^FragmentBuiltins, position : float<3>) {
       var p = Math.normalize(position);
       var b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
-    var position : vertex Buffer<float<3>[]>*;
+    var position : *vertex Buffer<float<3>[]>;
 };
 
 class ReflectionPipeline : DrawPipeline {
-    vertex main(vb : VertexBuiltins^) : Vertex {
+    vertex main(vb : ^VertexBuiltins) : Vertex {
         var v = vert.Get();
         var n = Math.normalize(v.normal);
         var uniforms = bindings.Get().uniforms.Map();
@@ -166,7 +166,7 @@ class ReflectionPipeline : DrawPipeline {
         varyings.normal = float<3>(normal.x, normal.y, normal.z);
         return varyings;
     }
-    fragment main(fb : FragmentBuiltins^, varyings : Vertex) {
+    fragment main(fb : ^FragmentBuiltins, varyings : Vertex) {
       var b = bindings.Get();
       var uniforms = b.uniforms.Map();
       var p = Math.normalize(varyings.position);
@@ -175,7 +175,7 @@ class ReflectionPipeline : DrawPipeline {
       var r4 = uniforms.viewInverse * float<4>(r.x, r.y, r.z, 0.0);
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-r4.x, r4.y, r4.z)));
     }
-    var vert : vertex Buffer<Vertex[]>*;
+    var vert : *vertex Buffer<Vertex[]>;
 };
 
 var depthState = new DepthStencilState();

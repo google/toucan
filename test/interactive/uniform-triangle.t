@@ -8,16 +8,16 @@ class Uniforms {
   var color : float<4>;
 }
 class Bindings {
-  var uniforms : uniform Buffer<Uniforms>*;
+  var uniforms : *uniform Buffer<Uniforms>;
 }
 class Pipeline {
-  vertex main(vb : VertexBuiltins^) { vb.position = vertices.Get(); }
-  fragment main(fb : FragmentBuiltins^) {
+  vertex main(vb : ^VertexBuiltins) { vb.position = vertices.Get(); }
+  fragment main(fb : ^FragmentBuiltins) {
     fragColor.Set(bindings.Get().uniforms.Map().color);
   }
-  var vertices : vertex Buffer<Vertex[]>*;
-  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
-  var bindings : BindGroup<Bindings>*;
+  var vertices : *vertex Buffer<Vertex[]>;
+  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var bindings : *BindGroup<Bindings>;
 }
 var uniformBuffer = new uniform Buffer<Uniforms>(device);
 var bg = new BindGroup<Bindings>(device, { uniformBuffer });

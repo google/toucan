@@ -38,23 +38,23 @@ indices[5] = 3;
 var vb = new vertex Buffer<Vertex[]>(device, verts);
 var ib = new index Buffer<uint[]>(device, indices);
 class Bindings {
-  var sampler : Sampler*;
-  var textureView : SampleableTexture2D<float>*;
+  var sampler : *Sampler;
+  var textureView : *SampleableTexture2D<float>;
 }
 
 class Pipeline {
-    vertex main(vb : VertexBuiltins^) : float<2> {
+    vertex main(vb : ^VertexBuiltins) : float<2> {
         var v = vert.Get();
         vb.position = v.position;
         return v.texCoord;
     }
-    fragment main(fb : FragmentBuiltins^, texCoord : float<2>) {
+    fragment main(fb : ^FragmentBuiltins, texCoord : float<2>) {
       fragColor.Set(bindings.Get().textureView.Sample(bindings.Get().sampler, texCoord));
     }
-    var vert : vertex Buffer<Vertex[]>*;
-    var indexBuffer : index Buffer<uint[]>*;
-    var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
-    var bindings : BindGroup<Bindings>*;
+    var vert : *vertex Buffer<Vertex[]>;
+    var indexBuffer : *index Buffer<uint[]>;
+    var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+    var bindings : *BindGroup<Bindings>;
 };
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 var sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);

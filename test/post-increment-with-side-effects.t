@@ -2,7 +2,7 @@ include "include/test.t"
 
 class Foo {
   Foo() {}
-  self() : Foo^ { count += 1; return this; }
+  self() : ^Foo { count += 1; return this; }
   var a : int;
   var count : int;
 }

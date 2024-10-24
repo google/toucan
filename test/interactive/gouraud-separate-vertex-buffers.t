@@ -13,17 +13,17 @@ colors[1] = {0.0, 1.0, 0.0};
 colors[2] = {0.0, 0.0, 1.0};
 
 class Pipeline {
-  vertex main(vb : VertexBuiltins^) : float<3> {
+  vertex main(vb : ^VertexBuiltins) : float<3> {
     var v = position.Get();
     vb.position = float<4>(v.x, v.y, 0.0, 1.0);
     return color.Get();
   }
-  fragment main(fb : FragmentBuiltins^, varyings : float<3>) {
+  fragment main(fb : ^FragmentBuiltins, varyings : float<3>) {
     fragColor.Set(float<4>(varyings.r, varyings.g, varyings.b, 1.0));
   }
-  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
-  var position : vertex Buffer<float<2>[]>*;
-  var color : vertex Buffer<float<3>[]>*;
+  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var position : *vertex Buffer<float<2>[]>;
+  var color : *vertex Buffer<float<3>[]>;
 }
 
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);

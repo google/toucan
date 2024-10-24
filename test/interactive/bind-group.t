@@ -11,18 +11,18 @@ class Uniforms {
   var color : float<4>;
 }
 class ObjectData {
-  var uniforms : uniform Buffer<Uniforms>*;
+  var uniforms : *uniform Buffer<Uniforms>;
 }
 
 class Pipeline {
-  vertex main(vb : VertexBuiltins^) { vb.position = vert.Get(); }
-  fragment main(fb : FragmentBuiltins^) {
+  vertex main(vb : ^VertexBuiltins) { vb.position = vert.Get(); }
+  fragment main(fb : ^FragmentBuiltins) {
     var u = objectData.Get().uniforms.Map();
     fragColor.Set(u.color);
   }
-  var vert : vertex Buffer<Vertex[]>*;
-  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
-  var objectData : BindGroup<ObjectData>*;
+  var vert : *vertex Buffer<Vertex[]>;
+  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var objectData : *BindGroup<ObjectData>;
 }
 var objectData : ObjectData;
 objectData.uniforms = new uniform Buffer<Uniforms>(device);

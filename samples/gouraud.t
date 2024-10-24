@@ -14,16 +14,16 @@ var verts : Vertex[3] = {
 
 var vb = new vertex Buffer<Vertex[]>(device, &verts);
 class Pipeline {
-  vertex main(vb : VertexBuiltins^) : float<3> {
+  vertex main(vb : ^VertexBuiltins) : float<3> {
     var v = vertices.Get();
     vb.position = v.position;
     return v.color;
   }
-  fragment main(fb : FragmentBuiltins^, varyings : float<3>) {
+  fragment main(fb : ^FragmentBuiltins, varyings : float<3>) {
     fragColor.Set(float<4>(varyings.r, varyings.g, varyings.b, 1.0));
   }
-  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
-  var vertices : vertex Buffer<Vertex[]>*;
+  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var vertices : *vertex Buffer<Vertex[]>;
 }
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 var encoder = new CommandEncoder(device);

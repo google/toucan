@@ -27,26 +27,26 @@ indices[4] = 2;
 indices[5] = 3;
 
 class Bindings {
-  var sampler : Sampler*;
-  var textureView : SampleableTextureCube<float>*;
+  var sampler : *Sampler;
+  var textureView : *SampleableTextureCube<float>;
 }
 
 class Pipeline {
-    vertex main(vb : VertexBuiltins^) : Varyings {
+    vertex main(vb : ^VertexBuiltins) : Varyings {
         var v = vert.Get();
         vb.position = v.position;
         var varyings : Varyings;
         varyings.texCoord = v.texCoord;
         return varyings;
     }
-    fragment main(fb : FragmentBuiltins^, varyings : Varyings) {
+    fragment main(fb : ^FragmentBuiltins, varyings : Varyings) {
       var b = bindings.Get();
       fragColor.Set(b.textureView.Sample(b.sampler, varyings.texCoord));
     }
-    var vert : vertex Buffer<Vertex[]>*;
-    var indices : index Buffer<uint[]>*;
-    var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
-    var bindings : BindGroup<Bindings>*;
+    var vert : *vertex Buffer<Vertex[]>;
+    var indices : *index Buffer<uint[]>;
+    var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+    var bindings : *BindGroup<Bindings>;
 };
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 var tex = new sampleable TextureCube<RGBA8unorm>(device, {2, 2});

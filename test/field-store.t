@@ -2,7 +2,7 @@ include "include/test.t"
 
 class Bar;
 class Foo {
-  var bar : Bar*;
+  var bar : *Bar;
 };
 
 class Bar {

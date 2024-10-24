@@ -11,7 +11,7 @@ class Vertex {
 using Format = RGBA8unorm;
 
 class CubeLoader {
-  static Load(device : Device*, data : ubyte[]^, texture : TextureCube<Format>^, face : uint) {
+  static Load(device : *Device, data : ^ubyte[], texture : ^TextureCube<Format>, face : uint) {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
     var buffer = new writeonly Buffer<Format::HostType[]>(device, texture.MinBufferWidth() * size.y);
@@ -47,30 +47,30 @@ class Uniforms {
 }
 
 class Bindings {
-  var sampler : Sampler*;
-  var textureView : SampleableTextureCube<float>*;
-  var uniforms : uniform Buffer<Uniforms>*;
+  var sampler : *Sampler;
+  var textureView : *SampleableTextureCube<float>;
+  var uniforms : *uniform Buffer<Uniforms>;
 }
 
 class SkyboxPipeline {
-    vertex main(vb : VertexBuiltins^) : float<3> {
+    vertex main(vb : ^VertexBuiltins) : float<3> {
         var v = vertices.Get();
         var uniforms = bindings.Get().uniforms.Map();
         var pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
-    fragment main(fb : FragmentBuiltins^, position : float<3>) {
+    fragment main(fb : ^FragmentBuiltins, position : float<3>) {
       var p = Math.normalize(position);
       var b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
-    var vertices : vertex Buffer<float<3>[]>*;
-    var indices : index Buffer<uint[]>*;
-    var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
-    var depth : DepthStencilAttachment<Depth24Plus>*;
-    var bindings : BindGroup<Bindings>*;
+    var vertices : *vertex Buffer<float<3>[]>;
+    var indices : *index Buffer<uint[]>;
+    var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+    var depth : *DepthStencilAttachment<Depth24Plus>;
+    var bindings : *BindGroup<Bindings>;
 };
 
 var depthState = new DepthStencilState();

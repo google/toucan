@@ -9,7 +9,7 @@ var swapChain2 = new SwapChain<PreferredSwapChainFormat>(device, window2);
 var framebuffer1 = swapChain1.GetCurrentTexture();
 var framebuffer2 = swapChain2.GetCurrentTexture();
 class Pipeline {
-  var fragColor : ColorAttachment<PreferredSwapChainFormat>*;
+  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
 }
 var encoder = new CommandEncoder(device);
 var p1 : Pipeline;

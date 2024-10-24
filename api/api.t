@@ -22,29 +22,29 @@ native class CommandBuffer {
 
 native class Queue {
  ~Queue();
-  Submit(commandBuffer : CommandBuffer*);
+  Submit(commandBuffer : *CommandBuffer);
 }
 
 native class Device {
   Device();
  ~Device();
-  GetQueue() : Queue*;
+  GetQueue() : *Queue;
 }
 
 native class CommandEncoder;
 
 native class Buffer<T> {
-  Buffer(device : Device*, size : uint = 1u);
-  Buffer(device : Device*, t : T^);
+  Buffer(device : *Device, size : uint = 1u);
+  Buffer(device : *Device, t : ^T);
  ~Buffer();
-  SetData(data : T^);
-  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<T>^);
+  SetData(data : ^T);
+  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<T>);
   deviceonly Get() vertex : T::ElementType;
-  deviceonly Map() uniform : uniform T^;
-  deviceonly Map() writeonly storage : writeonly storage T^;
-  deviceonly Map() storage : storage T^;
-  Map() readonly : readonly T^;
-  Map() writeonly : writeonly T^;
+  deviceonly Map() uniform : ^uniform T;
+  deviceonly Map() writeonly storage : ^writeonly storage T;
+  deviceonly Map() storage : ^storage T;
+  Map() readonly : ^readonly T;
+  Map() writeonly : ^writeonly T;
   Unmap();
 }
 
@@ -58,17 +58,17 @@ class DepthStencilState {
 }
 
 native class RenderPipeline<T> {
-  RenderPipeline(device : Device*, depthStencilState : DepthStencilState^, primitiveTopology : PrimitiveTopology);
+  RenderPipeline(device : *Device, depthStencilState : ^DepthStencilState, primitiveTopology : PrimitiveTopology);
  ~RenderPipeline();
 }
 
 native class ComputePipeline<T> {
-  ComputePipeline(device : Device*);
+  ComputePipeline(device : *Device);
  ~ComputePipeline();
 }
 
 native class BindGroup<T> {
-  BindGroup(device : Device*, data : T^);
+  BindGroup(device : *Device, data : ^T);
  ~BindGroup();
   deviceonly Get() : T;
 }
@@ -99,109 +99,109 @@ enum AddressMode { Repeat, MirrorRepeat, ClampToEdge };
 enum FilterMode { Nearest, Linear };
 
 native class Sampler {
-  Sampler(device : Device*, addressModeU : AddressMode, addressModeV : AddressMode, addressModeW : AddressMode, magFilter : FilterMode, minFilter : FilterMode, mipmapFilter : FilterMode);
+  Sampler(device : *Device, addressModeU : AddressMode, addressModeV : AddressMode, addressModeW : AddressMode, magFilter : FilterMode, minFilter : FilterMode, mipmapFilter : FilterMode);
  ~Sampler();
 }
 
 native class SampleableTexture1D<ST> {
  ~SampleableTexture1D();
-  deviceonly Sample(sampler : Sampler*, coord : float) : ST<4>;
+  deviceonly Sample(sampler : *Sampler, coord : float) : ST<4>;
 }
 
 native class SampleableTexture2D<ST> {
  ~SampleableTexture2D();
-  deviceonly Sample(sampler : Sampler*, coords : float<2>) : ST<4>;
+  deviceonly Sample(sampler : *Sampler, coords : float<2>) : ST<4>;
 }
 
 native class SampleableTexture2DArray<ST> {
  ~SampleableTexture2DArray();
-  deviceonly Sample(sampler : Sampler*, coords : float<2>, layer : uint) : ST<4>;
+  deviceonly Sample(sampler : *Sampler, coords : float<2>, layer : uint) : ST<4>;
 }
 
 native class SampleableTexture3D<ST> {
  ~SampleableTexture3D();
-  deviceonly Sample(sampler : Sampler*, coords : float<3>) : ST<4>;
+  deviceonly Sample(sampler : *Sampler, coords : float<3>) : ST<4>;
 }
 
 native class SampleableTextureCube<ST> {
  ~SampleableTextureCube();
-  deviceonly Sample(sampler : Sampler*, coords : float<3>) : ST<4>;
+  deviceonly Sample(sampler : *Sampler, coords : float<3>) : ST<4>;
 }
 
 native class Texture1D<PF> {
-  Texture1D(device : Device*, width : uint);
+  Texture1D(device : *Device, width : uint);
  ~Texture1D();
-  CreateSampleableView() sampleable : SampleableTexture1D<PF::DeviceType>*;
-  CreateStorageView(mipLevel = 0u) : storage Texture1D<PF>*;
-  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::HostType[]>^, width : uint, origin : uint = 0);
+  CreateSampleableView() sampleable : *SampleableTexture1D<PF::DeviceType>;
+  CreateStorageView(mipLevel = 0u) : *storage Texture1D<PF>;
+  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<PF::HostType[]>, width : uint, origin : uint = 0);
 }
 
 native class Texture2D<PF> {
-  Texture2D(device : Device*, size : uint<2>);
+  Texture2D(device : *Device, size : uint<2>);
  ~Texture2D();
-  CreateSampleableView() sampleable : SampleableTexture2D<PF::DeviceType>*;
-  CreateRenderableView(mipLevel = 0u) : renderable Texture2D<PF>*;
-  CreateStorageView(mipLevel = 0u) : storage Texture2D<PF>*;
-  CreateColorAttachment(loadOp : LoadOp, storeOp : StoreOp, clearValue = float<4>(0.0, 0.0, 0.0, 0.0)) renderable : ColorAttachment<PF>*;
-  CreateDepthStencilAttachment(depthLoadOp : LoadOp, depthstoreOp : StoreOp, depthClearValue = 0.0, stencilLoadOp : LoadOp, stencilStoreOp : StoreOp, stencilClearValue : int) renderable : DepthStencilAttachment<PF>*;
+  CreateSampleableView() sampleable : *SampleableTexture2D<PF::DeviceType>;
+  CreateRenderableView(mipLevel = 0u) : *renderable Texture2D<PF>;
+  CreateStorageView(mipLevel = 0u) : *storage Texture2D<PF>;
+  CreateColorAttachment(loadOp : LoadOp, storeOp : StoreOp, clearValue = float<4>(0.0, 0.0, 0.0, 0.0)) renderable : *ColorAttachment<PF>;
+  CreateDepthStencilAttachment(depthLoadOp : LoadOp, depthstoreOp : StoreOp, depthClearValue = 0.0, stencilLoadOp : LoadOp, stencilStoreOp : StoreOp, stencilClearValue : int) renderable : *DepthStencilAttachment<PF>;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::HostType[]>^, size : uint<2>, origin : uint<2> = uint<2>(0, 0));
+  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<PF::HostType[]>, size : uint<2>, origin : uint<2> = uint<2>(0, 0));
 }
 
 native class Texture2DArray<PF> {
-  Texture2DArray(device : Device*, size : uint<3>);
+  Texture2DArray(device : *Device, size : uint<3>);
  ~Texture2D();
-  CreateSampleableView() sampleable : SampleableTexture2DArray<PF::DeviceType>*;
-  CreateRenderableView(layer : uint, mipLevel = 0u) : renderable Texture2D<PF>*;
-  CreateStorageView(layer : uint, mipLevel = 0u) : storage Texture2DArray<PF>*;
+  CreateSampleableView() sampleable : *SampleableTexture2DArray<PF::DeviceType>;
+  CreateRenderableView(layee : uint, mipLevel = 0u) : *renderable Texture2D<PF>;
+  CreateStorageView(layer : uint, mipLevel = 0u) : *storage Texture2DArray<PF>;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::HostType[]>^, size : uint<3>, origin = uint<3>(0, 0, 0));
+  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<PF::HostType[]>, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
 native class Texture3D<PF> {
-  Texture3D(device : Device*, size : uint<3>);
+  Texture3D(device : *Device, size : uint<3>);
  ~Texture3D();
-  CreateSampleableView() sampleable : SampleableTexture3D<PF::DeviceType>*;
-  CreateRenderableView(depth : uint, mipLevel = 0u) : renderable Texture2D<PF>*;
-  CreateStorageView(depth : uint, mipLevel = 0u) : storage Texture3D<PF>*;
+  CreateSampleableView() sampleable : *SampleableTexture3D<PF::DeviceType>;
+  CreateRenderableView(depth : uint, mipLevel = 0u) : *renderable Texture2D<PF>;
+  CreateStorageView(depth : uint, mipLevel = 0u) : *storage Texture3D<PF>;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::HostType[]>^, size : uint<3>, origin = uint<3>(0, 0, 0));
+  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<PF::HostType[]>, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
 native class TextureCube<PF> {
-  TextureCube(device : Device*, size : uint<2>);
+  TextureCube(device : *Device, size : uint<2>);
  ~TextureCube();
-  CreateSampleableView() sampleable : SampleableTextureCube<PF::DeviceType>*;
-  CreateRenderableView(face : uint, mipLevel = 0u) : renderable Texture2D<PF>*;
-  CreateStorageView(face : uint, mipLevel = 0u) : storage Texture2D<PF>*;
+  CreateSampleableView() sampleable : *SampleableTextureCube<PF::DeviceType>;
+  CreateRenderableView(face : uint, mipLevel = 0u) : *renderable Texture2D<PF>;
+  CreateStorageView(face : uint, mipLevel = 0u) : *storage Texture2D<PF>;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::HostType[]>^, size : uint<3>, origin = uint<3>(0, 0, 0));
+  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<PF::HostType[]>, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
 native class CommandEncoder {
-  CommandEncoder(device : Device*);
+  CommandEncoder(device : *Device);
  ~CommandEncoder();
-  Finish() : CommandBuffer*;
+  Finish() : *CommandBuffer;
 }
 
 native class RenderPass<T> {
-  RenderPass(encoder : CommandEncoder*, data : T^);
-  RenderPass(base : RenderPass<T::BaseClass>^);
+  RenderPass(encoder : *CommandEncoder, data : ^T);
+  RenderPass(base : ^RenderPass<T::BaseClass>);
  ~RenderPass();
   Draw(vertexCount : uint, instanceCount : uint, firstVertex : uint, firstInstance : uint);
   DrawIndexed(indexCount : uint, instanceCount : uint, firstIndex : uint, baseVertex : uint, firstIntance : uint);
-  SetPipeline(pipeline : RenderPipeline<T>*);
-  Set(data : T^);
+  SetPipeline(pipeline : *RenderPipeline<T>);
+  Set(data : ^T);
   End();
 }
 
 native class ComputePass<T> {
-  ComputePass(encoder : CommandEncoder*, data : T^);
-  ComputePass(base : ComputePass<T::BaseClass>^);
+  ComputePass(encoder : *CommandEncoder, data : ^T);
+  ComputePass(base : ^ComputePass<T::BaseClass>);
  ~ComputePass();
   Dispatch(workgroupCountX : uint, workgroupCountY : uint, workgroupCountZ : uint);
-  SetPipeline(pipeline : ComputePipeline<T>*);
-  Set(data : T^);
+  SetPipeline(pipeline : *ComputePipeline<T>);
+  Set(data : ^T);
   End();
 }
 
@@ -212,10 +212,10 @@ native class Window {
 }
 
 native class SwapChain<T> {
-  SwapChain(device : Device^, window : Window^);
+  SwapChain(device : ^Device, window : ^Window);
  ~SwapChain();
   Resize(size : uint<2>);
-  GetCurrentTexture() : renderable Texture2D<T>*;
+  GetCurrentTexture() : *renderable Texture2D<T>;
   Present();
 }
 
@@ -247,10 +247,10 @@ native class Math {
 }
 
 native class ImageDecoder<PF> {
-  ImageDecoder(encodedImage : ubyte[]^);
+  ImageDecoder(encodedImage : ^ubyte[]);
  ~ImageDecoder();
   GetSize() : uint<2>;
-  Decode(buffer : writeonly PF::HostType[]^, bufferWidth : uint);
+  Decode(buffer : ^writeonly PF::HostType[], bufferWidth : uint);
 }
 
 enum EventType { MouseMove, MouseDown, MouseUp, TouchStart, TouchMove, TouchEnd, Unknown }
@@ -271,13 +271,13 @@ native class System {
  ~System();
   static IsRunning() : bool;
   static HasPendingEvents() : bool;
-  static GetNextEvent() : Event*;
+  static GetNextEvent() : *Event;
   static GetScreenSize() : uint<2>;
   static StorageBarrier() : int;
   static GetCurrentTime() : double;
-  static Print(str : ubyte[]^);
-  static PrintLine(str : ubyte[]^);
-  static GetSourceFile() : ubyte[]*;
+  static Print(str : ^ubyte[]);
+  static PrintLine(str : ^ubyte[]);
+  static GetSourceFile() : *ubyte[];
   static GetSourceLine() : int;
   static Abort();
 }

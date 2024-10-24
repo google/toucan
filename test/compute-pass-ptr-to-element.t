@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class ComputeBindings {
-  var buffer : writeonly storage Buffer<int[]>*;
+  var buffer : *writeonly storage Buffer<int[]>;
 }
 
 class Struct {
@@ -9,10 +9,10 @@ class Struct {
 }
 
 class Compute {
-  static set(p : int^, value : int) {
+  static set(p : ^int, value : int) {
     *p = value;
   }
-  compute(1, 1,1) main(cb : ComputeBuiltins^) {
+  compute(1, 1,1) main(cb : ^ComputeBuiltins) {
     var buffer = bindings.Get().buffer.Map();
     var i : int;
     var array : int[1];
@@ -24,7 +24,7 @@ class Compute {
     buffer[1] = array[0];
     buffer[2] = struct.a;
   }
-  var bindings : BindGroup<ComputeBindings>*;
+  var bindings : *BindGroup<ComputeBindings>;
 }
 
 var device = new Device();

@@ -254,8 +254,8 @@ qualified_type:
 
 type:
     qualified_type
-  | type '*'                                { $$ = types_->GetStrongPtrType($1); }
-  | type '^'                                { $$ = types_->GetWeakPtrType($1); }
+  | '*' type                                { $$ = types_->GetStrongPtrType($2); }
+  | '^' type                                { $$ = types_->GetWeakPtrType($2); }
   | type '[' arith_expr ']'                 { $$ = GetArrayType($1, AsIntConstant($3)); }
   | type '[' ']'                            { $$ = GetArrayType($1, 0); }
   ;

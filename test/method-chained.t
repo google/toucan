@@ -10,7 +10,7 @@ class Bar {
 }
 
 class Foo {
-  bar() : Bar* {
+  bar() : *Bar {
     return new Bar();
   }
 };
