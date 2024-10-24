@@ -214,7 +214,7 @@ Type* ShaderPrepPass::ConvertType(Type* type) {
         }
       } else if (classType->GetTemplate() == NativeClass::ColorAttachment) {
         type = classType->GetTemplateArgs()[0];
-        type = static_cast<ClassType*>(type)->FindType("SampledType");
+        type = static_cast<ClassType*>(type)->FindType("DeviceType");
         return types_->GetVector(type, 4);
       } else if (classType->GetTemplate() == NativeClass::BindGroup) {
         return classType->GetTemplateArgs()[0];

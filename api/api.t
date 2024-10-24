@@ -110,49 +110,49 @@ native class SampleableTextureCube<ST> {
 native class Texture1D<PF> {
   Texture1D(device : Device*, width : uint);
  ~Texture1D();
-  CreateSampleableView() sampleable : SampleableTexture1D<PF::SampledType>*;
+  CreateSampleableView() sampleable : SampleableTexture1D<PF::DeviceType>*;
   CreateStorageView(mipLevel = 0u) : storage Texture1D<PF>*;
-  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::MemoryType[]>^, width : uint, origin : uint = 0);
+  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::HostType[]>^, width : uint, origin : uint = 0);
 }
 
 native class Texture2D<PF> {
   Texture2D(device : Device*, size : uint<2>);
  ~Texture2D();
-  CreateSampleableView() sampleable : SampleableTexture2D<PF::SampledType>*;
+  CreateSampleableView() sampleable : SampleableTexture2D<PF::DeviceType>*;
   CreateRenderableView(mipLevel = 0u) : renderable Texture2D<PF>*;
   CreateStorageView(mipLevel = 0u) : storage Texture2D<PF>*;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::MemoryType[]>^, size : uint<2>, origin : uint<2> = uint<2>(0, 0));
+  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::HostType[]>^, size : uint<2>, origin : uint<2> = uint<2>(0, 0));
 }
 
 native class Texture2DArray<PF> {
   Texture2DArray(device : Device*, size : uint<3>);
  ~Texture2D();
-  CreateSampleableView() sampleable : SampleableTexture2DArray<PF::SampledType>*;
+  CreateSampleableView() sampleable : SampleableTexture2DArray<PF::DeviceType>*;
   CreateRenderableView(layer : uint, mipLevel = 0u) : renderable Texture2D<PF>*;
   CreateStorageView(layer : uint, mipLevel = 0u) : storage Texture2DArray<PF>*;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::MemoryType[]>^, size : uint<3>, origin = uint<3>(0, 0, 0));
+  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::HostType[]>^, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
 native class Texture3D<PF> {
   Texture3D(device : Device*, size : uint<3>);
  ~Texture3D();
-  CreateSampleableView() sampleable : SampleableTexture3D<PF::SampledType>*;
+  CreateSampleableView() sampleable : SampleableTexture3D<PF::DeviceType>*;
   CreateRenderableView(depth : uint, mipLevel = 0u) : renderable Texture2D<PF>*;
   CreateStorageView(depth : uint, mipLevel = 0u) : storage Texture3D<PF>*;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::MemoryType[]>^, size : uint<3>, origin = uint<3>(0, 0, 0));
+  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::HostType[]>^, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
 native class TextureCube<PF> {
   TextureCube(device : Device*, size : uint<2>);
  ~TextureCube();
-  CreateSampleableView() sampleable : SampleableTextureCube<PF::SampledType>*;
+  CreateSampleableView() sampleable : SampleableTextureCube<PF::DeviceType>*;
   CreateRenderableView(face : uint, mipLevel = 0u) : renderable Texture2D<PF>*;
   CreateStorageView(face : uint, mipLevel = 0u) : storage Texture2D<PF>*;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::MemoryType[]>^, size : uint<3>, origin = uint<3>(0, 0, 0));
+  CopyFromBuffer(encoder : CommandEncoder^, source : Buffer<PF::HostType[]>^, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
 native class CommandEncoder {
@@ -175,7 +175,7 @@ enum StoreOp {
 
 native class ColorAttachment<PF> {
   ColorAttachment(texture : renderable Texture2D<PF>*, loadOp : LoadOp, storeOp : StoreOp, clearValue = float<4>(0.0, 0.0, 0.0, 0.0));
-  deviceonly Set(value : PF::SampledType<4>);
+  deviceonly Set(value : PF::DeviceType<4>);
  ~ColorAttachment();
 }
 
@@ -250,7 +250,7 @@ native class ImageDecoder<PF> {
   ImageDecoder(encodedImage : ubyte[]^);
  ~ImageDecoder();
   GetSize() : uint<2>;
-  Decode(buffer : writeonly PF::MemoryType[]^, bufferWidth : uint);
+  Decode(buffer : writeonly PF::HostType[]^, bufferWidth : uint);
 }
 
 enum EventType { MouseMove, MouseDown, MouseUp, TouchStart, TouchMove, TouchEnd, Unknown }
@@ -300,7 +300,7 @@ class ComputeBuiltins {
   var workgroupId : readonly uint<3>;
 }
 
-class PixelFormat<SampledType, MemoryType> {}
+class PixelFormat<DeviceType, HostType> {}
 
 class R8unorm : PixelFormat<float, ubyte> {}
 class R8snorm : PixelFormat<float, byte> {}
