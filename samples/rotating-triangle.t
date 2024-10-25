@@ -23,7 +23,7 @@ verts[2].color = float<3>(0.0, 0.0, 1.0);
 var vb = new vertex Buffer<Vertex[]>(device, verts);
 
 class Bindings {
-  var uniformBuffer : uniform Buffer<Uniforms>*;
+  var uniformBuffer : *uniform Buffer<Uniforms>;
 }
 
 class Pipeline {

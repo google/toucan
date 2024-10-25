@@ -527,7 +527,7 @@ bool WeakPtrType::CanWidenTo(Type* type) const {
 };
 RawPtrType::RawPtrType(Type* baseType) : PtrType(baseType) {}
 
-std::string StrongPtrType::ToString() const { return GetBaseType()->ToString() + "*"; };
+std::string StrongPtrType::ToString() const { return "*" + GetBaseType()->ToString(); };
 
 bool StrongPtrType::CanWidenTo(Type* type) const {
   if (type == this) return true;
@@ -539,9 +539,9 @@ bool StrongPtrType::CanWidenTo(Type* type) const {
   return false;
 };
 
-std::string WeakPtrType::ToString() const { return GetBaseType()->ToString() + "^"; };
+std::string WeakPtrType::ToString() const { return "^" + GetBaseType()->ToString(); };
 
-std::string RawPtrType::ToString() const { return GetBaseType()->ToString() + "~"; };
+std::string RawPtrType::ToString() const { return "&" + GetBaseType()->ToString(); };
 
 TypeTable::TypeTable() {
   bool_ = Make<BoolType>();
