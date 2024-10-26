@@ -1,12 +1,12 @@
 var device = new Device();
 var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-var triVerts : float<4>[3] = { { 0.0,  1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 }};
-var triVB = new vertex Buffer<float<4>[]>(device, &triVerts);
+var triVerts : [3]float<4> = { { 0.0,  1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 }};
+var triVB = new vertex Buffer<[]float<4>>(device, &triVerts);
 class GreenPipeline {
     vertex main(vb : ^VertexBuiltins) { vb.position = position.Get(); }
     fragment main(fb : ^FragmentBuiltins) { renderTex.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
-    var position : *vertex Buffer<float<4>[]>;
+    var position : *vertex Buffer<[]float<4>>;
     var renderTex : *ColorAttachment<RGBA8unorm>;
 }
 
@@ -30,21 +30,21 @@ class TexPipeline {
       var b = bindings.Get();
       fragColor.Set(b.textureView.Sample(b.sampler, texCoord));
     }
-    var vertices : *vertex Buffer<QuadVertex[]>;
-    var indices : *index Buffer<uint[]>;
+    var vertices : *vertex Buffer<[]QuadVertex>;
+    var indices : *index Buffer<[]uint>;
     var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
     var bindings : *BindGroup<Bindings>;
 };
 
-var quadVerts : QuadVertex[4] = {
+var quadVerts : [4]QuadVertex = {
   { position = { -1.0, -1.0, 0.0, 1.0 }, texCoord = { 0.0, 1.0 } },
   { position = {  1.0, -1.0, 0.0, 1.0 }, texCoord = { 1.0, 1.0 } },
   { position = { -1.0,  1.0, 0.0, 1.0 }, texCoord = { 0.0, 0.0 } },
   { position = {  1.0,  1.0, 0.0, 1.0 }, texCoord = { 1.0, 0.0 } }
 };
-var quadIndices : uint[6] = { 0, 1, 2, 1, 2, 3 };
-var quadVB = new vertex Buffer<QuadVertex[]>(device, &quadVerts);
-var quadIB = new index Buffer<uint[]>(device, &quadIndices);
+var quadIndices : [6]uint = { 0, 1, 2, 1, 2, 3 };
+var quadVB = new vertex Buffer<[]QuadVertex>(device, &quadVerts);
+var quadIB = new index Buffer<[]uint>(device, &quadIndices);
 var sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
 
 var tex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());

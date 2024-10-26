@@ -1,4 +1,4 @@
-var teapotControlPoints = float<3>[290](
+var teapotControlPoints = [290]float<3>(
   float<3>(1.4, 0.0, 2.4),
   float<3>(1.4, -0.784, 2.4),
   float<3>(0.784, -1.4, 2.4),
@@ -291,7 +291,7 @@ var teapotControlPoints = float<3>[290](
   float<3>(1.5, -0.84, 0.075)
 );
 
-var teapotControlIndices = uint[512](
+var teapotControlIndices = [512]uint(
   // rim
     0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,
     3,  16,  17,  18,   7,  19,  20,  21,  11,  22,  23,  24,  15,  25,  26,  27,

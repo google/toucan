@@ -61,8 +61,8 @@ test/error-derefernce.t
 error-derefernce.t:2:  attempt to dereference a non-pointer
 test/error-hex-literal-too-large.t
 test/error-index-buffer-get.t
-error-index-buffer-get.t:4:  class Buffer<uint[]> has no method Get()
-error-index-buffer-get.t:4:  Buffer<uint[]>.Get() vertex : uint
+error-index-buffer-get.t:4:  class Buffer<[]uint> has no method Get()
+error-index-buffer-get.t:4:  Buffer<[]uint>.Get() vertex : uint
 test/error-int-literal-too-large.t
 test/error-missing-sampleable-qualifier.t
 error-missing-sampleable-qualifier.t:3:  class Texture2D<RGBA8unorm> has no method CreateSampleableView()
@@ -79,8 +79,8 @@ error-partial-template.t:10:  cannot store a value of type "*Foo<int, int>" to a
 error-partial-template.t:11:  cannot store a value of type "*Foo<int, int>" to a location of type "*Foo"
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
-error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(*CommandEncoder, *writeonly Buffer<float<4>[]>, int)
-error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromBuffer(^CommandEncoder, ^Buffer<ubyte<4>[]>, uint, uint) 
+error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(*CommandEncoder, *writeonly Buffer<[]float<4>>, int)
+error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromBuffer(^CommandEncoder, ^Buffer<[]ubyte<4>>, uint, uint) 
 test/error-uint-literal-too-large.t
 test/error-virtual-override.t
 error-virtual-override.t:8:  override of virtual method must be virtual
@@ -93,7 +93,7 @@ test/fabs.t
 test/fail-allocate-class-with-unsized-array.t
 fail-allocate-class-with-unsized-array.t:5:  class with unsized array must be allocated with size
 test/fail-invalid-storage-types.t
-fail-invalid-storage-types.t:1:  cannot create storage of type int[]
+fail-invalid-storage-types.t:1:  cannot create storage of type []int
 test/fail-unsized-array-not-last-in-class.t
 fail-unsized-array-not-last-in-class.t:4:  Unsized arrays are only allwed as the last field of a class
 test/field-access-from-static-method-error.t

@@ -1,7 +1,7 @@
 include "include/test.t"
 
 var count = 200;
-var a : float<4>[256];
+var a : [256]float<4>;
 var mul = float<4>(1.00001, 1.00001, 1.00001, 1.00001);
 var add = float<4>(1.0, 1.0, 1.0, 1.0);
 for (var i = 0; i < a.length; ++i) {

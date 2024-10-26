@@ -11,10 +11,10 @@ class Vertex {
 using Format = RGBA8unorm;
 
 class CubeLoader {
-  static Load(device : *Device, data : ^ubyte[], texture : ^TextureCube<Format>, face : uint) {
+  static Load(device : *Device, data : ^[]ubyte, texture : ^TextureCube<Format>, face : uint) {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
-    var buffer = new writeonly Buffer<Format::HostType[]>(device, texture.MinBufferWidth() * size.y);
+    var buffer = new writeonly Buffer<[]Format::HostType>(device, texture.MinBufferWidth() * size.y);
     var b = buffer.Map();
     image.Decode(b, texture.MinBufferWidth());
     buffer.Unmap();
@@ -37,8 +37,8 @@ CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 var window = new Window({0, 0}, System.GetScreenSize());
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
-var cubeVB = new vertex Buffer<float<3>[]>(device, &cubeVerts);
-var cubeIB = new index Buffer<uint[]>(device, &cubeIndices);
+var cubeVB = new vertex Buffer<[]float<3>>(device, &cubeVerts);
+var cubeIB = new index Buffer<[]uint>(device, &cubeIndices);
 
 class Uniforms {
   var model       : float<4,4>;
@@ -66,8 +66,8 @@ class SkyboxPipeline {
       // TODO: figure out why the skybox is X-flipped
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
-    var vertices : *vertex Buffer<float<3>[]>;
-    var indices : *index Buffer<uint[]>;
+    var vertices : *vertex Buffer<[]float<3>>;
+    var indices : *index Buffer<[]uint>;
     var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
     var depth : *DepthStencilAttachment<Depth24Plus>;
     var bindings : *BindGroup<Bindings>;

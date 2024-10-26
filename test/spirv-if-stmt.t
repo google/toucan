@@ -1,7 +1,7 @@
 using Vertex = float<4>;
 
 class ComputeBindings {
-  var vertStorage : *storage Buffer<Vertex[]>;
+  var vertStorage : *storage Buffer<[]Vertex>;
 }
 
 class BumpCompute {

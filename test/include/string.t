@@ -1,8 +1,8 @@
 class String {
-  String(b : *ubyte[]) { buffer = b; }
+  String(b : *[]ubyte) { buffer = b; }
   static IntLog2(value : int) : int { return 31 - Math.clz(value | 1); }
   static From(value : int) : *String {
-    var table = int[9](9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999);
+    var table = [9]int(9, 99, 999, 9999, 99999, 999999, 9999999, 99999999, 999999999);
     var negative = false;
     if (value < 0) {
       negative = true;
@@ -12,7 +12,7 @@ class String {
     if (value > table[len]) len += 1;
     len += 1;
     if (negative) len += 1;
-    var b = new ubyte[len];
+    var b = [len] new ubyte;
     for (var j = len - 1; j >= 0; j--) {
       b[j] = (ubyte) (value % 10) + 48ub;
       value /= 10;
@@ -20,6 +20,6 @@ class String {
     if (negative) b[0] = 45ub;
     return new String(b);
   }
-  Get() : *ubyte[] { return buffer; }
-  var buffer : *ubyte[];
+  Get() : *[]ubyte { return buffer; }
+  var buffer : *[]ubyte;
 }

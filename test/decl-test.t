@@ -5,7 +5,7 @@ a = 3.0;
 var b : int;
 {
   var a : int;
-  var aa : int[3];
-  var bb : int[3];
+  var aa : [3]int;
+  var bb : [3]int;
 }
 Test.Expect(a == 3.0);

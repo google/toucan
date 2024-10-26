@@ -2,10 +2,10 @@ using Vertex = float<4>;
 var device = new Device();
 var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-var verts : Vertex[3] = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 } };
-var vb = new vertex Buffer<Vertex[]>(device, &verts);
+var verts : [3]Vertex = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 } };
+var vb = new vertex Buffer<[]Vertex>(device, &verts);
 class Uniforms {
-  var padding : float[1];
+  var padding : [1]float;
   var intPadding : int;
   var color : float<4>;
 }
@@ -17,7 +17,7 @@ class Pipeline {
   fragment main(fb : ^FragmentBuiltins) {
     fragColor.Set(bindings.Get().uniforms.Map().color);
   }
-  var vertices : *vertex Buffer<Vertex[]>;
+  var vertices : *vertex Buffer<[]Vertex>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var bindings : *BindGroup<Bindings>;
 }

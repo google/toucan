@@ -1,7 +1,7 @@
 using Vertex = float<4>;
 
 class ComputeBindings {
-  var vertStorage : *storage Buffer<Vertex[]>;
+  var vertStorage : *storage Buffer<[]Vertex>;
 }
 
 class BumpCompute {
@@ -16,16 +16,16 @@ class BumpCompute {
 var device = new Device();
 var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-var verts = new Vertex[3];
+var verts = [3] new Vertex;
 verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
 verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
 verts[2] = float<4>( 1.0, -1.0, 0.0, 1.0);
-var vb = new vertex storage Buffer<Vertex[]>(device, verts);
+var vb = new vertex storage Buffer<[]Vertex>(device, verts);
 class Pipeline {
   vertex main(vb : ^VertexBuiltins) { vb.position = vert.Get(); }
   fragment main(fb : ^FragmentBuiltins) { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
-  var vert : *vertex Buffer<Vertex[]>;
+  var vert : *vertex Buffer<[]Vertex>;
 }
 
 var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);

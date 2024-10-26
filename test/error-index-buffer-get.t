@@ -6,7 +6,7 @@ class Pipeline {
   fragment main(fb : ^FragmentBuiltins) {
     fragColor.Set( {0.0, 1.0, 0.0, 1.0} );
   }
-  var vertices : *vertex Buffer<float<4>[]>;
-  var indices : *index Buffer<uint[]>;
+  var vertices : *vertex Buffer<[]float<4>>;
+  var indices : *index Buffer<[]uint>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
 }

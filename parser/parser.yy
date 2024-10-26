@@ -118,7 +118,7 @@ Type* FindType(const char* str) {
 };
 
 %type <type> scalar_type type class_header
-%type <type> simple_type qualified_type opt_return_type
+%type <type> simple_type opt_return_type
 %type <classType> template_class_header
 %type <expr> expr opt_expr assignable arith_expr expr_or_list opt_initializer
 %type <arg> argument
@@ -247,17 +247,13 @@ simple_type:
   | simple_type T_COLONCOLON T_IDENTIFIER  { $$ = GetScopedType($1, $3); }
   ;
 
-qualified_type:
-    simple_type
-  | type_qualifiers simple_type             { $$ = types_->GetQualifiedType($2, $1); }
-  ;
-
 type:
-    qualified_type
+    simple_type
+  | type_qualifier type                     { $$ = types_->GetQualifiedType($2, $1); }
   | '*' type                                { $$ = types_->GetStrongPtrType($2); }
   | '^' type                                { $$ = types_->GetWeakPtrType($2); }
-  | type '[' arith_expr ']'                 { $$ = GetArrayType($1, AsIntConstant($3)); }
-  | type '[' ']'                            { $$ = GetArrayType($1, 0); }
+  | '[' arith_expr ']' type                 { $$ = GetArrayType($4, AsIntConstant($2)); }
+  | '[' ']' type                            { $$ = GetArrayType($3, 0); }
   ;
 
 var_decl_list:
@@ -457,7 +453,7 @@ arith_expr:
   | '(' type ')' arith_expr %prec UNARYMINUS      { $$ = Make<CastExpr>($2, $4); }
   | simple_type '(' arguments ')'           { $$ = Make<UnresolvedInitializer>($1, $3, true); }
   | simple_type '{' arguments '}'           { $$ = Make<UnresolvedInitializer>($1, $3, false); }
-  | type '[' arith_expr ']' '(' arguments ')'     { $$ = Make<UnresolvedInitializer>(GetArrayType($1, AsIntConstant($3)), $6, true); }
+  | '[' arith_expr ']' type '(' arguments ')'     { $$ = Make<UnresolvedInitializer>(GetArrayType($4, AsIntConstant($2)), $6, true); }
   | T_INT_LITERAL                           { $$ = Make<IntConstant>($1, 32); }
   | T_UINT_LITERAL                          { $$ = Make<UIntConstant>($1, 32); }
   | T_BYTE_LITERAL                          { $$ = Make<IntConstant>($1, 8); }
@@ -474,9 +470,11 @@ arith_expr:
 
 expr:
     arith_expr
+  | T_NEW type                              { $$ = MakeNewExpr($2, nullptr, nullptr); }
   | T_NEW type '(' arguments ')'            { $$ = MakeNewExpr($2, nullptr, $4); }
-  | T_NEW type '[' arith_expr ']'           { $$ = MakeNewArrayExpr($2, $4); }
-  | T_NEW '[' arith_expr ']' type '(' arguments ')' { $$ = MakeNewExpr($5, $3, $7); }
+  | '[' arith_expr ']' T_NEW type           { $$ = MakeNewArrayExpr($5, $2); }
+  | '[' arith_expr ']' T_NEW type '(' arguments ')'
+                                            { $$ = MakeNewExpr($5, $2, $7); }
   | T_INLINE '(' T_STRING_LITERAL ')'       { $$ = InlineFile($3); }
   | T_STRING_LITERAL                        { $$ = StringLiteral($1); }
   ;

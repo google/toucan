@@ -16,8 +16,8 @@ class Body {
   var acceleration : Vector;
   var mass : float;
   var movable : float;
-  var spring : int[6];
-  var springWeight : float[6];
+  var spring : [6]int;
+  var springWeight : [6]float;
 
   computeAcceleration() {
     acceleration = force / mass;
@@ -66,10 +66,10 @@ class DrawUniforms {
 }
 
 class ComputeBindings {
-  var bodyStorage : *storage Buffer<Body[]>;
-  var springStorage : *storage Buffer<Spring[]>;
-  var bodyVerts : *storage Buffer<Vector[]>;
-  var springVerts : *storage Buffer<Vector[]>;
+  var bodyStorage : *storage Buffer<[]Body>;
+  var springStorage : *storage Buffer<[]Spring>;
+  var bodyVerts : *storage Buffer<[]Vector>;
+  var springVerts : *storage Buffer<[]Vector>;
   var uniforms : *uniform Buffer<ComputeUniforms>;
 }
 
@@ -142,13 +142,13 @@ class DrawPipeline {
   fragment main(fb : ^FragmentBuiltins) {
     fragColor.Set(bindings.Get().uniforms.Map().color);
   }
-  var vertices : *vertex Buffer<Vector[]>;
+  var vertices : *vertex Buffer<[]Vector>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var bindings : *BindGroup<DrawBindings>;
 }
 
-var bodies = new Body[width * height * depth];
-var springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
+var bodies = (width * height * depth) new Body;
+var springs = (bodies.length * 3 - width * depth - height * depth - width * height) new Spring;
 var spring = 0;
 for (var i = 0; i < bodies.length; ++i) {
   bodies[i].springWeight[0] = 0.0;
@@ -213,9 +213,9 @@ var window = new Window({0, 0}, {960, 960});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 var numBodyVerts = bodies.length * 3;
-var bodyVBO = new vertex storage Buffer<Vector[]>(device, numBodyVerts);
+var bodyVBO = new vertex storage Buffer<[]Vector>(device, numBodyVerts);
 var numSpringVerts = springs.length * 2;
-var springVBO = new vertex storage Buffer<Vector[]>(device, numSpringVerts);
+var springVBO = new vertex storage Buffer<[]Vector>(device, numSpringVerts);
 
 var computeUBO = new uniform Buffer<ComputeUniforms>(device);
 
@@ -223,8 +223,8 @@ var computeBindGroup = new BindGroup<ComputeBindings>(device, {
   bodyVerts = bodyVBO,
   springVerts = springVBO,
   uniforms = computeUBO,
-  bodyStorage = new storage Buffer<Body[]>(device, bodies),
-  springStorage = new storage Buffer<Spring[]>(device, springs)
+  bodyStorage = new storage Buffer<[]Body>(device, bodies),
+  springStorage = new storage Buffer<[]Spring>(device, springs)
 });
 
 var bodyPipeline = new RenderPipeline<DrawPipeline>(device, null, TriangleList);

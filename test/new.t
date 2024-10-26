@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class Foo {
-  var zzz : int[3];
+  var zzz : [3]int;
   var a : float;
 };
 var r : float;

@@ -1,7 +1,7 @@
 include "include/test.t"
 
 var outer_count = 200;
-var a : float[1024];
+var a : [1024]float;
 for (var i = 0; i < a.length; i++) {
   a[i] = 2000000.0;
 }

@@ -1,5 +1,5 @@
 class Cubic<T> {
-  FromBezier(p : T[4]) {
+  FromBezier(p : [4]T) {
     a =        p[0];
     b = -3.0 * p[0] + 3.0 * p[1];
     c =  3.0 * p[0] - 6.0 * p[1] + 3.0 * p[2];

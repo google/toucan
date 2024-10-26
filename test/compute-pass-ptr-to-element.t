@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class ComputeBindings {
-  var buffer : *writeonly storage Buffer<int[]>;
+  var buffer : *writeonly storage Buffer<[]int>;
 }
 
 class Struct {
@@ -15,7 +15,7 @@ class Compute {
   compute(1, 1,1) main(cb : ^ComputeBuiltins) {
     var buffer = bindings.Get().buffer.Map();
     var i : int;
-    var array : int[1];
+    var array : [1]int;
     var struct : Struct;
     this.set(&i, 7);
     this.set(&array[0], 21);
@@ -31,8 +31,8 @@ var device = new Device();
 
 var computePipeline = new ComputePipeline<Compute>(device);
 
-var storageBuf = new writeonly storage Buffer<int[]>(device, 3);
-var hostBuf = new readonly Buffer<int[]>(device, 3);
+var storageBuf = new writeonly storage Buffer<[]int>(device, 3);
+var hostBuf = new readonly Buffer<[]int>(device, 3);
 
 var bg = new BindGroup<ComputeBindings>(device, {buffer = storageBuf});
 

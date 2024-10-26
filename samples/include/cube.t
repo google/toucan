@@ -1,4 +1,4 @@
-var cubeVerts = float<3>[24](
+var cubeVerts = [24]float<3>(
   // Right face
   float<3>( 1.0, -1.0, -1.0),
   float<3>( 1.0, -1.0,  1.0),
@@ -36,7 +36,7 @@ var cubeVerts = float<3>[24](
   float<3>(-1.0,  1.0,  1.0)
 );
 
-var cubeIndices = uint[36](
+var cubeIndices = [36]uint(
   0,  1,   2,  0,  2,  3,
   4,  5,   6,  4,  6,  7,
   8,  9,  10,  8, 10, 11,

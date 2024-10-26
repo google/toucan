@@ -5,6 +5,6 @@ class Foo {
   var y : float;
 };
 
-var foo = new Foo[100];
+var foo = [100] new Foo;
 foo[23].y = 5.0;
 Test.Expect(foo[23].y == 5.0);

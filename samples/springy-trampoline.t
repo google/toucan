@@ -17,8 +17,8 @@ class Body {
   var velocity : Vector;
   var force : Vector;
   var acceleration : Vector;
-  var spring : int[6];
-  var springWeight : float[6];
+  var spring : [6]int;
+  var springWeight : [6]float;
   var mass : float;
   var nailed : float;
 }
@@ -84,10 +84,10 @@ class Uniforms {
 }
 
 class ComputeBindings {
-  var bodyStorage : *storage Buffer<Body[]>;
-  var springStorage : *storage Buffer<Spring[]>;
-  var bodyVerts : *storage Buffer<Vector[]>;
-  var springVerts : *storage Buffer<Vector[]>;
+  var bodyStorage : *storage Buffer<[]Body>;
+  var springStorage : *storage Buffer<[]Spring>;
+  var bodyVerts : *storage Buffer<[]Vector>;
+  var springVerts : *storage Buffer<[]Vector>;
   var uniforms : *uniform Buffer<Uniforms>;
 }
 
@@ -156,8 +156,8 @@ class FinalizeSprings : ComputeBase {
 var device = new Device();
 var window = new Window({0, 0}, {960, 960});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-var bodies = new Body[width * height * depth];
-var springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
+var bodies = (width * height * depth) new Body;
+var springs = (bodies.length * 3 - width * depth - height * depth - width * height) new Spring;
 var count = Utils.makeVector((float) width, (float) height, (float) depth, Vector(0.0));
 var pSpacing = Vector(2.0) / count;
 var spring = 0;
@@ -233,9 +233,9 @@ for (var i = 0u; i < bodies.length; ++i) {
 
 
 var numBodyVerts = bodies.length * 3;
-var bodyVBO = new vertex storage Buffer<Vector[]>(device, numBodyVerts);
+var bodyVBO = new vertex storage Buffer<[]Vector>(device, numBodyVerts);
 var numSpringVerts = springs.length * 2;
-var springVBO = new vertex storage Buffer<Vector[]>(device, numSpringVerts);
+var springVBO = new vertex storage Buffer<[]Vector>(device, numSpringVerts);
 
 var computeUBO = new uniform Buffer<Uniforms>(device);
 
@@ -243,11 +243,11 @@ var computeBindGroup = new BindGroup<ComputeBindings>(device, {
   bodyVerts = bodyVBO,
   springVerts = springVBO,
   uniforms = computeUBO,
-  bodyStorage = new storage Buffer<Body[]>(device, bodies),
-  springStorage = new storage Buffer<Spring[]>(device, springs)
+  bodyStorage = new storage Buffer<[]Body>(device, bodies),
+  springStorage = new storage Buffer<[]Spring>(device, springs)
 });
 class Shaders {
-  var vert : *vertex Buffer<Vector[]>;
+  var vert : *vertex Buffer<[]Vector>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
 }
 

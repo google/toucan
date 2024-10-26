@@ -34,7 +34,7 @@ class EventHandler {
   }
   var mouseDown : bool = false;
   var prevPosition : int<2>;
-  var prevTouches : int<2>[10];
+  var prevTouches : [10]int<2>;
   var prevNumTouches : int;
   var rotation : float<2>;
   var distance : float;

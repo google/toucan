@@ -13,10 +13,10 @@ class Vertex {
 using Format = RGBA8unorm;
 
 class CubeLoader {
-  static Load(device : *Device, data : ^ubyte[], texture : ^TextureCube<Format>, face : uint) {
+  static Load(device : *Device, data : ^[]ubyte, texture : ^TextureCube<Format>, face : uint) {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
-    var buffer = new writeonly Buffer<Format::HostType[]>(device, texture.MinBufferWidth() * size.y);
+    var buffer = new writeonly Buffer<[]Format::HostType>(device, texture.MinBufferWidth() * size.y);
     var b = buffer.Map();
     image.Decode(b, texture.MinBufferWidth());
     buffer.Unmap();
@@ -41,7 +41,7 @@ var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 class BicubicPatch {
   Evaluate(u : float, v : float) : Vertex {
-    var pu : float<3>[4], pv : float<3>[4];
+    var pu : [4]float<3>, pv : [4]float<3>;
     for (var i = 0; i < 4; ++i) {
       pu[i] = vCubics[i].Evaluate(v);
       pv[i] = uCubics[i].Evaluate(u);
@@ -65,24 +65,24 @@ class BicubicPatch {
     }
     return result;
   }
-  var uCubics : Cubic<float<3>>[4];
-  var vCubics : Cubic<float<3>>[4];
+  var uCubics : [4]Cubic<float<3>>;
+  var vCubics : [4]Cubic<float<3>>;
 }
 
 class BicubicTessellator {
-  BicubicTessellator(controlPoints : ^float<3>[], controlIndices : ^uint[], level : int) {
+  BicubicTessellator(controlPoints : ^[]float<3>, controlIndices : ^[]uint, level : int) {
     var numPatches = controlIndices.length / 16;
     var patchWidth = level + 1;
     var verticesPerPatch = patchWidth * patchWidth;
-    vertices = new Vertex[numPatches * verticesPerPatch];
-    indices = new uint[numPatches * level * level * 6];
+    vertices = [numPatches * verticesPerPatch] new Vertex;
+    indices = [numPatches * level * level * 6] new uint;
     var vi = 0, ii = 0;
     var scale = 1.0 / (float) level;
     for (var k = 0; k < controlIndices.length; k += 16) {
       var patch : BicubicPatch;
       for (var i = 0; i < 4; ++i) {
-        var pu : float<3>[4];
-        var pv : float<3>[4];
+        var pu : [4]float<3>;
+        var pv : [4]float<3>;
         for (var j = 0; j < 4; ++j) {
           pu[j] = controlPoints[controlIndices[k + i + j * 4]];
           pv[j] = controlPoints[controlIndices[k + i * 4 + j]];
@@ -109,8 +109,8 @@ class BicubicTessellator {
       }
     }
   }
-  var vertices : *Vertex[];
-  var indices : *uint[];
+  var vertices : *[]Vertex;
+  var indices : *[]uint;
 }
 
 var tessTeapot = new BicubicTessellator(&teapotControlPoints, &teapotControlIndices, 8);
@@ -129,7 +129,7 @@ class Bindings {
 }
 
 class DrawPipeline {
-  var indexBuffer : *index Buffer<uint[]>;
+  var indexBuffer : *index Buffer<[]uint>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var depth : *DepthStencilAttachment<Depth24Plus>;
   var bindings : *BindGroup<Bindings>;
@@ -149,7 +149,7 @@ class SkyboxPipeline : DrawPipeline {
       // TODO: figure out why the skybox is X-flipped
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-p.x, p.y, p.z)));
     }
-    var position : *vertex Buffer<float<3>[]>;
+    var position : *vertex Buffer<[]float<3>>;
 };
 
 class ReflectionPipeline : DrawPipeline {
@@ -175,7 +175,7 @@ class ReflectionPipeline : DrawPipeline {
       var r4 = uniforms.viewInverse * float<4>(r.x, r.y, r.z, 0.0);
       fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-r4.x, r4.y, r4.z)));
     }
-    var vert : *vertex Buffer<Vertex[]>;
+    var vert : *vertex Buffer<[]Vertex>;
 };
 
 var depthState = new DepthStencilState();
@@ -187,8 +187,8 @@ cubeBindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge
 cubeBindings.textureView = texture.CreateSampleableView();
 
 var cubeData : SkyboxPipeline;
-cubeData.position = new vertex Buffer<float<3>[]>(device, &cubeVerts);
-cubeData.indexBuffer = new index Buffer<uint[]>(device, &cubeIndices);
+cubeData.position = new vertex Buffer<[]float<3>>(device, &cubeVerts);
+cubeData.indexBuffer = new index Buffer<[]uint>(device, &cubeIndices);
 cubeData.bindings = new BindGroup<Bindings>(device, &cubeBindings);
 
 var teapotPipeline = new RenderPipeline<ReflectionPipeline>(device, depthState, TriangleList);
@@ -198,8 +198,8 @@ teapotBindings.textureView = cubeBindings.textureView;
 teapotBindings.uniforms = new uniform Buffer<Uniforms>(device);
 
 var teapotData : ReflectionPipeline;
-teapotData.vert = new vertex Buffer<Vertex[]>(device, tessTeapot.vertices);
-teapotData.indexBuffer = new index Buffer<uint[]>(device, tessTeapot.indices);
+teapotData.vert = new vertex Buffer<[]Vertex>(device, tessTeapot.vertices);
+teapotData.indexBuffer = new index Buffer<[]uint>(device, tessTeapot.indices);
 teapotData.bindings = new BindGroup<Bindings>(device, &teapotBindings);
 
 var handler : EventHandler;

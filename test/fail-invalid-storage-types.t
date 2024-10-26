@@ -1,1 +1,1 @@
-var invalidArray : int[];
+var invalidArray : []int;

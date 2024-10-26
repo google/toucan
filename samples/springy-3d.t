@@ -52,9 +52,9 @@ class Spring {
 }
 
 class ParticleSystem {
-  var bodies : *Body[];
-  var springs : *Spring[];
-  ParticleSystem(b : *Body[], s : *Spring[]) {
+  var bodies : *[]Body;
+  var springs : *[]Spring;
+  ParticleSystem(b : *[]Body, s : *[]Spring) {
     bodies = b;
     springs = s;
   }
@@ -96,13 +96,13 @@ class DrawPipeline {
   fragment main(fb : ^FragmentBuiltins) {
     fragColor.Set(bindings.Get().uniforms.Map().color);
   }
-  var vertices : *vertex Buffer<Vector[]>;
+  var vertices : *vertex Buffer<[]Vector>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var bindings : *BindGroup<Bindings>;
 }
 
-var bodies = new Body[width * height * depth];
-var springs = new Spring[bodies.length * 3 - width * depth - height * depth - width * height];
+var bodies = [width * height * depth] new Body;
+var springs = [bodies.length * 3 - width * depth - height * depth - width * height] new Spring;
 var spring = 0;
 for (var i = 0; i < bodies.length; ++i) {
   var x = i % width;
@@ -139,11 +139,11 @@ var window = new Window({0, 0}, {960, 960});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var physicsSystem = new ParticleSystem(bodies, springs);
 
-var bodyVerts = new Vector[bodies.length * 3];
-var bodyVBO = new vertex Buffer<Vector[]>(device, bodyVerts.length);
+var bodyVerts = [bodies.length * 3] new Vector;
+var bodyVBO = new vertex Buffer<[]Vector>(device, bodyVerts.length);
 
-var springVerts = new Vector[springs.length * 2];
-var springVBO = new vertex Buffer<Vector[]>(device, springVerts.length);
+var springVerts = [springs.length * 2] new Vector;
+var springVBO = new vertex Buffer<[]Vector>(device, springVerts.length);
 
 var bodyPipeline = new RenderPipeline<DrawPipeline>(device, null, TriangleList);
 var springPipeline = new RenderPipeline<DrawPipeline>(device, null, LineList);

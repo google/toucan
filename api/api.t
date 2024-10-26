@@ -133,7 +133,7 @@ native class Texture1D<PF> {
  ~Texture1D();
   CreateSampleableView() sampleable : *SampleableTexture1D<PF::DeviceType>;
   CreateStorageView(mipLevel = 0u) : *storage Texture1D<PF>;
-  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<PF::HostType[]>, width : uint, origin : uint = 0);
+  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<[]PF::HostType>, width : uint, origin : uint = 0);
 }
 
 native class Texture2D<PF> {
@@ -145,7 +145,7 @@ native class Texture2D<PF> {
   CreateColorAttachment(loadOp : LoadOp, storeOp : StoreOp, clearValue = float<4>(0.0, 0.0, 0.0, 0.0)) renderable : *ColorAttachment<PF>;
   CreateDepthStencilAttachment(depthLoadOp : LoadOp, depthstoreOp : StoreOp, depthClearValue = 0.0, stencilLoadOp : LoadOp, stencilStoreOp : StoreOp, stencilClearValue : int) renderable : *DepthStencilAttachment<PF>;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<PF::HostType[]>, size : uint<2>, origin : uint<2> = uint<2>(0, 0));
+  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<[]PF::HostType>, size : uint<2>, origin : uint<2> = uint<2>(0, 0));
 }
 
 native class Texture2DArray<PF> {
@@ -155,7 +155,7 @@ native class Texture2DArray<PF> {
   CreateRenderableView(layee : uint, mipLevel = 0u) : *renderable Texture2D<PF>;
   CreateStorageView(layer : uint, mipLevel = 0u) : *storage Texture2DArray<PF>;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<PF::HostType[]>, size : uint<3>, origin = uint<3>(0, 0, 0));
+  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<[]PF::HostType>, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
 native class Texture3D<PF> {
@@ -165,7 +165,7 @@ native class Texture3D<PF> {
   CreateRenderableView(depth : uint, mipLevel = 0u) : *renderable Texture2D<PF>;
   CreateStorageView(depth : uint, mipLevel = 0u) : *storage Texture3D<PF>;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<PF::HostType[]>, size : uint<3>, origin = uint<3>(0, 0, 0));
+  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<[]PF::HostType>, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
 native class TextureCube<PF> {
@@ -175,7 +175,7 @@ native class TextureCube<PF> {
   CreateRenderableView(face : uint, mipLevel = 0u) : *renderable Texture2D<PF>;
   CreateStorageView(face : uint, mipLevel = 0u) : *storage Texture2D<PF>;
   MinBufferWidth() : uint;
-  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<PF::HostType[]>, size : uint<3>, origin = uint<3>(0, 0, 0));
+  CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<[]PF::HostType>, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
 native class CommandEncoder {
@@ -247,10 +247,10 @@ native class Math {
 }
 
 native class ImageDecoder<PF> {
-  ImageDecoder(encodedImage : ^ubyte[]);
+  ImageDecoder(encodedImage : ^[]ubyte);
  ~ImageDecoder();
   GetSize() : uint<2>;
-  Decode(buffer : ^writeonly PF::HostType[], bufferWidth : uint);
+  Decode(buffer : ^writeonly []PF::HostType, bufferWidth : uint);
 }
 
 enum EventType { MouseMove, MouseDown, MouseUp, TouchStart, TouchMove, TouchEnd, Unknown }
@@ -263,7 +263,7 @@ native class Event {
   var position : int<2>;
   var button : uint;
   var modifiers : uint;
-  var touches : int<2>[10];
+  var touches : [10]int<2>;
   var numTouches : int;
 }
 
@@ -275,9 +275,9 @@ native class System {
   static GetScreenSize() : uint<2>;
   static StorageBarrier() : int;
   static GetCurrentTime() : double;
-  static Print(str : ^ubyte[]);
-  static PrintLine(str : ^ubyte[]);
-  static GetSourceFile() : *ubyte[];
+  static Print(str : ^[]ubyte);
+  static PrintLine(str : ^[]ubyte);
+  static GetSourceFile() : *[]ubyte;
   static GetSourceLine() : int;
   static Abort();
 }
