@@ -421,6 +421,22 @@ class SmartToRawPtr : public Expr {
   Expr* expr_;
 };
 
+class ToRawArray : public Expr {
+ public:
+  ToRawArray(Expr* data, Expr* length, Type* elementType, MemoryLayout memoryLayout);
+  Result Accept(Visitor* visitor) override;
+  Expr*  GetData() const { return data_; }
+  Expr*  GetLength() const { return length_; }
+  MemoryLayout GetMemoryLayout() const { return memoryLayout_; }
+  Type*  GetType(TypeTable* types) override;
+
+ private:
+  Expr* data_;
+  Expr* length_;
+  Type* elementType_;
+  MemoryLayout memoryLayout_;
+};
+
 class RawToWeakPtr : public Expr {
  public:
   RawToWeakPtr(Expr* expr);
@@ -791,6 +807,7 @@ class Visitor {
   virtual Result Visit(MethodCall* node) { return Default(node); }
   virtual Result Visit(Stmts* node) { return Default(node); }
   virtual Result Visit(TempVarExpr* node) { return Default(node); }
+  virtual Result Visit(ToRawArray* node) { return Default(node); }
   virtual Result Visit(UnaryOp* node) { return Default(node); }
   virtual Result Visit(DestroyStmt* node) { return Default(node); }
   virtual Result Visit(UnresolvedInitializer* node) { return Default(node); }

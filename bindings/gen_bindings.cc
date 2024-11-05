@@ -22,6 +22,19 @@
 
 namespace Toucan {
 
+namespace {
+
+const char* MemoryLayoutToString(MemoryLayout layout) {
+  switch (layout) {
+    case MemoryLayout::Default: return "Default";
+    case MemoryLayout::Storage: return "Storage";
+    case MemoryLayout::Uniform: return "Uniform";
+    default: assert(!"unknown MemoryLayout"); return "";
+  }
+}
+
+}  // namespace
+
 GenBindings::GenBindings(SymbolTable* symbols,
                          TypeTable*   types,
                          FILE*        file,
@@ -106,7 +119,10 @@ void GenBindings::GenType(Type* type) {
     }
   } else if (type->IsPtr()) {
     PtrType* ptrType = static_cast<PtrType*>(type);
-    fprintf(file_, "types->Get%sPtrType(", type->IsStrongPtr() ? "Strong" : "Weak");
+    fprintf(file_, "types->Get%sPtrType(",
+            type->IsStrongPtr() ? "Strong"
+            : type->IsWeakPtr() ? "Weak"
+                                : "Raw");
     if (ptrType->GetBaseType()) {
       fprintf(file_, "typeList[%d]", typeMap_[ptrType->GetBaseType()]);
     } else {
@@ -115,8 +131,9 @@ void GenBindings::GenType(Type* type) {
     fprintf(file_, ")");
   } else if (type->IsArray()) {
     ArrayType* arrayType = static_cast<ArrayType*>(type);
-    fprintf(file_, "types->GetArrayType((typeList[%d]), %d, MemoryLayout::Default)",
-            typeMap_[arrayType->GetElementType()], arrayType->GetNumElements());
+    fprintf(file_, "types->GetArrayType((typeList[%d]), %d, MemoryLayout::%s)",
+            typeMap_[arrayType->GetElementType()], arrayType->GetNumElements(),
+            MemoryLayoutToString(arrayType->GetMemoryLayout()));
   } else if (type->IsFormalTemplateArg()) {
     FormalTemplateArg* formalTemplateArg = static_cast<FormalTemplateArg*>(type);
     fprintf(file_, "types->GetFormalTemplateArg(\"%s\")", formalTemplateArg->GetName().c_str());
@@ -181,6 +198,10 @@ void GenBindings::Run() {
     fprintf(header_, "  void*          ptr;\n");
     fprintf(header_, "  ControlBlock  *controlBlock;\n");
     fprintf(header_, "};\n\n");
+    fprintf(header_, "struct Array {\n");
+    fprintf(header_, "  void*          ptr;\n");
+    fprintf(header_, "  uint32_t       length;\n");
+    fprintf(header_, "};\n\n");
   }
   int id = 0;
   for (auto type : types) {
@@ -226,6 +247,8 @@ void PrintNativeType(FILE* file, Type* type) {
   } else if (type->IsEnum()) {
     EnumType* e = static_cast<EnumType*>(type);
     fprintf(file, "%s", e->GetName().c_str());
+  } else if (type->IsRawPtr()) {
+    fprintf(file, "void*");
   } else if (type->IsPtr()) {
     Type* baseType = static_cast<PtrType*>(type)->GetBaseType();
     if (baseType->IsQualified()) {
@@ -349,10 +372,10 @@ void GenBindings::GenBindingsForClass(ClassType* classType) {
   fprintf(file_, "  c = static_cast<ClassType*>(typeList[%d]);\n", typeMap_[classType]);
   if (classType->IsNative()) {
     fprintf(file_, "  c->SetNative(true);\n");
-    if (classType->IsNative()) {
-      fprintf(file_, "  NativeClass::%s = c;\n;", classType->GetName().c_str());
-    }
+    fprintf(file_, "  NativeClass::%s = c;\n;", classType->GetName().c_str());
   }
+  fprintf(file_, "  c->SetMemoryLayout(MemoryLayout::%s);\n",
+          MemoryLayoutToString(classType->GetMemoryLayout()));
   fprintf(file_, "  scope = symbols->PushNewScope();\n");
   fprintf(file_, "  scope->classType = c;\n");
   fprintf(file_, "  c->SetScope(scope);\n");

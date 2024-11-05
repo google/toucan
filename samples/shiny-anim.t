@@ -74,7 +74,7 @@ class BicubicTessellator {
     var verticesPerPatch = patchWidth * patchWidth;
     vertices = [numPatches * verticesPerPatch] new Vertex;
   }
-  Tessellate(controlPoints : ^[]float<3>, controlIndices : ^[]uint) {
+  Tessellate(controlPoints : &[]float<3>, controlIndices : &[]uint) {
     var vi = 0, ii = 0;
     var scale = 1.0 / (float) level;
     for (var k = 0; k < controlIndices.length; k += 16) {

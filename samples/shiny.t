@@ -70,7 +70,7 @@ class BicubicPatch {
 }
 
 class BicubicTessellator {
-  BicubicTessellator(controlPoints : ^[]float<3>, controlIndices : ^[]uint, level : int) {
+  BicubicTessellator(controlPoints : &[]float<3>, controlIndices : &[]uint, level : int) {
     var numPatches = controlIndices.length / 16;
     var patchWidth = level + 1;
     var verticesPerPatch = patchWidth * patchWidth;

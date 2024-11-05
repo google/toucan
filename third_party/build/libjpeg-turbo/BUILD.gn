@@ -18,6 +18,7 @@ copy("jversion") {
 }
 
 source_set("libjpeg-turbo") {
+  data_deps = [ ":jversion" ]
   libjpeg = "../../libjpeg-turbo"
   include_dirs = [
     ".",

@@ -22,9 +22,8 @@ var hostBuf = new readonly Buffer<[]int>(device, 1);
 var bg = new BindGroup<ComputeBindings>(device, {buffer = storageBuf});
 
 var encoder = new CommandEncoder(device);
-var computePass = new ComputePass<Compute>(encoder, null);
+var computePass = new ComputePass<Compute>(encoder, {bindings = bg});
 computePass.SetPipeline(computePipeline);
-computePass.Set({bindings = bg});
 computePass.Dispatch(1, 1, 1);
 computePass.End();
 hostBuf.CopyFromBuffer(encoder, storageBuf);

@@ -439,6 +439,8 @@ class ClassType : public Type {
   void                        SetVTable(const std::vector<Method*>& vtable) { vtable_ = vtable; }
   Type*                       FindType(const std::string& id);
   void                        SetMemoryLayout(MemoryLayout memoryLayout, TypeTable* types);
+  void                        SetMemoryLayout(MemoryLayout memoryLayout) { memoryLayout_ = memoryLayout; }
+  MemoryLayout                GetMemoryLayout() const { return memoryLayout_; }
   int                         GetPadding() const { return padding_; }
   bool                        IsFullySpecified() const override;
   bool                        NeedsDestruction() const override;
@@ -482,6 +484,7 @@ class PtrType : public Type {
   bool  IsFullySpecified() const override { return baseType_->IsFullySpecified(); }
   bool  IsPOD() const override { return false; }
   int   GetSizeInBytes() const override { return 2 * sizeof(void*); }
+  bool  NeedsDestruction() const override { return true; }
 
  private:
   Type* baseType_;
@@ -493,7 +496,6 @@ class StrongPtrType : public PtrType {
   std::string ToString() const override;
   bool        IsStrongPtr() const override { return true; }
   bool        CanWidenTo(Type* type) const override;
-  bool        NeedsDestruction() const override { return true; }
 };
 
 class WeakPtrType : public PtrType {
@@ -502,7 +504,6 @@ class WeakPtrType : public PtrType {
   std::string ToString() const override;
   bool        IsWeakPtr() const override { return true; }
   bool        CanWidenTo(Type* type) const override;
-  bool        NeedsDestruction() const override { return true; }
   bool CanInitFrom(const ListType* type) const override { return GetBaseType()->CanInitFrom(type); }
 };
 
@@ -511,7 +512,8 @@ class RawPtrType : public PtrType {
   RawPtrType(Type* type);
   std::string ToString() const override;
   bool        IsRawPtr() const override { return true; }
-  bool        CanWidenTo(Type* type) const override { return false; }
+  bool        CanWidenTo(Type* type) const override;
+  bool        CanInitFrom(const ListType* type) const override { return GetBaseType()->CanInitFrom(type); }
   int         GetSizeInBytes() const override { return sizeof(void*); }
 };
 
@@ -521,7 +523,7 @@ class NullType : public PtrType {
   bool        IsNull() const override { return true; }
   bool        IsPOD() const override { return false; }
   std::string ToString() const override { return "null"; }
-  bool        CanWidenTo(Type* type) const override { return type->IsPtr(); }
+  bool        CanWidenTo(Type* type) const override { return type->IsStrongPtr() | type->IsWeakPtr(); }
   int         GetSizeInBytes() const override {
     assert(false);
     return 0;

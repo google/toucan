@@ -35,9 +35,9 @@ native class CommandEncoder;
 
 native class Buffer<T> {
   Buffer(device : *Device, size : uint = 1u);
-  Buffer(device : *Device, t : ^T);
+  Buffer(device : *Device, t : &T);
  ~Buffer();
-  SetData(data : ^T);
+  SetData(data : &T);
   CopyFromBuffer(encoder : ^CommandEncoder, source : ^Buffer<T>);
   deviceonly Get() vertex : T:ElementType;
   deviceonly Map() uniform : ^uniform T;
@@ -68,7 +68,7 @@ native class ComputePipeline<T> {
 }
 
 native class BindGroup<T> {
-  BindGroup(device : *Device, data : ^T);
+  BindGroup(device : *Device, data : &T);
  ~BindGroup();
   deviceonly Get() : T;
 }
@@ -185,23 +185,23 @@ native class CommandEncoder {
 }
 
 native class RenderPass<T> {
-  RenderPass(encoder : *CommandEncoder, data : ^T);
+  RenderPass(encoder : *CommandEncoder, data : &T);
   RenderPass(base : ^RenderPass<T:BaseClass>);
  ~RenderPass();
   Draw(vertexCount : uint, instanceCount : uint, firstVertex : uint, firstInstance : uint);
   DrawIndexed(indexCount : uint, instanceCount : uint, firstIndex : uint, baseVertex : uint, firstIntance : uint);
   SetPipeline(pipeline : *RenderPipeline<T>);
-  Set(data : ^T);
+  Set(data : &T);
   End();
 }
 
 native class ComputePass<T> {
-  ComputePass(encoder : *CommandEncoder, data : ^T);
+  ComputePass(encoder : *CommandEncoder, data : &T);
   ComputePass(base : ^ComputePass<T:BaseClass>);
  ~ComputePass();
   Dispatch(workgroupCountX : uint, workgroupCountY : uint, workgroupCountZ : uint);
   SetPipeline(pipeline : *ComputePipeline<T>);
-  Set(data : ^T);
+  Set(data : &T);
   End();
 }
 

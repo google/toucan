@@ -118,7 +118,15 @@ llvm::Type* CodeGenLLVM::ConvertType(Type* type) {
   } else if (type->IsRawPtr()) {
     Type* baseType = static_cast<RawPtrType*>(type)->GetBaseType();
     baseType = baseType->GetUnqualifiedType();
-    return llvm::PointerType::get(ConvertType(baseType), 0);
+    if (baseType->IsUnsizedArray()) {
+      std::vector<llvm::Type*> types;
+      baseType = baseType->GetUnqualifiedType();
+      types.push_back(llvm::PointerType::get(ConvertType(baseType), 0));
+      types.push_back(intType_);
+      return llvm::StructType::get(*context_, types);
+    } else {
+      return llvm::PointerType::get(ConvertType(baseType), 0);
+    }
   } else if (type->IsArray()) {
     ArrayType* atype = static_cast<ArrayType*>(type);
     return llvm::ArrayType::get(ConvertArrayElementType(atype), atype->GetNumElements());
@@ -176,7 +184,7 @@ llvm::Type* CodeGenLLVM::ConvertTypeToNative(Type* type) {
       // All pointers to native classes become ptr-to-base (obj pointer)
       return llvm::PointerType::get(ConvertType(baseType), 0);
     } else {
-      // Pointers to anything else passed as Object*.
+      // Pointers to anything else passed as Array* or Object*.
       return voidPtrType_;
     }
   } else if (type->IsVector()) {
@@ -234,14 +242,14 @@ llvm::Value* CodeGenLLVM::CreateControlBlock(Type* type) {
   return controlBlock;
 }
 
-llvm::Value* CodeGenLLVM::CreatePointer(llvm::Value* obj, llvm::Value* controlBlock) {
+llvm::Value* CodeGenLLVM::CreatePointer(llvm::Value* obj, llvm::Value* controlBlockOrLength) {
   std::vector<llvm::Type*> types;
   types.push_back(obj->getType());
-  types.push_back(controlBlock->getType());
+  types.push_back(controlBlockOrLength->getType());
   llvm::Type*  type = llvm::StructType::get(*context_, types);
   llvm::Value* result = llvm::ConstantAggregateZero::get(type);
   result = builder_->CreateInsertValue(result, obj, 0);
-  result = builder_->CreateInsertValue(result, controlBlock, 1);
+  result = builder_->CreateInsertValue(result, controlBlockOrLength, 1);
   return result;
 }
 
@@ -558,7 +566,12 @@ llvm::Value* CodeGenLLVM::GenerateLLVM(Expr* expr) {
 }
 
 llvm::Value* CodeGenLLVM::ConvertToNative(Type* type, llvm::Value* value) {
-  if (type->IsPtr()) {
+  if (type->IsRawPtr() && static_cast<RawPtrType*>(type)->GetBaseType()->IsUnsizedArray()) {
+    // Allocate a stack var for Array, then pass a pointer to that (Array*).
+    llvm::Value* alloc = builder_->CreateAlloca(ConvertType(type), 0, "Array");
+    builder_->CreateStore(value, alloc);
+    value = alloc;
+  } else if (type->IsStrongPtr() || type->IsWeakPtr()) {
     Type* baseType = static_cast<PtrType*>(type)->GetBaseType();
     baseType = baseType->GetUnqualifiedType();
     if (baseType && baseType->IsClass() && static_cast<ClassType*>(baseType)->IsNative()) {
@@ -848,22 +861,8 @@ llvm::Value* CodeGenLLVM::CreateCast(Type*        srcType,
     return CreateCast(static_cast<VectorType*>(srcType)->GetComponentType(),
                       static_cast<VectorType*>(dstType)->GetComponentType(), value,
                       ConvertType(dstType));
-  } else if (dstType->IsUnsizedArray() && srcType->IsUnsizedArray()) {
-    // FIXME:  Implement narrowing casts, with dynamic type checking.
-    assert(srcType->CanWidenTo(dstType));
-    return builder_->CreateBitCast(value, dstLLVMType);
   } else if (srcType->IsPtr() && dstType->IsPtr()) {
-    if (srcType->IsStrongPtr() && dstType->IsWeakPtr()) {
-      RefWeakPtr(value);
-      AppendTemporary(value, static_cast<StrongPtrType*>(srcType));
-    }
-    Type*        dstBase = static_cast<PtrType*>(dstType)->GetBaseType();
-    llvm::Value* ptr = builder_->CreateExtractValue(value, {0});
-    llvm::Value* controlBlock = builder_->CreateExtractValue(value, {1});
-    llvm::Type*  newPtrType =
-        dstBase->IsVoid() ? voidPtrType_ : llvm::PointerType::get(ConvertType(dstBase), 0);
-    llvm::Value* newPtr = builder_->CreateBitCast(ptr, newPtrType);
-    return CreatePointer(newPtr, controlBlock);
+    return value;
   }
   assert(!"unimplemented cast");
   return nullptr;
@@ -940,7 +939,18 @@ Result CodeGenLLVM::Visit(DestroyStmt* node) {
   assert(type->IsRawPtr());
   type = static_cast<RawPtrType*>(type)->GetBaseType();
   auto value = GenerateLLVM(node->GetExpr());
-  if (type->IsStrongPtr()) {
+  if (type->IsRawPtr()) {
+    auto temporary = scopedTemporaries_.find(value);
+    if (temporary != scopedTemporaries_.end()) {
+      type = temporary->second.type;
+      value = temporary->second.value;
+      if (type->IsStrongPtr()) {
+        UnrefStrongPtr(value, static_cast<StrongPtrType*>(type));
+      } else if (type->IsWeakPtr()) {
+        UnrefWeakPtr(value);
+      }
+    }
+  } else if (type->IsStrongPtr()) {
     value = builder_->CreateLoad(ConvertType(type), value);
     UnrefStrongPtr(value, static_cast<StrongPtrType*>(type));
   } else if (type->IsWeakPtr()) {
@@ -1093,6 +1103,11 @@ Result CodeGenLLVM::Visit(ZeroInitStmt* node) {
 Result CodeGenLLVM::Visit(StoreStmt* stmt) {
   llvm::Value* rhs = GenerateLLVM(stmt->GetRHS());
   llvm::Value* lhs = GenerateLLVM(stmt->GetLHS());
+  if (stmt->GetRHS()->GetType(types_)->IsRawPtr() & !temporaries_.empty()) {
+    auto temporary = temporaries_.back();
+    temporaries_.pop_back();
+    scopedTemporaries_[lhs] = temporary;
+  }
   DestroyTemporaries();
   return builder_->CreateStore(rhs, lhs);
 }
@@ -1147,14 +1162,12 @@ Result CodeGenLLVM::Visit(ArrayAccess* node) {
   llvm::Value* expr = GenerateLLVM(node->GetExpr());
   llvm::Value* index = GenerateLLVM(node->GetIndex());
   Type*        type = node->GetExpr()->GetType(types_);
-  if (type->IsRawPtr()) {
-    type = static_cast<RawPtrType*>(type)->GetBaseType();
-  } else {
-    llvm::AllocaInst* allocaInst = builder_->CreateAlloca(ConvertType(type));
-    builder_->CreateStore(expr, allocaInst);
-    expr = allocaInst;
-  }
+  assert(type->IsRawPtr());
+  type = static_cast<RawPtrType*>(type)->GetBaseType();
+  assert(type->IsUnsizedArray());
   llvm::Type* llvmType = ConvertType(type);
+  expr = builder_->CreateExtractValue(expr, {0});
+  // FIXME: do bounds checking here
   if (type->IsArray() && static_cast<ArrayType*>(type)->GetElementPadding() > 0) {
     return builder_->CreateGEP(llvmType, expr, {Int(0), index, Int(0)});
   } else {
@@ -1171,8 +1184,23 @@ Result CodeGenLLVM::Visit(RawToWeakPtr* node) {
 
 Result CodeGenLLVM::Visit(SmartToRawPtr* node) {
   llvm::Value* expr = GenerateLLVM(node->GetExpr());
-  AppendTemporary(expr, node->GetExpr()->GetType(types_));
-  return builder_->CreateExtractValue(expr, {0});
+  auto type = node->GetExpr()->GetType(types_);
+  AppendTemporary(expr, type);
+  auto value = builder_->CreateExtractValue(expr, {0});
+  assert(type->IsPtr());
+  if (static_cast<PtrType*>(type)->GetBaseType()->IsUnsizedArray()) {
+    auto controlBlock = builder_->CreateExtractValue(expr, {1});
+    auto length = GetArrayLengthAddress(controlBlock);
+    length = builder_->CreateLoad(intType_, length);
+    return CreatePointer(value, length);
+  }
+  return value;
+}
+
+Result CodeGenLLVM::Visit(ToRawArray* node) {
+  llvm::Value* data = GenerateLLVM(node->GetData());
+  llvm::Value* length = GenerateLLVM(node->GetLength());
+  return CreatePointer(data, length);
 }
 
 Result CodeGenLLVM::Visit(FieldAccess* node) {
@@ -1227,13 +1255,8 @@ Result CodeGenLLVM::Visit(Initializer* node) {
 Result CodeGenLLVM::Visit(LengthExpr* expr) {
   llvm::Value* value = GenerateLLVM(expr->GetExpr());
   Type*        type = expr->GetExpr()->GetType(types_);
-  assert(type->IsRawPtr());
-  type = static_cast<RawPtrType*>(type)->GetBaseType();
-  value = builder_->CreateLoad(ConvertType(type), value);
-  llvm::Value* controlBlock = builder_->CreateExtractValue(value, {1});
-  // TODO:  check for null ptr here
-  llvm::Value* length = GetArrayLengthAddress(controlBlock);
-  return builder_->CreateLoad(intType_, length);
+  assert(type->IsRawPtr() && static_cast<RawPtrType*>(type)->GetBaseType()->IsUnsizedArray());
+  return builder_->CreateExtractValue(value, {1});
 }
 
 Result CodeGenLLVM::Visit(ExtractElementExpr* expr) {

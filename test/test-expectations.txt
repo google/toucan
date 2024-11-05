@@ -14,6 +14,8 @@ array-new.t:3: array size is not an integer constant
 array-new.t:4: array size is not an integer constant
 array-new.t:5: array size is not an integer constant
 test/arrays.t
+test/assign-padded-array.t
+assign-padded-array.t:20:  expression is not of indexable type
 test/binop-widen.t
 test/bitwise.t
 test/bool-constants.t
@@ -79,6 +81,14 @@ error-non-virtual-override.t:10:  attempt to override a non-virtual method
 test/error-partial-template.t
 error-partial-template.t:10:  cannot store a value of type "*Foo<int, int>" to a location of type "*Foo<int>"
 error-partial-template.t:11:  cannot store a value of type "*Foo<int, int>" to a location of type "*Foo"
+test/error-raw-ptr-array-cast-to-smart.t
+error-raw-ptr-array-cast-to-smart.t:2:  cannot cast value of type &[3]int to ^[]int
+error-raw-ptr-array-cast-to-smart.t:3:  cannot cast value of type &[3]int to *[]int
+test/error-raw-ptr-cast-to-smart.t
+error-raw-ptr-cast-to-smart.t:2:  cannot cast value of type &int to ^int
+error-raw-ptr-cast-to-smart.t:3:  cannot cast value of type &int to *int
+test/error-raw-ptr-must-be-initialized.t
+error-raw-ptr-must-be-initialized.t:1:  reference must be initialized
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
 error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(*CommandEncoder, *writeonly Buffer<[]float<4>>, int)
@@ -86,6 +96,8 @@ error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromB
 test/error-uint-literal-too-large.t
 test/error-virtual-override.t
 error-virtual-override.t:8:  override of virtual method must be virtual
+test/error-widen-null-to-raw-ptr.t
+error-widen-null-to-raw-ptr.t:1:  cannot store a value of type "null" to a location of type "&int"
 test/error-wrong-named-param.t
 error-wrong-named-param.t:7:  class Bar has no method Foo(b = float, a = int)
 error-wrong-named-param.t:7:  Bar.Foo(int, float) : float
@@ -145,7 +157,9 @@ test/later-class-field.t
 test/length-store-error.t
 length-store-error.t:2:  expression is not an assignable value
 test/list-init-aggregated-class.t
-test/list-init-class-to-ptr.t
+test/list-init-array-arg.t
+test/list-init-array.t
+test/list-init-class-arg.t
 test/list-init-class.t
 test/list-init-inherited-field.t
 test/list-init-matrix.t
@@ -178,6 +192,7 @@ test/new.t
 test/overload.t
 test/override.t
 test/post-increment-with-side-effects.t
+test/raw-ptr.t
 test/really-simple.t
 test/scope-test.t
 test/short-vector.t

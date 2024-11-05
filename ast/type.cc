@@ -565,6 +565,15 @@ bool StrongPtrType::CanWidenTo(Type* type) const {
   return false;
 };
 
+bool RawPtrType::CanWidenTo(Type* type) const {
+  if (type == this) return true;
+  if (GetBaseType()->IsArray() && type->IsRawPtr()) {
+    auto ptrType = static_cast<PtrType*>(type);
+    return GetBaseType()->CanWidenTo(ptrType->GetBaseType());
+  }
+  return false;
+}
+
 std::string WeakPtrType::ToString() const { return "^" + GetBaseType()->ToString(); };
 
 std::string RawPtrType::ToString() const { return "&" + GetBaseType()->ToString(); };

@@ -1,5 +1,4 @@
 - implement window resize event
-- implement raw ptr optimization (or explicit raw ptrs?)
 - implement foreach
 - implement Math.inverse() on CPU side
 - implement bounds checking

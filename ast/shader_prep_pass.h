@@ -61,6 +61,7 @@ class ShaderPrepPass : public CopyVisitor {
   Result               Visit(SmartToRawPtr* node) override;
   Result               Visit(Stmts* node) override;
   Result               Visit(StoreStmt* node) override;
+  Result               Visit(ToRawArray* node) override;
   Result               Visit(VarExpr* node) override;
   Result               Visit(ZeroInitStmt* node) override;
   Result               Default(ASTNode* node) override;

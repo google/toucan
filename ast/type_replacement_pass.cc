@@ -104,6 +104,8 @@ Type* TypeReplacementPass::ResolveType(Type* type) {
     return types_->GetStrongPtrType(ResolveType(static_cast<PtrType*>(type)->GetBaseType()));
   } else if (type->IsWeakPtr()) {
     return types_->GetWeakPtrType(ResolveType(static_cast<PtrType*>(type)->GetBaseType()));
+  } else if (type->IsRawPtr()) {
+    return types_->GetRawPtrType(ResolveType(static_cast<PtrType*>(type)->GetBaseType()));
   } else if (type->IsQualified()) {
     int   qualifiers;
     Type* result = ResolveType(type->GetUnqualifiedType(&qualifiers));

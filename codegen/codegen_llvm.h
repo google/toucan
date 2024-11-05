@@ -45,12 +45,14 @@ typedef llvm::IRBuilder<> LLVMBuilder;
 
 struct ValueTypePair {
   ValueTypePair(llvm::Value* v, Type* t) : value(v), type(t) {}
+  ValueTypePair() : value(nullptr), type(nullptr) {}
   llvm::Value* value;
   Type*        type;
 };
 
 using DataVars = std::unordered_map<const void*, llvm::GlobalValue*>;
 using DerefList = std::vector<ValueTypePair>;
+using RefPtrTemporaries = std::unordered_map<llvm::Value*, ValueTypePair>;
 using BuiltinCall = llvm::Value* (CodeGenLLVM::*)(const FileLocation& location);
 
 class CodeGenLLVM : public Visitor {
@@ -92,7 +94,7 @@ class CodeGenLLVM : public Visitor {
   void                  FillVTable(ClassType* classType);
   void                  InitializeObject(llvm::Value* objPtr, ClassType* classType);
   llvm::AllocaInst*     CreateEntryBlockAlloca(llvm::Function* function, Var* var);
-  llvm::Value*          CreatePointer(llvm::Value* obj, llvm::Value* controlBlock);
+  llvm::Value*          CreatePointer(llvm::Value* obj, llvm::Value* controlBlockOrLength);
   llvm::Value*          CreateControlBlock(Type* type);
   llvm::Value*          CreateMalloc(llvm::Type* type, llvm::Value* arraySize);
   void                  GenerateFree(llvm::Value* value);
@@ -109,6 +111,7 @@ class CodeGenLLVM : public Visitor {
   Result                Visit(CastExpr* expr) override;
   Result                Visit(Data* expr) override;
   Result                Visit(SmartToRawPtr* stmt) override;
+  Result                Visit(ToRawArray* node) override;
   Result                Visit(DestroyStmt* stmt) override;
   Result                Visit(DoStatement* stmt) override;
   Result                Visit(DoubleConstant* stmt) override;
@@ -182,6 +185,7 @@ class CodeGenLLVM : public Visitor {
   llvm::Type*                                           vtableType_;
   bool                                                  debugOutput_;
   DerefList                                             temporaries_;
+  RefPtrTemporaries                                     scopedTemporaries_;
   llvm::Type*                                           typeListType_;
   llvm::GlobalValue*                                    typeList_;
   std::unordered_map<Expr*, llvm::Value*>               exprCache_;

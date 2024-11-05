@@ -250,6 +250,7 @@ type:
   | type_qualifier type                     { $$ = types_->GetQualifiedType($2, $1); }
   | '*' type                                { $$ = types_->GetStrongPtrType($2); }
   | '^' type                                { $$ = types_->GetWeakPtrType($2); }
+  | '&' type                                { $$ = types_->GetRawPtrType($2); }
   | '[' arith_expr ']' type                 { $$ = GetArrayType($4, AsIntConstant($2)); }
   | '[' ']' type                            { $$ = GetArrayType($3, 0); }
   ;
@@ -464,6 +465,7 @@ arith_expr:
   | T_FALSE                                 { $$ = Make<BoolConstant>(false); }
   | T_NULL                                  { $$ = Make<NullConstant>(); }
   | assignable                              { $$ = Load($1); }
+  | '&' assignable %prec UNARYMINUS         { $$ = $2; }
   ;
 
 expr:
@@ -502,7 +504,6 @@ assignable:
   | simple_type '.' T_IDENTIFIER '(' arguments ')'
                                             { $$ = MakeStaticMethodCall($1, $3, $5); }
   | assignable ':'                          { $$ = Make<SmartToRawPtr>(Make<LoadExpr>($1)); }
-  | '&' assignable %prec UNARYMINUS         { $$ = Make<RawToWeakPtr>($2); }
   ;
 
 %%

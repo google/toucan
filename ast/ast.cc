@@ -61,6 +61,11 @@ Type* SmartToRawPtr::GetType(TypeTable* types) {
   return types->GetRawPtrType(static_cast<PtrType*>(type)->GetBaseType());
 }
 
+Type* ToRawArray::GetType(TypeTable* types) {
+  auto type = types->GetArrayType(elementType_, 0, memoryLayout_);
+  return types->GetRawPtrType(type);
+}
+
 Type* FieldAccess::GetType(TypeTable* types) {
   Type* baseType = expr_->GetType(types);
   if (baseType->IsRawPtr()) { baseType = static_cast<RawPtrType*>(baseType)->GetBaseType(); }
@@ -183,6 +188,8 @@ UnresolvedDot::UnresolvedDot(Expr* expr, std::string id) : expr_(expr), id_(id) 
 RawToWeakPtr::RawToWeakPtr(Expr* expr) : expr_(expr) {}
 
 SmartToRawPtr::SmartToRawPtr(Expr* expr) : expr_(expr) {}
+
+ToRawArray::ToRawArray(Expr* data, Expr* length, Type* elementType, MemoryLayout memoryLayout) : data_(data), length_(length), elementType_(elementType), memoryLayout_(memoryLayout) {}
 
 FieldAccess::FieldAccess(Expr* expr, Field* field) : expr_(expr), field_(field) {}
 
@@ -313,6 +320,7 @@ Result EnumConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprList::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprWithStmt::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result SmartToRawPtr::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ToRawArray::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result DoStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result DoubleConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprStmt::Accept(Visitor* visitor) { return visitor->Visit(this); }

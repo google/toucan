@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class C {
-  clobber(c : ^C)
+  clobber(c : &C)
   {
     f = c.f;
   }

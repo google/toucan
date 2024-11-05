@@ -9,8 +9,8 @@ class Struct {
 }
 
 class Compute {
-  static set(p : ^int, value : int) {
-    p: = value;
+  static set(p : &int, value : int) {
+    p = value;
   }
   compute(1, 1,1) main(cb : ^ComputeBuiltins) {
     var buffer = bindings.Get().buffer.Map();
@@ -37,9 +37,8 @@ var hostBuf = new readonly Buffer<[]int>(device, 3);
 var bg = new BindGroup<ComputeBindings>(device, {buffer = storageBuf});
 
 var encoder = new CommandEncoder(device);
-var computePass = new ComputePass<Compute>(encoder, null);
+var computePass = new ComputePass<Compute>(encoder, {bindings = bg});
 computePass.SetPipeline(computePipeline);
-computePass.Set({bindings = bg});
 computePass.Dispatch(1, 1, 1);
 computePass.End();
 hostBuf.CopyFromBuffer(encoder, storageBuf);

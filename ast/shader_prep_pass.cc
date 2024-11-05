@@ -529,6 +529,11 @@ Result ShaderPrepPass::Visit(ZeroInitStmt* node) {
   return nullptr;
 }
 
+Result ShaderPrepPass::Visit(ToRawArray* node) {
+  // Array pointers in SPIR-V are just data.
+  return Resolve(node->GetData());
+}
+
 Result ShaderPrepPass::Default(ASTNode* node) {
   assert(false);
   return nullptr;

@@ -47,22 +47,13 @@ Result SemanticPass::Visit(ArrayAccess* node) {
   if (!expr) return nullptr;
   Expr* index = Resolve(node->GetIndex());
   if (!index) return nullptr;
-  Type* exprType = expr->GetType(types_);
-  if (exprType->IsRawPtr()) { exprType = static_cast<RawPtrType*>(exprType)->GetBaseType(); }
-  if (exprType->IsStrongPtr() || exprType->IsWeakPtr()) {
-    exprType = static_cast<PtrType*>(exprType)->GetBaseType();
-    if (expr->GetType(types_)->IsRawPtr()) { expr = Make<LoadExpr>(expr); }
-    expr = Make<SmartToRawPtr>(expr);
-  }
-  exprType = exprType->GetUnqualifiedType();
-  Type* indexType = index->GetType(types_);
-  if (!indexType->IsInt() && !indexType->IsUInt()) {
-    return Error("array index must be integer");
-  } else if (exprType->IsArray() || exprType->IsMatrix() || exprType->IsVector()) {
-    return Make<ArrayAccess>(expr, index);
-  } else {
+
+  expr = MakeIndexable(expr);
+  if (!expr) {
     return Error("expression is not of indexable type");
   }
+
+  return Make<ArrayAccess>(expr, index);
 }
 
 Result SemanticPass::Visit(CastExpr* node) {
@@ -74,7 +65,7 @@ Result SemanticPass::Visit(CastExpr* node) {
   if (srcType == dstType) {
     return expr;
   } else if (srcType->CanWidenTo(dstType) || srcType->CanNarrowTo(dstType)) {
-    return Make<CastExpr>(dstType, expr);
+    return Widen(expr, dstType);
   } else {
     return Error("cannot cast value of type %s to %s", srcType->ToString().c_str(), dstType->ToString().c_str());
   }
@@ -203,6 +194,9 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
     std::string errorMsg = std::string("cannot create storage of type ") + type->ToString();
     return Error(errorMsg.c_str());
   }
+  if (type->IsRawPtr() && !initExpr) {
+    return Error("reference must be initialized");
+  }
   Var*  var = symbols_->DefineVar(id, type);
   Expr* varExpr = Make<VarExpr>(var);
   return InitializeVar(varExpr, type, initExpr);
@@ -255,16 +249,62 @@ Expr* SemanticPass::Widen(Expr* node, Type* dstType) {
     return node;
   } else if (node->IsUnresolvedListExpr()) {
     return ResolveListExpr(static_cast<UnresolvedListExpr*>(node), dstType);
+  } else if ((srcType->IsStrongPtr() || srcType->IsWeakPtr()) && dstType->IsRawPtr()) {
+    return Make<SmartToRawPtr>(node);
+  } else if (dstType->IsRawPtr() && static_cast<RawPtrType*>(dstType)->GetBaseType()->IsArray()) {
+    return MakeIndexable(node);
   } else {
     return Make<CastExpr>(dstType, node);
   }
 }
 
+Expr* SemanticPass::MakeIndexable(Expr* expr) {
+  Type* type = expr->GetType(types_);
+  if (type->IsStrongPtr() || type->IsWeakPtr()) {
+    return Make<SmartToRawPtr>(expr);
+  } else if (!type->IsRawPtr()) {
+    return MakeIndexable(Make<TempVarExpr>(type, expr));
+  }
+  type = static_cast<RawPtrType*>(type)->GetBaseType();
+  if (type->IsUnsizedArray()) {
+    return expr;
+  } else if (type->IsStrongPtr() || type->IsWeakPtr()) {
+    return Make<SmartToRawPtr>(Make<LoadExpr>(expr));
+  }
+  int length;
+  Type* elementType;
+  MemoryLayout memoryLayout = MemoryLayout::Default;
+  if (type->IsMatrix()) {
+    auto matrixType = static_cast<MatrixType*>(type);
+    length = matrixType->GetNumColumns();
+    elementType = matrixType->GetColumnType();
+  } else if (type->IsVector()) {
+    auto vectorType = static_cast<VectorType*>(type);
+    length = vectorType->GetLength();
+    elementType = vectorType->GetComponentType();
+  } else if (type->IsArray()) {
+    auto arrayType = static_cast<ArrayType*>(type);
+    length = arrayType->GetNumElements();
+    elementType = arrayType->GetElementType();
+    memoryLayout = arrayType->GetMemoryLayout();
+  } else {
+    return nullptr;
+  }
+  return Make<ToRawArray>(expr, Make<IntConstant>(length, 32), elementType, memoryLayout);
+}
+
 Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
-  if (dstType->IsPtr()) {
-    dstType = static_cast<PtrType*>(dstType)->GetBaseType();
-    auto* tempVar = Make<TempVarExpr>(dstType, ResolveListExpr(node, dstType));
-    return Make<RawToWeakPtr>(tempVar);
+  if (dstType->IsRawPtr()) {
+    auto baseType = static_cast<RawPtrType*>(dstType)->GetBaseType();
+    if (baseType->IsUnsizedArray()) {
+      // Resolve as &[N] of list length, then convert to &[]
+      auto arrayType = static_cast<ArrayType*>(baseType);
+      auto length = node->GetArgList()->GetArgs().size();
+      dstType = types_->GetArrayType(arrayType->GetElementType(), length, arrayType->GetMemoryLayout());
+      dstType = types_->GetRawPtrType(dstType);
+      return MakeIndexable(ResolveListExpr(node, dstType));
+    }
+    return Make<TempVarExpr>(baseType, ResolveListExpr(node, baseType));
   }
   Type*              type = dstType;
   auto               argList = node->GetArgList();
@@ -373,7 +413,11 @@ Result SemanticPass::Visit(LoadExpr* node) {
 Result SemanticPass::Visit(UnresolvedIdentifier* node) {
   std::string id = node->GetID();
   if (Var* var = symbols_->FindVar(id)) {
-    return Make<VarExpr>(var);
+    if (var->type->IsRawPtr()) {
+      return Make<LoadExpr>(Make<VarExpr>(var));
+    } else {
+      return Make<VarExpr>(var);
+    }
   } else if (Field* field = symbols_->FindField(id)) {
     Var* thisPtr = symbols_->FindVar("this");
     if (!thisPtr) {
@@ -398,11 +442,8 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
   Type* type = expr->GetType(types_);
   if (type->IsRawPtr()) { type = static_cast<RawPtrType*>(type)->GetBaseType(); }
   std::string id = node->GetID();
-  if (type->IsPtr()) {
+  if (type->IsStrongPtr() || type->IsWeakPtr()) {
     type = static_cast<PtrType*>(type)->GetBaseType();
-    if (type->IsArray()) {
-      if (id == "length") { return Make<LengthExpr>(expr); }
-    }
     if (expr->GetType(types_)->IsRawPtr()) { expr = Make<LoadExpr>(expr); }
     expr = Make<SmartToRawPtr>(expr);
   }
@@ -410,8 +451,11 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
   if (type->IsArray()) {
     if (id == "length") {
       ArrayType* atype = static_cast<ArrayType*>(type);
-      assert(atype->GetNumElements() > 0);
-      return Make<IntConstant>(atype->GetNumElements(), 32);  // FIXME: uint?
+      if (atype->GetNumElements() > 0) {
+        return Make<IntConstant>(atype->GetNumElements(), 32);  // FIXME: uint?
+      } else {
+        return Make<LengthExpr>(expr);
+      }
     } else {
       return Error("unknown array property \"%s\"", id.c_str());
     }
@@ -546,11 +590,9 @@ Result SemanticPass::Visit(BinOpNode* node) {
   }
   if (lhsType != rhsType) {
     if (lhsType->CanWidenTo(rhsType)) {
-      lhs = Make<CastExpr>(rhsType, lhs);
-      assert(lhs->GetType(types_) == rhs->GetType(types_));
+      lhs = Widen(lhs, rhsType);
     } else if (rhsType->CanWidenTo(lhsType)) {
-      rhs = Make<CastExpr>(lhsType, rhs);
-      assert(lhs->GetType(types_) == rhs->GetType(types_));
+      rhs = Widen(rhs, lhsType);
     }
   }
   return Make<BinOpNode>(node->GetOp(), lhs, rhs);
