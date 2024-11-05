@@ -14,7 +14,7 @@ class CubeLoader {
   static Load(device : *Device, data : ^[]ubyte, texture : ^TextureCube<Format>, face : uint) {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
-    var buffer = new writeonly Buffer<[]Format::HostType>(device, texture.MinBufferWidth() * size.y);
+    var buffer = new writeonly Buffer<[]Format:HostType>(device, texture.MinBufferWidth() * size.y);
     var b = buffer.Map();
     image.Decode(b, texture.MinBufferWidth());
     buffer.Unmap();

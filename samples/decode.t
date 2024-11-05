@@ -9,7 +9,7 @@ using Format = RGBA8unorm;
 var image = new ImageDecoder<RGBA8unorm>(inline("third_party/libjpeg-turbo/testimages/testorig.jpg"));
 var imageSize = image.GetSize();
 var texture = new sampleable Texture2D<Format>(device, imageSize);
-var buffer = new writeonly Buffer<[]Format::HostType>(device, texture.MinBufferWidth() * imageSize.y);
+var buffer = new writeonly Buffer<[]Format:HostType>(device, texture.MinBufferWidth() * imageSize.y);
 var b = buffer.Map();
 image.Decode(b, texture.MinBufferWidth());
 buffer.Unmap();

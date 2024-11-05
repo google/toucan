@@ -172,8 +172,6 @@ half    { return T_HALF; }
 \+\+            { return T_PLUSPLUS; }
 --              { return T_MINUSMINUS; }
 
-::              { return T_COLONCOLON; }
-
 .               { return yytext[0]; }
 
 <include>[ \t\n]+  /* eat the whitespace */

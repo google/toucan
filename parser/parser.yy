@@ -160,7 +160,6 @@ Type* FindType(const char* str) {
 %left '*' '/' '%'
 %right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS
 %left '.' '[' ']' '(' ')'
-%left T_COLONCOLON
 %expect 1   /* we expect 1 shift/reduce: dangling-else */
 %%
 program:
@@ -244,7 +243,7 @@ simple_type:
   | simple_type T_LT T_INT_LITERAL T_GT     { $$ = types_->GetVector($1, $3); }
   | simple_type T_LT T_INT_LITERAL ',' T_INT_LITERAL T_GT 
     { $$ = types_->GetMatrix(types_->GetVector($1, $3), $5); }
-  | simple_type T_COLONCOLON T_IDENTIFIER  { $$ = GetScopedType($1, $3); }
+  | simple_type ':' T_IDENTIFIER  { $$ = GetScopedType($1, $3); }
   ;
 
 type:
