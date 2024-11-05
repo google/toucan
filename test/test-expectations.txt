@@ -54,8 +54,8 @@ test/empty.t
 test/enum.t
 test/error-constructor-not-found.t
 error-constructor-not-found.t:1:  matching constructor not found
-test/error-derefernce.t
-error-derefernce.t:2:  attempt to dereference a non-pointer
+test/error-dereference.t
+error-dereference.t:2:  attempt to dereference a non-pointer
 test/error-hex-literal-too-large.t
 test/error-index-buffer-get.t
 error-index-buffer-get.t:4:  class Buffer<[]uint> has no method Get()

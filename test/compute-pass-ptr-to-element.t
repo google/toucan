@@ -10,7 +10,7 @@ class Struct {
 
 class Compute {
   static set(p : ^int, value : int) {
-    *p = value;
+    p: = value;
   }
   compute(1, 1,1) main(cb : ^ComputeBuiltins) {
     var buffer = bindings.Get().buffer.Map();

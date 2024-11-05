@@ -158,7 +158,7 @@ Type* FindType(const char* str) {
 %left T_LT T_LE T_GE T_GT
 %left '+' '-'
 %left '*' '/' '%'
-%right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS
+%right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS ':'
 %left '.' '[' ']' '(' ')'
 %expect 1   /* we expect 1 shift/reduce: dangling-else */
 %%
@@ -502,7 +502,7 @@ assignable:
                                             { $$ = Make<UnresolvedMethodCall>($1, $3, $5); }
   | simple_type '.' T_IDENTIFIER '(' arguments ')'
                                             { $$ = MakeStaticMethodCall($1, $3, $5); }
-  | '*' assignable %prec UNARYMINUS         { $$ = Make<SmartToRawPtr>(Make<LoadExpr>($2)); }
+  | assignable ':'                          { $$ = Make<SmartToRawPtr>(Make<LoadExpr>($1)); }
   | '&' assignable %prec UNARYMINUS         { $$ = Make<RawToWeakPtr>($2); }
   ;
 
