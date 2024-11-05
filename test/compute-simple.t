@@ -5,7 +5,7 @@ class ComputeBindings {
 }
 
 class Compute {
-  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
+  compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var buffer = bindings.Get().buffer.Map();
     buffer[0] = 42;
   }

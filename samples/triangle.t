@@ -5,8 +5,8 @@ var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var verts : [3]Vertex = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 } };
 var vb = new vertex Buffer<[]Vertex>(device, &verts);
 class Pipeline {
-  vertex main(vb : ^VertexBuiltins) { vb.position = vertices.Get(); }
-  fragment main(fb : ^FragmentBuiltins) { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
+  vertex main(vb : &VertexBuiltins) { vb.position = vertices.Get(); }
+  fragment main(fb : &FragmentBuiltins) { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
   var vertices : *vertex Buffer<[]Vertex>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
 }

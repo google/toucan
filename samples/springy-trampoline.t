@@ -96,7 +96,7 @@ class ComputeBase {
 }
 
 class ComputeForces : ComputeBase {
-  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
+  compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var bodies = bindings.Get().bodyStorage.Map();
     var springs = bindings.Get().springStorage.Map();
     var u = bindings.Get().uniforms.Map();
@@ -109,7 +109,7 @@ class ComputeForces : ComputeBase {
 }
 
 class ApplyForces : ComputeBase {
-  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
+  compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var bodies = bindings.Get().bodyStorage.Map();
     var springs = bindings.Get().springStorage.Map();
     var u = bindings.Get().uniforms.Map();
@@ -124,7 +124,7 @@ class ApplyForces : ComputeBase {
 }
 
 class FinalizeBodies : ComputeBase {
-  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
+  compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var bodies = bindings.Get().bodyStorage.Map();
     var u = bindings.Get().uniforms.Map();
     var deltaT = u.deltaT;
@@ -143,7 +143,7 @@ class FinalizeBodies : ComputeBase {
 }
 
 class FinalizeSprings : ComputeBase {
-  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
+  compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var bodies = bindings.Get().bodyStorage.Map();
     var springs = bindings.Get().springStorage.Map();
     var sv = bindings.Get().springVerts.Map();
@@ -252,13 +252,13 @@ class Shaders {
 }
 
 class BodyShaders : Shaders {
-  vertex main(vb : ^VertexBuiltins) { vb.position = Utils.makeFloat4(vert.Get()); }
-  fragment main(fb : ^FragmentBuiltins) { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
+  vertex main(vb : &VertexBuiltins) { vb.position = Utils.makeFloat4(vert.Get()); }
+  fragment main(fb : &FragmentBuiltins) { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
 }
 
 class SpringShaders : Shaders {
-  vertex main(vb : ^VertexBuiltins) { vb.position = Utils.makeFloat4(vert.Get()); }
-  fragment main(fb : ^FragmentBuiltins) { fragColor.Set(float<4>(1.0, 1.0, 1.0, 1.0)); }
+  vertex main(vb : &VertexBuiltins) { vb.position = Utils.makeFloat4(vert.Get()); }
+  fragment main(fb : &FragmentBuiltins) { fragColor.Set(float<4>(1.0, 1.0, 1.0, 1.0)); }
 }
 
 var bodyPipeline = new RenderPipeline<BodyShaders>(device, null, TriangleList);

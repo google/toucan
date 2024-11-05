@@ -26,12 +26,12 @@ indices[5] = 3;
 var vb = new vertex Buffer<[]Vertex>(device, verts);
 var ib = new index Buffer<[]uint>(device, indices);
 class Pipeline {
-  vertex main(vb : ^VertexBuiltins) : Varyings {
+  vertex main(vb : &VertexBuiltins) : Varyings {
     var v = vertices.Get();
     vb.position = v.position;
     return v.color;
   }
-  fragment main(fb : ^FragmentBuiltins, v : Varyings) { fragColor.Set(v); }
+  fragment main(fb : &FragmentBuiltins, v : Varyings) { fragColor.Set(v); }
   var vertices : *vertex Buffer<[]Vertex>;
   var indices : *index Buffer<[]uint>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;

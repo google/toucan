@@ -7,7 +7,7 @@ class Pipeline {
   static b() : float {
     return Pipeline.a();
   }
-  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
+  compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var temp = Pipeline.b();
   }
 }

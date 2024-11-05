@@ -8,7 +8,7 @@ class ComputeBindings {
 }
 
 class BumpCompute {
-  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
+  compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var verts = bindings.Get().vertStorage.Map();
     var pos = cb.globalInvocationId.x;
     verts[pos].position += float<4>( 0.005,  0.0, 0.0, 0.0);
@@ -25,8 +25,8 @@ verts[1].position = float<4>(-1.0, -1.0, 0.0, 1.0);
 verts[2].position = float<4>( 1.0, -1.0, 0.0, 1.0);
 var vb = new vertex storage Buffer<[]Vertex>(device, verts);
 class Pipeline {
-  vertex main(vb : ^VertexBuiltins) { var v = vert.Get(); vb.position = v.position; }
-  fragment main(fb : ^FragmentBuiltins) { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
+  vertex main(vb : &VertexBuiltins) { var v = vert.Get(); vb.position = v.position; }
+  fragment main(fb : &FragmentBuiltins) { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var vert : *vertex Buffer<[]Vertex>;
 }
@@ -40,16 +40,12 @@ var storageBG = new BindGroup<ComputeBindings>(device, &cb);
 
 while (System.IsRunning()) {
   var encoder = new CommandEncoder(device);
-  var bc : BumpCompute;
-  bc.bindings = storageBG;
-  var computePass = new ComputePass<BumpCompute>(encoder, &bc);
+  var computePass = new ComputePass<BumpCompute>(encoder, {bindings = storageBG});
   computePass.SetPipeline(computePipeline);
   computePass.Dispatch(verts.length, 1, 1);
   computePass.End();
-  var p : Pipeline;
-  p.vert = vb;
-  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
-  var renderPass = new RenderPass<Pipeline>(encoder, &p);
+  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
+  var renderPass = new RenderPass<Pipeline>(encoder, {vert = vb, fragColor = fb});
   renderPass.SetPipeline(pipeline);
   renderPass.Draw(3, 1, 0, 0);
   renderPass.End();

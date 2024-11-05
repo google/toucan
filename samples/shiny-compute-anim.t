@@ -124,7 +124,7 @@ class ComputeBindings {
 }
 
 class BicubicComputePipeline {
-  compute(8, 8, 1) main(cb : ^ComputeBuiltins) {
+  compute(8, 8, 1) main(cb : &ComputeBuiltins) {
     var controlPoints = bindings.Get().controlPoints.Map();
     var controlIndices = bindings.Get().controlIndices.Map();
     var vertices = bindings.Get().vertices.Map();
@@ -153,14 +153,14 @@ class BicubicComputePipeline {
 }
 
 class SkyboxPipeline : DrawPipeline {
-    vertex main(vb : ^VertexBuiltins) : float<3> {
+    vertex main(vb : &VertexBuiltins) : float<3> {
         var v = position.Get();
         var uniforms = bindings.Get().uniforms.Map();
         var pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
-    fragment main(fb : ^FragmentBuiltins, position : float<3>) {
+    fragment main(fb : &FragmentBuiltins, position : float<3>) {
       var p = Math.normalize(position);
       var b = bindings.Get();
       // TODO: figure out why the skybox is X-flipped
@@ -170,7 +170,7 @@ class SkyboxPipeline : DrawPipeline {
 };
 
 class ReflectionPipeline : DrawPipeline {
-    vertex main(vb : ^VertexBuiltins) : Vertex {
+    vertex main(vb : &VertexBuiltins) : Vertex {
         var v = vert.Get();
         var n = Math.normalize(v.normal);
         var uniforms = bindings.Get().uniforms.Map();
@@ -183,7 +183,7 @@ class ReflectionPipeline : DrawPipeline {
         varyings.normal = float<3>(normal.x, normal.y, normal.z);
         return varyings;
     }
-    fragment main(fb : ^FragmentBuiltins, varyings : Vertex) {
+    fragment main(fb : &FragmentBuiltins, varyings : Vertex) {
       var b = bindings.Get();
       var uniforms = b.uniforms.Map();
       var p = Math.normalize(varyings.position);

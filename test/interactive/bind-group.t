@@ -15,8 +15,8 @@ class ObjectData {
 }
 
 class Pipeline {
-  vertex main(vb : ^VertexBuiltins) { vb.position = vert.Get(); }
-  fragment main(fb : ^FragmentBuiltins) {
+  vertex main(vb : &VertexBuiltins) { vb.position = vert.Get(); }
+  fragment main(fb : &FragmentBuiltins) {
     var u = objectData.Get().uniforms.Map();
     fragColor.Set(u.color);
   }

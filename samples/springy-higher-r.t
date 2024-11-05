@@ -78,7 +78,7 @@ class ComputeBase {
 }
 
 class ComputeForces : ComputeBase {
-  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
+  compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var bodies = bindings.Get().bodyStorage.Map();
     var springs = bindings.Get().springStorage.Map();
     var u = bindings.Get().uniforms.Map();
@@ -91,7 +91,7 @@ class ComputeForces : ComputeBase {
 }
 
 class ApplyForces : ComputeBase {
-  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
+  compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var bodies = bindings.Get().bodyStorage.Map();
     var springs = bindings.Get().springStorage.Map();
     var u = bindings.Get().uniforms.Map();
@@ -108,7 +108,7 @@ class ApplyForces : ComputeBase {
 }
 
 class UpdateBodyVerts : ComputeBase {
-  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
+  compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var bodies = bindings.Get().bodyStorage.Map();
     var i = cb.globalInvocationId.x;
     var p = bodies[i].position;
@@ -120,7 +120,7 @@ class UpdateBodyVerts : ComputeBase {
 }
 
 class UpdateSpringVerts : ComputeBase {
-  compute(1, 1, 1) main(cb : ^ComputeBuiltins) {
+  compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var bodies = bindings.Get().bodyStorage.Map();
     var springs = bindings.Get().springStorage.Map();
     var sv = bindings.Get().springVerts.Map();
@@ -135,11 +135,11 @@ class DrawBindings {
 }
 
 class DrawPipeline {
-  vertex main(vb : ^VertexBuiltins) {
+  vertex main(vb : &VertexBuiltins) {
     var matrix = bindings.Get().uniforms.Map().matrix;
     vb.position = matrix * Utils.makeFloat4(vertices.Get());
   }
-  fragment main(fb : ^FragmentBuiltins) {
+  fragment main(fb : &FragmentBuiltins) {
     fragColor.Set(bindings.Get().uniforms.Map().color);
   }
   var vertices : *vertex Buffer<[]Vector>;
