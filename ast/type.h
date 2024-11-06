@@ -429,6 +429,7 @@ class ClassType : public Type {
   void        SetVTable(int index, Method* method);
   void        AppendToVTable(Method* method);
   const std::vector<Method*>& GetVTable() { return vtable_; }
+  void                        SetVTable(const std::vector<Method*>& vtable) { vtable_ = vtable; }
   Type*                       FindType(const std::string& id);
   void                        SetMemoryLayout(MemoryLayout memoryLayout, TypeTable* types);
   int                         GetPadding() const { return padding_; }

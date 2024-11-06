@@ -648,6 +648,9 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
 
   symbols_->PushScope(scope);
   Method* destructor = nullptr;
+  if (auto parent = classType->GetParent()) {
+    classType->SetVTable(parent->GetVTable());
+  }
   for (const auto& mit : classType->GetMethods()) {
     Method* method = mit.get();
     if (method->name[0] == '~') {

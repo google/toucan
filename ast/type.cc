@@ -358,7 +358,6 @@ void ClassType::SetParent(ClassType* parent) {
   assert(parent_ == nullptr);
   if (parent == nullptr) { return; }
   numFields_ += parent->numFields_;
-  vtable_ = parent->vtable_;
   parent_ = parent;
 }
 
