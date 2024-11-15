@@ -52,6 +52,8 @@ test/early-return-bool.t
 test/early-return-int.t
 test/empty.t
 test/enum.t
+test/error-cast-weak-ptr-to-strong.t
+error-cast-weak-ptr-to-strong.t:3:  cannot cast value of type ^int to *int
 test/error-constructor-not-found.t
 error-constructor-not-found.t:1:  matching constructor not found
 test/error-dereference.t

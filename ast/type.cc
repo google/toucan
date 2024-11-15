@@ -54,6 +54,10 @@ bool IntegerType::CanWidenTo(Type* other) const {
   return (otherInteger->GetBits() >= bits_);
 }
 
+bool IntegerType::CanNarrowTo(Type* other) const {
+  return other->IsInteger() || other->IsFloatingPoint();
+}
+
 std::string IntegerType::ToString() const {
   switch (bits_) {
     case 32: return signed_ ? "int" : "uint";
@@ -70,6 +74,10 @@ bool FloatingPointType::CanWidenTo(Type* other) const {
   if (!other->IsFloatingPoint()) { return false; }
   FloatingPointType* otherFloatingPoint = static_cast<FloatingPointType*>(other);
   return (otherFloatingPoint->GetBits() >= bits_);
+}
+
+bool FloatingPointType::CanNarrowTo(Type* other) const {
+  return other->IsFloatingPoint() || other->IsInteger();
 }
 
 std::string FloatingPointType::ToString() const {
@@ -121,6 +129,15 @@ bool VectorType::CanWidenTo(Type* type) const {
     VectorType* vectorType = static_cast<VectorType*>(type);
     return length_ == vectorType->GetLength() &&
            componentType_->CanWidenTo(vectorType->GetComponentType());
+  }
+  return false;
+}
+
+bool VectorType::CanNarrowTo(Type* type) const {
+  if (type->IsVector()) {
+    VectorType* vectorType = static_cast<VectorType*>(type);
+    return length_ == vectorType->GetLength() &&
+           componentType_->CanNarrowTo(vectorType->GetComponentType());
   }
   return false;
 }

@@ -67,10 +67,16 @@ Result SemanticPass::Visit(ArrayAccess* node) {
 
 Result SemanticPass::Visit(CastExpr* node) {
   Expr* expr = Resolve(node->GetExpr());
-  if (expr && expr->GetType(types_) == node->GetType()) {
+  if (!expr) { return nullptr; }
+
+  Type* srcType = expr->GetType(types_);
+  Type* dstType = node->GetType();
+  if (srcType == dstType) {
     return expr;
+  } else if (srcType->CanWidenTo(dstType) || srcType->CanNarrowTo(dstType)) {
+    return Make<CastExpr>(dstType, expr);
   } else {
-    return Make<CastExpr>(node->GetType(), expr);
+    return Error("cannot cast value of type %s to %s", srcType->ToString().c_str(), dstType->ToString().c_str());
   }
 }
 

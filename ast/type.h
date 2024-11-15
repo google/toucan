@@ -85,6 +85,7 @@ class Type {
   virtual int         GetSizeInBytes(int dynamicArrayLength) const { return GetSizeInBytes(); }
   virtual int         GetAlignmentInBytes() const { return GetSizeInBytes(); }
   virtual bool        CanWidenTo(Type* type) const { return type == this; }
+  virtual bool        CanNarrowTo(Type* type) const { return type == this; }
   virtual bool        CanInitFrom(const ListType* type) const { return false; }
   enum Qualifier {
     Uniform = 0x0001,
@@ -110,6 +111,7 @@ class VectorType : public Type {
   bool         IsFloatVector() const override { return componentType_->IsFloat(); }
   bool         IsPOD() const override { return true; }
   bool         CanWidenTo(Type* type) const override;
+  bool         CanNarrowTo(Type* type) const override;
   bool         CanInitFrom(const ListType* type) const override;
   int          GetSizeInBytes() const override;
   std::string  ToString() const override;
@@ -149,6 +151,7 @@ class IntegerType : public Type {
   bool        Signed() const { return signed_; }
   bool        IsUnsigned() const override { return !signed_; }
   bool        CanWidenTo(Type* type) const override;
+  bool        CanNarrowTo(Type* type) const override;
 
   bool IsByte() const override { return bits_ == 8 && signed_ == true; }  // FIXME remove these?
   bool IsShort() const override { return bits_ == 16 && signed_ == true; }
@@ -172,6 +175,7 @@ class FloatingPointType : public Type {
   int         GetSizeInBytes() const override { return bits_ / 8; }
   int         GetBits() const { return bits_; }
   bool        CanWidenTo(Type* type) const override;
+  bool        CanNarrowTo(Type* type) const override;
 
   bool IsFloat() const override { return bits_ == 32; }
   bool IsDouble() const override { return bits_ == 64; }
