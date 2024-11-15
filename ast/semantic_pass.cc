@@ -580,7 +580,7 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
       }
       WidenArgList(exprList, constructor->formalArgList);
       args = Make<ExprList>(std::move(exprList));
-    } else if (classType->IsNative()) {
+    } else if (arglist->GetArgs().size() > 0) {
       return Error("matching constructor not found");
     }
   }
@@ -753,7 +753,7 @@ bool SemanticPass::MatchArgs(Expr*               thisExpr,
   } else {
     size_t      numArgs = args->GetArgs().size();
     Arg* const* a = args->GetArgs().data();
-    if (numArgs > m->formalArgList.size()) { return false; }
+    if (numArgs + offset > m->formalArgList.size()) { return false; }
     for (int i = 0; i < numArgs; ++i) {
       Expr* expr = a[i]->GetExpr();
       if (expr && !expr->GetType(types)->CanWidenTo(m->formalArgList[i + offset]->type)) {

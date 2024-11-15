@@ -67,6 +67,8 @@ error-missing-sampleable-qualifier.t:3:  Texture2D<RGBA8unorm>.CreateSampleableV
 test/error-named-param-missing-one.t
 error-named-param-missing-one.t:7:  class Bar has no method Foo(f = float)
 error-named-param-missing-one.t:7:  Bar.Foo(int, float) : float
+test/error-new-with-missing-constructor.t
+error-new-with-missing-constructor.t:5:  matching constructor not found
 test/error-non-static-method-called-statically.t
 error-non-static-method-called-statically.t:5:  attempt to call non-static method "bar" on class "Foo"
 test/error-non-virtual-override.t
