@@ -891,6 +891,8 @@ llvm::Value* CodeGenLLVM::GenerateGlobalData(const void* data, size_t size, Type
   llvm::Value* result = CreatePointer(var, controlBlock);
   // Add a ref so it can't actually be freed.
   RefStrongPtr(result);
+  // But don't add an extra ref to the weak ptr count, so it *can* be freed.
+  UnrefWeakPtr(result);
   return result;
 }
 
