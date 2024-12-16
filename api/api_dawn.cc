@@ -1044,7 +1044,10 @@ EM_ASYNC_JS(WGPUBufferMapAsyncStatus,
 
 static Object* MapSync(wgpu::MapMode mapMode, Buffer* buffer) {
   WGPUBufferMapAsyncStatus status = WGPUBufferMapAsyncStatus_Unknown;
-  if (buffer->mappedObject.ptr != nullptr) { return &buffer->mappedObject; }
+  if (buffer->mappedObject.ptr != nullptr) {
+    buffer->mappedObject.controlBlock->weakRefs++;
+    return &buffer->mappedObject;
+  }
   auto callback = [](WGPUBufferMapAsyncStatus status, void* userData) {
     *(WGPUBufferMapAsyncStatus*)userData = status;
   };
@@ -1071,7 +1074,8 @@ static Object* MapSync(wgpu::MapMode mapMode, Buffer* buffer) {
 #else
   ControlBlock* controlBlock = static_cast<ControlBlock*>(malloc(sizeof(ControlBlock)));
 #endif
-  controlBlock->strongRefs = controlBlock->weakRefs = 1;
+  controlBlock->strongRefs = 1;
+  controlBlock->weakRefs = 2;
   controlBlock->type = buffer->type;
   controlBlock->arrayLength = buffer->length;
   controlBlock->type = buffer->type;
