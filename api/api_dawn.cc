@@ -523,13 +523,15 @@ struct DepthStencilAttachment {
 };
 
 struct RenderPass {
-  RenderPass(wgpu::RenderPassEncoder e) : encoder(e) {}
+  RenderPass(wgpu::RenderPassEncoder e, Type* t) : encoder(e), type(t) {}
   wgpu::RenderPassEncoder encoder;
+  Type*                   type;
 };
 
 struct ComputePass {
-  ComputePass(wgpu::ComputePassEncoder e) : encoder(e) {}
+  ComputePass(wgpu::ComputePassEncoder e, Type* t) : encoder(e), type(t) {}
   wgpu::ComputePassEncoder encoder;
+  Type*                    type;
 };
 
 struct CommandEncoder {
@@ -655,7 +657,11 @@ struct PipelineData {
   }
 };
 
-static void ExtractPipelineData(ClassType* classType, void* data, PipelineData* out) {
+static void ExtractPipelineData(Type* type, void* data, PipelineData* out) {
+  if (!data) return;
+
+  assert(type->IsClass());
+  auto classType = static_cast<ClassType*>(type);
   if (classType->GetParent()) { ExtractPipelineData(classType->GetParent(), data, out); }
   for (const auto& field : classType->GetFields()) {
     Type* fieldType = field->type;
@@ -1122,7 +1128,7 @@ void Buffer_Unmap(Buffer* buffer) {
 }
 
 void Buffer_SetData(Buffer* buffer, Object* object) {
-  Type* type = object->controlBlock->type;
+  Type* type = buffer->type;
   assert(!type->IsPtr());
   size_t      size = type->GetSizeInBytes(object->controlBlock->arrayLength);
   wgpu::Queue queue = buffer->device.GetQueue();
@@ -1150,11 +1156,8 @@ RenderPass* RenderPass_RenderPass_CommandEncoder_T(int             qualifiers,
                                                    Type*           type,
                                                    CommandEncoder* encoder,
                                                    Object*         data) {
-  Type* objectType = data->controlBlock->type;
-  assert(objectType->IsClass());
-  ClassType*   classType = static_cast<ClassType*>(objectType);
   PipelineData pipelineData;
-  ExtractPipelineData(classType, data->ptr, &pipelineData);
+  ExtractPipelineData(type, data->ptr, &pipelineData);
 
   wgpu::RenderPassDescriptor desc;
   desc.colorAttachmentCount = pipelineData.colorAttachments.size();
@@ -1164,19 +1167,16 @@ RenderPass* RenderPass_RenderPass_CommandEncoder_T(int             qualifiers,
   }
   auto result = encoder->encoder.BeginRenderPass(&desc);
   pipelineData.Set(result);
-  return new RenderPass(result);
+  return new RenderPass(result, type);
 }
 
 RenderPass* RenderPass_RenderPass_RenderPass(int qualifiers, Type* type, RenderPass* parent) {
-  return new RenderPass(parent->encoder);
+  return new RenderPass(parent->encoder, type);
 }
 
 void RenderPass_Set(RenderPass* This, Object* data) {
   PipelineData pipelineData;
-  Type*        objectType = data->controlBlock->type;
-  assert(objectType->IsClass());
-  ClassType* classType = static_cast<ClassType*>(objectType);
-  ExtractPipelineData(classType, data->ptr, &pipelineData);
+  ExtractPipelineData(This->type, data->ptr, &pipelineData);
   pipelineData.Set(This->encoder);
 }
 
@@ -1210,20 +1210,15 @@ ComputePass* ComputePass_ComputePass_CommandEncoder_T(int             qualifiers
                                                       CommandEncoder* encoder,
                                                       Object*         data) {
   PipelineData pipelineData;
-  if (data && data->controlBlock) {
-    Type* objectType = data->controlBlock->type;
-    assert(objectType->IsClass());
-    ClassType* classType = static_cast<ClassType*>(objectType);
-    ExtractPipelineData(classType, data->ptr, &pipelineData);
-  }
+  ExtractPipelineData(type, data->ptr, &pipelineData);
   wgpu::ComputePassDescriptor desc;
   auto                        passEncoder = encoder->encoder.BeginComputePass(&desc);
   pipelineData.Set(passEncoder);
-  return new ComputePass(passEncoder);
+  return new ComputePass(passEncoder, type);
 }
 
 ComputePass* ComputePass_ComputePass_ComputePass(int qualifiers, Type* type, ComputePass* parent) {
-  return new ComputePass(parent->encoder);
+  return new ComputePass(parent->encoder, type);
 }
 
 void ComputePass_SetPipeline(ComputePass* This, ComputePipeline* pipeline) {
@@ -1232,10 +1227,7 @@ void ComputePass_SetPipeline(ComputePass* This, ComputePipeline* pipeline) {
 
 void ComputePass_Set(ComputePass* This, Object* data) {
   PipelineData pipelineData;
-  Type*        objectType = data->controlBlock->type;
-  assert(objectType->IsClass());
-  ClassType* classType = static_cast<ClassType*>(objectType);
-  ExtractPipelineData(classType, data->ptr, &pipelineData);
+  ExtractPipelineData(This->type, data->ptr, &pipelineData);
   pipelineData.Set(This->encoder);
 }
 
