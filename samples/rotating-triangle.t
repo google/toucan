@@ -54,9 +54,6 @@ var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
 var theta = 0.0;
 while (System.IsRunning()) {
   uniformBuffer.SetData(&uniformData);
-  while (System.HasPendingEvents()) {
-    System.GetNextEvent();
-  }
   var encoder = new CommandEncoder(device);
   var fb = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
   var renderPass = new RenderPass<Pipeline>(encoder, {vertices = vb, fragColor = fb, bindings = bg});
@@ -71,4 +68,7 @@ while (System.IsRunning()) {
   uniformData.mvpMatrix[1][1] = uniformData.mvpMatrix[0][0];
   uniformData.mvpMatrix[1][0] = Math.sin(theta);
   uniformData.mvpMatrix[0][1] = -uniformData.mvpMatrix[1][0];
+  while (System.HasPendingEvents()) {
+    System.GetNextEvent();
+  }
 }

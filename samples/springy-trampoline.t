@@ -156,8 +156,8 @@ class FinalizeSprings : ComputeBase {
 var device = new Device();
 var window = new Window({0, 0}, {960, 960});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-var bodies = (width * height * depth) new Body;
-var springs = (bodies.length * 3 - width * depth - height * depth - width * height) new Spring;
+var bodies = [width * height * depth] new Body;
+var springs = [bodies.length * 3 - width * depth - height * depth - width * height] new Spring;
 var count = Utils.makeVector((float) width, (float) height, (float) depth, Vector(0.0));
 var pSpacing = Vector(2.0) / count;
 var spring = 0;
