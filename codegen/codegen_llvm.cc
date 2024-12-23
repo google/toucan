@@ -862,7 +862,17 @@ llvm::Value* CodeGenLLVM::CreateCast(Type*        srcType,
                       static_cast<VectorType*>(dstType)->GetComponentType(), value,
                       ConvertType(dstType));
   } else if (srcType->IsPtr() && dstType->IsPtr()) {
-    return value;
+    if (srcType->IsStrongPtr() && dstType->IsWeakPtr()) {
+      RefWeakPtr(value);
+      AppendTemporary(value, static_cast<StrongPtrType*>(srcType));
+    }
+    Type*        dstBase = static_cast<PtrType*>(dstType)->GetBaseType();
+    llvm::Value* ptr = builder_->CreateExtractValue(value, {0});
+    llvm::Value* controlBlock = builder_->CreateExtractValue(value, {1});
+    llvm::Type*  newPtrType =
+        dstBase->IsVoid() ? voidPtrType_ : llvm::PointerType::get(ConvertType(dstBase), 0);
+    llvm::Value* newPtr = builder_->CreateBitCast(ptr, newPtrType);
+    return CreatePointer(newPtr, controlBlock);
   }
   assert(!"unimplemented cast");
   return nullptr;
