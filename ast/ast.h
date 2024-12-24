@@ -437,17 +437,6 @@ class ToRawArray : public Expr {
   MemoryLayout memoryLayout_;
 };
 
-class RawToWeakPtr : public Expr {
- public:
-  RawToWeakPtr(Expr* expr);
-  Result Accept(Visitor* visitor) override;
-  Type*  GetType(TypeTable* types) override;
-  Expr*  GetExpr() { return expr_; }
-
- private:
-  Expr* expr_;
-};
-
 class FieldAccess : public Expr {
  public:
   FieldAccess(Expr* expr, Field* field);
@@ -802,7 +791,6 @@ class Visitor {
   virtual Result Visit(NewArrayExpr* node) { return Default(node); }
   virtual Result Visit(NewExpr* node) { return Default(node); }
   virtual Result Visit(NullConstant* node) { return Default(node); }
-  virtual Result Visit(RawToWeakPtr* node) { return Default(node); }
   virtual Result Visit(ReturnStatement* node) { return Default(node); }
   virtual Result Visit(MethodCall* node) { return Default(node); }
   virtual Result Visit(Stmts* node) { return Default(node); }

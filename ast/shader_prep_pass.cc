@@ -91,6 +91,9 @@ Result ShaderPrepPass::Visit(FieldAccess* node) {
   if (NeedsUnfolding(base->GetType(types_))) {
     assert(base->IsVarExpr());
     Var* baseVar = static_cast<VarExpr*>(base)->GetVar();
+    if (baseVar->type->IsRawPtr()) {
+      baseVar = unfoldedPtrs_[baseVar].get();
+    }
     int index = node->GetField()->index;
     return ResolveVar(unfoldedVars_[baseVar][index].get());
   }
@@ -512,11 +515,6 @@ Type* ShaderPrepPass::GetWrapper(Type* type, int qualifiers) {
 
 bool ShaderPrepPass::IsWrapper(Type* type) const {
   return wrappers_.find(type) != wrappers_.end();
-}
-
-Result ShaderPrepPass::Visit(RawToWeakPtr* node) {
-  // All pointers are raw pointers in SPIR-V.
-  return Resolve(node->GetExpr());
 }
 
 Result ShaderPrepPass::Visit(SmartToRawPtr* node) {

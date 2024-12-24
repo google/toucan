@@ -145,7 +145,7 @@ Type* FindType(const char* str) {
 %token T_READONLY T_WRITEONLY T_COHERENT T_DEVICEONLY
 %token T_INT T_UINT T_FLOAT T_DOUBLE T_BOOL T_BYTE T_UBYTE T_SHORT T_USHORT
 %token T_HALF
-%token T_STATIC T_VIRTUAL T_NATIVE T_VERTEX T_FRAGMENT T_COMPUTE T_THIS
+%token T_STATIC T_NATIVE T_VERTEX T_FRAGMENT T_COMPUTE T_THIS
 %token T_INDEX T_UNIFORM T_STORAGE T_SAMPLEABLE T_RENDERABLE
 %token T_USING T_INLINE
 %right '=' T_ADD_EQUALS T_SUB_EQUALS T_MUL_EQUALS T_DIV_EQUALS
@@ -344,7 +344,6 @@ template_formal_arguments:
 
 method_modifier:
     T_STATIC                                { $$ = Method::Modifier::Static; }
-  | T_VIRTUAL                               { $$ = Method::Modifier::Virtual; }
   | T_DEVICEONLY                            { $$ = Method::Modifier::DeviceOnly; }
   | T_VERTEX                                { $$ = Method::Modifier::Vertex; }
   | T_FRAGMENT                              { $$ = Method::Modifier::Fragment; }
@@ -787,7 +786,7 @@ static void BeginMethod(int modifiers, std::string id, ArgList* workgroupSize,
   Method* method = new Method(modifiers, returnType, id, classType);
   if (!(modifiers & Method::Modifier::Static)) {
     Type* thisType = types_->GetQualifiedType(classType, thisQualifiers);
-    thisType = types_->GetWeakPtrType(thisType);
+    thisType = types_->GetRawPtrType(thisType);
     method->AddFormalArg("this", thisType, nullptr);
   }
   if (formalArguments) {
@@ -829,7 +828,7 @@ static void BeginConstructor(int modifiers, Type* type, Stmts* formalArguments) 
   if (classType->IsNative()) {
     modifiers |= Method::Modifier::Static;
   }
-  auto returnType = types_->GetWeakPtrType(classType);
+  auto returnType = types_->GetRawPtrType(classType);
   BeginMethod(modifiers, classType->GetName(), nullptr, formalArguments, 0, returnType);
 }
 
@@ -872,15 +871,14 @@ static Type* GetScopedType(Type* type, const char* id) {
 
 static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
   if (stmts) {
-    stmts->Append(Make<ReturnStatement>(Load(ThisExpr())));
+    stmts->Append(Make<ReturnStatement>(ThisExpr()));
   }
   Method* method = EndMethod(stmts);
   if (method->stmts) {
     if (!initializer) {
       initializer = Make<UnresolvedListExpr>(Make<ArgList>());
     }
-    Expr* rawPtrThis = Make<SmartToRawPtr>(Load(ThisExpr()));
-    method->stmts->Prepend(Make<StoreStmt>(rawPtrThis, initializer));
+    method->stmts->Prepend(Make<StoreStmt>(ThisExpr(), initializer));
   }
   return method;
 }

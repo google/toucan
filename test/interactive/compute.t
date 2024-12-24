@@ -37,7 +37,7 @@ var storageBG = new BindGroup<ComputeBindings>(device, &cb);
 
 while (System.IsRunning()) {
   var encoder = new CommandEncoder(device);
-  var computePass = new ComputePass<BumpCompute>(encoder, null);
+  var computePass = new ComputePass<BumpCompute>(encoder, {});
   computePass.SetPipeline(computePipeline);
   var bc : BumpCompute;
   bc.bindings = storageBG;

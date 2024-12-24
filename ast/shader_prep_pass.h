@@ -57,7 +57,6 @@ class ShaderPrepPass : public CopyVisitor {
   Result               Visit(FieldAccess* node) override;
   Result               Visit(LoadExpr* node) override;
   Result               Visit(MethodCall* node) override;
-  Result               Visit(RawToWeakPtr* node) override;
   Result               Visit(SmartToRawPtr* node) override;
   Result               Visit(Stmts* node) override;
   Result               Visit(StoreStmt* node) override;

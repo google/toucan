@@ -48,7 +48,6 @@ class CopyVisitor : public Visitor {
   Result        Visit(NewExpr* node) override;
   Result        Visit(UnresolvedNewExpr* node) override;
   Result        Visit(NullConstant* constant) override;
-  Result        Visit(RawToWeakPtr* node) override;
   Result        Visit(ReturnStatement* stmt) override;
   Result        Visit(LoadExpr* node) override;
   Result        Visit(SmartToRawPtr* node) override;

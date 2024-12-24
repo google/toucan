@@ -323,11 +323,8 @@ void CodeGenLLVM::UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type) {
     llvm::Value*    func = builder_->CreateLoad(funcPtrType_, gep);
     llvm::Value*    typedFunc =
         builder_->CreateBitCast(func, llvm::PointerType::get(function->getFunctionType(), 0));
-    llvm::Value* arg = ptr;
-    if (classType->IsNative()) {
-      arg = builder_->CreateExtractValue(arg, {0});
-      isNativeClass = true;
-    }
+    llvm::Value* arg = builder_->CreateExtractValue(ptr, {0});
+    isNativeClass = classType->IsNative();
     builder_->CreateCall(function->getFunctionType(), typedFunc, {arg});
   }
   if (!isNativeClass) { GenerateFree(builder_->CreateExtractValue(ptr, {0})); }
@@ -1138,12 +1135,9 @@ Result CodeGenLLVM::Visit(NewExpr* newExpr) {
                               newExpr->GetFileLocation());
   } else {
     expr = CreateMalloc(llvmType, length);
-    llvm::Value* controlBlock = CreateControlBlock(type);
-    expr = CreatePointer(expr, controlBlock);
     if (constructor) {
       std::vector<llvm::Value*> args;
       args.push_back(expr);
-      AppendTemporary(expr, types_->GetWeakPtrType(type));
       for (Expr* const& arg : newExpr->GetArgs()->Get()) {
         if (!arg) continue;
         llvm::Value* v = GenerateLLVM(arg);
@@ -1153,6 +1147,8 @@ Result CodeGenLLVM::Visit(NewExpr* newExpr) {
       llvm::Function* function = GetOrCreateMethodStub(constructor);
       expr = builder_->CreateCall(function, args);
     }
+    llvm::Value* controlBlock = CreateControlBlock(type);
+    expr = CreatePointer(expr, controlBlock);
   }
   return expr;
 }
@@ -1183,13 +1179,6 @@ Result CodeGenLLVM::Visit(ArrayAccess* node) {
   } else {
     return builder_->CreateGEP(llvmType, expr, {Int(0), index});
   }
-}
-
-Result CodeGenLLVM::Visit(RawToWeakPtr* node) {
-  llvm::Value* expr = GenerateLLVM(node->GetExpr());
-  Type*        type = node->GetExpr()->GetType(types_);
-  type = static_cast<RawPtrType*>(type)->GetBaseType();
-  return CreatePointer(expr, CreateControlBlock(type));
 }
 
 Result CodeGenLLVM::Visit(SmartToRawPtr* node) {

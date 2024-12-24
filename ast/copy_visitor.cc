@@ -134,10 +134,6 @@ Result CopyVisitor::Visit(DestroyStmt* node) {
   return Make<DestroyStmt>(Resolve(node->GetExpr()));
 }
 
-Result CopyVisitor::Visit(RawToWeakPtr* node) {
-  return Make<RawToWeakPtr>(Resolve(node->GetExpr()));
-}
-
 Result CopyVisitor::Visit(ReturnStatement* stmt) {
   return Make<ReturnStatement>(Resolve(stmt->GetExpr()));
 }

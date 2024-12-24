@@ -76,8 +76,6 @@ test/error-new-with-missing-constructor.t
 error-new-with-missing-constructor.t:5:  matching constructor not found
 test/error-non-static-method-called-statically.t
 error-non-static-method-called-statically.t:5:  attempt to call non-static method "bar" on class "Foo"
-test/error-non-virtual-override.t
-error-non-virtual-override.t:10:  attempt to override a non-virtual method
 test/error-partial-template.t
 error-partial-template.t:10:  cannot store a value of type "*Foo<int, int>" to a location of type "*Foo<int>"
 error-partial-template.t:11:  cannot store a value of type "*Foo<int, int>" to a location of type "*Foo"
@@ -94,10 +92,11 @@ error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
 error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(*CommandEncoder, *writeonly Buffer<[]float<4>>, int)
 error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromBuffer(^CommandEncoder, ^Buffer<[]ubyte<4>>, uint, uint) 
 test/error-uint-literal-too-large.t
-test/error-virtual-override.t
-error-virtual-override.t:8:  override of virtual method must be virtual
 test/error-widen-null-to-raw-ptr.t
 error-widen-null-to-raw-ptr.t:1:  cannot store a value of type "null" to a location of type "&int"
+test/error-widen-weak-ptr-short-to-weak-ptr-int.t
+error-widen-weak-ptr-short-to-weak-ptr-int.t:7:  cannot cast value of type ^short to ^int
+error-widen-weak-ptr-short-to-weak-ptr-int.t:9:  unknown symbol "wpi"
 test/error-wrong-named-param.t
 error-wrong-named-param.t:7:  class Bar has no method Foo(b = float, a = int)
 error-wrong-named-param.t:7:  Bar.Foo(int, float) : float
@@ -238,10 +237,9 @@ test/vector-constructors4.t
 test/vector-initializer.t
 test/vector-scalar-mul-div.t
 test/vector-store-by-index.t
-test/virtual-function.t
 test/void-value-error.t
 void-value-error.t:4:  implicit void return, in method returning non-void.
-test/vtable.t
+test/widen-weak-ptr-to-raw-ptr.t
 test/workgroup-size.t
 workgroup-size.t:5: workgroup size must have 1, 2, or 3 dimensions
 workgroup-size.t:6: workgroup size must have 1, 2, or 3 dimensions

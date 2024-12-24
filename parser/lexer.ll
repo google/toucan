@@ -98,7 +98,6 @@ new     { return T_NEW; }
 class   { return T_CLASS; }
 enum    { return T_ENUM; }
 static  { return T_STATIC; }
-virtual { return T_VIRTUAL; }
 vertex  { return T_VERTEX; }
 index   { return T_INDEX; }
 fragment { return T_FRAGMENT; }

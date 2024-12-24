@@ -7,7 +7,7 @@ class Bar {
   Bar(f : *Foo) {
     foo = f;
   }
- virtual ~Bar() {
+ ~Bar() {
     foo.r = 1234.0;
   }
   var foo : *Foo;

@@ -126,12 +126,10 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
       return Error("constructor for class \"%s\" with those arguments not found",
                    classType->GetName().c_str());
     }
-    auto* tempVar = Make<TempVarExpr>(node->GetType());
-    constructorArgs[0] = Make<RawToWeakPtr>(tempVar);
+    constructorArgs[0] = Make<TempVarExpr>(node->GetType());
     WidenArgList(constructorArgs, constructor->formalArgList);
     auto* exprList = Make<ExprList>(std::move(constructorArgs));
     Expr* result = Make<MethodCall>(constructor, exprList);
-    result = Make<SmartToRawPtr>(result);
     return Make<LoadExpr>(result);
   } else if (type->IsVector() && args.size() == 1) {
     unsigned int length = static_cast<VectorType*>(type)->GetLength();
@@ -375,7 +373,6 @@ Result SemanticPass::Visit(UnresolvedMethodCall* node) {
     if (!expr->GetType(types_)->IsRawPtr()) {
       expr = Make<TempVarExpr>(expr->GetType(types_), expr);
     }
-    expr = Make<RawToWeakPtr>(expr);
     thisPtrType = expr->GetType(types_);
   }
   if (!type) { return Error("calling method on void pointer?"); }
@@ -424,10 +421,8 @@ Result SemanticPass::Visit(UnresolvedIdentifier* node) {
       // TODO:  Implement static field access
       return Error("attempt to access non-static field in static method");
     } else {
-      Expr* varExpr = Make<VarExpr>(thisPtr);
-      Expr* loadExpr = Make<LoadExpr>(varExpr);
-      Expr* derefExpr = Make<SmartToRawPtr>(loadExpr);
-      return Make<FieldAccess>(derefExpr, field);
+      Expr* base = Make<LoadExpr>(Make<VarExpr>(thisPtr));
+      return Make<FieldAccess>(base, field);
     }
   } else if (const EnumValue* enumValue = symbols_->FindEnumValue(id)) {
     return Make<EnumConstant>(enumValue);
@@ -756,7 +751,7 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   if (!destructor) {
     std::string name(std::string("~") + classType->GetName());
     destructor = new Method(Method::Modifier::Virtual, types_->GetVoid(), name, classType);
-    destructor->AddFormalArg("this", types_->GetWeakPtrType(classType), nullptr);
+    destructor->AddFormalArg("this", types_->GetRawPtrType(classType), nullptr);
     classType->AddMethod(destructor);
   }
 

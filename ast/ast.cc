@@ -49,12 +49,6 @@ Type* VarExpr::GetType(TypeTable* types) { return types->GetRawPtrType(var_->typ
 
 Type* TempVarExpr::GetType(TypeTable* types) { return types->GetRawPtrType(type_); }
 
-Type* RawToWeakPtr::GetType(TypeTable* types) {
-  Type* type = expr_->GetType(types);
-  assert(type->IsRawPtr());
-  return types->GetWeakPtrType(static_cast<RawPtrType*>(type)->GetBaseType());
-}
-
 Type* SmartToRawPtr::GetType(TypeTable* types) {
   Type* type = expr_->GetType(types);
   assert(type->IsStrongPtr() || type->IsWeakPtr());
@@ -184,8 +178,6 @@ IncDecExpr::IncDecExpr(Op op, Expr* expr, bool returnOrigValue)
 ZeroInitStmt::ZeroInitStmt(Expr* lhs) : lhs_(lhs) {}
 
 UnresolvedDot::UnresolvedDot(Expr* expr, std::string id) : expr_(expr), id_(id) {}
-
-RawToWeakPtr::RawToWeakPtr(Expr* expr) : expr_(expr) {}
 
 SmartToRawPtr::SmartToRawPtr(Expr* expr) : expr_(expr) {}
 
@@ -338,7 +330,6 @@ Result NewExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result NullConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ReturnStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result MethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }
-Result RawToWeakPtr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Stmts::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result TempVarExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UIntConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }

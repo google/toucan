@@ -19,7 +19,6 @@
 - runtime check on SetData that data.length matches Buffer length
 - implement "using" of a class (for static methods)
 - implement range checking of integer types in constant folding
-- don't load the "this" pointer by default; it might get removed?
 - constify all Visitor arguments and Accept() functions?
 - all pointers are implicitly readonly in shader code?
 - autogenerate actual SPIR-V functions for pass-through methods? e.g., MapRead()

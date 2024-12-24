@@ -545,9 +545,9 @@ WeakPtrType::WeakPtrType(Type* baseType) : PtrType(baseType) {}
 
 bool WeakPtrType::CanWidenTo(Type* type) const {
   if (type == this) return true;
-  if (type->IsWeakPtr()) {
-    WeakPtrType* weakPtrType = static_cast<WeakPtrType*>(type);
-    if (!GetBaseType() || GetBaseType()->CanWidenTo(weakPtrType->GetBaseType())) { return true; }
+  if (type->IsRawPtr()) {
+    auto other = static_cast<RawPtrType*>(type);
+    return GetBaseType() == other->GetBaseType();
   }
   return false;
 };
