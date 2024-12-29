@@ -12,6 +12,6 @@ class Template<T> {
   get() : float { return foo.get(); }
 }
 
-var templateBar = new Template<Bar>();
-templateBar.set(new Bar());
+var templateBar = new Template<Bar>;
+templateBar.set(new Bar);
 Test.Expect(templateBar.get() == 3.0);

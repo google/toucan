@@ -13,6 +13,6 @@ class Foo {
   }
 };
 
-var f = new Foo();
+var f = new Foo;
 Test.Expect(f.bar(3) == 3.0);
 Test.Expect(f.bar(-4.0) == 4.0);

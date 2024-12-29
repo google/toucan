@@ -145,7 +145,7 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
   return Make<Initializer>(node->GetType(), exprList);
 }
 
-Stmt* SemanticPass::InitializeVar(Expr* varExpr, Type* type, Expr* initExpr) {
+Stmt* SemanticPass::Initialize(Expr* dest, Type* type, Expr* initExpr) {
   if (initExpr) {
     Type* initExprType = initExpr->GetType(types_);
     if (!initExprType->CanWidenTo(type)) {
@@ -154,20 +154,22 @@ Stmt* SemanticPass::InitializeVar(Expr* varExpr, Type* type, Expr* initExpr) {
       return nullptr;
     }
     initExpr = Widen(initExpr, type);
-    return Make<StoreStmt>(varExpr, initExpr);
+    return Make<StoreStmt>(dest, initExpr);
   } else if (type->IsClass()) {
-    return InitializeClass(varExpr, static_cast<ClassType*>(type));
+    return InitializeClass(dest, static_cast<ClassType*>(type));
+  } else if (type->IsArray()) {
+    return Make<Stmts>();
   } else {
-    return Make<ZeroInitStmt>(varExpr);
+    return Make<ZeroInitStmt>(dest);
   }
 }
 
-Stmts* SemanticPass::InitializeClass(Expr* thisExpr, ClassType* classType) {
+Stmts* SemanticPass::InitializeClass(Expr* dest, ClassType* classType) {
   Stmts* stmts = Make<Stmts>();
-  if (classType->GetParent()) { stmts->Append(InitializeClass(thisExpr, classType->GetParent())); }
+  if (classType->GetParent()) { stmts->Append(InitializeClass(dest, classType->GetParent())); }
   for (const auto& field : classType->GetFields()) {
-    Expr* fieldExpr = Make<FieldAccess>(thisExpr, field.get());
-    stmts->Append(InitializeVar(fieldExpr, field->type, Resolve(field->defaultValue)));
+    Expr* fieldExpr = Make<FieldAccess>(dest, field.get());
+    stmts->Append(Initialize(fieldExpr, field->type, Resolve(field->defaultValue)));
   }
   return stmts;
 }
@@ -197,7 +199,7 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
   }
   Var*  var = symbols_->DefineVar(id, type);
   Expr* varExpr = Make<VarExpr>(var);
-  return InitializeVar(varExpr, type, initExpr);
+  return Initialize(varExpr, type, initExpr);
 }
 
 Result SemanticPass::ResolveMethodCall(Expr*       expr,
@@ -606,13 +608,14 @@ void SemanticPass::WidenArgList(std::vector<Expr*>& argList, const VarVector& fo
 Result SemanticPass::Visit(UnresolvedNewExpr* node) {
   Type* type = node->GetType();
   if (!type) return nullptr;
+  if (type->IsUnsizedArray()) { return Error("cannot allocate unsized array"); }
+
   ArgList* arglist = Resolve(node->GetArgList());
   if (!arglist) return nullptr;
-  Method*   constructor = nullptr;
-  ExprList* args = nullptr;
   int       qualifiers;
   Type*     unqualifiedType = type->GetUnqualifiedType(&qualifiers);
   Expr*     length = node->GetLength() ? Resolve(node->GetLength()) : nullptr;
+  auto      allocation = Make<HeapAllocation>(type, length);
   if (unqualifiedType->IsClass()) {
     auto* classType = static_cast<ClassType*>(unqualifiedType);
     if (classType->HasUnsizedArray()) {
@@ -622,9 +625,12 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
       return Error("cannot allocate partially-specified template class %s",
                    classType->ToString().c_str());
     }
-    std::vector<Expr*> exprList;
-    constructor = FindMethod(nullptr, classType, classType->GetName(), arglist, &exprList);
-    if (constructor) {
+    if (node->IsConstructor()) {
+      std::vector<Expr*> exprList;
+      Method* constructor = FindMethod(nullptr, classType, classType->GetName(), arglist, &exprList);
+      if (!constructor) {
+        return Error("matching constructor not found");
+      }
       for (int i = 1; i < exprList.size(); ++i) {
         if (!exprList[i]) {
           return Error("formal parameter \"%s\" has no default value",
@@ -632,12 +638,20 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
         }
       }
       WidenArgList(exprList, constructor->formalArgList);
-      args = Make<ExprList>(std::move(exprList));
-    } else if (arglist->GetArgs().size() > 0) {
-      return Error("matching constructor not found");
+      exprList[0] = allocation;
+      auto args = Make<ExprList>(std::move(exprList));
+      Expr* result = Make<MethodCall>(constructor, args);
+      result = Make<RawToSmartPtr>(result);
+      // This is for native templated constructors, which return an untemplated type
+      if (result->GetType(types_) != node->GetType(types_)) {
+        result = Widen(result, node->GetType(types_));
+      }
+      return result;
     }
   }
-  return Make<NewExpr>(type, length, constructor, args);
+  if (length) { type = types_->GetArrayType(type, 0, MemoryLayout::Default); }
+  Stmt* stmt = Initialize(allocation, type);
+  return Make<RawToSmartPtr>(Make<ExprWithStmt>(allocation, stmt));
 }
 
 Result SemanticPass::Visit(IfStatement* s) {
@@ -677,17 +691,6 @@ Result SemanticPass::Visit(ForStatement* node) {
   Stmt* loopStmt = Resolve(node->GetLoopStmt());
   Stmt* body = Resolve(node->GetBody());
   return Make<ForStatement>(initStmt, cond, loopStmt, body);
-}
-
-Result SemanticPass::Visit(NewArrayExpr* expr) {
-  Expr* sizeExpr = Resolve(expr->GetSizeExpr());
-  Type* type = expr->GetElementType();
-  if (!type) return nullptr;
-  if (type->IsArray()) {
-    ArrayType* arrayType = static_cast<ArrayType*>(type);
-    if (arrayType->GetNumElements() == 0) { return Error("cannot allocate unsized array"); }
-  }
-  return Make<NewArrayExpr>(type, sizeExpr);
 }
 
 Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {

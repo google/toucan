@@ -34,7 +34,6 @@ class SemanticPass : public CopyVisitor {
   Result Visit(ExprWithStmt* node) override;
   Result Visit(ForStatement* forStmt) override;
   Result Visit(IfStatement* stmt) override;
-  Result Visit(NewArrayExpr* expr) override;
   Result Visit(LoadExpr* node) override;
   Result Visit(ReturnStatement* node) override;
   Result Visit(SmartToRawPtr* expr) override;
@@ -61,7 +60,7 @@ class SemanticPass : public CopyVisitor {
   void    WidenArgList(std::vector<Expr*>& argList, const VarVector& formalArgList);
   Expr*   Widen(Expr* expr, Type* dstType);
   Expr*   MakeIndexable(Expr* expr);
-  Stmt*   InitializeVar(Expr* varExpr, Type* type, Expr* initExpr);
+  Stmt*   Initialize(Expr* dest, Type* type, Expr* initExpr = nullptr);
   Stmts*  InitializeClass(Expr* thisExpr, ClassType* classType);
   int     FindFormalArg(Arg* arg, Method* m, TypeTable* types);
   bool    MatchArgs(Expr* thisExpr, ArgList* args, Method* m, TypeTable* types, std::vector<Expr*>* newArgList);

@@ -178,7 +178,7 @@ class ReflectionPipeline : DrawPipeline {
     var vert : *vertex Buffer<[]Vertex>;
 };
 
-var depthState = new DepthStencilState();
+var depthState = new DepthStencilState;
 
 var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, TriangleList);
 var cubeBindings : Bindings;

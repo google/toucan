@@ -11,5 +11,5 @@ class Foo {
   }
 };
 
-var foo = new Foo();
+var foo = new Foo;
 Test.Expect(foo.cast(42) == 42.0);

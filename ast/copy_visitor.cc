@@ -110,6 +110,10 @@ Result CopyVisitor::Visit(VarDeclaration* decl) {
 
 Result CopyVisitor::Visit(LoadExpr* node) { return Make<LoadExpr>(Resolve(node->GetExpr())); }
 
+Result CopyVisitor::Visit(RawToSmartPtr* node) {
+  return Make<RawToSmartPtr>(Resolve(node->GetExpr()));
+}
+
 Result CopyVisitor::Visit(SmartToRawPtr* node) {
   return Make<SmartToRawPtr>(Resolve(node->GetExpr()));
 }
@@ -138,11 +142,8 @@ Result CopyVisitor::Visit(ReturnStatement* stmt) {
   return Make<ReturnStatement>(Resolve(stmt->GetExpr()));
 }
 
-Result CopyVisitor::Visit(NewExpr* expr) {
-  Type*     type = ResolveType(expr->GetType());
-  Expr*     length = Resolve(expr->GetLength());
-  ExprList* args = Resolve(expr->GetArgs());
-  return Make<NewExpr>(type, length, expr->GetConstructor(), args);
+Result CopyVisitor::Visit(HeapAllocation* node) {
+  return Make<HeapAllocation>(node->GetType());
 }
 
 Result CopyVisitor::Visit(IfStatement* s) {
@@ -176,12 +177,6 @@ Result CopyVisitor::Visit(MethodCall* node) {
   return Make<MethodCall>(node->GetMethod(), Resolve(node->GetArgList()));
 }
 
-Result CopyVisitor::Visit(NewArrayExpr* expr) {
-  Type* type = ResolveType(expr->GetElementType());
-  Expr* sizeExpr = Resolve(expr->GetSizeExpr());
-  return Make<NewArrayExpr>(type, sizeExpr);
-}
-
 Result CopyVisitor::Visit(UnresolvedClassDefinition* defn) {
   return Make<UnresolvedClassDefinition>(defn->GetScope());
 }
@@ -203,7 +198,8 @@ Result CopyVisitor::Visit(UnresolvedNewExpr* expr) {
   Type*    type = ResolveType(expr->GetType());
   Expr*    length = Resolve(expr->GetLength());
   ArgList* arglist = Resolve(expr->GetArgList());
-  return Make<UnresolvedNewExpr>(type, length, arglist);
+  bool     constructor = expr->IsConstructor();
+  return Make<UnresolvedNewExpr>(type, length, arglist, constructor);
 }
 
 Result CopyVisitor::Visit(UnresolvedStaticMethodCall* node) {

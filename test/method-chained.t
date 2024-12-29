@@ -18,5 +18,5 @@ class Foo {
 class Bump {
 }
 
-var foo = new Foo();
+var foo = new Foo;
 Test.Expect(foo.bar().bump() == 3.0);

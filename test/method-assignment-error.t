@@ -4,5 +4,5 @@ class Foo {
   }
 };
 
-var foo = new Foo();
+var foo = new Foo;
 foo.bar() = 3.0;

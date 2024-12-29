@@ -5,5 +5,5 @@ class Q {
   }
   var mP : *P;
 }
-var p = new P();
+var p = new P;
 var q = new Q(null);

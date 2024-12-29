@@ -40,16 +40,16 @@ class CopyVisitor : public Visitor {
   Result        Visit(FieldAccess* node) override;
   Result        Visit(FloatConstant* constant) override;
   Result        Visit(ForStatement* forStmt) override;
+  Result        Visit(HeapAllocation* node) override;
   Result        Visit(IfStatement* stmt) override;
   Result        Visit(Initializer* node) override;
   Result        Visit(IntConstant* constant) override;
   Result        Visit(MethodCall* node) override;
-  Result        Visit(NewArrayExpr* expr) override;
-  Result        Visit(NewExpr* node) override;
   Result        Visit(UnresolvedNewExpr* node) override;
   Result        Visit(NullConstant* constant) override;
   Result        Visit(ReturnStatement* stmt) override;
   Result        Visit(LoadExpr* node) override;
+  Result        Visit(RawToSmartPtr* node) override;
   Result        Visit(SmartToRawPtr* node) override;
   Result        Visit(Stmts* stmts) override;
   Result        Visit(StoreStmt* node) override;

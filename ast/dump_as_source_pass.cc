@@ -185,11 +185,6 @@ Result DumpAsSourcePass::Visit(ReturnStatement* stmt) {
   return {};
 }
 
-Result DumpAsSourcePass::Visit(NewExpr* expr) {
-  NOTIMPLEMENTED();
-  return {};
-}
-
 Result DumpAsSourcePass::Visit(IfStatement* s) {
   NOTIMPLEMENTED();
   return {};
@@ -206,11 +201,6 @@ Result DumpAsSourcePass::Visit(DoStatement* s) {
 }
 
 Result DumpAsSourcePass::Visit(ForStatement* node) {
-  NOTIMPLEMENTED();
-  return {};
-}
-
-Result DumpAsSourcePass::Visit(NewArrayExpr* expr) {
   NOTIMPLEMENTED();
   return {};
 }

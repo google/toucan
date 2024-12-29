@@ -17,7 +17,7 @@ class Bar {
   var count : int = 0;
 };
 
-var bar = new Bar();
+var bar = new Bar;
 bar.count = 0;
 Test.Expect(bar.count == 0);
 var foo = new Foo(bar);

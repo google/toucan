@@ -329,6 +329,7 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
     assert(method->index == 0); // Destructors are the only supported virtual
     fprintf(file_, "  c->SetVTable(0, m);\n");
   }
+  bool skipFirst = false;
   if (classType->IsNative()) {
     if (header_ && !(method->modifiers & Method::Modifier::DeviceOnly)) {
 #if TARGET_OS_IS_WIN
@@ -336,18 +337,22 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
 #endif
       PrintNativeType(header_, method->returnType);
       fprintf(header_, " %s(", method->GetMangledName().c_str());
-      if (classType->IsClassTemplate() && method->modifiers & Method::Modifier::Static) {
-        fprintf(header_, "int qualifiers, ");
-        ClassTemplate* classTemplate = static_cast<ClassTemplate*>(classType);
-        for (Type* arg : classTemplate->GetFormalTemplateArgs()) {
-          FormalTemplateArg* formalTemplateArg = static_cast<FormalTemplateArg*>(arg);
-          fprintf(header_, "Type* %s", formalTemplateArg->GetName().c_str());
-          if (arg != classTemplate->GetFormalTemplateArgs().back() || !argList.empty()) {
-            fprintf(header_, ", ");
+      if (method->IsConstructor()) {
+        skipFirst = true;
+        if (classType->IsClassTemplate()) {
+          fprintf(header_, "int qualifiers, ");
+          ClassTemplate* classTemplate = static_cast<ClassTemplate*>(classType);
+          for (Type* arg : classTemplate->GetFormalTemplateArgs()) {
+            FormalTemplateArg* formalTemplateArg = static_cast<FormalTemplateArg*>(arg);
+            fprintf(header_, "Type* %s", formalTemplateArg->GetName().c_str());
+            if (arg != classTemplate->GetFormalTemplateArgs().back() || !argList.empty()) {
+              fprintf(header_, ", ");
+            }
           }
         }
       }
       for (const std::shared_ptr<Var>& var : argList) {
+        if (skipFirst) { skipFirst = false; continue; }
         PrintNativeType(header_, var->type);
         if (var->name == "this") {
           fprintf(header_, " This");

@@ -47,8 +47,6 @@ class DumpAsSourcePass : public Visitor {
   Result Visit(IfStatement* stmt) override;
   Result Visit(Initializer* node) override;
   Result Visit(IntConstant* constant) override;
-  Result Visit(NewArrayExpr* expr) override;
-  Result Visit(NewExpr* node) override;
   Result Visit(NullConstant* constant) override;
   Result Visit(ReturnStatement* stmt) override;
   Result Visit(LoadExpr* node) override;

@@ -1,4 +1,4 @@
 class Template<T> {
 }
 
-var removed = new Template<int>();
+var removed = new Template<int>;

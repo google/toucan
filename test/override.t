@@ -12,5 +12,5 @@ class Bar : Foo {
   }
 };
 
-var b = new Bar();
+var b = new Bar;
 Test.Expect(b.func() == 2345.0);

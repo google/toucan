@@ -77,6 +77,18 @@ class Expr : public ASTNode {
   virtual bool  IsVarExpr() const { return false; }
 };
 
+class HeapAllocation : public Expr {
+ public:
+  HeapAllocation(Type* type, Expr* length = nullptr);
+  Type* GetType(TypeTable* types) override;
+  Type* GetType() { return type_; }
+  Expr* GetLength() const { return length_; }
+  Result Accept(Visitor* visitor) override;
+ private:
+  Type* type_;
+  Expr* length_;
+};
+
 class Data : public Expr {
  public:
   Data(Type* type, std::unique_ptr<uint8_t[]> data, size_t size);
@@ -421,6 +433,17 @@ class SmartToRawPtr : public Expr {
   Expr* expr_;
 };
 
+class RawToSmartPtr : public Expr {
+ public:
+  RawToSmartPtr(Expr* expr);
+  Result Accept(Visitor* visitor) override;
+  Type*  GetType(TypeTable* types) override;
+  Expr*  GetExpr() { return expr_; }
+
+ private:
+  Expr* expr_;
+};
+
 class ToRawArray : public Expr {
  public:
   ToRawArray(Expr* data, Expr* length, Type* elementType, MemoryLayout memoryLayout);
@@ -679,49 +702,21 @@ class ReturnStatement : public Stmt {
   Expr*  expr_;
 };
 
-class NewArrayExpr : public Expr {
- public:
-  NewArrayExpr(Type* type, Expr* sizeExpr);
-  Result Accept(Visitor* visitor) override;
-  Type*  GetType(TypeTable* types) override;
-  Type*  GetElementType() { return elementType_; }
-  Expr*  GetSizeExpr() { return sizeExpr_; }
-
- private:
-  Type* elementType_;
-  Expr* sizeExpr_;
-};
-
 class UnresolvedNewExpr : public Expr {
  public:
-  UnresolvedNewExpr(Type* type, Expr* length, ArgList* arglist);
+  UnresolvedNewExpr(Type* type, Expr* length, ArgList* arglist, bool constructor);
   Result   Accept(Visitor* visitor) override;
   Type*    GetType(TypeTable* types) override;
   Type*    GetType() { return type_; }
   Expr*    GetLength() { return length_; }
   ArgList* GetArgList() { return arglist_; }
+  bool     IsConstructor() const { return constructor_; }
 
  private:
   Type*    type_;
   Expr*    length_;  // used for unsized arrays as last field
   ArgList* arglist_;
-};
-
-class NewExpr : public Expr {
- public:
-  NewExpr(Type* type, Expr* length, Method* constructor, ExprList* args);
-  Result    Accept(Visitor* visitor) override;
-  Type*     GetType(TypeTable* types) override;
-  Type*     GetType() { return type_; }
-  Expr*     GetLength() { return length_; }
-  Method*   GetConstructor() { return constructor_; }
-  ExprList* GetArgs() { return args_; }
-
- private:
-  Type*     type_;
-  Expr*     length_;  // used for unsized arrays as last field
-  Method*   constructor_;
-  ExprList* args_;
+  bool     constructor_;
 };
 
 class UnresolvedClassDefinition : public Stmt {
@@ -773,6 +768,7 @@ class Visitor {
   virtual Result Visit(Data* node) { return Default(node); }
   virtual Result Visit(EnumConstant* node) { return Default(node); }
   virtual Result Visit(SmartToRawPtr* node) { return Default(node); }
+  virtual Result Visit(RawToSmartPtr* node) { return Default(node); }
   virtual Result Visit(DoStatement* node) { return Default(node); }
   virtual Result Visit(DoubleConstant* node) { return Default(node); }
   virtual Result Visit(ExprList* node) { return Default(node); }
@@ -782,14 +778,13 @@ class Visitor {
   virtual Result Visit(FieldAccess* node) { return Default(node); }
   virtual Result Visit(FloatConstant* node) { return Default(node); }
   virtual Result Visit(ForStatement* node) { return Default(node); }
+  virtual Result Visit(HeapAllocation* node) { return Default(node); }
   virtual Result Visit(IfStatement* node) { return Default(node); }
   virtual Result Visit(Initializer* node) { return Default(node); }
   virtual Result Visit(InsertElementExpr* node) { return Default(node); }
   virtual Result Visit(IntConstant* node) { return Default(node); }
   virtual Result Visit(UIntConstant* node) { return Default(node); }
   virtual Result Visit(LengthExpr* node) { return Default(node); }
-  virtual Result Visit(NewArrayExpr* node) { return Default(node); }
-  virtual Result Visit(NewExpr* node) { return Default(node); }
   virtual Result Visit(NullConstant* node) { return Default(node); }
   virtual Result Visit(ReturnStatement* node) { return Default(node); }
   virtual Result Visit(MethodCall* node) { return Default(node); }

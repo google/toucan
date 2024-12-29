@@ -2,6 +2,8 @@ test/aggregate-return.t
 test/allocate-unsized-array.t
 allocate-unsized-array.t:1:  cannot allocate unsized array
 test/allocate-unsized-class.t
+allocate-unsized-class.t:8:  unknown array property "array"
+allocate-unsized-class.t:10:  unknown array property "array"
 test/array-assign.t
 test/array-class.t
 test/array-constant.t
@@ -39,6 +41,7 @@ test/compute-pass-ptr-to-element.t
 Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/compute-simple.t
 Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
+test/constructor-calls-initializer.t
 test/constructor-with-default-arg.t
 test/constructor-with-explicit-initializer.t
 test/constructor.t

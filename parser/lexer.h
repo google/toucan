@@ -25,6 +25,7 @@ class Arg;
 class ArgList;
 class Expr;
 class Stmt;
+class UnresolvedInitializer;
 };  // namespace Toucan
 #endif
 #define register

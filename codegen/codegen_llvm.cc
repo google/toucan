@@ -374,9 +374,11 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
   if (auto function = functions_[method]) { return function; }
   std::vector<llvm::Type*> params;
   llvm::Intrinsic::ID      intrinsic = llvm::Intrinsic::not_intrinsic;
+  bool skipFirst = false;
   if (method->classType->IsNative()) {
     if (method->templateMethod) { return GetOrCreateMethodStub(method->templateMethod); }
-    if (method->modifiers & Method::Modifier::Static) {
+    if (method->IsConstructor()) {
+      skipFirst = true;
       if (method->classType->IsClassTemplate()) {
         // First argument is the storage qualifier (as uint)
         params.push_back(intType_);
@@ -390,6 +392,7 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
   }
   bool nativeTypes = method->classType->IsNative() && !intrinsic;
   for (const auto& it : method->formalArgList) {
+    if (skipFirst) { skipFirst = false; continue; }
     Var* var = it.get();
     if (nativeTypes) {
       params.push_back(ConvertTypeToNative(var->type));
@@ -588,7 +591,7 @@ llvm::Value* CodeGenLLVM::ConvertToNative(Type* type, llvm::Value* value) {
 }
 
 llvm::Value* CodeGenLLVM::ConvertFromNative(Type* type, llvm::Value* value) {
-  if (type->IsPtr()) {
+  if (type->IsStrongPtr() || type->IsWeakPtr()) {
     Type* baseType = static_cast<PtrType*>(type)->GetBaseType();
     Type* unqualifiedType = baseType->GetUnqualifiedType();
     if (unqualifiedType->IsClass() && static_cast<ClassType*>(unqualifiedType)->IsNative()) {
@@ -1045,6 +1048,17 @@ Result CodeGenLLVM::Visit(ForStatement* forStmt) {
   return nullptr;
 }
 
+Result CodeGenLLVM::Visit(HeapAllocation* node) {
+  Type*   type = node->GetType();
+  int     qualifiers = 0;
+  type = type->GetUnqualifiedType(&qualifiers);
+  llvm::Type*  llvmType = ConvertType(type);
+  llvm::Value* length = node->GetLength() ? GenerateLLVM(node->GetLength()) : nullptr;
+  llvm::Value* value = CreateMalloc(llvmType, length);
+  if (length) { value = CreatePointer(value, length); }
+  return value;
+}
+
 Result CodeGenLLVM::Visit(BoolConstant* node) {
   return llvm::ConstantInt::get(boolType_, node->GetValue() ? 1 : 0, true);
 }
@@ -1119,51 +1133,6 @@ Result CodeGenLLVM::Visit(StoreStmt* stmt) {
   return builder_->CreateStore(rhs, lhs);
 }
 
-Result CodeGenLLVM::Visit(NewExpr* newExpr) {
-  Type*   type = newExpr->GetType();
-  Method* constructor = newExpr->GetConstructor();
-  int     qualifiers = 0;
-  type = type->GetUnqualifiedType(&qualifiers);
-  llvm::Type*  llvmType = ConvertType(type);
-  llvm::Value* expr = nullptr;
-  llvm::Value* length = newExpr->GetLength() ? GenerateLLVM(newExpr->GetLength()) : nullptr;
-  if (constructor && constructor->classType->IsNative()) {
-    // Note that the return type is the type of the "new" expression, including
-    // template type and qualifiers, not the return type of the method, which is native and
-    // untemplated.
-    expr = GenerateMethodCall(constructor, newExpr->GetArgs(), qualifiers, newExpr->GetType(types_),
-                              newExpr->GetFileLocation());
-  } else {
-    expr = CreateMalloc(llvmType, length);
-    if (constructor) {
-      std::vector<llvm::Value*> args;
-      args.push_back(expr);
-      for (Expr* const& arg : newExpr->GetArgs()->Get()) {
-        if (!arg) continue;
-        llvm::Value* v = GenerateLLVM(arg);
-        args.push_back(v);
-        AppendTemporary(v, arg->GetType(types_));
-      }
-      llvm::Function* function = GetOrCreateMethodStub(constructor);
-      expr = builder_->CreateCall(function, args);
-    }
-    llvm::Value* controlBlock = CreateControlBlock(type);
-    expr = CreatePointer(expr, controlBlock);
-  }
-  return expr;
-}
-
-Result CodeGenLLVM::Visit(NewArrayExpr* expr) {
-  llvm::Value* length = GenerateLLVM(expr->GetSizeExpr());
-  Type*        elementType = expr->GetElementType();
-  Type*        arrayType = types_->GetArrayType(elementType, 0, MemoryLayout::Default);
-  llvm::Value* controlBlock = CreateControlBlock(arrayType);
-  llvm::Value* storage = CreateMalloc(ConvertType(elementType), length);
-  storage = builder_->CreateBitCast(storage, llvm::PointerType::get(ConvertType(arrayType), 0));
-  builder_->CreateStore(length, GetArrayLengthAddress(controlBlock));
-  return CreatePointer(storage, controlBlock);
-}
-
 Result CodeGenLLVM::Visit(ArrayAccess* node) {
   llvm::Value* expr = GenerateLLVM(node->GetExpr());
   llvm::Value* index = GenerateLLVM(node->GetIndex());
@@ -1194,6 +1163,20 @@ Result CodeGenLLVM::Visit(SmartToRawPtr* node) {
     return CreatePointer(value, length);
   }
   return value;
+}
+
+Result CodeGenLLVM::Visit(RawToSmartPtr* node) {
+  llvm::Value* expr = GenerateLLVM(node->GetExpr());
+  auto type = node->GetExpr()->GetType(types_);
+  assert(type->IsRawPtr());
+  type = static_cast<RawPtrType*>(type)->GetBaseType();
+  auto controlBlock = CreateControlBlock(type);
+  if (type->IsUnsizedArray()) {
+    auto length = builder_->CreateExtractValue(expr, {1});
+    expr = builder_->CreateExtractValue(expr, {0});
+    builder_->CreateStore(length, GetArrayLengthAddress(controlBlock));
+  }
+  return CreatePointer(expr, controlBlock);
 }
 
 Result CodeGenLLVM::Visit(ToRawArray* node) {
@@ -1298,14 +1281,21 @@ Result CodeGenLLVM::Visit(IfStatement* ifStmt) {
 
 llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
                                              ExprList*           argList,
-                                             int                 qualifiers,
                                              Type*               returnType,
                                              const FileLocation& location) {
   std::vector<llvm::Value*> args;
   llvm::Function*           function = GetOrCreateMethodStub(method);
   if (auto builtin = FindBuiltin(method)) { return std::invoke(builtin, this, location); }
-  if (method->classType->IsNative() && (method->modifiers & Method::Modifier::Static)) {
+  bool skipFirst = false;
+  if (method->classType->IsNative() && method->IsConstructor()) {
+    skipFirst = true;
     if (method->classType->GetTemplate()) {
+      auto allocation = argList->Get()[0];
+      auto type = allocation->GetType(types_);
+      assert(type->IsRawPtr());
+      type = static_cast<RawPtrType*>(type)->GetBaseType();
+      int qualifiers;
+      type->GetUnqualifiedType(&qualifiers);
       // Prefix the args with the qualifiers
       args.push_back(llvm::ConstantInt::get(intType_, qualifiers));
     }
@@ -1315,6 +1305,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
   }
   llvm::Intrinsic::ID intrinsic = function->getIntrinsicID();
   for (auto arg : argList->Get()) {
+    if (skipFirst) { skipFirst = false; continue; }
     llvm::Value* v = GenerateLLVM(arg);
     Type*        type = arg->GetType(types_);
     AppendTemporary(v, type);
@@ -1348,7 +1339,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
 }
 
 Result CodeGenLLVM::Visit(MethodCall* node) {
-  return GenerateMethodCall(node->GetMethod(), node->GetArgList(), 0, node->GetMethod()->returnType,
+  return GenerateMethodCall(node->GetMethod(), node->GetArgList(), node->GetMethod()->returnType,
                             node->GetFileLocation());
 }
 

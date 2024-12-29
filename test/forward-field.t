@@ -7,6 +7,6 @@ class Foo {
   var baz : float;
 };
 
-var foo = new Foo();
+var foo = new Foo;
 foo.baz = -321.0;
 Test.Expect(foo.baz == -321.0);

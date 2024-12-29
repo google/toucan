@@ -77,8 +77,7 @@ static Stmt* Store(Expr* expr, Expr* value);
 static Expr* Identifier(const char* id);
 static Expr* Dot(Expr* lhs, const char* id);
 static Expr* MakeArrayAccess(Expr* lhs, Expr* expr);
-static Expr* MakeNewExpr(Type* type, Expr* length, ArgList* arguments);
-static Expr* MakeNewArrayExpr(Type* type, Expr* length);
+static Expr* MakeNewExpr(UnresolvedInitializer* initializer, Expr* length = nullptr);
 static Expr* InlineFile(const char* filename);
 static Expr* StringLiteral(const char* str);
 static void CreateFieldsFromVarDecls(Stmts* stmts);
@@ -112,6 +111,7 @@ Type* FindType(const char* str) {
     Toucan::Stmts*       stmts;
     Toucan::Arg*         arg;
     Toucan::ArgList*     argList;
+    Toucan::UnresolvedInitializer* initializer;
     Toucan::Type*        type;
     Toucan::ClassType*   classType;
     Toucan::TypeList*    typeList;
@@ -120,7 +120,8 @@ Type* FindType(const char* str) {
 %type <type> scalar_type type class_header
 %type <type> simple_type opt_return_type
 %type <classType> template_class_header
-%type <expr> expr opt_expr assignable arith_expr expr_or_list opt_initializer
+%type <expr> expr opt_expr assignable arith_expr expr_or_list opt_initializer opt_length
+%type <initializer> initializer initializer_or_type
 %type <arg> argument
 %type <stmt> statement expr_statement for_loop_stmt
 %type <stmt> assignment
@@ -160,7 +161,7 @@ Type* FindType(const char* str) {
 %left '*' '/' '%'
 %right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS ':'
 %left '.' '[' ']' '(' ')'
-%expect 1   /* we expect 1 shift/reduce: dangling-else */
+%expect 2   /* we expect 2 shift/reduce: dangling-else, and one for new-expr used as opt_initializer */
 %%
 program:
     statements                              { *rootStmts_ = $1; }
@@ -424,6 +425,16 @@ argument:
   | expr_or_list                            { $$ = Make<Arg>("", $1); }
   ;
 
+initializer:
+    type '(' arguments ')'                  { $$ = Make<UnresolvedInitializer>($1, $3, true); }
+  | type '{' arguments '}'                  { $$ = Make<UnresolvedInitializer>($1, $3, false); }
+  ;
+
+initializer_or_type:
+    initializer
+  | type                                    { $$ = Make<UnresolvedInitializer>($1, Make<ArgList>(), false); }
+  ;
+
 arith_expr:
     arith_expr '+' arith_expr               { $$ = BinOp(BinOpNode::ADD, $1, $3); }
   | arith_expr '-' arith_expr               { $$ = BinOp(BinOpNode::SUB, $1, $3); }
@@ -449,9 +460,7 @@ arith_expr:
   | assignable T_MINUSMINUS                 { $$ = IncDec(IncDecExpr::Op::Dec, false, $1); }
   | '(' arith_expr ')'                      { $$ = $2; }
   | '(' type ')' arith_expr %prec UNARYMINUS      { $$ = Make<CastExpr>($2, $4); }
-  | simple_type '(' arguments ')'           { $$ = Make<UnresolvedInitializer>($1, $3, true); }
-  | simple_type '{' arguments '}'           { $$ = Make<UnresolvedInitializer>($1, $3, false); }
-  | '[' arith_expr ']' type '(' arguments ')'     { $$ = Make<UnresolvedInitializer>(GetArrayType($4, AsIntConstant($2)), $6, true); }
+  | initializer                             { $$ = $1; }
   | T_INT_LITERAL                           { $$ = Make<IntConstant>($1, 32); }
   | T_UINT_LITERAL                          { $$ = Make<UIntConstant>($1, 32); }
   | T_BYTE_LITERAL                          { $$ = Make<IntConstant>($1, 8); }
@@ -467,13 +476,14 @@ arith_expr:
   | '&' assignable %prec UNARYMINUS         { $$ = $2; }
   ;
 
+opt_length:
+    '[' arith_expr ']'                      { $$ = $2; }
+  | /* nothing */                           { $$ = nullptr; }
+  ;
+
 expr:
     arith_expr
-  | T_NEW type                              { $$ = MakeNewExpr($2, nullptr, nullptr); }
-  | T_NEW type '(' arguments ')'            { $$ = MakeNewExpr($2, nullptr, $4); }
-  | '[' arith_expr ']' T_NEW type           { $$ = MakeNewArrayExpr($5, $2); }
-  | '[' arith_expr ']' T_NEW type '(' arguments ')'
-                                            { $$ = MakeNewExpr($5, $2, $7); }
+  | opt_length T_NEW initializer_or_type    { $$ = MakeNewExpr($3, $1); }
   | T_INLINE '(' T_STRING_LITERAL ')'       { $$ = InlineFile($3); }
   | T_STRING_LITERAL                        { $$ = StringLiteral($1); }
   ;
@@ -564,14 +574,9 @@ static Expr* Load(Expr* expr) {
   return Make<LoadExpr>(expr);
 }
 
-static Expr* MakeNewExpr(Type* type, Expr* length, ArgList* arguments) {
-  if (!type) return nullptr;
-  return Make<UnresolvedNewExpr>(type, length, arguments);
-}
-
-static Expr* MakeNewArrayExpr(Type* type, Expr* length) {
-  if (!type || !length) return nullptr;
-  return Make<NewArrayExpr>(type, length);
+static Expr* MakeNewExpr(UnresolvedInitializer* initializer, Expr* length) {
+  if (!initializer->GetType()) return nullptr;
+  return Make<UnresolvedNewExpr>(initializer->GetType(), length, initializer->GetArgList(), initializer->IsConstructor());
 }
 
 static Expr* TryInlineFile(std::string dir, const char* filename) {
@@ -825,9 +830,6 @@ static void BeginConstructor(int modifiers, Type* type, Stmts* formalArguments) 
     return;
   }
   ClassType* classType = static_cast<ClassType*>(type);
-  if (classType->IsNative()) {
-    modifiers |= Method::Modifier::Static;
-  }
   auto returnType = types_->GetRawPtrType(classType);
   BeginMethod(modifiers, classType->GetName(), nullptr, formalArguments, 0, returnType);
 }

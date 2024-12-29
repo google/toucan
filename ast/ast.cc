@@ -27,6 +27,16 @@ ASTNode::ASTNode() {}
 
 Expr::Expr() {}
 
+HeapAllocation::HeapAllocation(Type* type, Expr* length) : type_(type), length_(length) {}
+
+Type* HeapAllocation::GetType(TypeTable* types) {
+  Type* type = type_;
+  if (length_ != nullptr && !(type_->IsClass() && static_cast<ClassType*>(type_)->HasUnsizedArray())) {
+    type = types->GetArrayType(type_, 0, MemoryLayout::Default);
+  }
+  return types->GetRawPtrType(type);
+}
+
 Type* LoadExpr::GetType(TypeTable* types) {
   Type* type = expr_->GetType(types);
   assert(type->IsRawPtr());
@@ -53,6 +63,12 @@ Type* SmartToRawPtr::GetType(TypeTable* types) {
   Type* type = expr_->GetType(types);
   assert(type->IsStrongPtr() || type->IsWeakPtr());
   return types->GetRawPtrType(static_cast<PtrType*>(type)->GetBaseType());
+}
+
+Type* RawToSmartPtr::GetType(TypeTable* types) {
+  Type* type = expr_->GetType(types);
+  assert(type->IsRawPtr());
+  return types->GetStrongPtrType(static_cast<PtrType*>(type)->GetBaseType());
 }
 
 Type* ToRawArray::GetType(TypeTable* types) {
@@ -181,6 +197,8 @@ UnresolvedDot::UnresolvedDot(Expr* expr, std::string id) : expr_(expr), id_(id) 
 
 SmartToRawPtr::SmartToRawPtr(Expr* expr) : expr_(expr) {}
 
+RawToSmartPtr::RawToSmartPtr(Expr* expr) : expr_(expr) {}
+
 ToRawArray::ToRawArray(Expr* data, Expr* length, Type* elementType, MemoryLayout memoryLayout) : data_(data), length_(length), elementType_(elementType), memoryLayout_(memoryLayout) {}
 
 FieldAccess::FieldAccess(Expr* expr, Field* field) : expr_(expr), field_(field) {}
@@ -280,22 +298,10 @@ ForStatement::ForStatement(Stmt* initStmt, Expr* cond, Stmt* loopStmt, Stmt* bod
 
 ReturnStatement::ReturnStatement(Expr* expr) : expr_(expr) {}
 
-NewArrayExpr::NewArrayExpr(Type* elementType, Expr* sizeExpr)
-    : elementType_(elementType), sizeExpr_(sizeExpr) {}
-
-Type* NewArrayExpr::GetType(TypeTable* types) {
-  return types->GetStrongPtrType(types->GetArrayType(elementType_, 0, MemoryLayout::Default));
-}
-
-UnresolvedNewExpr::UnresolvedNewExpr(Type* type, Expr* length, ArgList* arglist)
-    : type_(type), length_(length), arglist_(arglist) {}
+UnresolvedNewExpr::UnresolvedNewExpr(Type* type, Expr* length, ArgList* arglist, bool constructor)
+    : type_(type), length_(length), arglist_(arglist), constructor_(constructor) {}
 
 Type* UnresolvedNewExpr::GetType(TypeTable* types) { return types->GetStrongPtrType(type_); }
-
-NewExpr::NewExpr(Type* type, Expr* length, Method* constructor, ExprList* args)
-    : type_(type), length_(length), constructor_(constructor), args_(args) {}
-
-Type* NewExpr::GetType(TypeTable* types) { return types->GetStrongPtrType(type_); }
 
 UnresolvedClassDefinition::UnresolvedClassDefinition(Scope* scope) : scope_(scope) {}
 
@@ -312,6 +318,7 @@ Result EnumConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprList::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprWithStmt::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result SmartToRawPtr::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result RawToSmartPtr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ToRawArray::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result DoStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result DoubleConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
@@ -320,13 +327,12 @@ Result ExtractElementExpr::Accept(Visitor* visitor) { return visitor->Visit(this
 Result FieldAccess::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result FloatConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ForStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result HeapAllocation::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result IfStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Initializer::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result InsertElementExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result IntConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result LengthExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
-Result NewArrayExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
-Result NewExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result NullConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ReturnStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result MethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }

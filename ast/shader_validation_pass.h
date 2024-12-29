@@ -39,8 +39,6 @@ class ShaderValidationPass : public Visitor {
   Result            Visit(ForStatement* forStmt) override;
   Result            Visit(IfStatement* stmt) override;
   Result            Visit(IntConstant* constant) override;
-  Result            Visit(NewArrayExpr* expr) override;
-  Result            Visit(NewExpr* node) override;
   Result            Visit(NullConstant* constant) override;
   Result            Visit(ReturnStatement* stmt) override;
   Result            Visit(LoadExpr* node) override;

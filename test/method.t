@@ -8,7 +8,7 @@ class Foo {
   var x : float;
 };
 
-var foo = new Foo();
+var foo = new Foo;
 foo.x = 0.0;
 foo.inc();
 foo.inc();

@@ -110,6 +110,7 @@ class CodeGenLLVM : public Visitor {
   Result                Visit(BoolConstant* node) override;
   Result                Visit(CastExpr* expr) override;
   Result                Visit(Data* expr) override;
+  Result                Visit(RawToSmartPtr* stmt) override;
   Result                Visit(SmartToRawPtr* stmt) override;
   Result                Visit(ToRawArray* node) override;
   Result                Visit(DestroyStmt* stmt) override;
@@ -122,14 +123,13 @@ class CodeGenLLVM : public Visitor {
   Result                Visit(FieldAccess* loadExpr) override;
   Result                Visit(FloatConstant* node) override;
   Result                Visit(ForStatement* forStmt) override;
+  Result                Visit(HeapAllocation* node) override;
   Result                Visit(IfStatement* stmt) override;
   Result                Visit(Initializer* node) override;
   Result                Visit(InsertElementExpr* expr) override;
   Result                Visit(IntConstant* node) override;
   Result                Visit(LengthExpr* expr) override;
   Result                Visit(LoadExpr* expr) override;
-  Result                Visit(NewArrayExpr* expr) override;
-  Result                Visit(NewExpr* newExpr) override;
   Result                Visit(NullConstant* node) override;
   Result                Visit(ReturnStatement* stmt) override;
   Result                Visit(MethodCall* node) override;
@@ -156,7 +156,6 @@ class CodeGenLLVM : public Visitor {
                           llvm::Type*  dstLLVMType);
   llvm::Value* GenerateMethodCall(Method*             method,
                                   ExprList*           args,
-                                  int                 qualifiers,
                                   Type*               returnType,
                                   const FileLocation& location);
   llvm::Value* GenerateGlobalData(const void* data, size_t size, Type* type);

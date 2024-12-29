@@ -310,6 +310,7 @@ struct Method {
   std::string             ToString() const;
   std::string             GetMangledName() const;
   void                    AddFormalArg(std::string id, Type* type, Expr* defaultValue);
+  bool                    IsConstructor() const;
   int                     modifiers;
   Type*                   returnType;
   std::string             name;

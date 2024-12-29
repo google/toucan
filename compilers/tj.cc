@@ -190,7 +190,7 @@ int main(int argc, char** argv) {
   codeGenLLVM.Run(stmts);
   auto typeList = types.GetTypes().data();
   engine->addGlobalMapping(codeGenLLVM.GetTypeList(), &typeList);
-  if (verifyFunction(*main)) { printf("LLVM main function is broken; aborting"); }
+  if (verifyFunction(*main)) { printf("LLVM main function is broken; aborting\n"); }
   fpm.run(*main);
   if (dump) {
 #ifdef NDEBUG

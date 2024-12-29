@@ -7,7 +7,7 @@ class A {
   }
   var f : Enum1;
 };
-var a = new A();
+var a = new A;
 a.init();
 Test.Expect(a.f == FOO);
 a.f = BAR;

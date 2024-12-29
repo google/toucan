@@ -197,7 +197,7 @@ class ReflectionPipeline : DrawPipeline {
 
 var tessPipeline = new ComputePipeline<BicubicComputePipeline>(device);
 
-var depthState = new DepthStencilState();
+var depthState = new DepthStencilState;
 
 var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, TriangleList);
 var cubeBindings : Bindings;

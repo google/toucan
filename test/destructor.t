@@ -14,7 +14,7 @@ class Bar {
 };
 var r = -1.0;
 {
-  var f = new Foo();
+  var f = new Foo;
   f.r = -1.0;
   {
     var b = new Bar(f);

@@ -319,7 +319,9 @@ std::string Method::GetMangledName() const {
   }
   for (auto& m : classType->GetMethods()) {
     if (m.get() != this && m->name == name) {
+      bool skipFirst = classType->IsNative() && m->IsConstructor();
       for (auto arg : formalArgList) {
+        if (skipFirst) { skipFirst = false; continue; }
         result += "_";
         if (arg->type->IsPtr()) {
           auto baseType = static_cast<PtrType*>(arg->type)->GetBaseType();
@@ -345,6 +347,10 @@ std::string Method::GetMangledName() const {
     }
   }
   return result;
+}
+
+bool Method::IsConstructor() const {
+  return name == classType->GetName();
 }
 
 ClassType::ClassType(std::string name)
