@@ -597,7 +597,8 @@ class TypeTable {
   static bool ScalarMatrix(Type* lhs, Type* rhs);
   static bool MatrixVector(Type* lhs, Type* rhs);
   static bool VectorMatrix(Type* lhs, Type* rhs);
-  void        Layout();
+  void        SetMemoryLayout();
+  void        ComputeFieldOffsets();
   const TypeVector& GetTypes() { return types_; }
   ClassType*        PopInstanceQueue();
 

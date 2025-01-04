@@ -49,12 +49,12 @@ native class Buffer<T> {
 }
 
 class DepthStencilState {
-  var depthWriteEnabled : bool = false;
-  var stencilReadMask : int = 0xFFFFFFFF;
-  var stencilWriteMask : int = 0xFFFFFFFF;
-  var depthBias : int = 0;
-  var depthBiasSlopeScale : float = 0.0;
-  var depthBiasClamp : float = 0.0;
+  var depthWriteEnabled = false;
+  var stencilReadMask = 0xFFFFFFFF;
+  var stencilWriteMask = 0xFFFFFFFF;
+  var depthBias = 0;
+  var depthBiasSlopeScale = 0.0;
+  var depthBiasClamp = 0.0;
 }
 
 native class RenderPipeline<T> {

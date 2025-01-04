@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
   TypeTable   types;
   NodeVector  nodes;
   InitTypes(&symbols, &types, &nodes);
-  types.Layout();
+  types.ComputeFieldOffsets();
   _type_list = types.GetTypes().data();
   toucan_main();
   return 0;

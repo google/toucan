@@ -113,10 +113,11 @@ int main(int argc, char** argv) {
   if (syntaxErrors > 0) { exit(1); }
   Scope* topScope = symbols.PopScope();
   rootStmts->SetScope(topScope);
-  types.Layout();
+  types.SetMemoryLayout();
   SemanticPass semanticPass(&nodes, &symbols, &types);
   Stmts*       stmts = semanticPass.Resolve(rootStmts);
   if (semanticPass.GetNumErrors() > 0) { exit(2); }
+  types.ComputeFieldOffsets();
   double start, end;
   if (dumpSymbolTable) {
     symbols.Dump();

@@ -775,7 +775,7 @@ bool TypeTable::MatrixVector(Type* lhs, Type* rhs) {
 
 bool TypeTable::VectorMatrix(Type* lhs, Type* rhs) { return MatrixVector(rhs, lhs); }
 
-void TypeTable::Layout() {
+void TypeTable::SetMemoryLayout() {
   std::vector<Type*> classTypes;
   for (auto type : types_) {
     if (type->GetUnqualifiedType()->IsClass()) { classTypes.push_back(type); }
@@ -792,7 +792,11 @@ void TypeTable::Layout() {
       }
     }
   }
-  for (Type* type : classTypes) {
+}
+
+void TypeTable::ComputeFieldOffsets() {
+  for (auto type : types_) {
+    type = type->GetUnqualifiedType();
     if (type->IsClass() && !type->IsClassTemplate()) {
       static_cast<ClassType*>(type)->ComputeFieldOffsets();
     }
