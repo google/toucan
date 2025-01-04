@@ -2,8 +2,6 @@ test/aggregate-return.t
 test/allocate-unsized-array.t
 allocate-unsized-array.t:1:  cannot allocate unsized array
 test/allocate-unsized-class.t
-allocate-unsized-class.t:8:  unknown array property "array"
-allocate-unsized-class.t:10:  unknown array property "array"
 test/array-assign.t
 test/array-class.t
 test/array-constant.t
@@ -70,6 +68,9 @@ test/error-index-buffer-get.t
 error-index-buffer-get.t:4:  class Buffer<[]uint> has no method Get()
 error-index-buffer-get.t:4:  Buffer<[]uint>.Get() vertex : uint
 test/error-int-literal-too-large.t
+test/error-invalid-return-value.t
+error-invalid-return-value.t:4:  cannot return a value of type &int from a function of type ^int
+error-invalid-return-value.t:14:  implicit void return, in method returning non-void.
 test/error-missing-sampleable-qualifier.t
 error-missing-sampleable-qualifier.t:3:  class Texture2D<RGBA8unorm> has no method CreateSampleableView()
 error-missing-sampleable-qualifier.t:3:  Texture2D<RGBA8unorm>.CreateSampleableView() sampleable : *SampleableTexture2D<float>
@@ -91,6 +92,8 @@ error-raw-ptr-cast-to-smart.t:2:  cannot cast value of type &int to ^int
 error-raw-ptr-cast-to-smart.t:3:  cannot cast value of type &int to *int
 test/error-raw-ptr-must-be-initialized.t
 error-raw-ptr-must-be-initialized.t:1:  reference must be initialized
+test/error-return-int-from-main.t
+error-return-int-from-main.t:1:  cannot return a value of type int from a function of type void
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
 error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(*CommandEncoder, *writeonly Buffer<[]float<4>>, int)
@@ -114,6 +117,7 @@ fail-invalid-storage-types.t:1:  cannot create storage of type []int
 test/fail-unsized-array-not-last-in-class.t
 fail-unsized-array-not-last-in-class.t:4:  Unsized arrays are only allwed as the last field of a class
 test/field-access-from-static-method-error.t
+field-access-from-static-method-error.t:3:  attempt to access non-static field in static method
 field-access-from-static-method-error.t:3:  attempt to access non-static field in static method
 test/field-access.t
 test/field-default-value.t

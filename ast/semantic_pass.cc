@@ -858,6 +858,16 @@ void SemanticPass::UnwindStack(Scope* scope, Stmts* stmts) {
 }
 
 Result SemanticPass::Visit(ReturnStatement* stmt) {
+  if (auto returnValue = Resolve(stmt->GetExpr())) {
+    auto type = returnValue->GetType(types_);
+    auto scope = symbols_->PeekScope();
+    while (scope && !scope->method) { scope = scope->parent; }
+    auto returnType = scope ? scope->method->returnType : types_->GetVoid();
+    if (!type->CanWidenTo(returnType)) {
+      return Error("cannot return a value of type %s from a function of type %s", type->ToString().c_str(),
+        returnType->ToString().c_str());
+    }
+  }
   auto stmts = Make<Stmts>();
   UnwindStack(symbols_->PeekScope(), stmts);
   stmts->Append(Make<ReturnStatement>(Resolve(stmt->GetExpr())));

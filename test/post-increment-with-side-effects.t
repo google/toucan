@@ -1,14 +1,18 @@
 include "include/test.t"
 
-class Foo {
-  Foo() {}
-  self() : ^Foo { count += 1; return this; }
+class Bar {
   var a : int;
+}
+
+class Foo {
+  Foo() { bar = new Bar; }
+  GetBar() : ^Bar { count += 1; return bar; }
+  var bar : *Bar;
   var count : int;
 }
 
 var foo = new Foo();
-foo.self().a++;
+foo.GetBar().a++;
 
-Test.Expect(foo.a == 1);
+Test.Expect(foo.bar.a == 1);
 Test.Expect(foo.count == 1);
