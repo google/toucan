@@ -646,13 +646,6 @@ Result CodeGenSPIRV::Visit(Initializer* node) {
   for (auto arg : args) {
     resultArgs.push_back(GenerateSPIRV(arg));
   }
-  if (node->GetType()->IsVector()) {
-    auto     vectorType = static_cast<VectorType*>(node->GetType());
-    uint32_t zero = GetZeroConstant(vectorType->GetComponentType());
-    for (int i = args.size(); i < vectorType->GetLength(); ++i) {
-      resultArgs.push_back(zero);
-    }
-  }
   return AppendCode(spv::Op::OpCompositeConstruct, resultType, {resultArgs});
 }
 

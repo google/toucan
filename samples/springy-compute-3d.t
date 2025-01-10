@@ -113,9 +113,9 @@ class UpdateBodyVerts : ComputeBase {
     var i = cb.globalInvocationId.x;
     var p = bodies[i].position;
     var bv = bindings.Get().bodyVerts.Map();
-    bv[i*3]   = p + Vector( 0.1,  0.0);
-    bv[i*3+1] = p + Vector(-0.1,  0.0);
-    bv[i*3+2] = p + Vector( 0.0, -0.2);
+    bv[i*3]   = p + Utils.makeVector( 0.1,  0.0, 0.0, Vector(0.0));
+    bv[i*3+1] = p + Utils.makeVector(-0.1,  0.0, 0.0, Vector(0.0));
+    bv[i*3+2] = p + Utils.makeVector( 0.0, -0.2, 0.0, Vector(0.0));
   }
 }
 

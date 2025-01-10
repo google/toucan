@@ -9,6 +9,7 @@ test/array-class.t
 test/array-constant.t
 test/array-float.t
 test/array-float4.t
+test/array-initialization.t
 test/array-length-dynamic.t
 test/array-length-static.t
 test/array-new.t

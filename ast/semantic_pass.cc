@@ -136,6 +136,16 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
     for (int i = 0; i < length; ++i) {
       exprs.push_back(args[0]->GetExpr());
     }
+  } else if (type->IsArray() && args.size() == 1) {
+    unsigned int length = static_cast<ArrayType*>(type)->GetNumElements();
+    for (int i = 0; i < length; ++i) {
+      exprs.push_back(args[0]->GetExpr());
+    }
+  } else if (type->IsMatrix() && args.size() == 1) {
+    unsigned int length = static_cast<MatrixType*>(type)->GetNumColumns();
+    for (int i = 0; i < length; ++i) {
+      exprs.push_back(args[0]->GetExpr());
+    }
   } else {
     for (auto arg : args) {
       exprs.push_back(arg->GetExpr());
@@ -145,7 +155,10 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
   return Make<Initializer>(node->GetType(), exprList);
 }
 
-Stmt* SemanticPass::Initialize(Expr* dest, Type* type, Expr* initExpr) {
+Stmt* SemanticPass::Initialize(Expr* dest, Expr* initExpr) {
+  auto type = dest->GetType(types_);
+  assert(type->IsRawPtr());
+  type = static_cast<RawPtrType*>(type)->GetBaseType();
   if (initExpr) {
     Type* initExprType = initExpr->GetType(types_);
     if (!initExprType->CanWidenTo(type)) {
@@ -158,7 +171,8 @@ Stmt* SemanticPass::Initialize(Expr* dest, Type* type, Expr* initExpr) {
   } else if (type->IsClass()) {
     return InitializeClass(dest, static_cast<ClassType*>(type));
   } else if (type->IsArray()) {
-    return Make<Stmts>();
+    auto arrayType = static_cast<ArrayType*>(type);
+    return InitializeArray(MakeIndexable(dest), arrayType->GetElementType(), Make<IntConstant>(arrayType->GetNumElements(), 32), Make<ExprList>());
   } else {
     return Make<ZeroInitStmt>(dest);
   }
@@ -169,8 +183,34 @@ Stmts* SemanticPass::InitializeClass(Expr* dest, ClassType* classType) {
   if (classType->GetParent()) { stmts->Append(InitializeClass(dest, classType->GetParent())); }
   for (const auto& field : classType->GetFields()) {
     Expr* fieldExpr = Make<FieldAccess>(dest, field.get());
-    stmts->Append(Initialize(fieldExpr, field->type, Resolve(field->defaultValue)));
+    stmts->Append(Initialize(fieldExpr, Resolve(field->defaultValue)));
   }
+  return stmts;
+}
+
+Stmts* SemanticPass::InitializeArray(Expr* dest, Type* elementType, Expr* length, ExprList* exprList) {
+  auto stmts = Make<Stmts>();
+  auto indexVar = std::make_shared<Var>("", types_->GetInt());
+  stmts->AppendVar(indexVar);
+  auto index = Make<VarExpr>(indexVar.get());
+  auto lhs = Make<ArrayAccess>(dest, Make<LoadExpr>(index));
+  auto initStmt = Make<StoreStmt>(index, Make<IntConstant>(0, 32));
+  auto cond = Make<BinOpNode>(BinOpNode::Op::LT, Make<LoadExpr>(index), length);
+  auto indexPlusOne = Make<BinOpNode>(BinOpNode::Op::ADD, Make<LoadExpr>(index), MakeConstantOne(types_->GetInt()));
+  auto loopStmt = Make<StoreStmt>(index, indexPlusOne);
+  Stmt* body;
+  int numArgs = exprList->Get().size();
+  if (numArgs == 0) {
+    body = Initialize(lhs);
+  } else if (numArgs == 1) {
+    body = Make<StoreStmt>(lhs, exprList->Get()[0]);
+  } else {
+    Type* type = types_->GetArrayType(elementType, numArgs, MemoryLayout::Default);
+    auto value = Make<Initializer>(type, exprList);
+    auto rhs = Make<LoadExpr>(Make<ArrayAccess>(MakeIndexable(value), Make<LoadExpr>(index)));
+    body = Make<StoreStmt>(lhs, rhs);
+  }
+  stmts->Append(Make<ForStatement>(initStmt, cond, loopStmt, body));
   return stmts;
 }
 
@@ -199,7 +239,7 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
   }
   Var*  var = symbols_->DefineVar(id, type);
   Expr* varExpr = Make<VarExpr>(var);
-  return Initialize(varExpr, type, initExpr);
+  return Initialize(varExpr, initExpr);
 }
 
 Result SemanticPass::ResolveMethodCall(Expr*       expr,
@@ -337,21 +377,31 @@ Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
       return nullptr;
     }
     Type* elementType;
+    int length;
     if (dstType->IsVector()) {
-      elementType = static_cast<VectorType*>(dstType)->GetComponentType();
+      auto vectorType = static_cast<VectorType*>(dstType);
+      elementType = vectorType->GetComponentType();
+      length = vectorType->GetLength();
     } else if (dstType->IsArray()) {
-      elementType = static_cast<ArrayType*>(dstType)->GetElementType();
+      auto arrayType = static_cast<ArrayType*>(dstType);
+      elementType = arrayType->GetElementType();
+      length = arrayType->GetNumElements();
     } else if (dstType->IsMatrix()) {
-      elementType = static_cast<MatrixType*>(dstType)->GetColumnType();
+      auto matrixType = static_cast<MatrixType*>(dstType);
+      elementType = matrixType->GetColumnType();
+      length = matrixType->GetNumColumns();
     } else {
       assert(!"unexpected type in arglist");
     }
-    for (auto arg : argList->GetArgs()) {
-      Expr* argExpr = arg->GetExpr();
-      if (argExpr->IsUnresolvedListExpr()) {
-        argExpr = ResolveListExpr(static_cast<UnresolvedListExpr*>(argExpr), elementType);
+    if (argList->GetArgs().size() == 1) {
+      Expr* arg = Widen(argList->GetArgs()[0]->GetExpr(), elementType);
+      for (int i = 0; i < length; ++i) {
+        exprs.push_back(arg);
       }
-      exprs.push_back(argExpr);
+    } else {
+      for (auto arg : argList->GetArgs()) {
+        exprs.push_back(Widen(arg->GetExpr(), elementType));
+      }
     }
   }
   auto exprList = Make<ExprList>(std::move(exprs));
@@ -649,8 +699,22 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
       return result;
     }
   }
-  if (length) { type = types_->GetArrayType(type, 0, MemoryLayout::Default); }
-  Stmt* stmt = Initialize(allocation, type);
+  if (unqualifiedType->IsUnsizedArray()) {
+    return Error("cannot allocate unsized array");
+  }
+  Stmt* stmt;
+  if (length) {
+    if (arglist->IsNamed()) {
+      return Error("array initializer list must not be named");
+    }
+    auto exprList = Make<ExprList>();
+    for (int i = 0; i < arglist->GetArgs().size(); ++i) {
+      exprList->Append(arglist->GetArgs()[i]->GetExpr());
+    }
+    stmt = InitializeArray(allocation, type, length, exprList);
+  } else {
+    stmt = Initialize(allocation);
+  }
   return Make<RawToSmartPtr>(Make<ExprWithStmt>(allocation, stmt));
 }
 
