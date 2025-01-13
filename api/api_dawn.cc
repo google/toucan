@@ -589,6 +589,7 @@ struct PipelineLayout {
 };
 
 static void ExtractPipelineLayout(ClassType* classType, Device* device, PipelineLayout* out) {
+  out->depthStencilTarget.format = wgpu::TextureFormat::Undefined;
   if (classType->GetParent()) { ExtractPipelineLayout(classType->GetParent(), device, out); }
   for (const auto& field : classType->GetFields()) {
     Type* type = field->type;
@@ -726,7 +727,7 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   vertexState.buffers = pipelineLayout.vertexBufferLayouts.data();
   wgpu::RenderPipelineDescriptor rpDesc;
   wgpu::DepthStencilState        depthStencilState;
-  if (depthStencil->ptr) {
+  if (pipelineLayout.depthStencilTarget.format != wgpu::TextureFormat::Undefined) {
     depthStencilState.format = pipelineLayout.depthStencilTarget.format;
     depthStencilState.depthWriteEnabled = true;
     depthStencilState.depthCompare = wgpu::CompareFunction::Less;
@@ -748,7 +749,9 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   if (primitiveTopology == LineStrip || primitiveTopology == TriangleStrip) {
     rpDesc.primitive.stripIndexFormat = pipelineLayout.indexFormat;
   }
-  if (depthStencil->ptr) { rpDesc.depthStencil = &depthStencilState; }
+  if (pipelineLayout.depthStencilTarget.format != wgpu::TextureFormat::Undefined) {
+    rpDesc.depthStencil = &depthStencilState;
+  }
   return new RenderPipeline(device->device.CreateRenderPipeline(&rpDesc));
 }
 
@@ -1284,12 +1287,12 @@ float Math_rand() { return (float)(rand() % 100) / 100.0f; }
 
 void Math_Destroy(Math* This) {}
 
-void System_Print(Object* buffer) {
-  fwrite(buffer->ptr, 1, buffer->controlBlock->arrayLength, stdout);
+void System_Print(Array* buffer) {
+  fwrite(buffer->ptr, 1, buffer->length, stdout);
 }
 
-void System_PrintLine(Object* buffer) {
-  fwrite(buffer->ptr, 1, buffer->controlBlock->arrayLength, stdout);
+void System_PrintLine(Array* buffer) {
+  fwrite(buffer->ptr, 1, buffer->length, stdout);
   fwrite("\n", 1, 1, stdout);
 }
 

@@ -48,7 +48,7 @@ class Pipeline {
     var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
     var bindings : *BindGroup<Bindings>;
 };
-var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, {}, TriangleList);
 var tex = new sampleable Texture1D<RGBA8unorm>(device, 2);
 var buffer = new writeonly Buffer<[]ubyte<4>>(device, 2);
 var data = buffer.Map();

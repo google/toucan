@@ -227,8 +227,8 @@ var computeBindGroup = new BindGroup<ComputeBindings>(device, {
   springStorage = new storage Buffer<[]Spring>(device, springs)
 });
 
-var bodyPipeline = new RenderPipeline<DrawPipeline>(device, null, TriangleList);
-var springPipeline = new RenderPipeline<DrawPipeline>(device, null, LineList);
+var bodyPipeline = new RenderPipeline<DrawPipeline>(device, {}, TriangleList);
+var springPipeline = new RenderPipeline<DrawPipeline>(device, {}, LineList);
 var computeForces = new ComputePipeline<ComputeForces>(device);
 var applyForces = new ComputePipeline<ApplyForces>(device);
 var updateBodyVerts = new ComputePipeline<UpdateBodyVerts>(device);

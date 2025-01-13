@@ -22,7 +22,7 @@ class Pipeline {
 var uniformBuffer = new uniform Buffer<Uniforms>(device);
 var bg = new BindGroup<Bindings>(device, { uniformBuffer });
 var stagingBuffer = new writeonly Buffer<Uniforms>(device);
-var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, {}, TriangleList);
 for (var i = 0; i < 1000; ++i) {
   while (System.HasPendingEvents()) {
     System.GetNextEvent();

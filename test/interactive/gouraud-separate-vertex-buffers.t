@@ -26,7 +26,7 @@ class Pipeline {
   var color : *vertex Buffer<[]float<3>>;
 }
 
-var pipeline = new RenderPipeline<Pipeline>(device, null, TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, {}, TriangleList);
 var encoder = new CommandEncoder(device);
 var p : Pipeline;
 p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);

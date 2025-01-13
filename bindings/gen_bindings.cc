@@ -253,6 +253,8 @@ void PrintNativeType(FILE* file, Type* type) {
     if (baseType->IsClass()) {
       PrintNativeType(file, baseType);
       fprintf(file, "*");
+    } else if (baseType->IsUnsizedArray()) {
+      fprintf(file, "Array*");
     } else {
       fprintf(file, "void*");
     }
