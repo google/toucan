@@ -31,7 +31,7 @@ HeapAllocation::HeapAllocation(Type* type, Expr* length) : type_(type), length_(
 
 Type* HeapAllocation::GetType(TypeTable* types) {
   Type* type = type_;
-  if (length_ != nullptr && !(type_->IsClass() && static_cast<ClassType*>(type_)->HasUnsizedArray())) {
+  if (length_ != nullptr && !type_->IsUnsizedClass()) {
     type = types->GetArrayType(type_, 0, MemoryLayout::Default);
   }
   return types->GetRawPtrType(type);

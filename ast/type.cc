@@ -455,7 +455,7 @@ Field* ClassType::FindField(std::string name) const {
 }
 
 int ClassType::GetSizeInBytes() const {
-  assert(!HasUnsizedArray());
+  assert(!IsUnsizedClass());
   return GetSizeInBytes(0);
 }
 
@@ -506,7 +506,7 @@ bool ClassType::IsNative() const {
   return native_;
 }
 
-bool ClassType::HasUnsizedArray() const {
+bool ClassType::IsUnsizedClass() const {
   if (fields_.size() == 0) { return false; }
   return (fields_.back()->type->IsUnsizedArray());
 }

@@ -42,6 +42,7 @@ class Type {
   virtual bool  IsArray() const { return false; }
   virtual bool  IsQualified() const { return false; }
   virtual bool  IsUnsizedArray() const { return false; }
+  virtual bool  IsUnsizedClass() const { return false; }
   virtual bool  IsVector() const { return false; }
   virtual bool  IsByte() const { return false; }
   virtual bool  IsUByte() const { return false; }
@@ -421,7 +422,7 @@ class ClassType : public Type {
   bool                IsPOD() const override;
   bool                CanWidenTo(Type* type) const override;
   bool                CanInitFrom(const ListType* type) const override;
-  bool                HasUnsizedArray() const;
+  bool                IsUnsizedClass() const override;
   void                SetParent(ClassType* parent);
   void                SetScope(Scope* scope) { scope_ = scope; }
   Scope*              GetScope() const { return scope_; }

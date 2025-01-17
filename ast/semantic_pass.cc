@@ -48,9 +48,10 @@ Result SemanticPass::Visit(ArrayAccess* node) {
   Expr* index = Resolve(node->GetIndex());
   if (!index) return nullptr;
 
-  expr = MakeIndexable(expr);
-  if (!expr) {
-    return Error("expression is not of indexable type");
+  if (auto indexableExpr = MakeIndexable(expr)) {
+    expr = indexableExpr;
+  } else {
+    Error("expression is not of indexable type");
   }
 
   return Make<ArrayAccess>(expr, index);
@@ -668,7 +669,7 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
   auto      allocation = Make<HeapAllocation>(type, length);
   if (unqualifiedType->IsClass()) {
     auto* classType = static_cast<ClassType*>(unqualifiedType);
-    if (classType->HasUnsizedArray()) {
+    if (classType->IsUnsizedClass()) {
       if (!length) { return Error("class with unsized array must be allocated with size"); }
     }
     if (!classType->IsFullySpecified()) {
@@ -703,7 +704,7 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
     return Error("cannot allocate unsized array");
   }
   Stmt* stmt;
-  if (length) {
+  if (length && !type->IsUnsizedClass()) {
     if (arglist->IsNamed()) {
       return Error("array initializer list must not be named");
     }

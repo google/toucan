@@ -118,7 +118,7 @@ llvm::Type* CodeGenLLVM::ConvertType(Type* type) {
   } else if (type->IsRawPtr()) {
     Type* baseType = static_cast<RawPtrType*>(type)->GetBaseType();
     baseType = baseType->GetUnqualifiedType();
-    if (baseType->IsUnsizedArray()) {
+    if (baseType->IsUnsizedArray() || baseType->IsUnsizedClass()) {
       std::vector<llvm::Type*> types;
       baseType = baseType->GetUnqualifiedType();
       types.push_back(llvm::PointerType::get(ConvertType(baseType), 0));
@@ -324,6 +324,10 @@ void CodeGenLLVM::UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type) {
     llvm::Value*    typedFunc =
         builder_->CreateBitCast(func, llvm::PointerType::get(function->getFunctionType(), 0));
     llvm::Value* arg = builder_->CreateExtractValue(ptr, {0});
+    if (classType->IsUnsizedClass()) {
+      auto length = builder_->CreateLoad(intType_, GetArrayLengthAddress(controlBlock));
+      arg = CreatePointer(arg, length);
+    }
     isNativeClass = classType->IsNative();
     builder_->CreateCall(function->getFunctionType(), typedFunc, {arg});
   }
@@ -1155,8 +1159,9 @@ Result CodeGenLLVM::Visit(SmartToRawPtr* node) {
   auto type = node->GetExpr()->GetType(types_);
   AppendTemporary(expr, type);
   auto value = builder_->CreateExtractValue(expr, {0});
-  assert(type->IsPtr());
-  if (static_cast<PtrType*>(type)->GetBaseType()->IsUnsizedArray()) {
+  assert(type->IsStrongPtr() || type->IsWeakPtr());
+  type = static_cast<PtrType*>(type)->GetBaseType();
+  if (type->IsUnsizedArray() || type->IsUnsizedClass()) {
     auto controlBlock = builder_->CreateExtractValue(expr, {1});
     auto length = GetArrayLengthAddress(controlBlock);
     length = builder_->CreateLoad(intType_, length);
@@ -1171,7 +1176,7 @@ Result CodeGenLLVM::Visit(RawToSmartPtr* node) {
   assert(type->IsRawPtr());
   type = static_cast<RawPtrType*>(type)->GetBaseType();
   auto controlBlock = CreateControlBlock(type);
-  if (type->IsUnsizedArray()) {
+  if (type->IsUnsizedArray() || type->IsUnsizedClass()) {
     auto length = builder_->CreateExtractValue(expr, {1});
     expr = builder_->CreateExtractValue(expr, {0});
     builder_->CreateStore(length, GetArrayLengthAddress(controlBlock));
@@ -1188,15 +1193,22 @@ Result CodeGenLLVM::Visit(ToRawArray* node) {
 Result CodeGenLLVM::Visit(FieldAccess* node) {
   llvm::Value* expr = GenerateLLVM(node->GetExpr());
   Type*        type = node->GetExpr()->GetType(types_);
+  llvm::Value* length = nullptr;
   if (type->IsRawPtr()) {
     type = static_cast<RawPtrType*>(type)->GetBaseType();
+    if (type->IsUnsizedClass()) {
+      length = builder_->CreateExtractValue(expr, {1});
+      expr = builder_->CreateExtractValue(expr, {0});
+    }
   } else {
     llvm::AllocaInst* allocaInst = builder_->CreateAlloca(ConvertType(type));
     builder_->CreateStore(expr, allocaInst);
     expr = allocaInst;
   }
   Field* field = node->GetField();
-  return builder_->CreateGEP(ConvertType(type), expr, {Int(0), Int(field->paddedIndex)});
+  auto result = builder_->CreateGEP(ConvertType(type), expr, {Int(0), Int(field->paddedIndex)});
+  if (field->type->IsUnsizedArray()) { result = CreatePointer(result, length); }
+  return result;
 }
 
 Result CodeGenLLVM::Visit(Initializer* node) {
