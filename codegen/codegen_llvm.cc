@@ -178,17 +178,7 @@ llvm::Type* CodeGenLLVM::ConvertArrayElementType(ArrayType* arrayType) {
 }
 
 llvm::Type* CodeGenLLVM::ConvertTypeToNative(Type* type) {
-  if (type->IsPtr()) {
-    Type* baseType = static_cast<PtrType*>(type)->GetBaseType()->GetUnqualifiedType();
-    if (baseType->IsClass() && static_cast<ClassType*>(baseType)->IsNative()) {
-      // All pointers to native classes become ptr-to-base (obj pointer)
-      return llvm::PointerType::get(ConvertType(baseType), 0);
-    } else {
-      // Pointers to anything else passed as Array* or Object*.
-      return voidPtrType_;
-    }
-  } else if (type->IsVector()) {
-    // All vectors must be passed as void*.
+  if (type->IsPtr() || type->IsVector()) {
     return voidPtrType_;
   }
   return ConvertType(type);
@@ -570,26 +560,13 @@ llvm::Value* CodeGenLLVM::GenerateLLVM(Expr* expr) {
 }
 
 llvm::Value* CodeGenLLVM::ConvertToNative(Type* type, llvm::Value* value) {
-  if (type->IsRawPtr() && static_cast<RawPtrType*>(type)->GetBaseType()->IsUnsizedArray()) {
-    // Allocate a stack var for Array, then pass a pointer to that (Array*).
-    llvm::Value* alloc = builder_->CreateAlloca(ConvertType(type), 0, "Array");
-    builder_->CreateStore(value, alloc);
-    value = alloc;
-  } else if (type->IsStrongPtr() || type->IsWeakPtr()) {
-    Type* baseType = static_cast<PtrType*>(type)->GetBaseType();
-    baseType = baseType->GetUnqualifiedType();
-    if (baseType && baseType->IsClass() && static_cast<ClassType*>(baseType)->IsNative()) {
-      value = builder_->CreateExtractValue(value, {0});
-    } else {
-      // Allocate a stack var for Object, then pass a pointer to that (Object*).
-      llvm::Value* alloc = builder_->CreateAlloca(ConvertType(type), 0, "Object");
-      builder_->CreateStore(value, alloc);
-      value = alloc;
-    }
-  } else if (type->IsVector()) {
+  if (type->IsStrongPtr() || type->IsWeakPtr() || type->IsVector() ||
+      (type->IsRawPtr() && static_cast<RawPtrType*>(type)->GetBaseType()->IsUnsizedArray())) {
+    // All types that can't be passed through native function calls are spilled to the stack.
+    // Arrays are passed as Array*, Smart ptrs are passed as Object*, and vectors as component*.
     llvm::Value* alloc = builder_->CreateAlloca(ConvertType(type));
     builder_->CreateStore(value, alloc);
-    value = builder_->CreateBitCast(alloc, voidPtrType_);
+    value = alloc;
   }
   return value;
 }
