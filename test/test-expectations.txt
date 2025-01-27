@@ -1,6 +1,4 @@
 test/aggregate-return.t
-test/allocate-unsized-array.t
-allocate-unsized-array.t:1:  cannot allocate unsized array
 test/allocate-unsized-class.t
 test/array-assign.t
 test/array-class.t
@@ -10,24 +8,12 @@ test/array-float4.t
 test/array-initialization.t
 test/array-length-dynamic.t
 test/array-length-static.t
-test/array-new.t
-array-new.t:3: array size is not an integer constant
-array-new.t:4: array size is not an integer constant
-array-new.t:5: array size is not an integer constant
 test/arrays.t
-test/assign-padded-array.t
-assign-padded-array.t:20:  expression is not of indexable type
-assign-padded-array.t:21:  expression is not of indexable type
-assign-padded-array.t:22:  expression is not of indexable type
 test/binop-widen.t
 test/bitwise.t
 test/bool-constants.t
 test/byte-vector.t
 test/byte.t
-test/cast-classes.t
-cast-classes.t:14:  cannot store a value of type "null" to a location of type "int"
-cast-classes.t:17:  cannot store a value of type "*Base2" to a location of type "*Base"
-cast-classes.t:19:  cannot store a value of type "*Derived" to a location of type "*Derived2"
 test/cast-int-to-float.t
 test/cast-int-vector-to-float-vector.t
 test/cast-static-array-to-dynamic.t
@@ -59,20 +45,60 @@ test/early-return-bool.t
 test/early-return-int.t
 test/empty.t
 test/enum.t
+test/error-allocate-class-with-unsized-array-without-length.t
+error-allocate-class-with-unsized-array-without-length.t:5:  class with unsized array must be allocated with size
+test/error-allocate-unsized-array.t
+error-allocate-unsized-array.t:1:  cannot allocate unsized array
+test/error-array-size-non-integer.t
+error-array-size-non-integer.t:3: array size is not an integer constant
+error-array-size-non-integer.t:4: array size is not an integer constant
+error-array-size-non-integer.t:5: array size is not an integer constant
+test/error-assign-padded-array.t
+error-assign-padded-array.t:20:  expression is not of indexable type
+error-assign-padded-array.t:21:  expression is not of indexable type
+error-assign-padded-array.t:22:  expression is not of indexable type
+test/error-assign-to-method.t
+error-assign-to-method.t:8:  expression is not an assignable value
 test/error-cast-weak-ptr-to-strong.t
 error-cast-weak-ptr-to-strong.t:3:  cannot cast value of type ^int to *int
 test/error-constructor-not-found.t
 error-constructor-not-found.t:1:  matching constructor not found
 test/error-dereference.t
 error-dereference.t:2:  attempt to dereference a non-pointer
+test/error-expectation-failed.t
+test/error-expectation-failed.t:4: expectation failed
+test/error-field-access-from-static-method.t
+error-field-access-from-static-method.t:3:  attempt to access non-static field in static method
+error-field-access-from-static-method.t:3:  attempt to access non-static field in static method
+test/error-forward-var.t
+error-forward-var.t:1:  unknown symbol "a"
 test/error-hex-literal-too-large.t
+test/error-implicit-void-return.t
+error-implicit-void-return.t:4:  implicit void return, in method returning non-void.
+test/error-include-not-found.t
+error-include-not-found.t:1: file "include/bogus.t" not found
 test/error-index-buffer-get.t
 error-index-buffer-get.t:4:  class Buffer<[]uint> has no method Get()
 error-index-buffer-get.t:4:  Buffer<[]uint>.Get() vertex : uint
 test/error-int-literal-too-large.t
+test/error-invalid-class-casts.t
+error-invalid-class-casts.t:14:  cannot store a value of type "null" to a location of type "int"
+error-invalid-class-casts.t:17:  cannot store a value of type "*Base2" to a location of type "*Base"
+error-invalid-class-casts.t:19:  cannot store a value of type "*Derived" to a location of type "*Derived2"
+test/error-invalid-forward-decl.t
+error-invalid-forward-decl.t:5: type is already declared as non-class
+error-invalid-forward-decl.t:8: syntax error
 test/error-invalid-return-value.t
 error-invalid-return-value.t:4:  cannot return a value of type &int from a function of type ^int
 error-invalid-return-value.t:14:  implicit void return, in method returning non-void.
+test/error-missing-class.t
+error-missing-class.t:3: syntax error
+test/error-missing-field.t
+error-missing-field.t:5:  field "zzz" not found on class "Foo"
+test/error-missing-method.t
+error-missing-method.t:5:  class Foo has no method zzz()
+test/error-missing-parent-class.t
+error-missing-parent-class.t:1: syntax error
 test/error-missing-sampleable-qualifier.t
 error-missing-sampleable-qualifier.t:3:  class Texture2D<RGBA8unorm> has no method CreateSampleableView()
 error-missing-sampleable-qualifier.t:3:  Texture2D<RGBA8unorm>.CreateSampleableView() sampleable : *SampleableTexture2D<float>
@@ -96,31 +122,38 @@ test/error-raw-ptr-must-be-initialized.t
 error-raw-ptr-must-be-initialized.t:1:  reference must be initialized
 test/error-return-int-from-main.t
 error-return-int-from-main.t:1:  cannot return a value of type int from a function of type void
+test/error-stack-allocate-unsized-array.t
+error-stack-allocate-unsized-array.t:1:  cannot create storage of type []int
+test/error-store-to-length.t
+error-store-to-length.t:2:  expression is not an assignable value
+test/error-syntax-error-in-included-file.t
+syntax-error.t:2: syntax error
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
 error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(*CommandEncoder, *writeonly Buffer<[]float<4>>, int)
 error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromBuffer(&CommandEncoder, &Buffer<[]ubyte<4>>, uint, uint) 
 test/error-uint-literal-too-large.t
+test/error-unknown-param-type.t
+error-unknown-param-type.t:2: syntax error
+test/error-unknown-return-type.t
+error-unknown-return-type.t:2: syntax error
+test/error-unsized-array-not-last-in-class.t
+error-unsized-array-not-last-in-class.t:4:  Unsized arrays are only allwed as the last field of a class
 test/error-widen-null-to-raw-ptr.t
 error-widen-null-to-raw-ptr.t:1:  cannot store a value of type "null" to a location of type "&int"
 test/error-widen-weak-ptr-short-to-weak-ptr-int.t
 error-widen-weak-ptr-short-to-weak-ptr-int.t:7:  cannot cast value of type ^short to ^int
 error-widen-weak-ptr-short-to-weak-ptr-int.t:9:  unknown symbol "wpi"
+test/error-workgroup-size.t
+error-workgroup-size.t:5: workgroup size must have 1, 2, or 3 dimensions
+error-workgroup-size.t:6: workgroup size must have 1, 2, or 3 dimensions
+error-workgroup-size.t:7: workgroup size is not an integer constant
+error-workgroup-size.t:8: non-compute shaders do not require a workgroup size
+error-workgroup-size.t:9: non-compute shaders do not require a workgroup size
 test/error-wrong-named-param.t
 error-wrong-named-param.t:7:  class Bar has no method Foo(b = float, a = int)
 error-wrong-named-param.t:7:  Bar.Foo(int, float) : float
-test/expectation-failed.t
-test/expectation-failed.t:4: expectation failed
 test/fabs.t
-test/fail-allocate-class-with-unsized-array.t
-fail-allocate-class-with-unsized-array.t:5:  class with unsized array must be allocated with size
-test/fail-invalid-storage-types.t
-fail-invalid-storage-types.t:1:  cannot create storage of type []int
-test/fail-unsized-array-not-last-in-class.t
-fail-unsized-array-not-last-in-class.t:4:  Unsized arrays are only allwed as the last field of a class
-test/field-access-from-static-method-error.t
-field-access-from-static-method-error.t:3:  attempt to access non-static field in static method
-field-access-from-static-method-error.t:3:  attempt to access non-static field in static method
 test/field-access.t
 test/field-default-value.t
 test/field-store.t
@@ -132,8 +165,6 @@ test/file-location.t
 test/file-location.t:4
 test/for-stmt.t
 test/forward-field.t
-test/forward-var-error.t
-forward-var-error.t:1:  unknown symbol "a"
 test/hello-split.t
 Hello, world.
 test/hello.t
@@ -143,12 +174,8 @@ test/implicit-return.t
 test/inc-dec-byte.t
 test/inc-dec-float.t
 test/inc-dec-short.t
-test/include-not-found.t
-include-not-found.t:1: file "include/bogus.t" not found
 test/include-syntax-error-after-included-file.t
 include-syntax-error-after-included-file.t:3: syntax error
-test/include-syntax-error-in-included-file.t
-syntax-error.t:2: syntax error
 test/include-twice-by-different-paths.t
 test/include-twice.t
 test/include.t
@@ -157,14 +184,7 @@ test/indexed-bracketed-expr.t
 test/indexed-method-return.t
 test/inherited-field.t
 test/inline-file.t
-test/invalid-assignment.t
-invalid-assignment.t:1: syntax error
-test/invalid-forward-decl.t
-invalid-forward-decl.t:5: type is already declared as non-class
-invalid-forward-decl.t:8: syntax error
 test/later-class-field.t
-test/length-store-error.t
-length-store-error.t:2:  expression is not an assignable value
 test/list-init-aggregated-class.t
 test/list-init-array-arg.t
 test/list-init-array.t
@@ -182,18 +202,8 @@ test/matrix-array-access.t
 test/matrix-constructor.t
 test/matrix-initializer.t
 test/matrix.t
-test/method-assignment-error.t
-method-assignment-error.t:8:  expression is not an assignable value
 test/method-chained.t
 test/method.t
-test/missing-class.t
-missing-class.t:3: syntax error
-test/missing-field.t
-missing-field.t:5:  field "zzz" not found on class "Foo"
-test/missing-method.t
-missing-method.t:5:  class Foo has no method zzz()
-test/missing-parent-class.t
-missing-parent-class.t:1: syntax error
 test/mutual-recursion.t
 test/named-param-default-value.t
 test/named-param.t
@@ -233,10 +243,6 @@ test/ubyte-vector.t
 test/ubyte.t
 test/uint.t
 test/unary-minus.t
-test/unknown-param-type.t
-unknown-param-type.t:2: syntax error
-test/unknown-return-type.t
-unknown-return-type.t:2: syntax error
 test/unspecified-template-destructor.t
 test/ushort-vector.t
 test/ushort.t
@@ -247,13 +253,5 @@ test/vector-constructors4.t
 test/vector-initializer.t
 test/vector-scalar-mul-div.t
 test/vector-store-by-index.t
-test/void-value-error.t
-void-value-error.t:4:  implicit void return, in method returning non-void.
 test/widen-weak-ptr-to-raw-ptr.t
-test/workgroup-size.t
-workgroup-size.t:5: workgroup size must have 1, 2, or 3 dimensions
-workgroup-size.t:6: workgroup size must have 1, 2, or 3 dimensions
-workgroup-size.t:7: workgroup size is not an integer constant
-workgroup-size.t:8: non-compute shaders do not require a workgroup size
-workgroup-size.t:9: non-compute shaders do not require a workgroup size
 test/worst-cast-ever.t
