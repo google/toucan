@@ -239,11 +239,7 @@ void PrintNativeType(FILE* file, Type* type) {
     fprintf(file, "double");
   } else if (type->IsClass()) {
     ClassType* c = static_cast<ClassType*>(type);
-    if (c->IsNative()) {
-      fprintf(file, "%s", c->GetName().c_str());
-    } else {
-      fprintf(file, "Object");
-    }
+    fprintf(file, "%s", c->GetName().c_str());
   } else if (type->IsEnum()) {
     EnumType* e = static_cast<EnumType*>(type);
     fprintf(file, "%s", e->GetName().c_str());
@@ -258,16 +254,13 @@ void PrintNativeType(FILE* file, Type* type) {
     } else {
       fprintf(file, "void*");
     }
-  } else if (type->IsPtr()) {
-    Type* baseType = static_cast<PtrType*>(type)->GetBaseType();
-    if (baseType->IsQualified()) {
-      baseType = static_cast<QualifiedType*>(baseType)->GetBaseType();
-    }
-    if (baseType->IsVoid() || baseType->IsFormalTemplateArg() || baseType->IsArray()) {
-      fprintf(file, "Object*");
-    } else {
+  } else if (type->IsStrongPtr() || type->IsWeakPtr()) {
+    Type* baseType = static_cast<PtrType*>(type)->GetBaseType()->GetUnqualifiedType();
+    if (baseType->IsClass() && static_cast<ClassType*>(baseType)->IsNative()) {
       PrintNativeType(file, baseType);
       fprintf(file, "*");
+    } else {
+      fprintf(file, "Object*");
     }
   } else if (type->IsArray()) {
     ArrayType* arrayType = static_cast<ArrayType*>(type);
