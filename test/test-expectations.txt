@@ -47,6 +47,13 @@ test/empty.t
 test/enum.t
 test/error-allocate-class-with-unsized-array-without-length.t
 error-allocate-class-with-unsized-array-without-length.t:5:  class with unsized array must be allocated with size
+test/error-allocate-raw-ptr.t
+error-allocate-raw-ptr.t:6:  cannot allocate a type containing raw pointer
+error-allocate-raw-ptr.t:7:  cannot allocate a type containing raw pointer
+error-allocate-raw-ptr.t:8:  cannot allocate a type containing raw pointer
+error-allocate-raw-ptr.t:9:  cannot allocate a type containing raw pointer
+error-allocate-raw-ptr.t:10:  cannot allocate a type containing raw pointer
+error-allocate-raw-ptr.t:11:  cannot allocate a type containing raw pointer
 test/error-allocate-unsized-array.t
 error-allocate-unsized-array.t:1:  cannot allocate unsized array
 test/error-array-size-non-integer.t
@@ -122,6 +129,21 @@ test/error-raw-ptr-must-be-initialized.t
 error-raw-ptr-must-be-initialized.t:1:  reference must be initialized
 test/error-return-int-from-main.t
 error-return-int-from-main.t:1:  cannot return a value of type int from a function of type void
+test/error-return-raw-ptr.t
+error-return-raw-ptr.t:6:  cannot return a raw pointer
+error-return-raw-ptr.t:10:  cannot return a raw pointer
+error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
+error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
+error-return-raw-ptr.t:14:  cannot return a raw pointer
+test/error-stack-allocate-raw-ptr-aggregate.t
+error-stack-allocate-raw-ptr-aggregate.t:11:  cannot allocate a type containing a raw pointer
+error-stack-allocate-raw-ptr-aggregate.t:12:  cannot allocate a type containing a raw pointer
+error-stack-allocate-raw-ptr-aggregate.t:13:  cannot allocate a type containing a raw pointer
+error-stack-allocate-raw-ptr-aggregate.t:14:  cannot allocate a type containing a raw pointer
+error-stack-allocate-raw-ptr-aggregate.t:15:  cannot allocate a type containing a raw pointer
+error-stack-allocate-raw-ptr-aggregate.t:16:  cannot allocate a type containing a raw pointer
+error-stack-allocate-raw-ptr-aggregate.t:17:  cannot allocate a type containing a raw pointer
+error-stack-allocate-raw-ptr-aggregate.t:18:  cannot allocate a type containing a raw pointer
 test/error-stack-allocate-unsized-array.t
 error-stack-allocate-unsized-array.t:1:  cannot create storage of type []int
 test/error-store-to-length.t

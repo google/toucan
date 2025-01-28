@@ -375,6 +375,16 @@ bool ClassType::NeedsDestruction() const {
   return false;
 }
 
+bool ClassType::ContainsRawPtr() const {
+  if (parent_ && parent_->ContainsRawPtr()) { return true; }
+  for (const auto& field : fields_) {
+    if (field->type->ContainsRawPtr()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool ClassType::IsFullySpecified() const {
   if (!template_) { return true; }
 

@@ -118,6 +118,7 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
   ArgList*           argList = Resolve(node->GetArgList());
   auto               args = argList->GetArgs();
   std::vector<Expr*> exprs;
+  if (type->ContainsRawPtr()) { return Error("cannot allocate a type containing a raw pointer"); }
   if (type->IsClass() && node->IsConstructor()) {
     ClassType*         classType = static_cast<ClassType*>(type);
     TypeList           types;
@@ -237,6 +238,9 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
   }
   if (type->IsRawPtr() && !initExpr) {
     return Error("reference must be initialized");
+  }
+  if (!type->IsRawPtr() && type->ContainsRawPtr()) {
+    return Error("cannot allocate a type containing a raw pointer");
   }
   Var*  var = symbols_->DefineVar(id, type);
   Expr* varExpr = Make<VarExpr>(var);
@@ -660,6 +664,7 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
   Type* type = node->GetType();
   if (!type) return nullptr;
   if (type->IsUnsizedArray()) { return Error("cannot allocate unsized array"); }
+  if (type->ContainsRawPtr()) { return Error("cannot allocate a type containing raw pointer"); }
 
   ArgList* arglist = Resolve(node->GetArgList());
   if (!arglist) return nullptr;
@@ -699,9 +704,6 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
       }
       return result;
     }
-  }
-  if (unqualifiedType->IsUnsizedArray()) {
-    return Error("cannot allocate unsized array");
   }
   Stmt* stmt;
   if (length && !type->IsUnsizedClass()) {
@@ -807,6 +809,9 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
           method->stmts->Append(Make<ReturnStatement>(nullptr));
         }
       }
+    }
+    if (method->returnType->ContainsRawPtr() && !method->IsConstructor()) {
+      return Error("cannot return a raw pointer");
     }
     for (int i = 0; i < method->defaultArgs.size(); ++i) {
       method->defaultArgs[i] = Resolve(method->defaultArgs[i]);

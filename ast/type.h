@@ -89,6 +89,7 @@ class Type {
   virtual bool        CanWidenTo(Type* type) const { return type == this; }
   virtual bool        CanNarrowTo(Type* type) const { return type == this; }
   virtual bool        CanInitFrom(const ListType* type) const { return false; }
+  virtual bool        ContainsRawPtr() const { return false; }
   enum Qualifier {
     Uniform = 0x0001,
     Storage = 0x0002,
@@ -253,6 +254,7 @@ class ArrayType : public Type {
   bool         CanWidenTo(Type* type) const override;
   bool         CanInitFrom(const ListType* type) const override;
   bool         NeedsDestruction() const override { return elementType_->NeedsDestruction(); }
+  bool         ContainsRawPtr() const override { return elementType_->ContainsRawPtr(); }
 
  private:
   Type*        elementType_;
@@ -274,6 +276,7 @@ class QualifiedType : public Type {
   int           GetSizeInBytes() const override { return baseType_->GetSizeInBytes(); }
   bool          NeedsDestruction() const override { return baseType_->NeedsDestruction(); }
   bool          CanWidenTo(Type* type) const override;
+  bool          ContainsRawPtr() const override { return baseType_->ContainsRawPtr(); }
 
  private:
   Type* baseType_;
@@ -446,6 +449,7 @@ class ClassType : public Type {
   int                         GetPadding() const { return padding_; }
   bool                        IsFullySpecified() const override;
   bool                        NeedsDestruction() const override;
+  bool                        ContainsRawPtr() const override;
 
  private:
   std::string          name_;
@@ -487,7 +491,7 @@ class PtrType : public Type {
   bool  IsPOD() const override { return false; }
   int   GetSizeInBytes() const override { return 2 * sizeof(void*); }
   bool  NeedsDestruction() const override { return true; }
-
+  bool  ContainsRawPtr() const override { return baseType_->ContainsRawPtr(); }
  private:
   Type* baseType_;
 };
@@ -517,6 +521,7 @@ class RawPtrType : public PtrType {
   bool        CanWidenTo(Type* type) const override;
   bool        CanInitFrom(const ListType* type) const override { return GetBaseType()->CanInitFrom(type); }
   int         GetSizeInBytes() const override { return sizeof(void*); }
+  bool        ContainsRawPtr() const override { return true; }
 };
 
 class NullType : public PtrType {
