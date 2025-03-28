@@ -18,6 +18,7 @@
 #include <sys/time.h>
 
 #include <cassert>
+#include <cstdio>
 #include <cstring>
 #include <memory>
 
@@ -129,14 +130,14 @@ Event* System_GetNextEvent() {
     case ButtonRelease:
       result->type = event.type == ButtonPress ? EventType::MouseDown : EventType::MouseUp;
       result->button = event.xbutton.button;
-      result->mousePos[0] = event.xbutton.x;
-      result->mousePos[1] = event.xbutton.y;
+      result->position[0] = event.xbutton.x;
+      result->position[1] = event.xbutton.y;
       result->modifiers = ToToucanEventModifiers(event.xbutton.state);
       break;
     case MotionNotify:
       result->type = EventType::MouseMove;
-      result->mousePos[0] = event.xmotion.x;
-      result->mousePos[1] = event.xmotion.y;
+      result->position[0] = event.xmotion.x;
+      result->position[1] = event.xmotion.y;
       result->modifiers = ToToucanEventModifiers(event.xmotion.state);
       break;
     case ConfigureNotify:

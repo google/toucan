@@ -28,8 +28,8 @@ static std::unordered_map<int, Window*> gWindows;
 
 void copyMouseEvent(emscripten::val event, Event* result) {
   result->button = event["button"].as<int>();
-  result->mousePos[0] = event["clientX"].as<int>();
-  result->mousePos[1] = event["clientY"].as<int>();
+  result->position[0] = event["clientX"].as<int>();
+  result->position[1] = event["clientY"].as<int>();
 }
 
 void copyTouches(emscripten::val touches, Event* result) {

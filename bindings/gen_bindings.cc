@@ -33,6 +33,50 @@ const char* MemoryLayoutToString(MemoryLayout layout) {
   }
 }
 
+std::string ConvertType(Type* type, const std::string& str) {
+  if (type->IsPtr()) {
+    return ConvertType(static_cast<PtrType*>(type)->GetBaseType(), "*" + str);
+  } else if (type->IsArray()) {
+    ArrayType* atype = static_cast<ArrayType*>(type);
+    return ConvertType(atype->GetElementType(), str + "[" + std::to_string(atype->GetNumElements()) + "]");
+  } else if (type->IsClass()) {
+    return static_cast<ClassType*>(type)->GetName() + " " + str;
+  } else if (type->IsByte()) {
+    return "int8_t " + str;
+  } else if (type->IsUByte()) {
+    return "uint8_t " + str;
+  } else if (type->IsShort()) {
+    return "int16_t " + str;
+  } else if (type->IsUShort()) {
+    return "uint16_t " + str;
+  } else if (type->IsInt()) {
+    return "int32_t " + str;
+  } else if (type->IsUInt()) {
+    return "uint32_t " + str;
+  } else if (type->IsEnum()) {
+    return "uint32_t " + str;
+  } else if (type->IsFloat()) {
+    return "float " + str;
+  } else if (type->IsDouble()) {
+    return "double " + str;
+  } else if (type->IsBool()) {
+    return "bool " + str;
+  } else if (type->IsVector()) {
+    VectorType* v = static_cast<VectorType*>(type);
+    return ConvertType(v->GetComponentType(), str + "[" + std::to_string(v->GetLength()) + "]");
+  } else if (type->IsMatrix()) {
+    MatrixType* m = static_cast<MatrixType*>(type);
+    return ConvertType(m->GetColumnType(), str + "[" + std::to_string(m->GetNumColumns()) + "]");
+  } else if (type->IsVoid()) {
+    return "void " + str;
+  } else if (type->IsQualified()) {
+    return ConvertType(static_cast<QualifiedType*>(type)->GetBaseType(), str);
+  } else {
+    assert(!"ConvertType:  unknown type");
+    return 0;
+  }
+}
+
 }  // namespace
 
 GenBindings::GenBindings(SymbolTable* symbols,
@@ -99,7 +143,22 @@ void GenBindings::GenType(Type* type) {
       fprintf(file_, "} )");
     } else {
       fprintf(file_, "  types->Make<ClassType>(\"%s\")", classType->GetName().c_str());
-      if (header_) { fprintf(header_, "struct %s;\n", classType->GetName().c_str()); }
+      if (header_) {
+        int pad = 0;
+        if (classType->GetFields().size() > 0) {
+          classType->ComputeFieldOffsets();
+          fprintf(header_, "struct %s {\n", classType->GetName().c_str());
+          for (const auto& field : classType->GetFields()) {
+            fprintf(header_, "  %s;\n", ConvertType(field->type, field->name).c_str());
+            if (field->padding > 0) {
+              fprintf(header_, "  uint8_t pad%d[%zu];\n", pad++, field->padding);
+            }
+          }
+          fprintf(header_, "};\n");
+        } else {
+          fprintf(header_, "struct %s;\n", classType->GetName().c_str());
+        }
+      }
     }
 #if 0
     if (nativeClasses && classType->IsNative()) {

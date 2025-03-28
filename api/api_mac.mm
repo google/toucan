@@ -211,8 +211,8 @@ Event* System_GetNextEvent() {
   [NSApp sendEvent:nsEvent];
   Event* event = new Event();
   int    height = [[nsEvent.window contentView] frame].size.height;
-  event->mousePos[0] = nsEvent.locationInWindow.x;
-  event->mousePos[1] = height - nsEvent.locationInWindow.y;
+  event->position[0] = nsEvent.locationInWindow.x;
+  event->position[1] = height - nsEvent.locationInWindow.y;
   event->modifiers = ToToucanEventModifiers(nsEvent.modifierFlags);
   event->button = 0;
   event->type = EventType::Unknown;

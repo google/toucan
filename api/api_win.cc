@@ -170,8 +170,8 @@ Event* System_GetNextEvent() {
   DispatchMessage(&msg);
 
   LONG rc = 0L;
-  event->mousePos[0] = LOWORD(msg.lParam);
-  event->mousePos[1] = HIWORD(msg.lParam);
+  event->position[0] = LOWORD(msg.lParam);
+  event->position[1] = HIWORD(msg.lParam);
   event->modifiers = ToToucanEventModifiers(msg.wParam);
   event->button = 0;
   switch (msg.message) {

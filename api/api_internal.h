@@ -40,16 +40,6 @@ struct SwapChain {
   void*               pool;
 };
 
-struct Event {
-  uint32_t type;
-  uint32_t pad;
-  int32_t  mousePos[2];
-  uint32_t button;
-  uint32_t modifiers;
-  int32_t  touches[10][2];
-  int32_t  numTouches;
-};
-
 wgpu::TextureFormat GetPreferredSwapChainFormat();
 wgpu::TextureFormat ToDawnTextureFormat(Type* type);
 wgpu::Device CreateDawnDevice(wgpu::BackendType type, wgpu::ErrorCallback callback);
