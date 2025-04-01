@@ -18,6 +18,7 @@ import argparse
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 
 argparser = argparse.ArgumentParser(description="Create an APK")
@@ -81,7 +82,8 @@ with open(manifest_file, "w") as f:
   f.write(manifest)
   f.close()
 
-subprocess.check_call([android_sdk_dir + '/build-tools/latest/aapt', 'package', '-f' , '-M', manifest_file, '-I', android_sdk_dir + '/platforms/android-26/android.jar', '-F', outfile, apk_dir])
-subprocess.check_call([android_sdk_dir + '/build-tools/34.0.0/apksigner', 'sign', '--ks', keystore, '--ks-pass', 'pass:toucan', outfile])
+subprocess.check_call([android_sdk_dir + '/build-tools/34.0.0/aapt', 'package', '-f' , '-M', manifest_file, '-I', android_sdk_dir + '/platforms/android-26/android.jar', '-F', outfile, apk_dir])
+ext = '.bat' if sys.platform == 'win32' else ''
+subprocess.check_call([android_sdk_dir + '/build-tools/34.0.0/apksigner' + ext, 'sign', '--ks', keystore, '--ks-pass', 'pass:toucan', outfile])
 shutil.rmtree(apk_dir)
 shutil.rmtree(manifest_dir)

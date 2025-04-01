@@ -28,13 +28,21 @@ import("llvm_libs.gni")
 
 llvm_lib_dirs = [ "../third_party/llvm/llvm/out/$debug_or_release/lib" ]
 if (is_win) {
-  dawn_needs_libs = []
+  dawn_needs_libs = [
+    "ws2_32.lib",
+    "ntdll.lib",
+  ]
 } else {
   dawn_needs_libs = [
     "curses",
     "z",
     "dl",
     "pthread",
+  ]
+}
+if (is_linux) {
+  dawn_needs_libs += [
+    "zstd",
   ]
 }
 
@@ -50,8 +58,6 @@ executable("tj") {
     libs += [
       "gdi32.lib",
       "user32.lib",
-      "ws2_32.lib",
-      "ntdll.lib",
     ]
   }
   if (is_linux) {
@@ -101,13 +107,6 @@ executable("tc") {
   libs = llvm_libs
   lib_dirs = llvm_lib_dirs
   libs += dawn_needs_libs
-  if (is_win) {
-    libs += [
-      "ws2_32.lib",
-      "ntdll.lib",
-    ]
-  }
-
   sources = [ "tc.cc", ]
   deps = [
     "//api:init_types",

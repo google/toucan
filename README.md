@@ -26,7 +26,7 @@ If you simply wish to try some live Toucan demos without building the toolchain,
 - A C++17 toolchain (clang, gcc, or MSVC)
 - GNU flex
 - GNU bison
-- node.js (for the WebAssembly build)
+- node.js and npm (for the WebAssembly build)
 
 Toucan uses the GN and ninja build systems from the Chromium project.
 These will be retrieved by the git-sync-deps script.
@@ -96,11 +96,24 @@ These will be retrieved by the git-sync-deps script.
 
 1. Run `tools/git-sync-deps` to update `third_party` dependencies
 
-2. Install the Android SDK, and ensure ANDROID_SDK_ROOT is set.
+2. Install [Java 17](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html) or later.
 
-3. Install the Android NDK (r26d is known to work), and sure ANDROID_NDK_ROOT is set.
+3. Install the [Android SDK command line tools](https://developer.android.com/studio/index.html#command-line-tools-only), and ensure `ANDROID_SDK_ROOT` is set.
 
-4. Build LLVM (Makefiles):
+4. Install all required Android SDK components:
+
+```
+$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --install 'platforms;android-26' 'ndk;26.3.11579264' 'build-tools;34.0.0' platform-tools
+```
+or on Windows:
+
+```
+%ANDROID_SDK_ROOT%\cmdline-tools\latest\bin\sdkmanager --install platforms;android-26 ndk;26.3.11579264 build-tools;34.0.0 platform-tools
+```
+
+5. Set `ANDROID_NDK_ROOT` to `$ANDROID_SDK_ROOT/ndk/26.3.11579264`.
+
+6. Build LLVM (Makefiles):
 ```
    pushd third_party/llvm/llvm
    mkdir -p out/Release
@@ -110,7 +123,7 @@ These will be retrieved by the git-sync-deps script.
    popd
 ```
 
-5. Build tc and native samples:
+7. Build tc and native samples:
 
 ```
    mkdir -p out/Release-android
@@ -145,12 +158,12 @@ popd
 3. Build WASM targets
 
 ```
-mkdir -p out/wasm
+mkdir -p out/Release-wasm
 echo 'is_debug=false\
 target_os="wasm"\
-target_cpu="wasm"' > out/wasm/args.gn
-gn gen out/wasm
-ninja -C out/wasm
+target_cpu="wasm"' > out/Release-wasm/args.gn
+gn gen out/Release-wasm
+ninja -C out/Release-wasm
 ```
 
 ## Running tj, the Toucan JIT:
@@ -171,7 +184,7 @@ e.g., `out/Release/springy`
 
 ## Running WebAssembly samples
 
-- `npx http-server out/wasm`
+- `npx http-server out/Release-wasm`
 - start Chrome with the runtime flag `--enable-features=WebAssemblyExperimentalJSPI`, or enable "Experimental WebAssembly JavaScript Promise Integration (JSPI)" in about:flags
 - open `http://localhost:8080`
 - open sample (e.g., springy.html)
@@ -179,15 +192,15 @@ e.g., `out/Release/springy`
 ## Installing and running Android samples
 
 ```
-adb install -r out/Release-android/$SAMPLE.apk
-adb shell am start -a android.intent.action.MAIN -n org.toucanlang.$SAMPLE/android.app.NativeActivity
+$ANDROID_SDK_ROOT/platform-tools/adb install -r out/Release-android/$SAMPLE.apk
+$ANDROID_SDK_ROOT/platform-tools/adb shell am start -a android.intent.action.MAIN -n org.toucanlang.$SAMPLE/android.app.NativeActivity
 ```
 
 e.g.,
 
 ```
-adb install -r out/Release-android/springy.apk
-adb shell am start -a android.intent.action.MAIN -n org.toucanlang.springy/android.app.NativeActivity
+$ANDROID_SDK_ROOT/platform-tools/adb install -r out/Release-android/springy.apk
+$ANDROID_SDK_ROOT/platform-tools/adb shell am start -a android.intent.action.MAIN -n org.toucanlang.springy/android.app.NativeActivity
 ```
 
 ## Testing instructions
