@@ -28,10 +28,10 @@ var objectData : ObjectData;
 objectData.uniforms = new uniform Buffer<Uniforms>(device);
 var bg = new BindGroup<ObjectData>(device, &objectData);
 var stagingBuffer = new writeonly Buffer<Uniforms>(device);
-var pipeline = new RenderPipeline<Pipeline>(device, {}, TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, {}, PrimitiveTopology.TriangleList);
 while (System.IsRunning()) {
   var event = System.GetNextEvent();
-  if (event.type == MouseMove) {
+  if (event.type == EventType.MouseMove) {
     var s = stagingBuffer.Map();
     s.color = float<4>((float) event.position.x / 640.0, (float) event.position.y / 480.0, 0.0, 1.0);
     stagingBuffer.Unmap();
@@ -40,7 +40,7 @@ while (System.IsRunning()) {
   objectData.uniforms.CopyFromBuffer(encoder, stagingBuffer);
   var p : Pipeline;
   p.vert = vb;
-  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
+  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
   p.objectData = bg;
   var renderPass = new RenderPass<Pipeline>(encoder, &p);
   renderPass.SetPipeline(pipeline);

@@ -29,10 +29,10 @@ class Pipeline : BasePipeline {
   var color : *vertex Buffer<[]float<3>>;
 }
 
-var pipeline = new RenderPipeline<Pipeline>(device, {}, TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, {}, PrimitiveTopology.TriangleList);
 var encoder = new CommandEncoder(device);
 var p : Pipeline;
-p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
+p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
 p.position = new vertex Buffer<[]float<2>>(device, &positions);
 p.color = new vertex Buffer<[]float<3>>(device, &colors);
 var renderPass = new RenderPass<Pipeline>(encoder, &p);

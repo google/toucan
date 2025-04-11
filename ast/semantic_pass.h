@@ -45,6 +45,7 @@ class SemanticPass : public CopyVisitor {
   Result Visit(UnresolvedInitializer* node) override;
   Result Visit(UnresolvedMethodCall* node) override;
   Result Visit(UnresolvedNewExpr* node) override;
+  Result Visit(UnresolvedStaticDot* node) override;
   Result Visit(UnresolvedStaticMethodCall* node) override;
   Result Visit(VarDeclaration* decl) override;
   Result Visit(WhileStatement* stmt) override;

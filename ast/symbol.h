@@ -43,7 +43,6 @@ class SymbolTable {
   SymbolTable();
   Var*             FindVar(const std::string& identifier) const;
   Type*            FindType(const std::string& identifier) const;
-  const EnumValue* FindEnumValue(const std::string& identifier) const;
   Field*           FindField(const std::string& identifier) const;
   Var*             FindVarInScope(const std::string& identifier) const;
   Var*             DefineVar(std::string identifier, Type* type);

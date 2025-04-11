@@ -76,7 +76,6 @@ static Expr* ThisExpr();
 static Expr* Load(Expr* expr);
 static Stmt* Store(Expr* expr, Expr* value);
 static Expr* Identifier(const char* id);
-static Expr* Dot(Expr* lhs, const char* id);
 static Expr* MakeArrayAccess(Expr* lhs, Expr* expr);
 static Expr* MakeNewExpr(UnresolvedInitializer* initializer, Expr* length = nullptr);
 static Expr* InlineFile(const char* filename);
@@ -515,7 +514,8 @@ assignable:
     T_IDENTIFIER                            { $$ = Identifier($1); }
   | T_THIS                                  { $$ = ThisExpr(); }
   | assignable '[' expr ']'                 { $$ = MakeArrayAccess($1, $3); }
-  | assignable '.' T_IDENTIFIER             { $$ = Dot($1, $3); }
+  | assignable '.' T_IDENTIFIER             { $$ = Make<UnresolvedDot>($1, $3); }
+  | simple_type '.' T_IDENTIFIER            { $$ = Make<UnresolvedStaticDot>($1, $3); }
   | assignable '.' T_IDENTIFIER '(' arguments ')'
                                             { $$ = Make<UnresolvedMethodCall>($1, $3, $5); }
   | simple_type '.' T_IDENTIFIER '(' arguments ')'
@@ -565,11 +565,6 @@ static Expr* IncDec(IncDecExpr::Op op, bool pre, Expr* expr) {
 static Expr* Identifier(const char* id) {
   if (!id) return nullptr;
   return Make<UnresolvedIdentifier>(id);
-}
-
-static Expr* Dot(Expr* lhs, const char* id) {
-  if (!lhs || !id) return nullptr;
-  return Make<UnresolvedDot>(lhs, id);
 }
 
 static Expr* MakeArrayAccess(Expr* lhs, Expr* expr) {

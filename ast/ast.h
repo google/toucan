@@ -332,6 +332,19 @@ class UnresolvedDot : public Expr {
   std::string id_;
 };
 
+class UnresolvedStaticDot : public Expr {
+ public:
+  UnresolvedStaticDot(Type* type, std::string id);
+  Result      Accept(Visitor* visitor) override;
+  Type*       GetType(TypeTable* types) override { return nullptr; }
+  Type*       GetType() { return type_; }
+  std::string GetID() { return id_; }
+
+ private:
+  Type*       type_;
+  std::string id_;
+};
+
 class UnresolvedIdentifier : public Expr {
  public:
   UnresolvedIdentifier(std::string id);
@@ -795,6 +808,7 @@ class Visitor {
   virtual Result Visit(DestroyStmt* node) { return Default(node); }
   virtual Result Visit(UnresolvedInitializer* node) { return Default(node); }
   virtual Result Visit(UnresolvedDot* node) { return Default(node); }
+  virtual Result Visit(UnresolvedStaticDot* node) { return Default(node); }
   virtual Result Visit(UnresolvedIdentifier* node) { return Default(node); }
   virtual Result Visit(UnresolvedListExpr* node) { return Default(node); }
   virtual Result Visit(UnresolvedClassDefinition* node) { return Default(node); }

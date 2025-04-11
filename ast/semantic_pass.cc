@@ -481,8 +481,6 @@ Result SemanticPass::Visit(UnresolvedIdentifier* node) {
       Expr* base = Make<LoadExpr>(Make<VarExpr>(thisPtr));
       return Make<FieldAccess>(base, field);
     }
-  } else if (const EnumValue* enumValue = symbols_->FindEnumValue(id)) {
-    return Make<EnumConstant>(enumValue);
   } else {
     return Error("unknown symbol \"%s\"", id.c_str());
   }
@@ -530,6 +528,24 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
     }
   } else {
     return Error("Expression is not of class, reference or vector type");
+  }
+}
+
+Result SemanticPass::Visit(UnresolvedStaticDot* node) {
+  auto type = node->GetType();
+  if (!type) return nullptr;
+  std::string id = node->GetID();
+  if (type->IsEnum()) {
+    auto enumType = static_cast<EnumType*>(type);
+    const EnumValue* enumValue = enumType->FindValue(id);
+    if (enumValue) {
+      return Make<EnumConstant>(enumValue);
+    } else {
+      return Error("value \"%s\" not found on enum \"%s\"", id.c_str(),
+                   enumType->ToString().c_str());
+    }
+  } else {
+    return Error("expression is not of enum type");
   }
 }
 

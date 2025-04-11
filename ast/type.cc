@@ -274,6 +274,13 @@ void EnumType::Append(std::string id, int value) {
   nextValue_ = value + 1;
 }
 
+const EnumValue* EnumType::FindValue(const std::string& id) {
+  for (const EnumValue& e : values_) {
+    if (e.id == id) return &e;
+  }
+  return nullptr;
+}
+
 int EnumType::GetSizeInBytes() const { return 4; }
 
 std::string EnumType::ToString() const { return name_; }

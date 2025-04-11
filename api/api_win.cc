@@ -32,8 +32,8 @@ void PrintDeviceError(WGPUErrorType, const char* message, void*) { OutputDebugSt
 unsigned ToToucanEventModifiers(WPARAM wParam) {
   unsigned result = 0;
 
-  if (wParam & MK_SHIFT) { result |= Shift; }
-  if (wParam & MK_CONTROL) { result |= Control; }
+  if (wParam & MK_SHIFT) { result |= static_cast<uint32_t>(EventModifiers::Shift); }
+  if (wParam & MK_CONTROL) { result |= static_cast<uint32_t>(EventModifiers::Control); }
   return result;
 }
 

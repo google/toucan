@@ -227,8 +227,8 @@ var computeBindGroup = new BindGroup<ComputeBindings>(device, {
   springStorage = new storage Buffer<[]Spring>(device, springs)
 });
 
-var bodyPipeline = new RenderPipeline<DrawPipeline>(device, {}, TriangleList);
-var springPipeline = new RenderPipeline<DrawPipeline>(device, {}, LineList);
+var bodyPipeline = new RenderPipeline<DrawPipeline>(device, {}, PrimitiveTopology.TriangleList);
+var springPipeline = new RenderPipeline<DrawPipeline>(device, {}, PrimitiveTopology.LineList);
 var computeForces = new ComputePipeline<ComputeForces>(device);
 var applyForces = new ComputePipeline<ApplyForces>(device);
 var updateBodyVerts = new ComputePipeline<UpdateBodyVerts>(device);
@@ -291,7 +291,7 @@ while(System.IsRunning()) {
 
   computePass.End();
   var p : DrawPipeline;
-  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
+  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
   var renderPass = new RenderPass<DrawPipeline>(encoder, &p);
 
   renderPass.SetPipeline(springPipeline);

@@ -65,10 +65,10 @@ struct Window {
 
 namespace {
 
-unsigned ToToucanEventModifiers(NSEventModifierFlags modifiers) {
-  unsigned result = 0;
-  if (modifiers & NSEventModifierFlagShift) { result |= Shift; }
-  if (modifiers & NSEventModifierFlagControl) { result |= Control; }
+uint32_t ToToucanEventModifiers(NSEventModifierFlags modifiers) {
+  uint32_t result = 0;
+  if (modifiers & NSEventModifierFlagShift) { result |= static_cast<uint32_t>(EventModifiers::Shift); }
+  if (modifiers & NSEventModifierFlagControl) { result |= static_cast<uint32_t>(EventModifiers::Control); }
   return result;
 }
 

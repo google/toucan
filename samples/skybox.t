@@ -75,10 +75,10 @@ class SkyboxPipeline {
 
 var depthState = new DepthStencilState;
 
-var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, TriangleList);
+var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, PrimitiveTopology.TriangleList);
 var cubeBindings : Bindings;
 cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
-cubeBindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
+cubeBindings.sampler = new Sampler(device, AddressMode.ClampToEdge, AddressMode.ClampToEdge, AddressMode.ClampToEdge, FilterMode.Linear, FilterMode.Linear, FilterMode.Linear);
 cubeBindings.textureView = texture.CreateSampleableView();
 var cubeBindGroup = new BindGroup<Bindings>(device, &cubeBindings);
 
@@ -101,8 +101,8 @@ while (System.IsRunning()) {
   cubeBindings.uniforms.SetData(&uniforms);
   var encoder = new CommandEncoder(device);
   var p : SkyboxPipeline;
-  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
-  var db = depthBuffer.CreateDepthStencilAttachment(Clear, Store, 1.0, LoadUndefined, StoreUndefined, 0);
+  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
+  var db = depthBuffer.CreateDepthStencilAttachment(LoadOp.Clear, StoreOp.Store, 1.0, LoadOp.Undefined, StoreOp.Undefined, 0);
   var renderPass = new RenderPass<SkyboxPipeline>(encoder,
     { fragColor = fb, depth = db, vertices = cubeVB, indices = cubeIB, bindings = cubeBindGroup }
   );

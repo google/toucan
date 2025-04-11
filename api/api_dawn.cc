@@ -61,18 +61,18 @@ wgpu::TextureUsage ToDawnTextureUsage(int qualifiers) {
 
 wgpu::LoadOp ToDawnLoadOp(LoadOp loadOp) {
   switch (loadOp) {
-    case LoadUndefined: return wgpu::LoadOp::Undefined;
-    case Load: return wgpu::LoadOp::Load;
-    case Clear: return wgpu::LoadOp::Clear;
+    case LoadOp::Undefined: return wgpu::LoadOp::Undefined;
+    case LoadOp::Load: return wgpu::LoadOp::Load;
+    case LoadOp::Clear: return wgpu::LoadOp::Clear;
     default: assert(!"unknown LoadOp"); return wgpu::LoadOp::Load;
   }
 }
 
 wgpu::StoreOp ToDawnStoreOp(StoreOp loadOp) {
   switch (loadOp) {
-    case StoreUndefined: return wgpu::StoreOp::Undefined;
-    case Store: return wgpu::StoreOp::Store;
-    case Discard: return wgpu::StoreOp::Discard;
+    case StoreOp::Undefined: return wgpu::StoreOp::Undefined;
+    case StoreOp::Store: return wgpu::StoreOp::Store;
+    case StoreOp::Discard: return wgpu::StoreOp::Discard;
     default: assert(!"unknown StoreOp"); return wgpu::StoreOp::Store;
   }
 }
@@ -337,11 +337,11 @@ static wgpu::BufferUsage toDawnBufferUsage(int qualifiers) {
 
 static wgpu::PrimitiveTopology toDawnPrimitiveTopology(PrimitiveTopology type) {
   switch (type) {
-    case PointList: return wgpu::PrimitiveTopology::PointList;
-    case LineList: return wgpu::PrimitiveTopology::LineList;
-    case LineStrip: return wgpu::PrimitiveTopology::LineStrip;
-    case TriangleList: return wgpu::PrimitiveTopology::TriangleList;
-    case TriangleStrip: return wgpu::PrimitiveTopology::TriangleStrip;
+    case PrimitiveTopology::PointList: return wgpu::PrimitiveTopology::PointList;
+    case PrimitiveTopology::LineList: return wgpu::PrimitiveTopology::LineList;
+    case PrimitiveTopology::LineStrip: return wgpu::PrimitiveTopology::LineStrip;
+    case PrimitiveTopology::TriangleList: return wgpu::PrimitiveTopology::TriangleList;
+    case PrimitiveTopology::TriangleStrip: return wgpu::PrimitiveTopology::TriangleStrip;
     default: assert(!"unknown PrimitiveTopology"); return wgpu::PrimitiveTopology::PointList;
   }
 }
@@ -746,7 +746,7 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   rpDesc.vertex = vertexState;
   rpDesc.fragment = &fragmentState;
   rpDesc.primitive.topology = toDawnPrimitiveTopology(primitiveTopology);
-  if (primitiveTopology == LineStrip || primitiveTopology == TriangleStrip) {
+  if (primitiveTopology == PrimitiveTopology::LineStrip || primitiveTopology == PrimitiveTopology::TriangleStrip) {
     rpDesc.primitive.stripIndexFormat = pipelineLayout.indexFormat;
   }
   if (pipelineLayout.depthStencilTarget.format != wgpu::TextureFormat::Undefined) {

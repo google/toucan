@@ -1,19 +1,19 @@
 include "include/test.t"
 
-enum Enum1 { FOO, BAR, BAZ };
+enum Enum { Foo, Bar, Baz };
 class A {
   init() {
-    f = FOO;
+    f = Enum.Foo;
   }
-  var f : Enum1;
+  var f : Enum;
 };
 var a = new A;
 a.init();
-Test.Expect(a.f == FOO);
-a.f = BAR;
-Test.Expect(a.f == BAR);
+Test.Expect(a.f == Enum.Foo);
+a.f = Enum.Bar;
+Test.Expect(a.f == Enum.Bar);
 var r = 0.0;
-if (a.f == BAR ) {
+if (a.f == Enum.Bar ) {
   r = 1.0;
 }
 Test.Expect(r == 1.0);

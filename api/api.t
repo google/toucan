@@ -74,13 +74,13 @@ native class BindGroup<T> {
 }
 
 enum LoadOp {
-  LoadUndefined,
+  Undefined,
   Clear,
   Load
 }
 
 enum StoreOp {
-  StoreUndefined,
+  Undefined,
   Store,
   Discard
 }

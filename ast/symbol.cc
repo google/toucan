@@ -92,21 +92,6 @@ Type* SymbolTable::FindType(const std::string& identifier) const {
   return 0;
 }
 
-const EnumValue* SymbolTable::FindEnumValue(const std::string& identifier) const {
-  Scope* scope = currentScope_;
-  for (scope = currentScope_; scope != nullptr; scope = scope->parent) {
-    for (const auto& j : scope->types) {
-      Type* type = j.second;
-      if (type->IsEnum()) {
-        for (const EnumValue& k : static_cast<EnumType*>(type)->GetValues()) {
-          if (identifier == k.id) { return &k; }
-        }
-      }
-    }
-  }
-  return 0;
-}
-
 void SymbolTable::Dump() {
   for (const auto& scope : scopes_) {
     printf("Scope%s:\n", scope->method ? " (method)" : "");

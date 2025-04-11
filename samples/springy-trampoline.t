@@ -261,8 +261,8 @@ class SpringShaders : Shaders {
   fragment main(fb : &FragmentBuiltins) { fragColor.Set(float<4>(1.0, 1.0, 1.0, 1.0)); }
 }
 
-var bodyPipeline = new RenderPipeline<BodyShaders>(device, {}, TriangleList);
-var springPipeline = new RenderPipeline<SpringShaders>(device, {}, LineList);
+var bodyPipeline = new RenderPipeline<BodyShaders>(device, {}, PrimitiveTopology.TriangleList);
+var springPipeline = new RenderPipeline<SpringShaders>(device, {}, PrimitiveTopology.LineList);
 var computeForces = new ComputePipeline<ComputeForces>(device);
 var applyForces = new ComputePipeline<ApplyForces>(device);
 var finalizeBodies = new ComputePipeline<FinalizeBodies>(device);
@@ -298,7 +298,7 @@ while(System.IsRunning()) {
   finalizeSpringsPass.Dispatch(springs.length, 1, 1);
 
   computePass.End();
-  var colorAttachment = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
+  var colorAttachment = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
   var renderPass = new RenderPass<Shaders>(encoder, { fragColor = colorAttachment });
 
   var bodyPass = new RenderPass<BodyShaders>(renderPass);

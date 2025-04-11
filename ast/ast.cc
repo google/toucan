@@ -195,6 +195,8 @@ ZeroInitStmt::ZeroInitStmt(Expr* lhs) : lhs_(lhs) {}
 
 UnresolvedDot::UnresolvedDot(Expr* expr, std::string id) : expr_(expr), id_(id) {}
 
+UnresolvedStaticDot::UnresolvedStaticDot(Type* type, std::string id) : type_(type), id_(id) {}
+
 SmartToRawPtr::SmartToRawPtr(Expr* expr) : expr_(expr) {}
 
 RawToSmartPtr::RawToSmartPtr(Expr* expr) : expr_(expr) {}
@@ -348,6 +350,7 @@ Result UnresolvedClassDefinition::Accept(Visitor* visitor) { return visitor->Vis
 Result UnresolvedInitializer::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedMethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedNewExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result UnresolvedStaticDot::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedStaticMethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedSwizzleExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result VarDeclaration::Accept(Visitor* visitor) { return visitor->Visit(this); }

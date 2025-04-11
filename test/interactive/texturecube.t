@@ -48,7 +48,7 @@ class Pipeline {
     var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
     var bindings : *BindGroup<Bindings>;
 };
-var pipeline = new RenderPipeline<Pipeline>(device, {}, TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, {}, PrimitiveTopology.TriangleList);
 var tex = new sampleable TextureCube<RGBA8unorm>(device, {2, 2});
 var buffer = new writeonly Buffer<[]ubyte<4>>(device, 64 * 2 * 2);
 var data = buffer.Map();
@@ -65,13 +65,13 @@ var copyEncoder = new CommandEncoder(device);
 tex.CopyFromBuffer(copyEncoder, buffer, {2, 2, 2});
 device.GetQueue().Submit(copyEncoder.Finish());
 var bindings : Bindings;
-bindings.sampler = new Sampler(device, ClampToEdge, ClampToEdge, ClampToEdge, Linear, Linear, Linear);
+bindings.sampler = new Sampler(device, AddressMode.ClampToEdge, AddressMode.ClampToEdge, AddressMode.ClampToEdge, FilterMode.Linear, FilterMode.Linear, FilterMode.Linear);
 bindings.textureView = tex.CreateSampleableView();
 var bindGroup = new BindGroup<Bindings>(device, &bindings);
 
 var encoder = new CommandEncoder(device);
 var p : Pipeline;
-p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(Clear, Store);
+p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
 p.vert = new vertex Buffer<[]Vertex>(device, verts);
 p.indices = new index Buffer<[]uint>(device, indices);
 p.bindings = bindGroup;

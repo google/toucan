@@ -54,7 +54,7 @@ std::string ConvertType(Type* type, const std::string& str) {
   } else if (type->IsUInt()) {
     return "uint32_t " + str;
   } else if (type->IsEnum()) {
-    return "uint32_t " + str;
+    return static_cast<EnumType*>(type)->GetName() + " " + str;
   } else if (type->IsFloat()) {
     return "float " + str;
   } else if (type->IsDouble()) {
@@ -169,7 +169,7 @@ void GenBindings::GenType(Type* type) {
     EnumType* enumType = static_cast<EnumType*>(type);
     fprintf(file_, "  types->Make<EnumType>(\"%s\")", enumType->GetName().c_str());
     if (header_) {
-      fprintf(header_, "enum %s {\n", enumType->GetName().c_str());
+      fprintf(header_, "enum class %s {\n", enumType->GetName().c_str());
       const EnumValueVector& values = enumType->GetValues();
       for (EnumValue const& v : values) {
         fprintf(header_, "  %s = %d,\n", v.id.c_str(), v.value);

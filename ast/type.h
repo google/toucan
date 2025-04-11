@@ -349,6 +349,7 @@ class EnumType : public Type {
   std::string            ToString() const override;
   int                    GetSizeInBytes() const override;
   const EnumValueVector& GetValues() { return values_; }
+  const EnumValue*       FindValue(const std::string& id);
   std::string            GetName() { return name_; }
   bool                   CanWidenTo(Type* type) const override;
 
