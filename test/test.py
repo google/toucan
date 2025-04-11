@@ -16,7 +16,7 @@ import glob;
 import os;
 import subprocess;
 import sys;
-files = glob.glob(os.path.join(os.path.dirname(__file__), '*.t'));
+files = glob.glob(os.path.relpath(os.path.join(os.path.dirname(__file__), '*.t')));
 files = sorted(files)
 debug_or_release = 'Release'
 if sys.platform == 'win32':
