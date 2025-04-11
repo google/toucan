@@ -72,6 +72,8 @@ test/error-constructor-not-found.t
 error-constructor-not-found.t:1:  matching constructor not found
 test/error-dereference.t
 error-dereference.t:2:  attempt to dereference a non-pointer
+test/error-duplicate-enum.t
+error-duplicate-enum.t:4: type is already declared as non-enum
 test/error-expectation-failed.t
 test/error-expectation-failed.t:4: expectation failed
 test/error-field-access-from-static-method.t
@@ -94,7 +96,7 @@ error-invalid-class-casts.t:17:  cannot store a value of type "*Base2" to a loca
 error-invalid-class-casts.t:19:  cannot store a value of type "*Derived" to a location of type "*Derived2"
 test/error-invalid-forward-decl.t
 error-invalid-forward-decl.t:5: type is already declared as non-class
-error-invalid-forward-decl.t:8: syntax error
+error-invalid-forward-decl.t:8: type is already declared as non-enum
 test/error-invalid-return-value.t
 error-invalid-return-value.t:4:  cannot return a value of type &int from a function of type ^int
 error-invalid-return-value.t:14:  implicit void return, in method returning non-void.

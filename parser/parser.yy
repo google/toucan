@@ -55,11 +55,12 @@ static Expr* IncDec(IncDecExpr::Op op, bool pre, Expr* expr);
 static Stmt* MakeReturnStatement(Expr* expr);
 static Expr* MakeStaticMethodCall(Type* type, const char *id, ArgList* arguments);
 static ClassType* DeclareClass(int native, const char* id);
+static EnumType* DeclareEnum(const char* id);
 static void DeclareUsing(const char* id, Type* type);
 static void BeginClass(Type* type, ClassType* parent);
 static ClassType*  BeginClassTemplate(int native, TypeList* templateArgs, const char* id);
 static Stmt* EndClass();
-static void BeginEnum(const char *id);
+static void BeginEnum(Type* e);
 static void AppendEnum(const char* id);
 static void AppendEnum(const char* id, int value);
 static void EndEnum();
@@ -85,6 +86,7 @@ static Type* GetArrayType(Type* elementType, int numElements);
 static Type* GetScopedType(Type* type, const char* id);
 static TypeList* AddIDToTypeList(const char* id, TypeList* list);
 static ClassType* AsClassType(Type* type);
+static EnumType* AsEnumType(Type* type);
 static ClassTemplate* AsClassTemplate(Type* type);
 static int AsIntConstant(Expr* expr);
 
@@ -117,7 +119,7 @@ Type* FindType(const char* str) {
     Toucan::TypeList*    typeList;
 };
 
-%type <type> scalar_type type class_header
+%type <type> scalar_type type class_header enum_header
 %type <type> simple_type opt_return_type
 %type <classType> template_class_header
 %type <expr> expr opt_expr assignable arith_expr expr_or_list opt_initializer opt_length
@@ -296,8 +298,14 @@ class_body:
     class_body class_body_decl
   | /* nothing */
   ;
+
+enum_header:
+    T_ENUM T_IDENTIFIER                     { $$ = DeclareEnum($2); }
+  | T_ENUM T_TYPENAME                       { $$ = AsEnumType($2); }
+  ;
+
 enum_decl:
-    T_ENUM T_IDENTIFIER '{'                 { BeginEnum($2); }
+    enum_header '{'                         { BeginEnum($1); }
     enum_list '}'                           { EndEnum(); }
   ;
 enum_list:
@@ -703,6 +711,13 @@ static ClassType* DeclareClass(int native, const char *id) {
   return c;
 }
 
+static EnumType* DeclareEnum(const char *id) {
+  assert(!symbols_->FindType(id));
+  EnumType* e = types_->Make<EnumType>(id);
+  symbols_->DefineType(id, e);
+  return e;
+}
+
 static void DeclareUsing(const char *id, Type* type) {
   assert(!symbols_->FindType(id));
   symbols_->DefineType(id, type);
@@ -743,18 +758,9 @@ static Stmt* EndClass() {
   return Make<UnresolvedClassDefinition>(scope);
 }
 
-static void BeginEnum(const char *id) {
-  EnumType* e = types_->Make<EnumType>(id);
-  // FIXME:  Check for class or enum of the same name.
-  ClassType* classType = symbols_->PeekScope()->classType;
-  if (classType) {
-    classType->AddEnum(id, e);
-  } else {
-    // FIXME:  Global enums must die.
-    symbols_->DefineType(id, e);
-  }
+static void BeginEnum(Type* t) {
   Scope* scope = symbols_->PushNewScope();
-  scope->enumType = e;
+  scope->enumType = static_cast<EnumType*>(t);
 }
 
 static void EndEnum() {
@@ -763,13 +769,15 @@ static void EndEnum() {
 
 static void AppendEnum(const char *id) {
   EnumType* enumType = symbols_->PeekScope()->enumType;
-  assert(enumType);
+  if (!enumType) return;
+
   enumType->Append(id);
 }
 
 static void AppendEnum(const char *id, int value) {
   EnumType* enumType = symbols_->PeekScope()->enumType;
-  assert(enumType);
+  if (!enumType) return;
+
   enumType->Append(id, value);
 }
 
@@ -957,6 +965,14 @@ static ClassType* AsClassType(Type* type) {
     return nullptr;
   }
   return static_cast<ClassType*>(type);
+}
+
+static EnumType* AsEnumType(Type* type) {
+  if (type && !type->IsEnum()) {
+    yyerrorf("type is already declared as non-enum");
+    return nullptr;
+  }
+  return static_cast<EnumType*>(type);
 }
 
 static ClassTemplate* AsClassTemplate(Type* type) {
