@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #
 # Invokes llvm-config, and massages the result into a list of libs usable by GN.
 # argv[1] is the path to the llvm-config binary.

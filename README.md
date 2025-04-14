@@ -206,7 +206,15 @@ $ANDROID_SDK_ROOT/platform-tools/adb shell am start -a android.intent.action.MAI
 ## Testing instructions
 
 There is a primitive test harness in test/test.py, and a set of end-to-end
-tests. This requires tj, so it is only supported on Windows, Mac and
-Linux. Run it as follows:
+tests. This requires tj, so it is only supported on desktop platforms.
 
-`test/test.py >& test/test-expectations.txt`
+On Linux and MacOS:
+```
+test/test.py >& test/test-expectations.txt
+```
+
+On Windows:
+```
+python3 test\test.py > test\test-expectations.txt 2>&1
+python3 tools\unixify.py test\test-expectations.txt
+```
