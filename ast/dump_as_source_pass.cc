@@ -67,7 +67,9 @@ Result DumpAsSourcePass::Visit(UIntConstant* node) {
 }
 
 Result DumpAsSourcePass::Visit(EnumConstant* node) {
-  Output(node, "Make<EnumConstant>(%d)", node->GetValue()->value);
+  const EnumValue* value = node->GetValue();
+  int type = (*typeMap_)[value->type];
+  Output(node, "Make<EnumConstant>(static_cast<EnumType*>(typeList[%d])->FindValue(\"%s\"))", type, value->id.c_str());
   return {};
 }
 
