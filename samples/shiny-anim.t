@@ -193,10 +193,10 @@ class ReflectionPipeline : DrawPipeline {
 
 var depthState = new DepthStencilState;
 
-var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState, PrimitiveTopology.TriangleList);
+var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState);
 var cubeBindings : Bindings;
 cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
-cubeBindings.sampler = new Sampler(device, AddressMode.ClampToEdge, AddressMode.ClampToEdge, AddressMode.ClampToEdge, FilterMode.Linear, FilterMode.Linear, FilterMode.Linear);
+cubeBindings.sampler = new Sampler(device);
 cubeBindings.textureView = texture.CreateSampleableView();
 
 var cubeData : SkyboxPipeline;
@@ -204,7 +204,7 @@ cubeData.position = new vertex Buffer<[]float<3>>(device, &cubeVerts);
 cubeData.indexBuffer = new index Buffer<[]uint>(device, &cubeIndices);
 cubeData.bindings = new BindGroup<Bindings>(device, &cubeBindings);
 
-var teapotPipeline = new RenderPipeline<ReflectionPipeline>(device, depthState, PrimitiveTopology.TriangleList);
+var teapotPipeline = new RenderPipeline<ReflectionPipeline>(device, depthState);
 var teapotBindings : Bindings;
 teapotBindings.sampler = cubeBindings.sampler;
 teapotBindings.textureView = cubeBindings.textureView;
@@ -277,8 +277,8 @@ while (System.IsRunning()) {
   uniforms.model = teapotRotation * Transform.scale(2.0, 2.0, 2.0);
   teapotBindings.uniforms.SetData(&uniforms);
   var encoder = new CommandEncoder(device);
-  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
-  var db = depthBuffer.CreateDepthStencilAttachment(LoadOp.Clear, StoreOp.Store, 1.0, LoadOp.Undefined, StoreOp.Undefined, 0);
+  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
+  var db = depthBuffer.CreateDepthStencilAttachment(LoadOp.Clear);
   var renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = fb, depth = db });
 
   var cubePass = new RenderPass<SkyboxPipeline>(renderPass);

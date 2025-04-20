@@ -145,7 +145,7 @@ var bodyVBO = new vertex Buffer<[]Vector>(device, bodyVerts.length);
 var springVerts = [springs.length * 2] new Vector;
 var springVBO = new vertex Buffer<[]Vector>(device, springVerts.length);
 
-var bodyPipeline = new RenderPipeline<DrawPipeline>(device, {}, PrimitiveTopology.TriangleList);
+var bodyPipeline = new RenderPipeline<DrawPipeline>(device, {});
 var springPipeline = new RenderPipeline<DrawPipeline>(device, {}, PrimitiveTopology.LineList);
 var bodyBindings : Bindings;
 bodyBindings.uniforms = new uniform Buffer<DrawUniforms>(device);
@@ -194,7 +194,7 @@ while(System.IsRunning()) {
     stepsDone++;
   }
   var encoder = new CommandEncoder(device);
-  var colorAttachment = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
+  var colorAttachment = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
   var renderPass = new RenderPass<DrawPipeline>(encoder, { fragColor = colorAttachment });
 
   renderPass.SetPipeline(springPipeline);

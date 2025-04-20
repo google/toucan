@@ -25,9 +25,9 @@ class Pipeline {
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var vertices : *vertex Buffer<[]Vertex>;
 }
-var pipeline = new RenderPipeline<Pipeline>(device, {}, PrimitiveTopology.TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, {});
 var encoder = new CommandEncoder(device);
-var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
+var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
 var renderPass = new RenderPass<Pipeline>(encoder, { vertices = vb, fragColor = fb });
 renderPass.SetPipeline(pipeline);
 renderPass.Draw(3, 1, 0, 0);

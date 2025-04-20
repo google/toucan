@@ -22,7 +22,7 @@ class Pipeline {
 var uniformBuffer = new uniform Buffer<Uniforms>(device);
 var bg = new BindGroup<Bindings>(device, { uniformBuffer });
 var stagingBuffer = new writeonly Buffer<Uniforms>(device);
-var pipeline = new RenderPipeline<Pipeline>(device, {}, PrimitiveTopology.TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, {});
 for (var i = 0; i < 1000; ++i) {
   while (System.HasPendingEvents()) {
     System.GetNextEvent();
@@ -33,7 +33,7 @@ for (var i = 0; i < 1000; ++i) {
   s.color = float<4>(1.0 - f, f, 0.0, 1.0);
   stagingBuffer.Unmap();
   uniformBuffer.CopyFromBuffer(encoder, stagingBuffer);
-  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
+  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
   var renderPass = new RenderPass<Pipeline>(encoder, { vertices = vb, fragColor = fb, bindings = bg });
   renderPass.SetPipeline(pipeline);
   renderPass.Draw(3, 1, 0, 0);

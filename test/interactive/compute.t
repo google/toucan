@@ -28,7 +28,7 @@ class Pipeline {
   var vert : *vertex Buffer<[]Vertex>;
 }
 
-var pipeline = new RenderPipeline<Pipeline>(device, {}, PrimitiveTopology.TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, {});
 var computePipeline = new ComputePipeline<BumpCompute>(device);
 
 var cb : ComputeBindings;
@@ -43,7 +43,7 @@ while (System.IsRunning()) {
   computePass.End();
   var p : Pipeline;
   p.vert = vb;
-  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
+  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
   var renderPass = new RenderPass<Pipeline>(encoder, &p);
   renderPass.SetPipeline(pipeline);
   renderPass.Draw(3, 1, 0, 0);

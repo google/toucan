@@ -58,7 +58,7 @@ class DepthStencilState {
 }
 
 native class RenderPipeline<T> {
-  RenderPipeline(device : &Device, depthStencilState : &DepthStencilState, primitiveTopology : PrimitiveTopology);
+  RenderPipeline(device : &Device, depthStencilState : &DepthStencilState, primitiveTopology = PrimitiveTopology.TriangleList);
  ~RenderPipeline();
 }
 
@@ -99,7 +99,7 @@ enum AddressMode { Repeat, MirrorRepeat, ClampToEdge };
 enum FilterMode { Nearest, Linear };
 
 native class Sampler {
-  Sampler(device : &Device, addressModeU : AddressMode, addressModeV : AddressMode, addressModeW : AddressMode, magFilter : FilterMode, minFilter : FilterMode, mipmapFilter : FilterMode);
+  Sampler(device : &Device, addressModeU = AddressMode.ClampToEdge, addressModeV = AddressMode.ClampToEdge, addressModeW = AddressMode.ClampToEdge, magFilter = FilterMode.Linear, minFilter = FilterMode.Linear, mipmapFilter = FilterMode.Linear);
  ~Sampler();
 }
 
@@ -143,7 +143,7 @@ native class Texture2D<PF> {
   CreateRenderableView(mipLevel = 0u) : *renderable Texture2D<PF>;
   CreateStorageView(mipLevel = 0u) : *storage Texture2D<PF>;
   CreateColorAttachment(loadOp = LoadOp.Load, storeOp = StoreOp.Store, clearValue = float<4>(0.0, 0.0, 0.0, 0.0)) renderable : *ColorAttachment<PF>;
-  CreateDepthStencilAttachment(depthLoadOp : LoadOp, depthstoreOp : StoreOp, depthClearValue = 0.0, stencilLoadOp : LoadOp, stencilStoreOp : StoreOp, stencilClearValue : int) renderable : *DepthStencilAttachment<PF>;
+  CreateDepthStencilAttachment(depthLoadOp = LoadOp.Load, depthStoreOp = StoreOp.Store, depthClearValue = 1.0, stencilLoadOp = LoadOp.Undefined, stencilStoreOp = StoreOp.Undefined, stencilClearValue = 0) renderable : *DepthStencilAttachment<PF>;
   MinBufferWidth() : uint;
   CopyFromBuffer(encoder : &CommandEncoder, source : &Buffer<[]PF:HostType>, size : uint<2>, origin : uint<2> = uint<2>(0, 0));
 }

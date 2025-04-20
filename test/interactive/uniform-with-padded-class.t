@@ -28,10 +28,10 @@ class Pipeline {
 var uniforms = new uniform Buffer<Uniforms>(device, { color = { 0.0, 1.0, 0.0, 1.0 } });
 var bg = new BindGroup<Bindings>(device, { uniforms });
 var stagingBuffer = new writeonly Buffer<Uniforms>(device);
-var pipeline = new RenderPipeline<Pipeline>(device, {}, PrimitiveTopology.TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, {});
 var framebuffer = swapChain.GetCurrentTexture();
 var encoder = new CommandEncoder(device);
-var fb = framebuffer.CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
+var fb = framebuffer.CreateColorAttachment(LoadOp.Clear);
 var renderPass = new RenderPass<Pipeline>(encoder,
   {vertices = vb, fragColor = fb, bindings = bg }
 );

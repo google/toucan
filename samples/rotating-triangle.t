@@ -50,12 +50,12 @@ uniformData.mvpMatrix = float<4, 4>(float<4>(1.0, 0.0, 0.0, 0.0),
                                     float<4>(0.0, 0.0, 0.0, 1.0));
 uniformData.alpha = 0.5;
 var bg = new BindGroup<Bindings>(device, { uniformBuffer } );
-var pipeline = new RenderPipeline<Pipeline>(device, {}, PrimitiveTopology.TriangleList);
+var pipeline = new RenderPipeline<Pipeline>(device, {});
 var theta = 0.0;
 while (System.IsRunning()) {
   uniformBuffer.SetData(&uniformData);
   var encoder = new CommandEncoder(device);
-  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear, StoreOp.Store);
+  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
   var renderPass = new RenderPass<Pipeline>(encoder, {vertices = vb, fragColor = fb, bindings = bg});
   renderPass.SetPipeline(pipeline);
   renderPass.Draw(3, 1, 0, 0);
