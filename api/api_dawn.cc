@@ -301,6 +301,47 @@ static wgpu::MipmapFilterMode ToDawnMipmapFilterMode(FilterMode mode) {
   return wgpu::MipmapFilterMode::Nearest;
 }
 
+static wgpu::BlendFactor toDawnBlendFactor(BlendFactor factor) {
+  switch (factor) {
+    case BlendFactor::Zero:                 return wgpu::BlendFactor::Zero;
+    case BlendFactor::One:                  return wgpu::BlendFactor::One;
+    case BlendFactor::Src:                  return wgpu::BlendFactor::Src;
+    case BlendFactor::OneMinusSrc:          return wgpu::BlendFactor::OneMinusSrc;
+    case BlendFactor::SrcAlpha:             return wgpu::BlendFactor::SrcAlpha;
+    case BlendFactor::OneMinusSrcAlpha:     return wgpu::BlendFactor::OneMinusSrcAlpha;
+    case BlendFactor::Dst:                  return wgpu::BlendFactor::Dst;
+    case BlendFactor::OneMinusDst:          return wgpu::BlendFactor::OneMinusDst;
+    case BlendFactor::DstAlpha:             return wgpu::BlendFactor::DstAlpha;
+    case BlendFactor::OneMinusDstAlpha:     return wgpu::BlendFactor::OneMinusDstAlpha;
+    case BlendFactor::SrcAlphaSaturated:    return wgpu::BlendFactor::SrcAlphaSaturated;
+    case BlendFactor::Constant:             return wgpu::BlendFactor::Constant;
+    case BlendFactor::OneMinusConstant:     return wgpu::BlendFactor::OneMinusConstant;
+    default:                                return wgpu::BlendFactor::One;
+  }
+}
+
+static wgpu::BlendOperation toDawnBlendOperation(BlendOp op) {
+  switch (op) {
+    case BlendOp::Add:               return wgpu::BlendOperation::Add;
+    case BlendOp::Subtract:          return wgpu::BlendOperation::Subtract;
+    case BlendOp::ReverseSubtract:   return wgpu::BlendOperation::ReverseSubtract;
+    case BlendOp::Min:               return wgpu::BlendOperation::Min;
+    case BlendOp::Max:               return wgpu::BlendOperation::Max;
+    default:                         return wgpu::BlendOperation::Add;
+  }
+}
+
+
+static wgpu::BlendComponent toDawnBlendComponent(BlendComponent component) {
+  return wgpu::BlendComponent{ toDawnBlendOperation(component.operation),
+                               toDawnBlendFactor(component.srcFactor),
+                               toDawnBlendFactor(component.dstFactor) };
+}
+
+static wgpu::BlendState toDawnBlendState(BlendState state) {
+  return wgpu::BlendState{ toDawnBlendComponent(state.color), toDawnBlendComponent(state.alpha)};
+}
+
 // FIXME: this should handle a mask, properly
 static wgpu::BufferUsage toDawnBufferUsage(int qualifiers) {
   if (qualifiers == 0) { qualifiers = Type::Qualifier::WriteOnly; }
@@ -588,9 +629,9 @@ struct PipelineLayout {
   }
 };
 
-static void ExtractPipelineLayout(ClassType* classType, Device* device, PipelineLayout* out) {
+static void ExtractPipelineLayout(ClassType* classType, Device* device, wgpu::BlendState* blendState, PipelineLayout* out) {
   out->depthStencilTarget.format = wgpu::TextureFormat::Undefined;
-  if (classType->GetParent()) { ExtractPipelineLayout(classType->GetParent(), device, out); }
+  if (classType->GetParent()) { ExtractPipelineLayout(classType->GetParent(), device, blendState, out); }
   for (const auto& field : classType->GetFields()) {
     Type* type = field->type;
 
@@ -606,6 +647,7 @@ static void ExtractPipelineLayout(ClassType* classType, Device* device, Pipeline
       const auto&            templateArgs = classType->GetTemplateArgs();
       assert(templateArgs.size() == 1);
       colorTargetState.format = ToDawnTextureFormat(templateArgs[0]);
+      colorTargetState.blend = blendState;
       out->colorTargets.push_back(colorTargetState);
     } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment) {
       const auto& templateArgs = classType->GetTemplateArgs();
@@ -697,7 +739,8 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
                                               Type*             type,
                                               Device*           device,
                                               PrimitiveTopology primitiveTopology,
-                                              DepthStencilState*depthStencil) {
+                                              DepthStencilState*depthStencil,
+                                              BlendState*       blendState) {
   if (!type->IsClass()) { return nullptr; }
   ClassType*         classType = static_cast<ClassType*>(type);
   wgpu::ShaderModule vertexShader, fragmentShader;
@@ -717,7 +760,8 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
     }
   }
   PipelineLayout pipelineLayout;
-  ExtractPipelineLayout(classType, device, &pipelineLayout);
+  auto dawnBlendState = toDawnBlendState(*blendState);
+  ExtractPipelineLayout(classType, device, &dawnBlendState, &pipelineLayout);
   pipelineLayout.FinalizeVertexLayouts();
 
   wgpu::VertexState vertexState;
@@ -777,7 +821,7 @@ ComputePipeline* ComputePipeline_ComputePipeline(int     qualifiers,
   computeState.entryPoint = "main";
   wgpu::ComputePipelineDescriptor cpDesc;
   PipelineLayout                  pipelineLayout;
-  ExtractPipelineLayout(classType, device, &pipelineLayout);
+  ExtractPipelineLayout(classType, device, nullptr, &pipelineLayout);
   wgpu::PipelineLayoutDescriptor desc;
   desc.bindGroupLayoutCount = pipelineLayout.bindGroupLayouts.size();
   desc.bindGroupLayouts = pipelineLayout.bindGroupLayouts.data();

@@ -57,8 +57,43 @@ class DepthStencilState {
   var depthBiasClamp = 0.0;
 }
 
+enum BlendOp {
+  Add,
+  Subtract,
+  ReverseSubtract,
+  Min,
+  Max
+}
+
+enum BlendFactor {
+  Zero,
+  One,
+  Src,
+  OneMinusSrc,
+  SrcAlpha,
+  OneMinusSrcAlpha,
+  Dst,
+  OneMinusDst,
+  DstAlpha,
+  OneMinusDstAlpha,
+  SrcAlphaSaturated,
+  Constant,
+  OneMinusConstant
+}
+
+class BlendComponent {
+  var operation = BlendOp.Add;
+  var srcFactor = BlendFactor.One;
+  var dstFactor = BlendFactor.Zero;
+}
+
+class BlendState {
+  var color : BlendComponent;
+  var alpha : BlendComponent;
+}
+
 native class RenderPipeline<T> {
-  RenderPipeline(device : &Device, primitiveTopology = PrimitiveTopology.TriangleList, depthStencilState : &DepthStencilState = {});
+  RenderPipeline(device : &Device, primitiveTopology = PrimitiveTopology.TriangleList, depthStencilState : &DepthStencilState = {}, blendState : &BlendState = {});
  ~RenderPipeline();
 }
 
