@@ -44,6 +44,7 @@ test/duplicate-var.t
 test/early-return-bool.t
 test/early-return-int.t
 test/empty.t
+test/enum-default-value.t
 test/enum.t
 test/error-allocate-class-with-unsized-array-without-length.t
 error-allocate-class-with-unsized-array-without-length.t:5:  class with unsized array must be allocated with size

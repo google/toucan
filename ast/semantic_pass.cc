@@ -855,7 +855,7 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   const auto& fields = classType->GetFields();
   for (const auto& field : fields) {
     if (field->type->IsAuto()) {
-      assert(field->defaultValue);
+      field->defaultValue = Resolve(field->defaultValue);
       field->type = field->defaultValue->GetType(types_);
     } else if (field->type->IsUnsizedArray()) {
       if (field != fields.back()) {
