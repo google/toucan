@@ -48,7 +48,7 @@ var quadIB = new index Buffer<[]uint>(device, &quadIndices);
 var sampler = new Sampler(device);
 
 var tex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());
-var triPipeline = new RenderPipeline<GreenPipeline>(device, {});
+var triPipeline = new RenderPipeline<GreenPipeline>(device);
 var encoder = new CommandEncoder(device);
 var gp : GreenPipeline;
 gp.position = triVB;
@@ -58,7 +58,7 @@ renderPass.SetPipeline(triPipeline);
 renderPass.Draw(3, 1, 0, 0);
 renderPass.End();
 
-var quadPipeline = new RenderPipeline<TexPipeline>(device, {});
+var quadPipeline = new RenderPipeline<TexPipeline>(device);
 var texView = tex.CreateSampleableView();
 var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
 var quadBG = new BindGroup<Bindings>(device, { sampler = sampler, textureView = texView} );

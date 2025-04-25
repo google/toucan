@@ -58,7 +58,7 @@ class DepthStencilState {
 }
 
 native class RenderPipeline<T> {
-  RenderPipeline(device : &Device, depthStencilState : &DepthStencilState, primitiveTopology = PrimitiveTopology.TriangleList);
+  RenderPipeline(device : &Device, primitiveTopology = PrimitiveTopology.TriangleList, depthStencilState : &DepthStencilState = {});
  ~RenderPipeline();
 }
 

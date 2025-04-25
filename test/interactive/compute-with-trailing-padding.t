@@ -31,7 +31,7 @@ class Pipeline {
   var vert : *vertex Buffer<[]Vertex>;
 }
 
-var pipeline = new RenderPipeline<Pipeline>(device, {});
+var pipeline = new RenderPipeline<Pipeline>(device);
 var computePipeline = new ComputePipeline<BumpCompute>(device);
 
 var cb : ComputeBindings;

@@ -36,7 +36,7 @@ class Pipeline {
   var indices : *index Buffer<[]uint>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
 }
-var pipeline = new RenderPipeline<Pipeline>(device, {});
+var pipeline = new RenderPipeline<Pipeline>(device);
 var encoder = new CommandEncoder(device);
 var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
 var renderPass = new RenderPass<Pipeline>(encoder, { vertices = vb, indices = ib, fragColor = fb });

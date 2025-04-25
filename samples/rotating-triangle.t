@@ -50,7 +50,7 @@ uniformData.mvpMatrix = float<4, 4>(float<4>(1.0, 0.0, 0.0, 0.0),
                                     float<4>(0.0, 0.0, 0.0, 1.0));
 uniformData.alpha = 0.5;
 var bg = new BindGroup<Bindings>(device, { uniformBuffer } );
-var pipeline = new RenderPipeline<Pipeline>(device, {});
+var pipeline = new RenderPipeline<Pipeline>(device);
 var theta = 0.0;
 while (System.IsRunning()) {
   uniformBuffer.SetData(&uniformData);

@@ -56,7 +56,7 @@ class Pipeline {
     var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
     var bindings : *BindGroup<Bindings>;
 };
-var pipeline = new RenderPipeline<Pipeline>(device, {});
+var pipeline = new RenderPipeline<Pipeline>(device);
 var sampler = new Sampler(device);
 var texView = texture.CreateSampleableView();
 var bindings : Bindings;

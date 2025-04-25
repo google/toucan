@@ -230,6 +230,7 @@ void GenBindings::Run() {
   fprintf(file_, "  Type** typeList = new Type*[%d];\n", numTypes);
   fprintf(file_, "  ASTNode** nodeList = new ASTNode*[%d];\n", 1000 /* FIXME num_nodes */);
   fprintf(file_, "  Expr** exprs = reinterpret_cast<Expr**>(nodeList);\n");
+  fprintf(file_, "  ArgList** argLists = reinterpret_cast<ArgList**>(nodeList);\n");
   fprintf(file_, "  ExprList** exprLists = reinterpret_cast<ExprList**>(nodeList);\n");
   fprintf(file_, "  Stmt** stmts = reinterpret_cast<Stmt**>(nodeList);\n");
   fprintf(file_, "  Stmts** stmtss = reinterpret_cast<Stmts**>(nodeList);\n");
@@ -367,7 +368,6 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
     // non-native default values are never used at runtime.
     // TODO: fix this through proper constant folding.
     Expr* defaultValue = method->classType->IsNative() ? method->defaultArgs[i] : nullptr;
-    assert(!defaultValue || !defaultValue->GetType(types_)->IsList());
     int defaultValueId = defaultValue ? sourcePass_.Resolve(defaultValue) : 0;
     fprintf(file_, "  m->AddFormalArg(\"%s\", typeList[%d], ", var->name.c_str(),
             typeMap_[var->type]);

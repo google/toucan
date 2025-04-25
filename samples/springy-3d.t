@@ -145,8 +145,8 @@ var bodyVBO = new vertex Buffer<[]Vector>(device, bodyVerts.length);
 var springVerts = [springs.length * 2] new Vector;
 var springVBO = new vertex Buffer<[]Vector>(device, springVerts.length);
 
-var bodyPipeline = new RenderPipeline<DrawPipeline>(device, {});
-var springPipeline = new RenderPipeline<DrawPipeline>(device, {}, PrimitiveTopology.LineList);
+var bodyPipeline = new RenderPipeline<DrawPipeline>(device);
+var springPipeline = new RenderPipeline<DrawPipeline>(device, PrimitiveTopology.LineList);
 var bodyBindings : Bindings;
 bodyBindings.uniforms = new uniform Buffer<DrawUniforms>(device);
 var bodyBG = new BindGroup<Bindings>(device, &bodyBindings);

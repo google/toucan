@@ -261,8 +261,8 @@ class SpringShaders : Shaders {
   fragment main(fb : &FragmentBuiltins) { fragColor.Set(float<4>(1.0, 1.0, 1.0, 1.0)); }
 }
 
-var bodyPipeline = new RenderPipeline<BodyShaders>(device, {});
-var springPipeline = new RenderPipeline<SpringShaders>(device, {}, PrimitiveTopology.LineList);
+var bodyPipeline = new RenderPipeline<BodyShaders>(device);
+var springPipeline = new RenderPipeline<SpringShaders>(device, PrimitiveTopology.LineList);
 var computeForces = new ComputePipeline<ComputeForces>(device);
 var applyForces = new ComputePipeline<ApplyForces>(device);
 var finalizeBodies = new ComputePipeline<FinalizeBodies>(device);

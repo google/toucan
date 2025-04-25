@@ -696,8 +696,8 @@ static void ExtractPipelineData(Type* type, void* data, PipelineData* out) {
 RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
                                               Type*             type,
                                               Device*           device,
-                                              DepthStencilState*depthStencil,
-                                              PrimitiveTopology primitiveTopology) {
+                                              PrimitiveTopology primitiveTopology,
+                                              DepthStencilState*depthStencil) {
   if (!type->IsClass()) { return nullptr; }
   ClassType*         classType = static_cast<ClassType*>(type);
   wgpu::ShaderModule vertexShader, fragmentShader;

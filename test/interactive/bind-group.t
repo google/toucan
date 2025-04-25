@@ -28,7 +28,7 @@ var objectData : ObjectData;
 objectData.uniforms = new uniform Buffer<Uniforms>(device);
 var bg = new BindGroup<ObjectData>(device, &objectData);
 var stagingBuffer = new writeonly Buffer<Uniforms>(device);
-var pipeline = new RenderPipeline<Pipeline>(device, {});
+var pipeline = new RenderPipeline<Pipeline>(device);
 while (System.IsRunning()) {
   var event = System.GetNextEvent();
   if (event.type == EventType.MouseMove) {

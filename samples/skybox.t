@@ -73,9 +73,7 @@ class SkyboxPipeline {
     var bindings : *BindGroup<Bindings>;
 };
 
-var depthState = new DepthStencilState;
-
-var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState);
+var cubePipeline = new RenderPipeline<SkyboxPipeline>(device);
 var cubeBindings : Bindings;
 cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
 cubeBindings.sampler = new Sampler(device);

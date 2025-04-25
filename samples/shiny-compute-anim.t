@@ -197,9 +197,7 @@ class ReflectionPipeline : DrawPipeline {
 
 var tessPipeline = new ComputePipeline<BicubicComputePipeline>(device);
 
-var depthState = new DepthStencilState;
-
-var cubePipeline = new RenderPipeline<SkyboxPipeline>(device, depthState);
+var cubePipeline = new RenderPipeline<SkyboxPipeline>(device);
 var cubeBindings : Bindings;
 cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
 cubeBindings.sampler = new Sampler(device);
@@ -210,7 +208,7 @@ cubeData.position = new vertex Buffer<[]float<3>>(device, &cubeVerts);
 cubeData.indexBuffer = new index Buffer<[]uint>(device, &cubeIndices);
 cubeData.bindings = new BindGroup<Bindings>(device, &cubeBindings);
 
-var teapotPipeline = new RenderPipeline<ReflectionPipeline>(device, depthState);
+var teapotPipeline = new RenderPipeline<ReflectionPipeline>(device);
 var teapotBindings : Bindings;
 teapotBindings.sampler = cubeBindings.sampler;
 teapotBindings.textureView = cubeBindings.textureView;

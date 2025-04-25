@@ -42,6 +42,13 @@ int DumpAsSourcePass::Output(ASTNode* node, const char* fmt, ...) {
   return nodeCount_++;
 }
 
+Result DumpAsSourcePass::Visit(ArgList* node) {
+  // For now, support only empty ArgList.
+  assert(node->GetArgs().size() == 0);
+  Output(node, "Make<ArgList>()");
+  return {};
+}
+
 Result DumpAsSourcePass::Visit(ArrayAccess* node) {
   int expr = Resolve(node->GetExpr());
   int index = Resolve(node->GetIndex());
@@ -174,6 +181,12 @@ Result DumpAsSourcePass::Visit(BinOpNode* node) {
 
 Result DumpAsSourcePass::Visit(UnaryOp* node) {
   NOTIMPLEMENTED();
+  return {};
+}
+
+Result DumpAsSourcePass::Visit(UnresolvedListExpr* node) {
+  int argList = Resolve(node->GetArgList());
+  Output(node, "Make<UnresolvedListExpr>(argLists[%d])", argList);
   return {};
 }
 

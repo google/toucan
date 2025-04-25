@@ -33,6 +33,7 @@ class DumpAsSourcePass : public Visitor {
   DumpAsSourcePass(FILE* file, std::unordered_map<Type*, int>* typeMap);
   int    Resolve(ASTNode* node);
   int    Output(ASTNode* node, const char* fmt, ...) CHECK_FORMAT(printf, 3, 4);
+  Result Visit(ArgList* node) override;
   Result Visit(ArrayAccess* node) override;
   Result Visit(BinOpNode* node) override;
   Result Visit(BoolConstant* constant) override;
@@ -53,6 +54,7 @@ class DumpAsSourcePass : public Visitor {
   Result Visit(Stmts* stmts) override;
   Result Visit(StoreStmt* node) override;
   Result Visit(UIntConstant* constant) override;
+  Result Visit(UnresolvedListExpr* node) override;
   Result Visit(UnaryOp* node) override;
   Result Visit(VarDeclaration* decl) override;
   Result Visit(WhileStatement* stmt) override;
