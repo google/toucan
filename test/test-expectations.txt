@@ -210,11 +210,13 @@ test/indexed-method-return.t
 test/inherited-field.t
 test/inline-file.t
 test/later-class-field.t
+test/list-default-init-aggregated-class.t
 test/list-init-aggregated-class.t
 test/list-init-array-arg.t
 test/list-init-array.t
 test/list-init-class-arg.t
 test/list-init-class.t
+test/list-init-default-class-arg.t
 test/list-init-inherited-field.t
 test/list-init-matrix.t
 test/list-init-padded-class.t

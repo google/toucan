@@ -338,6 +338,34 @@ Expr* SemanticPass::MakeIndexable(Expr* expr) {
   return Make<ToRawArray>(expr, Make<IntConstant>(length, 32), elementType, memoryLayout);
 }
 
+Expr* SemanticPass::MakeDefaultInitializer(Type* type) {
+  if (type->IsClass()) {
+    auto classType = static_cast<ClassType*>(type);
+    std::vector<Expr*> exprs(classType->GetTotalFields());
+    AddDefaultInitializers(type, &exprs);
+    auto exprList = Make<ExprList>(std::move(exprs));
+    return Make<Initializer>(type, exprList);
+  }
+  return nullptr;
+}
+
+void SemanticPass::AddDefaultInitializers(Type* type, std::vector<Expr*>* exprs) {
+  if (type->IsClass()) {
+    auto  classType = static_cast<ClassType*>(type);
+    for (ClassType* c = classType; c != nullptr; c = c->GetParent()) {
+      for (auto& field : c->GetFields()) {
+        if ((*exprs)[field->index] == nullptr) {
+          if (field->defaultValue) {
+            (*exprs)[field->index] = Widen(field->defaultValue, field->type);
+          } else {
+            (*exprs)[field->index] = MakeDefaultInitializer(field->type);
+          }
+        }
+      }
+    }
+  }
+}
+
 Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
   if (dstType->IsRawPtr()) {
     auto baseType = static_cast<RawPtrType*>(dstType)->GetBaseType();
@@ -356,21 +384,15 @@ Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
   std::vector<Expr*> exprs;
   if (dstType->IsClass()) {
     auto  classType = static_cast<ClassType*>(dstType);
-    auto& fields = classType->GetFields();
-    if (argList->IsNamed()) {
+    if (argList->IsNamed() || argList->GetArgs().size() == 0) {
       exprs.resize(classType->GetTotalFields(), nullptr);
       for (auto arg : argList->GetArgs()) {
         Field* field = classType->FindField(arg->GetID());
         exprs[field->index] = Widen(arg->GetExpr(), field->type);
       }
-      for (ClassType* c = classType; c != nullptr; c = c->GetParent()) {
-        for (auto& field : c->GetFields()) {
-          if (exprs[field->index] == nullptr) {
-            exprs[field->index] = Resolve(field->defaultValue);
-          }
-        }
-      }
+      AddDefaultInitializers(classType, &exprs);
     } else {
+      auto& fields = classType->GetFields();
       int i = 0;
       for (auto arg : argList->GetArgs()) {
         exprs.push_back(Widen(arg->GetExpr(), fields[i++]->type));
