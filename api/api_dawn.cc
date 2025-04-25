@@ -387,6 +387,23 @@ static wgpu::PrimitiveTopology toDawnPrimitiveTopology(PrimitiveTopology type) {
   }
 }
 
+static wgpu::CullMode toDawnCullMode(CullMode cullMode) {
+  switch (cullMode) {
+    case CullMode::None:  return wgpu::CullMode::None;
+    case CullMode::Front: return wgpu::CullMode::Front;
+    case CullMode::Back:  return wgpu::CullMode::Back;
+    default: assert(!"unknown CullMode"); return wgpu::CullMode::None;
+  }
+}
+
+static wgpu::FrontFace toDawnFrontFace(FrontFace frontFace) {
+  switch (frontFace) {
+    case FrontFace::CCW:   return wgpu::FrontFace::CCW;
+    case FrontFace::CW:    return wgpu::FrontFace::CW;
+    default: assert(!"unknown FrontFace"); return wgpu::FrontFace::CCW;
+  }
+}
+
 wgpu::VertexBufferLayout toDawnVertexBufferLayout(Type*                               vertexInput,
                                                   std::vector<wgpu::VertexAttribute>* vaDescs) {
   size_t start = vaDescs->size();
@@ -739,6 +756,8 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
                                               Type*             type,
                                               Device*           device,
                                               PrimitiveTopology primitiveTopology,
+                                              FrontFace         frontFace,
+                                              CullMode          cullMode,
                                               DepthStencilState*depthStencil,
                                               BlendState*       blendState) {
   if (!type->IsClass()) { return nullptr; }
@@ -793,6 +812,8 @@ RenderPipeline* RenderPipeline_RenderPipeline(int               qualifiers,
   if (primitiveTopology == PrimitiveTopology::LineStrip || primitiveTopology == PrimitiveTopology::TriangleStrip) {
     rpDesc.primitive.stripIndexFormat = pipelineLayout.indexFormat;
   }
+  rpDesc.primitive.frontFace = toDawnFrontFace(frontFace);
+  rpDesc.primitive.cullMode = toDawnCullMode(cullMode);
   if (pipelineLayout.depthStencilTarget.format != wgpu::TextureFormat::Undefined) {
     rpDesc.depthStencil = &depthStencilState;
   }

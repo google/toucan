@@ -16,6 +16,10 @@ enum PrimitiveTopology {
   PointList, LineList, LineStrip, TriangleList, TriangleStrip
 }
 
+enum FrontFace { CCW, CW }
+
+enum CullMode { None, Front, Back }
+
 native class CommandBuffer {
  ~CommandBuffer();
 }
@@ -93,7 +97,7 @@ class BlendState {
 }
 
 native class RenderPipeline<T> {
-  RenderPipeline(device : &Device, primitiveTopology = PrimitiveTopology.TriangleList, depthStencilState : &DepthStencilState = {}, blendState : &BlendState = {});
+  RenderPipeline(device : &Device, primitiveTopology = PrimitiveTopology.TriangleList, frontFace = FrontFace.CCW, cullMode = CullMode.None, depthStencilState : &DepthStencilState = {}, blendState : &BlendState = {});
  ~RenderPipeline();
 }
 
