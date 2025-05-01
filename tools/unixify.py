@@ -22,7 +22,7 @@ with open(filename, 'rb') as f:
   contents = f.read()
 
 contents = contents.replace(b'\r\n', b'\n')
-contents = contents.replace(b'\\', b'/')
+contents = contents.replace(b'test\\', b'test/')
 
 with open(filename, 'wb') as f:
   f.write(contents)

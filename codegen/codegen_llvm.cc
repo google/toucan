@@ -34,6 +34,78 @@
 
 namespace Toucan {
 
+namespace {
+
+llvm::Value* GenerateBinOpInt(LLVMBuilder*   builder,
+                              BinOpNode::Op  op,
+                              llvm::Value*   lhs,
+                              llvm::Value*   rhs) {
+  switch (op) {
+    case BinOpNode::ADD: return builder->CreateAdd(lhs, rhs, "iadd");
+    case BinOpNode::SUB: return builder->CreateSub(lhs, rhs, "isub");
+    case BinOpNode::MUL: return builder->CreateMul(lhs, rhs, "imul");
+    case BinOpNode::DIV: return builder->CreateSDiv(lhs, rhs, "idiv");
+    case BinOpNode::MOD: return builder->CreateSRem(lhs, rhs, "imod");
+    case BinOpNode::LT: return builder->CreateICmpSLT(lhs, rhs, "icmp");
+    case BinOpNode::LE: return builder->CreateICmpSLE(lhs, rhs, "icmp");
+    case BinOpNode::EQ: return builder->CreateICmpEQ(lhs, rhs, "icmp");
+    case BinOpNode::GE: return builder->CreateICmpSGE(lhs, rhs, "icmp");
+    case BinOpNode::GT: return builder->CreateICmpSGT(lhs, rhs, "icmp");
+    case BinOpNode::NE: return builder->CreateICmpNE(lhs, rhs, "icmp");
+    case BinOpNode::LOGICAL_AND:
+    case BinOpNode::BITWISE_AND: return builder->CreateAnd(lhs, rhs, "and");
+    case BinOpNode::LOGICAL_OR:
+    case BinOpNode::BITWISE_OR: return builder->CreateOr(lhs, rhs, "or");
+    case BinOpNode::BITWISE_XOR: return builder->CreateXor(lhs, rhs, "xor");
+    default: assert(false); return 0;
+  }
+}
+
+llvm::Value* GenerateBinOpUInt(LLVMBuilder*   builder,
+                               BinOpNode::Op  op,
+                               llvm::Value*   lhs,
+                               llvm::Value*   rhs) {
+  switch (op) {
+    case BinOpNode::ADD: return builder->CreateAdd(lhs, rhs, "uiadd");
+    case BinOpNode::SUB: return builder->CreateSub(lhs, rhs, "uisub");
+    case BinOpNode::MUL: return builder->CreateMul(lhs, rhs, "uimul");
+    case BinOpNode::DIV: return builder->CreateUDiv(lhs, rhs, "uidiv");
+    case BinOpNode::MOD: return builder->CreateURem(lhs, rhs, "uimod");
+    case BinOpNode::LT: return builder->CreateICmpULT(lhs, rhs, "uicmp");
+    case BinOpNode::LE: return builder->CreateICmpULE(lhs, rhs, "uicmp");
+    case BinOpNode::EQ: return builder->CreateICmpEQ(lhs, rhs, "uicmp");
+    case BinOpNode::GE: return builder->CreateICmpUGE(lhs, rhs, "uicmp");
+    case BinOpNode::GT: return builder->CreateICmpUGT(lhs, rhs, "uicmp");
+    case BinOpNode::NE: return builder->CreateICmpNE(lhs, rhs, "uicmp");
+    case BinOpNode::BITWISE_AND: return builder->CreateAnd(lhs, rhs, "uiand");
+    case BinOpNode::BITWISE_XOR: return builder->CreateXor(lhs, rhs, "xor");
+    case BinOpNode::BITWISE_OR: return builder->CreateOr(lhs, rhs, "or");
+    default: assert(false); return 0;
+  }
+}
+
+llvm::Value* GenerateBinOpFloat(LLVMBuilder*   builder,
+                                BinOpNode::Op  op,
+                                llvm::Value*   lhs,
+                                llvm::Value*   rhs) {
+  switch (op) {
+    case BinOpNode::ADD: return builder->CreateFAdd(lhs, rhs, "fadd");
+    case BinOpNode::SUB: return builder->CreateFSub(lhs, rhs, "fsub");
+    case BinOpNode::MUL: return builder->CreateFMul(lhs, rhs, "fmul");
+    case BinOpNode::DIV: return builder->CreateFDiv(lhs, rhs, "fdiv");
+    case BinOpNode::LT: return builder->CreateFCmpOLT(lhs, rhs, "fcmp");
+    case BinOpNode::LE: return builder->CreateFCmpOLE(lhs, rhs, "fcmp");
+    case BinOpNode::EQ: return builder->CreateFCmpOEQ(lhs, rhs, "fcmp");
+    case BinOpNode::GE: return builder->CreateFCmpOGE(lhs, rhs, "fcmp");
+    case BinOpNode::GT: return builder->CreateFCmpOGT(lhs, rhs, "fcmp");
+    case BinOpNode::NE: return builder->CreateFCmpONE(lhs, rhs, "fcmp");
+    case BinOpNode::MOD: return builder->CreateFRem(lhs, rhs, "frem");
+    default: assert(false); return 0;
+  }
+}
+
+}
+
 CodeGenLLVM::CodeGenLLVM(llvm::LLVMContext*                 context,
                          TypeTable*                         types,
                          llvm::Module*                      module,
@@ -263,20 +335,20 @@ llvm::Value* CodeGenLLVM::GetVTableAddress(llvm::Value* controlBlock) {
   return builder_->CreateGEP(controlBlockType_, controlBlock, {Int(0), Int(4)});
 }
 
-llvm::BasicBlock* CodeGenLLVM::NullControlBlockCheck(llvm::Value* controlBlock) {
+llvm::BasicBlock* CodeGenLLVM::NullControlBlockCheck(llvm::Value* controlBlock, BinOpNode::Op op) {
   llvm::Value*      nullControlBlock = llvm::ConstantPointerNull::get(controlBlockPtrType_);
-  llvm::Value*      nonNull = builder_->CreateICmpNE(controlBlock, nullControlBlock);
+  llvm::Value*      condition = GenerateBinOpInt(builder_, op, controlBlock, nullControlBlock);
   llvm::Function*   f = builder_->GetInsertBlock()->getParent();
-  llvm::BasicBlock* nonNullBlock = llvm::BasicBlock::Create(*context_, "nonNull", f);
+  llvm::BasicBlock* trueBlock = llvm::BasicBlock::Create(*context_, "trueBlock", f);
   llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context_, "after", f);
-  builder_->CreateCondBr(nonNull, nonNullBlock, afterBlock);
-  builder_->SetInsertPoint(nonNullBlock);
+  builder_->CreateCondBr(condition, trueBlock, afterBlock);
+  builder_->SetInsertPoint(trueBlock);
   return afterBlock;
 }
 
 void CodeGenLLVM::RefStrongPtr(llvm::Value* ptr) {
   llvm::Value*      controlBlock = builder_->CreateExtractValue(ptr, {1});
-  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock);
+  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock, BinOpNode::NE);
 
   llvm::Value* address = GetStrongRefCountAddress(controlBlock);
   llvm::Value* refCount = builder_->CreateLoad(intType_, address);
@@ -290,7 +362,7 @@ void CodeGenLLVM::RefStrongPtr(llvm::Value* ptr) {
 
 void CodeGenLLVM::UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type) {
   llvm::Value*      controlBlock = builder_->CreateExtractValue(ptr, {1});
-  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock);
+  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock, BinOpNode::NE);
 
   llvm::Value* address = GetStrongRefCountAddress(controlBlock);
   llvm::Value* refCount = builder_->CreateLoad(intType_, address);
@@ -334,7 +406,7 @@ llvm::AllocaInst* CodeGenLLVM::CreateEntryBlockAlloca(llvm::Function* function, 
 
 void CodeGenLLVM::RefWeakPtr(llvm::Value* ptr) {
   llvm::Value*      controlBlock = builder_->CreateExtractValue(ptr, {1});
-  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock);
+  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock, BinOpNode::NE);
 
   llvm::Value* address = GetWeakRefCountAddress(controlBlock);
   llvm::Value* refCount = builder_->CreateLoad(intType_, address);
@@ -347,7 +419,7 @@ void CodeGenLLVM::RefWeakPtr(llvm::Value* ptr) {
 
 void CodeGenLLVM::UnrefWeakPtr(llvm::Value* ptr) {
   llvm::Value*      controlBlock = builder_->CreateExtractValue(ptr, {1});
-  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock);
+  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock, BinOpNode::NE);
 
   llvm::Value* address = GetWeakRefCountAddress(controlBlock);
   llvm::Value* refCount = builder_->CreateLoad(intType_, address);
@@ -588,74 +660,6 @@ llvm::Value* CodeGenLLVM::ConvertFromNative(Type* type, llvm::Value* value) {
   return value;
 }
 
-static llvm::Value* GenerateBinOpInt(LLVMBuilder* builder,
-                                     BinOpNode*   node,
-                                     llvm::Value* lhs,
-                                     llvm::Value* rhs) {
-  switch (node->GetOp()) {
-    case BinOpNode::ADD: return builder->CreateAdd(lhs, rhs, "iadd");
-    case BinOpNode::SUB: return builder->CreateSub(lhs, rhs, "isub");
-    case BinOpNode::MUL: return builder->CreateMul(lhs, rhs, "imul");
-    case BinOpNode::DIV: return builder->CreateSDiv(lhs, rhs, "idiv");
-    case BinOpNode::MOD: return builder->CreateSRem(lhs, rhs, "imod");
-    case BinOpNode::LT: return builder->CreateICmpSLT(lhs, rhs, "icmp");
-    case BinOpNode::LE: return builder->CreateICmpSLE(lhs, rhs, "icmp");
-    case BinOpNode::EQ: return builder->CreateICmpEQ(lhs, rhs, "icmp");
-    case BinOpNode::GE: return builder->CreateICmpSGE(lhs, rhs, "icmp");
-    case BinOpNode::GT: return builder->CreateICmpSGT(lhs, rhs, "icmp");
-    case BinOpNode::NE: return builder->CreateICmpNE(lhs, rhs, "icmp");
-    case BinOpNode::LOGICAL_AND:
-    case BinOpNode::BITWISE_AND: return builder->CreateAnd(lhs, rhs, "and");
-    case BinOpNode::LOGICAL_OR:
-    case BinOpNode::BITWISE_OR: return builder->CreateOr(lhs, rhs, "or");
-    case BinOpNode::BITWISE_XOR: return builder->CreateXor(lhs, rhs, "xor");
-    default: assert(false); return 0;
-  }
-}
-
-static llvm::Value* GenerateBinOpUInt(LLVMBuilder* builder,
-                                      BinOpNode*   node,
-                                      llvm::Value* lhs,
-                                      llvm::Value* rhs) {
-  switch (node->GetOp()) {
-    case BinOpNode::ADD: return builder->CreateAdd(lhs, rhs, "uiadd");
-    case BinOpNode::SUB: return builder->CreateSub(lhs, rhs, "uisub");
-    case BinOpNode::MUL: return builder->CreateMul(lhs, rhs, "uimul");
-    case BinOpNode::DIV: return builder->CreateUDiv(lhs, rhs, "uidiv");
-    case BinOpNode::MOD: return builder->CreateURem(lhs, rhs, "uimod");
-    case BinOpNode::LT: return builder->CreateICmpULT(lhs, rhs, "uicmp");
-    case BinOpNode::LE: return builder->CreateICmpULE(lhs, rhs, "uicmp");
-    case BinOpNode::EQ: return builder->CreateICmpEQ(lhs, rhs, "uicmp");
-    case BinOpNode::GE: return builder->CreateICmpUGE(lhs, rhs, "uicmp");
-    case BinOpNode::GT: return builder->CreateICmpUGT(lhs, rhs, "uicmp");
-    case BinOpNode::NE: return builder->CreateICmpNE(lhs, rhs, "uicmp");
-    case BinOpNode::BITWISE_AND: return builder->CreateAnd(lhs, rhs, "uiand");
-    case BinOpNode::BITWISE_XOR: return builder->CreateXor(lhs, rhs, "xor");
-    case BinOpNode::BITWISE_OR: return builder->CreateOr(lhs, rhs, "or");
-    default: assert(false); return 0;
-  }
-}
-
-static llvm::Value* GenerateBinOpFloat(LLVMBuilder* builder,
-                                       BinOpNode*   node,
-                                       llvm::Value* lhs,
-                                       llvm::Value* rhs) {
-  switch (node->GetOp()) {
-    case BinOpNode::ADD: return builder->CreateFAdd(lhs, rhs, "fadd");
-    case BinOpNode::SUB: return builder->CreateFSub(lhs, rhs, "fsub");
-    case BinOpNode::MUL: return builder->CreateFMul(lhs, rhs, "fmul");
-    case BinOpNode::DIV: return builder->CreateFDiv(lhs, rhs, "fdiv");
-    case BinOpNode::LT: return builder->CreateFCmpOLT(lhs, rhs, "fcmp");
-    case BinOpNode::LE: return builder->CreateFCmpOLE(lhs, rhs, "fcmp");
-    case BinOpNode::EQ: return builder->CreateFCmpOEQ(lhs, rhs, "fcmp");
-    case BinOpNode::GE: return builder->CreateFCmpOGE(lhs, rhs, "fcmp");
-    case BinOpNode::GT: return builder->CreateFCmpOGT(lhs, rhs, "fcmp");
-    case BinOpNode::NE: return builder->CreateFCmpONE(lhs, rhs, "fcmp");
-    case BinOpNode::MOD: return builder->CreateFRem(lhs, rhs, "frem");
-    default: assert(false); return 0;
-  }
-}
-
 llvm::Value* CodeGenLLVM::GenerateTranspose(llvm::Value* srcMatrix, MatrixType* srcMatrixType) {
   VectorType* srcColumnType = srcMatrixType->GetColumnType();
   unsigned    numSrcColumns = srcMatrixType->GetNumColumns();
@@ -730,12 +734,12 @@ llvm::Value* CodeGenLLVM::GenerateBinOp(BinOpNode*   node,
                                         Type*        type) {
   if (type->IsInteger() || type->IsIntegerVector() || type->IsBool() || type->IsEnum()) {
     if (type->IsUnsigned()) {
-      return GenerateBinOpUInt(builder_, node, lhs, rhs);
+      return GenerateBinOpUInt(builder_, node->GetOp(), lhs, rhs);
     } else {
-      return GenerateBinOpInt(builder_, node, lhs, rhs);
+      return GenerateBinOpInt(builder_, node->GetOp(), lhs, rhs);
     }
   } else if (type->IsFloatingPoint() || type->IsFloatVector()) {
-    return GenerateBinOpFloat(builder_, node, lhs, rhs);
+    return GenerateBinOpFloat(builder_, node->GetOp(), lhs, rhs);
   } else if (type->IsMatrix() && node->GetOp() == BinOpNode::MUL) {
     auto matrixType = static_cast<MatrixType*>(type);
     return GenerateMatrixMultiply(lhs, rhs, matrixType, matrixType);
@@ -1132,8 +1136,25 @@ Result CodeGenLLVM::Visit(ArrayAccess* node) {
 }
 
 Result CodeGenLLVM::Visit(SmartToRawPtr* node) {
+  llvm::Function*   parentBlock = builder_->GetInsertBlock()->getParent();
   llvm::Value* expr = GenerateLLVM(node->GetExpr());
   auto type = node->GetExpr()->GetType(types_);
+  auto controlBlock = builder_->CreateExtractValue(expr, {1});
+  llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock, BinOpNode::Op::EQ);
+  llvm::BasicBlock* abortBlock = builder_->GetInsertBlock();
+  llvm::Type* voidType = llvm::Type::getVoidTy(*context_);
+  llvm::FunctionType* ft = llvm::FunctionType::get(voidType, false);
+  llvm::FunctionCallee systemAbort = module_->getOrInsertFunction("System_Abort", ft);
+  builder_->CreateCall(systemAbort, {});
+  builder_->CreateBr(afterBlock);
+  builder_->SetInsertPoint(afterBlock);
+  if (type->IsWeakPtr()) {
+    llvm::BasicBlock* afterRefCountCheck = llvm::BasicBlock::Create(*context_, "afterRefCountCheck", parentBlock);
+    auto strongRefCount = builder_->CreateLoad(intType_, GetStrongRefCountAddress(controlBlock));
+    auto isZero = builder_->CreateICmpEQ(strongRefCount, Int(0));
+    builder_->CreateCondBr(isZero, abortBlock, afterRefCountCheck);
+    builder_->SetInsertPoint(afterRefCountCheck);
+  }
   AppendTemporary(expr, type);
   auto value = builder_->CreateExtractValue(expr, {0});
   assert(type->IsStrongPtr() || type->IsWeakPtr());

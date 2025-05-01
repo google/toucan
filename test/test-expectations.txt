@@ -1,3 +1,16 @@
+test/abort-on-assert-failure.t
+test/abort-on-assert-failure.t:4: assertion failed
+  Y__Y
+--\__(x)==     (pining for the fjords)
+test/abort-on-strong-null-deref.t
+  Y__Y
+--\__(x)==     (pining for the fjords)
+test/abort-on-weak-null-deref.t
+  Y__Y
+--\__(x)==     (pining for the fjords)
+test/abort.t
+  Y__Y
+--\__(x)==     (pining for the fjords)
 test/aggregate-return.t
 test/allocate-unsized-class.t
 test/array-assign.t

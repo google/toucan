@@ -191,6 +191,7 @@ int main(int argc, char** argv) {
   auto typeList = types.GetTypes().data();
   engine->addGlobalMapping(codeGenLLVM.GetTypeList(), &typeList);
   if (verifyFunction(*main)) { printf("LLVM main function is broken; aborting\n"); }
+  Toucan::exitOnAbort = true;
   fpm.run(*main);
   if (dump) {
 #ifdef NDEBUG

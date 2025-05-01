@@ -13,7 +13,7 @@
 // limitations under the License.
 
 namespace Toucan {
-
+extern bool exitOnAbort;
 class SymbolTable;
 class TypeTable;
 class NodeVector;

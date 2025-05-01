@@ -37,6 +37,8 @@
 
 namespace Toucan {
 
+bool exitOnAbort;
+
 namespace {
 
 uint32_t BytesPerPixel(wgpu::TextureFormat format) {
@@ -1361,7 +1363,15 @@ void System_PrintLine(Array* buffer) {
   fwrite("\n", 1, 1, stdout);
 }
 
-void System_Abort() { abort(); }
+void System_Abort() {
+  printf("  Y__Y\n");
+  printf("--\\__(x)==     (pining for the fjords)\n");
+  if (exitOnAbort) {
+    exit(1);
+  } else {
+    abort();
+  }
+}
 
 void System_Destroy(System* This) {}
 
