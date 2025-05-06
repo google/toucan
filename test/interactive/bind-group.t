@@ -30,12 +30,6 @@ var bg = new BindGroup<ObjectData>(device, &objectData);
 var stagingBuffer = new writeonly Buffer<Uniforms>(device);
 var pipeline = new RenderPipeline<Pipeline>(device);
 while (System.IsRunning()) {
-  var event = System.GetNextEvent();
-  if (event.type == EventType.MouseMove) {
-    var s = stagingBuffer.Map();
-    s.color = float<4>((float) event.position.x / 640.0, (float) event.position.y / 480.0, 0.0, 1.0);
-    stagingBuffer.Unmap();
-  }
   var encoder = new CommandEncoder(device);
   objectData.uniforms.CopyFromBuffer(encoder, stagingBuffer);
   var p : Pipeline;
@@ -48,4 +42,12 @@ while (System.IsRunning()) {
   renderPass.End();
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
+  while (System.HasPendingEvents()) {
+    var event = System.GetNextEvent();
+    if (event.type == EventType.MouseMove) {
+      var s = stagingBuffer.Map();
+      s.color = float<4>((float) event.position.x / 640.0, (float) event.position.y / 480.0, 0.0, 1.0);
+      stagingBuffer.Unmap();
+    }
+  }
 }

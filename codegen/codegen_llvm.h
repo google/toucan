@@ -45,9 +45,9 @@ typedef llvm::IRBuilder<> LLVMBuilder;
 
 struct ValueTypePair {
   ValueTypePair(llvm::Value* v, Type* t) : value(v), type(t) {}
-  ValueTypePair() : value(nullptr), type(nullptr) {}
-  llvm::Value* value;
-  Type*        type;
+  ValueTypePair() {}
+  llvm::Value* value = nullptr;
+  Type*        type = nullptr;
 };
 
 using DataVars = std::unordered_map<const void*, llvm::GlobalValue*>;
@@ -159,6 +159,7 @@ class CodeGenLLVM : public Visitor {
                                   Type*               returnType,
                                   const FileLocation& location);
   llvm::Value* GenerateGlobalData(const void* data, size_t size, Type* type);
+  llvm::BasicBlock* CreateBasicBlock(const char* name);
   void         AppendTemporary(llvm::Value* value, Type* type);
   void         DestroyTemporaries();
   llvm::Value* CreateTypePtr(Type* type);

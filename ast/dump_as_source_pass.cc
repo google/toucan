@@ -25,7 +25,6 @@ DumpAsSourcePass::DumpAsSourcePass(FILE* file, std::unordered_map<Type*, int>* t
   map_[nullptr] = 0;
 }
 
-#define NOTIMPLEMENTED() assert(!"that node is not implemented")
 
 int DumpAsSourcePass::Resolve(ASTNode* node) {
   if (!map_[node]) { node->Accept(this); }
@@ -179,10 +178,6 @@ Result DumpAsSourcePass::Visit(BinOpNode* node) {
   return {};
 }
 
-Result DumpAsSourcePass::Visit(UnaryOp* node) {
-  NOTIMPLEMENTED();
-  return {};
-}
 
 Result DumpAsSourcePass::Visit(UnresolvedListExpr* node) {
   int argList = Resolve(node->GetArgList());
@@ -200,28 +195,8 @@ Result DumpAsSourcePass::Visit(ReturnStatement* stmt) {
   return {};
 }
 
-Result DumpAsSourcePass::Visit(IfStatement* s) {
-  NOTIMPLEMENTED();
-  return {};
-}
-
-Result DumpAsSourcePass::Visit(WhileStatement* s) {
-  NOTIMPLEMENTED();
-  return {};
-}
-
-Result DumpAsSourcePass::Visit(DoStatement* s) {
-  NOTIMPLEMENTED();
-  return {};
-}
-
-Result DumpAsSourcePass::Visit(ForStatement* node) {
-  NOTIMPLEMENTED();
-  return {};
-}
-
 Result DumpAsSourcePass::Default(ASTNode* node) {
-  NOTIMPLEMENTED();
+  assert(!"that node is not implemented");
   return {};
 }
 

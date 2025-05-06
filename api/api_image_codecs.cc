@@ -26,7 +26,6 @@
 namespace Toucan {
 
 struct ImageDecoder {
-  ImageDecoder() {}
   Type*                         pixelFormat;
   struct jpeg_decompress_struct cinfo;
   struct jpeg_error_mgr         jerr;

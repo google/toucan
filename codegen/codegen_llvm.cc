@@ -338,9 +338,8 @@ llvm::Value* CodeGenLLVM::GetVTableAddress(llvm::Value* controlBlock) {
 llvm::BasicBlock* CodeGenLLVM::NullControlBlockCheck(llvm::Value* controlBlock, BinOpNode::Op op) {
   llvm::Value*      nullControlBlock = llvm::ConstantPointerNull::get(controlBlockPtrType_);
   llvm::Value*      condition = GenerateBinOpInt(builder_, op, controlBlock, nullControlBlock);
-  llvm::Function*   f = builder_->GetInsertBlock()->getParent();
-  llvm::BasicBlock* trueBlock = llvm::BasicBlock::Create(*context_, "trueBlock", f);
-  llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context_, "after", f);
+  llvm::BasicBlock* trueBlock = CreateBasicBlock("trueBlock");
+  llvm::BasicBlock* afterBlock = CreateBasicBlock("after");
   builder_->CreateCondBr(condition, trueBlock, afterBlock);
   builder_->SetInsertPoint(trueBlock);
   return afterBlock;
@@ -360,6 +359,10 @@ void CodeGenLLVM::RefStrongPtr(llvm::Value* ptr) {
   RefWeakPtr(ptr);
 }
 
+llvm::BasicBlock* CodeGenLLVM::CreateBasicBlock(const char* name) {
+  return llvm::BasicBlock::Create(*context_, name, builder_->GetInsertBlock()->getParent());
+}
+
 void CodeGenLLVM::UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type) {
   llvm::Value*      controlBlock = builder_->CreateExtractValue(ptr, {1});
   llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock, BinOpNode::NE);
@@ -369,8 +372,7 @@ void CodeGenLLVM::UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type) {
   refCount = builder_->CreateSub(refCount, Int(1));
   builder_->CreateStore(refCount, address);
   llvm::Value*      isZero = builder_->CreateICmpEQ(refCount, Int(0));
-  llvm::Function*   f = builder_->GetInsertBlock()->getParent();
-  llvm::BasicBlock* trueBlock = llvm::BasicBlock::Create(*context_, "trueBlock", f);
+  llvm::BasicBlock* trueBlock = CreateBasicBlock("trueBlock");
   builder_->CreateCondBr(isZero, trueBlock, afterBlock);
   builder_->SetInsertPoint(trueBlock);
   bool  isNativeClass = false;
@@ -426,8 +428,7 @@ void CodeGenLLVM::UnrefWeakPtr(llvm::Value* ptr) {
   refCount = builder_->CreateSub(refCount, Int(1));
   builder_->CreateStore(refCount, address);
   llvm::Value*      isZero = builder_->CreateICmpEQ(refCount, Int(0));
-  llvm::Function*   f = builder_->GetInsertBlock()->getParent();
-  llvm::BasicBlock* trueBlock = llvm::BasicBlock::Create(*context_, "trueBlock", f);
+  llvm::BasicBlock* trueBlock = CreateBasicBlock("trueBlock");
   builder_->CreateCondBr(isZero, trueBlock, afterBlock);
   builder_->SetInsertPoint(trueBlock);
   GenerateFree(controlBlock);
@@ -964,10 +965,9 @@ Result CodeGenLLVM::Visit(ReturnStatement* stmt) {
 
 Result CodeGenLLVM::Visit(WhileStatement* stmt) {
   Expr*             cond = stmt->GetCond();
-  llvm::Function*   f = builder_->GetInsertBlock()->getParent();
-  llvm::BasicBlock* topOfLoop = llvm::BasicBlock::Create(*context_, "topOfLoop", f);
-  llvm::BasicBlock* condition = cond ? llvm::BasicBlock::Create(*context_, "condition", f) : 0;
-  llvm::BasicBlock* after = llvm::BasicBlock::Create(*context_, "after", f);
+  llvm::BasicBlock* topOfLoop = CreateBasicBlock("topOfLoop");
+  llvm::BasicBlock* condition = cond ? CreateBasicBlock("condition") : nullptr;
+  llvm::BasicBlock* after = CreateBasicBlock("after");
   builder_->CreateBr(condition ? condition : topOfLoop);
   builder_->SetInsertPoint(topOfLoop);
   Stmt* body = stmt->GetBody();
@@ -988,9 +988,8 @@ Result CodeGenLLVM::Visit(WhileStatement* stmt) {
 Result CodeGenLLVM::Visit(DoStatement* stmt) {
   Stmt*             body = stmt->GetBody();
   Expr*             cond = stmt->GetCond();
-  llvm::Function*   f = builder_->GetInsertBlock()->getParent();
-  llvm::BasicBlock* topOfLoop = llvm::BasicBlock::Create(*context_, "topOfLoop", f);
-  llvm::BasicBlock* after = llvm::BasicBlock::Create(*context_, "after", f);
+  llvm::BasicBlock* topOfLoop = CreateBasicBlock("topOfLoop");
+  llvm::BasicBlock* after = CreateBasicBlock("after");
   builder_->CreateBr(topOfLoop);
   builder_->SetInsertPoint(topOfLoop);
   if (body) body->Accept(this);
@@ -1010,12 +1009,10 @@ Result CodeGenLLVM::Visit(ForStatement* forStmt) {
   Expr*           cond = forStmt->GetCond();
   Stmt*           loopStmt = forStmt->GetLoopStmt();
   Stmt*           body = forStmt->GetBody();
-  llvm::Function* f = builder_->GetInsertBlock()->getParent();
   if (initStmt) initStmt->Accept(this);
-  llvm::BasicBlock* topOfLoop = llvm::BasicBlock::Create(*context_, "topOfLoop", f);
-  llvm::BasicBlock* condition =
-      cond ? llvm::BasicBlock::Create(*context_, "forLoopCondition", f) : 0;
-  llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context_, "forLoopExit", f);
+  llvm::BasicBlock* topOfLoop = CreateBasicBlock("topOfLoop");
+  llvm::BasicBlock* condition = cond ? CreateBasicBlock("forLoopCondition") : nullptr;
+  llvm::BasicBlock* afterBlock = CreateBasicBlock("forLoopExit");
   builder_->CreateBr(cond ? condition : topOfLoop);
   builder_->SetInsertPoint(topOfLoop);
   if (body) body->Accept(this);
@@ -1136,7 +1133,6 @@ Result CodeGenLLVM::Visit(ArrayAccess* node) {
 }
 
 Result CodeGenLLVM::Visit(SmartToRawPtr* node) {
-  llvm::Function*   parentBlock = builder_->GetInsertBlock()->getParent();
   llvm::Value* expr = GenerateLLVM(node->GetExpr());
   auto type = node->GetExpr()->GetType(types_);
   auto controlBlock = builder_->CreateExtractValue(expr, {1});
@@ -1149,7 +1145,7 @@ Result CodeGenLLVM::Visit(SmartToRawPtr* node) {
   builder_->CreateBr(afterBlock);
   builder_->SetInsertPoint(afterBlock);
   if (type->IsWeakPtr()) {
-    llvm::BasicBlock* afterRefCountCheck = llvm::BasicBlock::Create(*context_, "afterRefCountCheck", parentBlock);
+    llvm::BasicBlock* afterRefCountCheck = CreateBasicBlock("afterRefCountCheck");
     auto strongRefCount = builder_->CreateLoad(intType_, GetStrongRefCountAddress(controlBlock));
     auto isZero = builder_->CreateICmpEQ(strongRefCount, Int(0));
     builder_->CreateCondBr(isZero, abortBlock, afterRefCountCheck);
@@ -1271,10 +1267,9 @@ Result CodeGenLLVM::Visit(IfStatement* ifStmt) {
   DestroyTemporaries();
   Stmt*             stmt = ifStmt->GetStmt();
   Stmt*             optElse = ifStmt->GetOptElse();
-  llvm::Function*   f = builder_->GetInsertBlock()->getParent();
-  llvm::BasicBlock* trueBlock = llvm::BasicBlock::Create(*context_, "trueBlock", f);
-  llvm::BasicBlock* elseBlock = optElse ? llvm::BasicBlock::Create(*context_, "elseBlock", f) : 0;
-  llvm::BasicBlock* afterBlock = llvm::BasicBlock::Create(*context_, "afterBlock", f);
+  llvm::BasicBlock* trueBlock = CreateBasicBlock("trueBlock");
+  llvm::BasicBlock* elseBlock = optElse ? CreateBasicBlock("elseBlock") : nullptr;
+  llvm::BasicBlock* afterBlock = CreateBasicBlock("afterBlock");
   builder_->CreateCondBr(v, trueBlock, elseBlock ? elseBlock : afterBlock);
   builder_->SetInsertPoint(trueBlock);
   if (stmt) stmt->Accept(this);

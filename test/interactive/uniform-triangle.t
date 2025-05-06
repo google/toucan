@@ -23,13 +23,10 @@ var uniformBuffer = new uniform Buffer<Uniforms>(device);
 var bg = new BindGroup<Bindings>(device, { uniformBuffer });
 var stagingBuffer = new writeonly Buffer<Uniforms>(device);
 var pipeline = new RenderPipeline<Pipeline>(device);
-for (var i = 0; i < 1000; ++i) {
-  while (System.HasPendingEvents()) {
-    System.GetNextEvent();
-  }
+for (var i = 0; i < 300 && System.IsRunning(); ++i) {
   var encoder = new CommandEncoder(device);
   var s = stagingBuffer.Map();
-  var f = (float) i / 1000.0;
+  var f = (float) i / 300.0;
   s.color = float<4>(1.0 - f, f, 0.0, 1.0);
   stagingBuffer.Unmap();
   uniformBuffer.CopyFromBuffer(encoder, stagingBuffer);
@@ -40,4 +37,7 @@ for (var i = 0; i < 1000; ++i) {
   renderPass.End();
   device.GetQueue().Submit(encoder.Finish());
   swapChain.Present();
+  while (System.HasPendingEvents()) {
+    System.GetNextEvent();
+  }
 }

@@ -360,8 +360,7 @@ bool Method::IsConstructor() const {
   return name == classType->GetName();
 }
 
-ClassType::ClassType(std::string name)
-    : name_(name), parent_(nullptr), template_(nullptr), numFields_(0) {
+ClassType::ClassType(std::string name) : name_(name) {
   vtable_.resize(1);
 }
 

@@ -36,7 +36,7 @@ struct FileLocation {
   FileLocation(const FileLocation& other);
   FileLocation(std::shared_ptr<std::string> f, int n);
   std::shared_ptr<std::string> filename;
-  int                          lineNum;
+  int                          lineNum = -1;
 };
 
 class ScopedFileLocation {

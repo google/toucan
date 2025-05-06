@@ -455,14 +455,14 @@ class ClassType : public Type {
  private:
   std::string          name_;
   Scope*               scope_ = nullptr;
-  ClassType*           parent_;
+  ClassType*           parent_ = nullptr;
   FieldVector          fields_;
   MethodVector         methods_;
   EnumVector           enums_;
-  ClassTemplate*       template_;
+  ClassTemplate*       template_ = nullptr;
   TypeList             templateArgs_;
   std::vector<Method*> vtable_;
-  int                  numFields_;  // includes inherited fields
+  int                  numFields_ = 0;  // includes inherited fields
   bool                 isDefined_ = false;
   bool                 native_ = false;
   MemoryLayout         memoryLayout_ = MemoryLayout::Default;

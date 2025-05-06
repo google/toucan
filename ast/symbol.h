@@ -29,11 +29,11 @@ typedef std::unordered_map<std::string, std::shared_ptr<Var>> VarMap;
 typedef std::unordered_map<std::string, Type*>                TypeMap;
 
 struct Scope {
-  Scope(Scope* p) : parent(p), classType(nullptr), enumType(nullptr), method(nullptr) {}
+  Scope(Scope* p) : parent(p) {}
   Scope*     parent;
-  ClassType* classType;
-  EnumType*  enumType;
-  Method*    method;
+  ClassType* classType = nullptr;
+  EnumType*  enumType = nullptr;
+  Method*    method = nullptr;
   VarMap     vars;
   TypeMap    types;
 };
