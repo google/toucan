@@ -265,6 +265,7 @@ void CodeGenSPIRV::Run(Method* entryPoint) {
   header_.push_back(0);        // Schema
   Append(spv::OpCapability, {spv::CapabilityMatrix}, &header_);
   Append(spv::OpCapability, {spv::CapabilityShader}, &header_);
+  Append(spv::OpCapability, {spv::CapabilityImageQuery}, &header_);
   Append(spv::OpCapability, {spv::CapabilitySampled1D}, &header_);
   Append(spv::OpCapability, {spv::CapabilityImage1D}, &header_);
   Code importName;
@@ -847,6 +848,12 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
       }
       uint32_t mask = spv::ImageOperandsLodMask;
       return AppendCode(spv::Op::OpImageFetch, resultType, {texture, coord, mask, level});
+    } else if (method->name == "GetSize") {
+      uint32_t resultType = ConvertType(expr->GetType(types_));
+      Type*    textureType = static_cast<PtrType*>(args[0]->GetType(types_))->GetBaseType();
+      uint32_t texture = GenerateSPIRV(args[0]);
+      texture = AppendCode(spv::Op::OpLoad, ConvertType(textureType), {texture});
+      return AppendCode(spv::Op::OpImageQuerySizeLod, resultType, {texture, GetIntConstant(0)});
     }
   } else if (isMath(method->classType)) {
     uint32_t resultType = ConvertType(expr->GetType(types_));

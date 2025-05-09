@@ -151,29 +151,34 @@ native class SampleableTexture1D<ST> {
  ~SampleableTexture1D();
   deviceonly Sample(sampler : &Sampler, coord : float) : ST<4>;
   deviceonly Load(coord : uint, level : uint) : ST<4>;
+  deviceonly GetSize() : uint;
 }
 
 native class SampleableTexture2D<ST> {
  ~SampleableTexture2D();
   deviceonly Sample(sampler : &Sampler, coords : float<2>) : ST<4>;
   deviceonly Load(coord : uint<2>, level : uint) : ST<4>;
+  deviceonly GetSize() : uint<2>;
 }
 
 native class SampleableTexture2DArray<ST> {
  ~SampleableTexture2DArray();
   deviceonly Sample(sampler : &Sampler, coords : float<2>, layer : uint) : ST<4>;
   deviceonly Load(coord : uint<2>, layer : uint, level : uint) : ST<4>;
+  deviceonly GetSize() : uint<2>;
 }
 
 native class SampleableTexture3D<ST> {
  ~SampleableTexture3D();
   deviceonly Sample(sampler : &Sampler, coords : float<3>) : ST<4>;
   deviceonly Load(coord : uint<3>, level : uint) : ST<4>;
+  deviceonly GetSize() : uint<3>;
 }
 
 native class SampleableTextureCube<ST> {
  ~SampleableTextureCube();
   deviceonly Sample(sampler : &Sampler, coords : float<3>) : ST<4>;
+  deviceonly GetSize() : uint<2>;
 }
 
 native class Texture1D<PF> {
