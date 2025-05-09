@@ -204,7 +204,20 @@ void GenBindings::GenType(Type* type) {
             "types->GetUnresolvedScopedType(static_cast<FormalTemplateArg*>(typeList[%d]), \"%s\")",
             typeMap_[unresolvedScopedType->GetBaseType()], unresolvedScopedType->GetID().c_str());
   } else if (type->IsList()) {
-    fprintf(file_, "nullptr");
+    // This is technically correct, but builds very large list types that aren't used.
+    // It also causes the WASM backend to fail with "too many locals".
+#if 0
+    const VarVector& vars = static_cast<ListType*>(type)->GetTypes();
+    fprintf(file_, "types->GetList(VarVector{");
+    for (auto var : vars) {
+      fprintf(file_, "std::make_shared<Var>(\"%s\", typeList[%d])", var->name.c_str(), typeMap_[var->type]);
+      if (var != vars.back()) { fprintf(file_, ", "); }
+    }
+    fprintf(file_,"})");
+#endif
+    // For now, just emit a placeholder type that will still cause the type IDs in
+    // CodeGenLLVM::CreateTypePtr() to match the indices in the type table.
+    fprintf(file_, "types->GetPlaceholder()");
   } else {
     assert(!"unknown type");
     exit(-1);
@@ -276,6 +289,7 @@ void GenBindings::Run() {
       GenBindingsForEnum(static_cast<EnumType*>(type));
     }
   }
+  fprintf(file_, "  assert(types->GetTypes().size() == %d);\n", numTypes);
   fprintf(file_, "  delete[] typeList;\n");
   fprintf(file_, "  delete[] nodeList;\n");
   fprintf(file_, "}\n\n");
