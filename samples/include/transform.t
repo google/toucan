@@ -30,6 +30,26 @@ class Transform {
       float<4>((r + l) / (r - l), (t + b) / (t - b), -(f + n) / (f - n), -1.0),
       float<4>(0.0, 0.0, -2.0 * f * n / (f - n), 0.0));
   }
+  static perspective(fovy : float, aspect : float, n: float, f : float) : float<4,4> {
+    var a = 1.0 / Math.tan(fovy / 2.0);
+    return float<4,4>(
+      float<4>(a / aspect, 0.0, 0.0,                   0.0),
+      float<4>(0.0,        a,   0.0,                   0.0),
+      float<4>(0.0,        0.0, (f + n) / (n - f),    -1.0),
+      float<4>(0.0,        0.0, 2.0 * f * n / (n - f), 0.0));
+  }
+  static lookAt(eye : float<3>, center : float<3>, up : float<3>) : float<4,4> {
+    var f = Math.normalize(center - eye);
+    up = Math.normalize(up);
+    var s = Math.normalize(Math.cross(f, up));
+    var u = Math.cross(s, f);
+    var t = float<3>(Math.dot(s, -eye), Math.dot(u, -eye), Math.dot(f, eye));
+    return float<4,4>(
+      float<4>(s.x, u.x, -f.x, 0.0),
+      float<4>(s.y, u.y, -f.y, 0.0),
+      float<4>(s.z, u.z, -f.z, 0.0),
+      float<4>(t.x, t.y,  t.z, 1.0));
+  }
   static swapRows(m : float<4,4>, i : int, j : int) : float<4,4> {
     for (var k = 0; k < 4; ++k) {
       var tmp = m[k][i];

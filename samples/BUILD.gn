@@ -25,6 +25,10 @@ toucan_app("decode") {
   sources = [ "decode.t" ]
 }
 
+toucan_app("disco-dragon") {
+  sources = [ "disco-dragon.t" ]
+}
+
 toucan_app("skybox") {
   sources = [ "skybox.t" ]
 }
@@ -55,6 +59,10 @@ toucan_app("shiny-anim") {
 
 toucan_app("shiny-compute-anim") {
   sources = [ "shiny-compute-anim.t" ]
+}
+
+toucan_app("shiny-dragon") {
+  sources = [ "shiny-dragon.t" ]
 }
 
 toucan_app("triangle") {
