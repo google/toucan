@@ -69,6 +69,7 @@ class Expr : public ASTNode {
  public:
   Expr();
   virtual Type* GetType(TypeTable* types) = 0;
+  virtual bool  IsConstant(TypeTable* types) const { return false; }
   virtual bool  IsArrayAccess() const { return false; }
   virtual bool  IsFieldAccess() const { return false; }
   virtual bool  IsUnresolvedListExpr() const { return false; }
@@ -109,6 +110,7 @@ class IntConstant : public Expr {
   IntConstant(int32_t value, uint32_t bits);
   Result   Accept(Visitor* visitor) override;
   Type*    GetType(TypeTable* types) override;
+  bool     IsConstant(TypeTable* types) const override { return true; }
   bool     IsIntConstant() const override { return true; }
   int32_t  GetValue() const { return value_; }
   uint32_t GetBits() const { return bits_; }
@@ -123,6 +125,7 @@ class UIntConstant : public Expr {
   UIntConstant(uint32_t value, uint32_t bits);
   Result   Accept(Visitor* visitor) override;
   Type*    GetType(TypeTable* types) override;
+  bool     IsConstant(TypeTable* types) const override { return true; }
   uint32_t GetValue() const { return value_; }
   uint32_t GetBits() const { return bits_; }
 
@@ -136,6 +139,7 @@ class FloatConstant : public Expr {
   FloatConstant(float value);
   Result Accept(Visitor* visitor) override;
   Type*  GetType(TypeTable* types) override;
+  bool   IsConstant(TypeTable* types) const override { return true; }
   float  GetValue() const { return value_; }
 
  private:
@@ -147,6 +151,7 @@ class DoubleConstant : public Expr {
   DoubleConstant(double value);
   Result Accept(Visitor* visitor) override;
   Type*  GetType(TypeTable* types) override;
+  bool   IsConstant(TypeTable* types) const override { return true; }
   double GetValue() const { return value_; }
 
  private:
@@ -158,8 +163,12 @@ class CastExpr : public Expr {
   CastExpr(Type* type, Expr* expr);
   Result Accept(Visitor* visitor) override;
   Type*  GetType(TypeTable* types) override;
+  bool   IsConstant(TypeTable* types) const override {
+    return IsTransparent(types) && expr_->IsConstant(types);
+  }
   Type*  GetType() { return type_; }
   Expr*  GetExpr() { return expr_; }
+  bool   IsTransparent(TypeTable* types) const;
 
  private:
   Type* type_;
@@ -171,6 +180,7 @@ class BoolConstant : public Expr {
   BoolConstant(bool value);
   Result Accept(Visitor* visitor) override;
   Type*  GetType(TypeTable* types) override;
+  bool   IsConstant(TypeTable* types) const override { return true; }
   bool   GetValue() { return value_; }
 
  private:
@@ -227,6 +237,7 @@ class ExprList : public ASTNode {
   Result                    Accept(Visitor* visitor) override;
   void                      Append(Expr* expr) { exprs_.push_back(expr); }
   const std::vector<Expr*>& Get() const { return exprs_; }
+  bool                      IsConstant(TypeTable* types) const;
 
  private:
   std::vector<Expr*> exprs_;
@@ -271,6 +282,7 @@ class Initializer : public Expr {
   Initializer(Type* type, ExprList* arglist);
   Result    Accept(Visitor* visitor) override;
   Type*     GetType(TypeTable* types) override { return type_; }
+  bool      IsConstant(TypeTable* types) const override { return arglist_->IsConstant(types) && !type_->IsClass(); }
   Type*     GetType() { return type_; }
   ExprList* GetArgList() { return arglist_; }
 
@@ -750,6 +762,7 @@ class UnaryOp : public Expr {
   UnaryOp(Op op, Expr* rhs);
   Result Accept(Visitor* visitor) override;
   Type*  GetType(TypeTable* types) override;
+  bool   IsConstant(TypeTable* types) const override;
   Op     GetOp() { return op_; }
   Expr*  GetRHS() { return rhs_; }
 

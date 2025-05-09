@@ -29,12 +29,15 @@
 #include <tint/tint.h>
 #endif
 
+#include <ast/constant_folder.h>
 #include <ast/symbol.h>
 #include "codegen_spirv.h"
 
 namespace Toucan {
 
 namespace {
+
+constexpr int kMinAutoConstantSize = 1024;
 
 llvm::Value* GenerateBinOpInt(LLVMBuilder*   builder,
                               BinOpNode::Op  op,
@@ -1155,15 +1158,32 @@ Result CodeGenLLVM::Visit(ZeroInitStmt* node) {
 }
 
 Result CodeGenLLVM::Visit(StoreStmt* stmt) {
-  llvm::Value* rhs = GenerateLLVM(stmt->GetRHS());
   llvm::Value* lhs = GenerateLLVM(stmt->GetLHS());
+  int64_t size = stmt->GetRHS()->GetType(types_)->GetSizeInBytes();
+  // If the RHS is a relatively large constant value, fold it into a static global in the
+  // data segment and memcpy() from there.
+  // FIXME: this should probably be done in a separate pass and produce a Data node.
+  if (stmt->GetRHS()->IsConstant(types_) && size >= kMinAutoConstantSize) {
+    char* data = new char[size];
+    memset(data, 0, size);
+    ConstantFolder constantFolder(types_, data);
+    constantFolder.Resolve(stmt->GetRHS());
+    llvm::StringRef stringRef(static_cast<const char*>(data), size);
+    llvm::Constant* initializer = llvm::ConstantDataArray::getRaw(stringRef, size, byteType_);
+    auto rhs = new llvm::GlobalVariable(*module_, initializer->getType(), true,
+      llvm::GlobalVariable::InternalLinkage, initializer, "data");
+    builder_->CreateMemCpy(lhs, {}, rhs, {}, size);
+  } else {
+    llvm::Value* rhs = GenerateLLVM(stmt->GetRHS());
+    builder_->CreateStore(rhs, lhs);
+  }
   if (stmt->GetRHS()->GetType(types_)->IsRawPtr() & !temporaries_.empty()) {
     auto temporary = temporaries_.back();
     temporaries_.pop_back();
     scopedTemporaries_[lhs] = temporary;
   }
   DestroyTemporaries();
-  return builder_->CreateStore(rhs, lhs);
+  return {};
 }
 
 Result CodeGenLLVM::Visit(ArrayAccess* node) {
