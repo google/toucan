@@ -827,6 +827,26 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
         coord = AppendCode(spv::Op::OpCompositeConstruct, float3, {x, y, layer});
       }
       return AppendCode(spv::Op::OpImageSampleImplicitLod, resultType, {sampledImage, coord});
+    } else if (method->name == "Load") {
+      uint32_t resultType = ConvertType(expr->GetType(types_));
+      Type*    textureType = static_cast<PtrType*>(args[0]->GetType(types_))->GetBaseType();
+      uint32_t texture = GenerateSPIRV(args[0]);
+      texture = AppendCode(spv::Op::OpLoad, ConvertType(textureType), {texture});
+      uint32_t coord = GenerateSPIRV(args[1]);
+      uint32_t level;
+      if (isSampleableTexture2DArray(method->classType)) {
+        uint32_t layer = GenerateSPIRV(args[2]);
+        uint32_t int3 = ConvertType(types_->GetVector(types_->GetInt(), 3));
+        uint32_t intType = ConvertType(types_->GetInt());
+        uint32_t x = AppendCode(spv::Op::OpCompositeExtract, intType, {coord, 0});
+        uint32_t y = AppendCode(spv::Op::OpCompositeExtract, intType, {coord, 1});
+        coord = AppendCode(spv::Op::OpCompositeConstruct, int3, {x, y, layer});
+        level = GenerateSPIRV(args[3]);
+      } else {
+        level = GenerateSPIRV(args[2]);
+      }
+      uint32_t mask = spv::ImageOperandsLodMask;
+      return AppendCode(spv::Op::OpImageFetch, resultType, {texture, coord, mask, level});
     }
   } else if (isMath(method->classType)) {
     uint32_t resultType = ConvertType(expr->GetType(types_));
