@@ -366,6 +366,14 @@ uint32_t CodeGenSPIRV::AppendCode(uint32_t opCode, uint32_t resultType, const Co
 
 void CodeGenSPIRV::AppendCode(uint32_t opCode, const Code& args) { Append(opCode, args, &body_); }
 
+uint32_t CodeGenSPIRV::AppendCodeFromExprList(uint32_t opCode, uint32_t resultType, ExprList* exprList) {
+  Code args;
+  for (auto& i : exprList->Get()) {
+    args.push_back(GenerateSPIRV(i));
+  }
+  return AppendCode(opCode, resultType, args);
+}
+
 uint32_t CodeGenSPIRV::AppendDecl(uint32_t opCode, uint32_t resultType, const Code& args) {
   return Append(opCode, resultType, args, &decl_);
 }
@@ -857,30 +865,45 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
     }
   } else if (isMath(method->classType)) {
     uint32_t resultType = ConvertType(expr->GetType(types_));
+    ExprList* argList = expr->GetArgList();
     if (method->name == "sqrt") {
-      return AppendExtInst(GLSLstd450Sqrt, resultType, expr->GetArgList());
+      return AppendExtInst(GLSLstd450Sqrt, resultType, argList);
     } else if (method->name == "sin") {
-      return AppendExtInst(GLSLstd450Sin, resultType, expr->GetArgList());
+      return AppendExtInst(GLSLstd450Sin, resultType, argList);
     } else if (method->name == "cos") {
-      return AppendExtInst(GLSLstd450Cos, resultType, expr->GetArgList());
+      return AppendExtInst(GLSLstd450Cos, resultType, argList);
+    } else if (method->name == "tan") {
+      return AppendExtInst(GLSLstd450Tan, resultType, argList);
+    } else if (method->name == "dot") {
+      return AppendCodeFromExprList(spv::Op::OpDot, resultType, argList);
+    } else if (method->name == "cross") {
+      return AppendExtInst(GLSLstd450Cross, resultType, argList);
     } else if (method->name == "fabs") {
-      return AppendExtInst(GLSLstd450FAbs, resultType, expr->GetArgList());
+      return AppendExtInst(GLSLstd450FAbs, resultType, argList);
     } else if (method->name == "clz") {
-      return AppendExtInst(GLSLstd450FindSMsb, resultType, expr->GetArgList());
+      return AppendExtInst(GLSLstd450FindSMsb, resultType, argList);
+    } else if (method->name == "floor") {
+      return AppendExtInst(GLSLstd450Floor, resultType, argList);
+    } else if (method->name == "ceil") {
+      return AppendExtInst(GLSLstd450Ceil, resultType, argList);
+    } else if (method->name == "length") {
+      return AppendExtInst(GLSLstd450Length, resultType, argList);
+    } else if (method->name == "min") {
+      return AppendExtInst(GLSLstd450FMin, resultType, argList);
+    } else if (method->name == "max") {
+      return AppendExtInst(GLSLstd450FMax, resultType, argList);
+    } else if (method->name == "pow") {
+      return AppendExtInst(GLSLstd450Pow, resultType, argList);
     } else if (method->name == "reflect") {
-      return AppendExtInst(GLSLstd450Reflect, resultType, expr->GetArgList());
+      return AppendExtInst(GLSLstd450Reflect, resultType, argList);
     } else if (method->name == "refract") {
-      return AppendExtInst(GLSLstd450Refract, resultType, expr->GetArgList());
+      return AppendExtInst(GLSLstd450Refract, resultType, argList);
     } else if (method->name == "normalize") {
-      return AppendExtInst(GLSLstd450Normalize, resultType, expr->GetArgList());
+      return AppendExtInst(GLSLstd450Normalize, resultType, argList);
     } else if (method->name == "inverse") {
-      return AppendExtInst(GLSLstd450MatrixInverse, resultType, expr->GetArgList());
+      return AppendExtInst(GLSLstd450MatrixInverse, resultType, argList);
     } else if (method->name == "transpose") {
-      Code resultArgs;
-      for (auto& i : args) {
-        resultArgs.push_back(GenerateSPIRV(i));
-      }
-      return AppendCode(spv::Op::OpTranspose, resultType, resultArgs);
+      return AppendCodeFromExprList(spv::Op::OpTranspose, resultType, argList);
     }
   } else if (isSystem(method->classType)) {
     if (method->name == "StorageBarrier") {

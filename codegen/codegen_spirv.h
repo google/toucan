@@ -55,6 +55,7 @@ class CodeGenSPIRV : public Visitor {
   void     AppendCode(uint32_t opCode, const Code& args);
   uint32_t AppendString(const char* str, Code* result);
   uint32_t AppendCode(uint32_t opCode, uint32_t resultType, const Code& args);
+  uint32_t AppendCodeFromExprList(uint32_t opCode, uint32_t resultType, ExprList* exprList);
   uint32_t AppendDecl(uint32_t opCode, uint32_t resultType, const Code& args);
   uint32_t AppendExtInst(uint32_t extInst, uint32_t resultType, ExprList* argList);
   uint32_t GetStorageClass(Type* type);
