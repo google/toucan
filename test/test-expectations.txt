@@ -320,6 +320,8 @@ test/ubyte-vector.t
 test/ubyte.t
 test/uint.t
 test/unary-minus.t
+test/unfilterable.t
+Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/unspecified-template-destructor.t
 test/ushort-vector.t
 test/ushort.t

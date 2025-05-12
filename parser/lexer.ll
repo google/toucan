@@ -116,6 +116,7 @@ hostreadable { return T_HOSTREADABLE; }
 hostwriteable { return T_HOSTWRITEABLE; }
 using   { return T_USING; }
 inline  { return T_INLINE; }
+unfilterable { return T_UNFILTERABLE; }
 include BEGIN(include);
 
 int     { return T_INT; }

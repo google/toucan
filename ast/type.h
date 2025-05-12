@@ -101,7 +101,8 @@ class Type {
     WriteOnly = 0x0080,
     HostReadable = 0x100,
     HostWriteable = 0x200,
-    Coherent = 0x0400,
+    Unfilterable = 0x0400,
+    Coherent = 0x0800,
   };
 };
 

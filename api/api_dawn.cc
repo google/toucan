@@ -224,10 +224,14 @@ wgpu::TextureFormat ToDawnTextureFormat(Type* format) {
   }
 }
 
-wgpu::TextureSampleType ToDawnTextureSampleType(ClassType* type) {
+wgpu::TextureSampleType ToDawnTextureSampleType(ClassType* type, int qualifiers) {
   Type* arg = type->GetTemplateArgs()[0];
   if (arg->IsFloat()) {
-    return wgpu::TextureSampleType::Float;
+    if (qualifiers & Type::Qualifier::Unfilterable) {
+      return wgpu::TextureSampleType::UnfilterableFloat;
+    } else {
+      return wgpu::TextureSampleType::Float;
+    }
   } else if (arg->IsInt()) {
     return wgpu::TextureSampleType::Sint;
   } else if (arg->IsUInt()) {
@@ -479,19 +483,19 @@ static wgpu::BindGroupLayoutEntry CreateBindGroupLayoutEntry(uint32_t binding,
   if (templ == NativeClass::Buffer) {
     entry.buffer.type = toDawnBufferBindingType(qualifiers);
   } else if (templ == NativeClass::SampleableTexture1D) {
-    entry.texture.sampleType = ToDawnTextureSampleType(classType);
+    entry.texture.sampleType = ToDawnTextureSampleType(classType, qualifiers);
     entry.texture.viewDimension = wgpu::TextureViewDimension::e1D;
   } else if (templ == NativeClass::SampleableTexture2D) {
-    entry.texture.sampleType = ToDawnTextureSampleType(classType);
+    entry.texture.sampleType = ToDawnTextureSampleType(classType, qualifiers);
     entry.texture.viewDimension = wgpu::TextureViewDimension::e2D;
   } else if (templ == NativeClass::SampleableTexture3D) {
-    entry.texture.sampleType = ToDawnTextureSampleType(classType);
+    entry.texture.sampleType = ToDawnTextureSampleType(classType, qualifiers);
     entry.texture.viewDimension = wgpu::TextureViewDimension::e3D;
   } else if (templ == NativeClass::SampleableTexture2DArray) {
-    entry.texture.sampleType = ToDawnTextureSampleType(classType);
+    entry.texture.sampleType = ToDawnTextureSampleType(classType, qualifiers);
     entry.texture.viewDimension = wgpu::TextureViewDimension::e2DArray;
   } else if (templ == NativeClass::SampleableTextureCube) {
-    entry.texture.sampleType = ToDawnTextureSampleType(classType);
+    entry.texture.sampleType = ToDawnTextureSampleType(classType, qualifiers);
     entry.texture.viewDimension = wgpu::TextureViewDimension::Cube;
   } else if (classType == NativeClass::Sampler) {
     entry.sampler.type = wgpu::SamplerBindingType::Filtering;

@@ -44,6 +44,7 @@ std::string QualifiersToString(int qualifiers, std::string sep) {
   if (qualifiers & Type::Qualifier::HostReadable) { result += "hostreadable" + sep; }
   if (qualifiers & Type::Qualifier::HostWriteable) { result += "hostwriteable" + sep; }
   if (qualifiers & Type::Qualifier::Coherent) { result += "coherent" + sep; }
+  if (qualifiers & Type::Qualifier::Unfilterable) { result += "unfilterable" + sep; }
   return result;
 }
 
