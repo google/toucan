@@ -64,7 +64,9 @@ class CodeGenSPIRV : public Visitor {
   uint32_t GetFunctionType(const Code& signature);
   uint32_t ConvertPointerToType(Type* type, uint32_t storageClass);
   uint32_t ConvertPointerToType(Type* type);
+  uint32_t GetConstant(Type* type, uint32_t value);
   uint32_t GetIntConstant(int32_t value);
+  uint32_t GetUIntConstant(uint32_t value);
   uint32_t GetFloatConstant(float value);
   uint32_t GetBoolConstant(bool value);
   uint32_t GetZeroConstant(Type* type);
@@ -129,6 +131,7 @@ class CodeGenSPIRV : public Visitor {
   std::unordered_map<Type*, uint32_t>          sampledImageTypes_;
   std::unordered_map<Code, uint32_t, HashCode> spirvFunctionTypes_;
   std::unordered_map<int32_t, uint32_t>        intConstants_;
+  std::unordered_map<uint32_t, uint32_t>       uintConstants_;
   std::unordered_map<float, uint32_t>          floatConstants_;
   uint32_t                                     boolConstants_[2];
   std::unordered_map<Method*, uint32_t>        functions_;

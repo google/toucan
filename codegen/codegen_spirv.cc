@@ -688,18 +688,23 @@ Result CodeGenSPIRV::Visit(ExprStmt* exprStmt) {
   return 0u;
 }
 
+uint32_t CodeGenSPIRV::GetConstant(Type* type, uint32_t value) {
+  return AppendDecl(spv::Op::OpConstant, ConvertType(type), {value});
+}
+
 uint32_t CodeGenSPIRV::GetIntConstant(int32_t value) {
   if (intConstants_[value]) { return intConstants_[value]; }
-  uint32_t resultType = ConvertType(types_->GetInt());
-  uint32_t ivalue = static_cast<uint32_t>(value);
-  return intConstants_[value] = AppendDecl(spv::Op::OpConstant, resultType, {ivalue});
+  return intConstants_[value] = GetConstant(types_->GetInt(), value);
+}
+
+uint32_t CodeGenSPIRV::GetUIntConstant(uint32_t value) {
+  if (uintConstants_[value]) { return uintConstants_[value]; }
+  return uintConstants_[value] = GetConstant(types_->GetUInt(), value);
 }
 
 uint32_t CodeGenSPIRV::GetFloatConstant(float value) {
   if (floatConstants_[value]) { return floatConstants_[value]; }
-  uint32_t resultType = ConvertType(types_->GetFloat());
-  uint32_t ivalue = *reinterpret_cast<int*>(&value);
-  return floatConstants_[value] = AppendDecl(spv::Op::OpConstant, resultType, {ivalue});
+  return floatConstants_[value] = GetConstant(types_->GetFloat(), *reinterpret_cast<uint32_t*>(&value));
 }
 
 uint32_t CodeGenSPIRV::GetBoolConstant(bool value) {
@@ -713,8 +718,10 @@ uint32_t CodeGenSPIRV::GetBoolConstant(bool value) {
 uint32_t CodeGenSPIRV::GetZeroConstant(Type* type) {
   if (type->IsFloatingPoint()) {
     return GetFloatConstant(0.0);
-  } else if (type->IsInteger()) {
+  } else if (type->IsInt()) {
     return GetIntConstant(0);
+  } else if (type->IsUInt()) {
+    return GetUIntConstant(0u);
   } else if (type->IsBool()) {
     return GetBoolConstant(false);
   } else {
@@ -793,10 +800,12 @@ Result CodeGenSPIRV::Visit(IfStatement* stmt) {
 }
 
 Result CodeGenSPIRV::Visit(IntConstant* expr) {
-  return GetIntConstant(static_cast<uint32_t>(expr->GetValue()));
+  return GetIntConstant(expr->GetValue());
 }
 
-Result CodeGenSPIRV::Visit(UIntConstant* expr) { return GetIntConstant(expr->GetValue()); }
+Result CodeGenSPIRV::Visit(UIntConstant* expr) {
+  return GetUIntConstant(expr->GetValue());
+}
 
 Result CodeGenSPIRV::Visit(ReturnStatement* stmt) {
   Expr*    expr = stmt->GetExpr();
