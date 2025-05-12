@@ -24,8 +24,8 @@ class EventHandler {
       } else if (event.numTouches == 1) {
         this.Rotate(event.touches[0] - prevTouches[0]);
       } else if (event.numTouches == 2) {
-        var prevDistance = Utils.length((float<2>) (prevTouches[1] - prevTouches[0]));
-        var curDistance = Utils.length((float<2>) (event.touches[1] - event.touches[0]));
+        var prevDistance = Math.length((float<2>) (prevTouches[1] - prevTouches[0]));
+        var curDistance = Math.length((float<2>) (event.touches[1] - event.touches[0]));
         distance *= prevDistance / curDistance;
       }
       prevTouches = event.touches;

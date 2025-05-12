@@ -9,7 +9,7 @@ class Quaternion {
     q.xyz = scaledAxis;
     q.w = Math.cos(angle * 0.5);
   }
-  len() : float { return Math.sqrt(Utils.dot(q, q)); }
+  len() : float { return Math.length(q); }
   normalize() { q = q / this.len(); }
   mul(other : Quaternion) : Quaternion {
     var p = other.q;

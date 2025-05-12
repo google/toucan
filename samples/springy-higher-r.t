@@ -40,8 +40,8 @@ class Spring {
   computeForce(b1 : Body, b2 : Body) : Vector {
     var dp = b1.position - b2.position;
     var dv = b1.velocity - b2.velocity;
-    var dplen = Utils.length(dp);
-    var f = ks * (dplen - r) + kd * Utils.dot(dv, dp) / dplen;
+    var dplen = Math.length(dp);
+    var f = ks * (dplen - r) + kd * Math.dot(dv, dp) / dplen;
     return -dp / dplen * f;
   }
 
