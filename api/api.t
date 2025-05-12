@@ -408,15 +408,15 @@ class BGRA8unormSRGB : PixelFormat<float, ubyte<4>> {}
 
 class R16uint : PixelFormat<uint, ushort> {}
 class R16sint : PixelFormat<int, short> {}
-// class R16float : PixelFormat<float, half> {}
+class R16float : PixelFormat<float, ushort> {}
 
 class RG16uint : PixelFormat<uint, ushort<2>> {}
 class RG16sint : PixelFormat<int, short<2>> {}
-// class RG16float : PixelFormat<float, half<2>> {}
+class RG16float : PixelFormat<float, ushort<2>> {}
 
 class RGBA16uint : PixelFormat<uint, ushort<4>> {}
 class RGBA16sint : PixelFormat<int, short<4>> {}
-// class RGBA16float : PixelFormat<float, half<4>> {}
+class RGBA16float : PixelFormat<float, ushort<4>> {}
 
 class R32uint : PixelFormat<uint, uint> {}
 class R32sint : PixelFormat<int, int> {}
