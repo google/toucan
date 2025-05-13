@@ -623,13 +623,11 @@ uint32_t CodeGenSPIRV::CreateCast(Type*    srcType,
   } else if (dstType->IsUInt() && srcType->IsInt()) {
     return valueId;
   } else if (dstType->IsVector() && srcType->IsVector()) {
-    VectorType* t1 = static_cast<VectorType*>(dstType);
-    VectorType* t2 = static_cast<VectorType*>(srcType);
-    if (t1->GetLength() == t2->GetLength()) {
-      return CreateCast(t1->GetComponentType(), t2->GetComponentType(), resultType, valueId);
-    } else {
-      assert(false);
-    }
+    VectorType* srcVectorType = static_cast<VectorType*>(srcType);
+    VectorType* dstVectorType = static_cast<VectorType*>(dstType);
+    assert(srcVectorType->GetLength() == dstVectorType->GetLength());
+    return CreateCast(srcVectorType->GetComponentType(), dstVectorType->GetComponentType(),
+                      resultType, valueId);
   } else if (dstType->IsUnsizedArray() && srcType->IsUnsizedArray()) {
     NOTIMPLEMENTED();
   } else if (dstType->IsPtr() && srcType->IsPtr()) {

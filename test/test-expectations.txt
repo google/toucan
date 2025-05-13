@@ -43,6 +43,8 @@ test/compute-simple.t
 Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/compute-swizzle.t
 Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
+test/compute-vector-cast.t
+Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/constructor-calls-initializer.t
 test/constructor-with-default-arg.t
 test/constructor-with-explicit-initializer.t
