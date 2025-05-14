@@ -203,11 +203,15 @@ llvm::Type* CodeGenLLVM::ConvertType(Type* type) {
     ArrayType* atype = static_cast<ArrayType*>(type);
     return llvm::ArrayType::get(ConvertArrayElementType(atype), atype->GetNumElements());
   } else if (type->IsClass()) {
-    ClassType*               ctype = static_cast<ClassType*>(type);
+    ClassType*               classType = static_cast<ClassType*>(type);
+    if (auto placeholder = classPlaceholders_[classType]) {
+      return placeholder;
+    }
+    classPlaceholders_[classType] = llvm::StructType::get(*context_);
     std::vector<llvm::Type*> types;
-    ConvertAndAppendFieldTypes(ctype, &types);
-    llvm::StructType* str = llvm::StructType::get(*context_, types);
-    return str;
+    ConvertAndAppendFieldTypes(classType, &types);
+    classPlaceholders_[classType] = nullptr;
+    return llvm::StructType::get(*context_, types);
   } else if (type->IsByte() || type->IsUByte()) {
     return byteType_;
   } else if (type->IsShort() || type->IsUShort()) {

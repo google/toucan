@@ -196,6 +196,7 @@ class CodeGenLLVM : public Visitor {
   std::unordered_map<Var*, llvm::AllocaInst*>           allocas_;
   std::unordered_map<Method*, llvm::Function*>          functions_;
   std::unordered_map<ClassType*, llvm::GlobalVariable*> vtables_;
+  std::unordered_map<ClassType*, llvm::StructType*>     classPlaceholders_;
 };
 
 };  // namespace Toucan

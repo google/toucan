@@ -271,6 +271,7 @@ test/override.t
 test/post-increment-with-side-effects.t
 test/raw-ptr.t
 test/really-simple.t
+test/recursive-type.t
 test/scope-test.t
 test/short-vector.t
 test/short.t
