@@ -114,8 +114,6 @@ void GenBindings::GenType(Type* type) {
     fprintf(file_, "types->GetString()");
   } else if (type->IsVoid()) {
     fprintf(file_, "types->GetVoid()");
-  } else if (type->IsNull()) {
-    fprintf(file_, "types->GetNull()");
   } else if (type->IsAuto()) {
     fprintf(file_, "types->GetAuto()");
   } else if (type->IsClassTemplate()) {

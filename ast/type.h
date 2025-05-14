@@ -60,7 +60,6 @@ class Type {
   virtual bool  IsFloat() const { return false; }
   virtual bool  IsDouble() const { return false; }
   virtual bool  IsEnum() const { return false; }
-  virtual bool  IsNull() const { return false; }
   virtual bool  IsList() const { return false; }
   virtual bool  IsStrongPtr() const { return false; }
   virtual bool  IsWeakPtr() const { return false; }
@@ -525,19 +524,6 @@ class RawPtrType : public PtrType {
   bool        ContainsRawPtr() const override { return true; }
 };
 
-class NullType : public PtrType {
- public:
-  NullType();
-  bool        IsNull() const override { return true; }
-  bool        IsPOD() const override { return false; }
-  std::string ToString() const override { return "null"; }
-  bool        CanWidenTo(Type* type) const override { return type->IsStrongPtr() | type->IsWeakPtr(); }
-  int         GetSizeInBytes() const override {
-    assert(false);
-    return 0;
-  }
-};
-
 class ListType : public Type {
  public:
   ListType(const VarVector& types);
@@ -585,7 +571,6 @@ class TypeTable {
   StringType*        GetString();
   VoidType*          GetVoid();
   AutoType*          GetAuto();
-  NullType*          GetNull();
   ListType*          GetList(VarVector&& types);
   VectorType*        GetVector(Type* componentType, int size);
   MatrixType*        GetMatrix(VectorType* columnType, int numColumns);
@@ -629,7 +614,6 @@ class TypeTable {
   StringType*                                          string_;
   VoidType*                                            void_;
   AutoType*                                            auto_;
-  NullType*                                            null_;
   std::vector<ClassType*>                              instanceQueue_;
 };
 

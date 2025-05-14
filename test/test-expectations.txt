@@ -265,6 +265,7 @@ test/mutual-recursion.t
 test/named-param-default-value.t
 test/named-param.t
 test/new.t
+test/null-ptr.t
 test/overload.t
 test/override.t
 test/post-increment-with-side-effects.t

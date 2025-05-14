@@ -95,8 +95,6 @@ VoidType::VoidType() {}
 
 AutoType::AutoType() {}
 
-NullType::NullType() : PtrType(nullptr) {}
-
 ListType::ListType(const VarVector& types) : types_(types) {}
 
 int ListType::GetSizeInBytes() const {
@@ -575,13 +573,19 @@ bool WeakPtrType::CanWidenTo(Type* type) const {
 };
 RawPtrType::RawPtrType(Type* baseType) : PtrType(baseType) {}
 
-std::string StrongPtrType::ToString() const { return "*" + GetBaseType()->ToString(); };
+std::string StrongPtrType::ToString() const {
+  if (GetBaseType()->IsVoid()) {
+    return "null";
+  } else {
+    return "*" + GetBaseType()->ToString();
+  }
+}
 
 bool StrongPtrType::CanWidenTo(Type* type) const {
   if (type == this) return true;
   if (type->IsPtr()) {
     PtrType* ptrType = static_cast<PtrType*>(type);
-    if (ptrType->GetBaseType()->IsVoid()) { return true; }
+    if (GetBaseType()->IsVoid() && !type->IsRawPtr()) { return true; }
     if (GetBaseType()->CanWidenTo(ptrType->GetBaseType())) { return true; }
   }
   return false;
@@ -605,7 +609,6 @@ TypeTable::TypeTable() {
   string_ = Make<StringType>();
   void_ = Make<VoidType>();
   auto_ = Make<AutoType>();
-  null_ = Make<NullType>();
 }
 
 IntegerType* TypeTable::GetInteger(int bits, bool isSigned) {
@@ -670,8 +673,6 @@ StringType* TypeTable::GetString() { return string_; }
 VoidType* TypeTable::GetVoid() { return void_; }
 
 AutoType* TypeTable::GetAuto() { return auto_; }
-
-NullType* TypeTable::GetNull() { return null_; }
 
 ListType* TypeTable::GetList(VarVector&& types) {
   // FIXME: implement caching?

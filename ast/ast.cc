@@ -266,7 +266,7 @@ Type* EnumConstant::GetType(TypeTable* types) { return value_->type; }
 
 NullConstant::NullConstant() {}
 
-Type* NullConstant::GetType(TypeTable* types) { return types->GetNull(); }
+Type* NullConstant::GetType(TypeTable* types) { return types->GetStrongPtrType(types->GetVoid()); }
 
 Stmts::Stmts() : scope_(nullptr) {}
 

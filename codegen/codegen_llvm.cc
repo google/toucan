@@ -781,6 +781,10 @@ llvm::Value* CodeGenLLVM::GenerateBinOp(BinOpNode*   node,
   } else if (type->IsMatrix() && node->GetOp() == BinOpNode::MUL) {
     auto matrixType = static_cast<MatrixType*>(type);
     return GenerateMatrixMultiply(lhs, rhs, matrixType, matrixType);
+  } else if (type->IsStrongPtr() || type->IsWeakPtr()) {
+    lhs = builder_->CreateExtractValue(lhs, {0});
+    rhs = builder_->CreateExtractValue(rhs, {0});
+    return GenerateBinOpInt(builder_, node->GetOp(), lhs, rhs);
   } else {
     assert(false);
     return nullptr;

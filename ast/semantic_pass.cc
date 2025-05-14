@@ -754,7 +754,7 @@ Result SemanticPass::Visit(BinOpNode* node) {
     }
   }
   if (node->IsRelOp()) {
-    if (lhsType->IsEnum() || lhsType->IsBool()) {
+    if (lhsType->IsEnum() || lhsType->IsBool() || lhsType->IsPtr()) {
       if (!isEqualityOp) { return Error("invalid type for binary operator"); }
     } else if (!(lhsType->IsInt() || lhsType->IsUInt() || lhsType->IsFloatingPoint())) {
       return Error("invalid type for relational operator");
