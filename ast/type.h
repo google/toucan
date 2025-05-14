@@ -491,7 +491,7 @@ class PtrType : public Type {
   bool  IsPOD() const override { return false; }
   int   GetSizeInBytes() const override { return 2 * sizeof(void*); }
   bool  NeedsDestruction() const override { return true; }
-  bool  ContainsRawPtr() const override { return baseType_->ContainsRawPtr(); }
+  bool  ContainsRawPtr() const override { return baseType_->IsRawPtr(); }
  private:
   Type* baseType_;
 };

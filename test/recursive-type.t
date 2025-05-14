@@ -11,3 +11,5 @@ class D {
 class E {
   var d : ^D;
 }
+
+var c = new C;
