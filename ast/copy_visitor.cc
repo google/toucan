@@ -96,6 +96,13 @@ Result CopyVisitor::Visit(ExprList* node) {
 
 Result CopyVisitor::Visit(ExprStmt* stmt) { return Make<ExprStmt>(Resolve(stmt->GetExpr())); }
 
+Result CopyVisitor::Visit(InsertElementExpr* node) {
+  Expr* expr = Resolve(node->GetExpr());
+  Expr* newElement = Resolve(node->newElement());
+  int   index = node->GetIndex();
+  return Make<InsertElementExpr>(expr, newElement, index);
+}
+
 Result CopyVisitor::Visit(UnresolvedInitializer* node) {
   Type*    type = ResolveType(node->GetType());
   ArgList* argList = Resolve(node->GetArgList());
@@ -140,6 +147,12 @@ Result CopyVisitor::Visit(UnaryOp* node) {
   Expr* rhs = Resolve(node->GetRHS());
   if (!rhs) return nullptr;
   return Make<UnaryOp>(node->GetOp(), rhs);
+}
+
+Result CopyVisitor::Visit(IncDecExpr* node) {
+  Expr* expr = Resolve(node->GetExpr());
+  if (!expr) return nullptr;
+  return Make<IncDecExpr>(node->GetOp(), expr, node->returnOrigValue());
 }
 
 Result CopyVisitor::Visit(DestroyStmt* node) {

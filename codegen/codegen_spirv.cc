@@ -948,7 +948,7 @@ Result CodeGenSPIRV::Visit(InsertElementExpr* expr) {
   uint32_t compositeId = GenerateSPIRV(expr->GetExpr());
   uint32_t newElementId = GenerateSPIRV(expr->newElement());
   uint32_t index = expr->GetIndex();
-  return AppendCode(spv::Op::OpCompositeInsert, resultType, {compositeId, newElementId, index});
+  return AppendCode(spv::Op::OpCompositeInsert, resultType, {newElementId, compositeId, index});
 }
 
 Result CodeGenSPIRV::Visit(VarExpr* expr) { return vars_[expr->GetVar()]; }
