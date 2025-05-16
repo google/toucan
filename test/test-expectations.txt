@@ -128,6 +128,11 @@ error-missing-parent-class.t:1: syntax error
 test/error-missing-sampleable-qualifier.t
 error-missing-sampleable-qualifier.t:3:  class Texture2D<RGBA8unorm> has no method CreateSampleableView()
 error-missing-sampleable-qualifier.t:3:  Texture2D<RGBA8unorm>.CreateSampleableView() sampleable : *SampleableTexture2D<float>
+test/error-missing-this-qualifier.t
+error-missing-this-qualifier.t:6:  class Foo has no method bar(i = int)
+error-missing-this-qualifier.t:6:  Foo.bar(int) uniform 
+error-missing-this-qualifier.t:7:  class Foo has no method bar(int)
+error-missing-this-qualifier.t:7:  Foo.bar(int) uniform 
 test/error-named-param-missing-one.t
 error-named-param-missing-one.t:7:  class Bar has no method Foo(f = float)
 error-named-param-missing-one.t:7:  Bar.Foo(int, float) : float

@@ -1041,9 +1041,9 @@ bool SemanticPass::MatchArgs(Expr*               thisExpr,
       }
       result[i + offset] = expr;
     }
-    if (!(m->modifiers & Method::Modifier::Static) && thisExpr && !thisExpr->GetType(types)->CanWidenTo(m->formalArgList[0]->type)) {
-      return false;
-    }
+  }
+  if (!(m->modifiers & Method::Modifier::Static) && thisExpr && !thisExpr->GetType(types)->CanWidenTo(m->formalArgList[0]->type)) {
+    return false;
   }
   for (int i = offset; i < result.size(); ++i) {
     if (!result[i]) {
