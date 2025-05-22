@@ -71,10 +71,10 @@ class Expr : public ASTNode {
   virtual Type* GetType(TypeTable* types) = 0;
   virtual bool  IsArrayAccess() const { return false; }
   virtual bool  IsFieldAccess() const { return false; }
-  virtual bool  IsUnresolvedSwizzleExpr() const { return false; }
   virtual bool  IsUnresolvedListExpr() const { return false; }
   virtual bool  IsIntConstant() const { return false; }
   virtual bool  IsTempVarExpr() const { return false; }
+  virtual bool  IsUnresolvedDot() const { return false; }
   virtual bool  IsVarExpr() const { return false; }
 };
 
@@ -325,6 +325,7 @@ class UnresolvedDot : public Expr {
   UnresolvedDot(Expr* expr, std::string id);
   Result      Accept(Visitor* visitor) override;
   Type*       GetType(TypeTable* types) override { return nullptr; }
+  bool        IsUnresolvedDot() const override { return true; }
   Expr*       GetExpr() { return expr_; }
   std::string GetID() { return id_; }
 
@@ -489,25 +490,11 @@ class FieldAccess : public Expr {
   Field* field_;
 };
 
-class UnresolvedSwizzleExpr : public Expr {
- public:
-  UnresolvedSwizzleExpr(Expr* expr, int index);
-  Result        Accept(Visitor* visitor) override;
-  virtual Type* GetType(TypeTable* types) override;
-  virtual bool  IsUnresolvedSwizzleExpr() const override { return true; }
-  Expr*         GetExpr() { return expr_; }
-  int           GetIndex() { return index_; }
-
- private:
-  Expr* expr_;
-  int   index_;
-};
-
 class ExtractElementExpr : public Expr {
  public:
   ExtractElementExpr(Expr* expr, int index);
   Result        Accept(Visitor* visitor) override;
-  virtual Type* GetType(TypeTable* types) override;
+  Type*         GetType(TypeTable* types) override;
   Expr*         GetExpr() { return expr_; }
   int           GetIndex() { return index_; }
 
@@ -520,7 +507,7 @@ class InsertElementExpr : public Expr {
  public:
   InsertElementExpr(Expr* expr, Expr* newElement, int index);
   Result        Accept(Visitor* visitor) override;
-  virtual Type* GetType(TypeTable* types) override;
+  Type*         GetType(TypeTable* types) override;
   Expr*         GetExpr() { return expr_; }
   Expr*         newElement() { return newElement_; }
   int           GetIndex() { return index_; }
@@ -529,6 +516,19 @@ class InsertElementExpr : public Expr {
   Expr* expr_;
   Expr* newElement_;
   int   index_;
+};
+
+class SwizzleExpr : public Expr {
+ public:
+  SwizzleExpr(Expr* expr, const std::vector<int>& indices);
+  Result                   Accept(Visitor* visitor) override;
+  Type*                    GetType(TypeTable* types) override;
+  Expr*                    GetExpr() { return expr_; }
+  const std::vector<int>&  GetIndices() const { return indices_; }
+
+ private:
+  Expr*            expr_;
+  std::vector<int> indices_;
 };
 
 class LengthExpr : public Expr {
@@ -817,11 +817,11 @@ class Visitor {
   virtual Result Visit(UnresolvedNewExpr* node) { return Default(node); }
   virtual Result Visit(UnresolvedMethodCall* node) { return Default(node); }
   virtual Result Visit(UnresolvedStaticMethodCall* node) { return Default(node); }
-  virtual Result Visit(UnresolvedSwizzleExpr* node) { return Default(node); }
   virtual Result Visit(VarDeclaration* node) { return Default(node); }
   virtual Result Visit(VarExpr* node) { return Default(node); }
   virtual Result Visit(LoadExpr* node) { return Default(node); }
   virtual Result Visit(StoreStmt* node) { return Default(node); }
+  virtual Result Visit(SwizzleExpr* node) { return Default(node); }
   virtual Result Visit(ZeroInitStmt* node) { return Default(node); }
   virtual Result Visit(IncDecExpr* node) { return Default(node); }
   virtual Result Visit(WhileStatement* node) { return Default(node); }

@@ -41,6 +41,8 @@ test/compute-pass-ptr-to-element.t
 Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/compute-simple.t
 Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
+test/compute-swizzle.t
+Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/constructor-calls-initializer.t
 test/constructor-with-default-arg.t
 test/constructor-with-explicit-initializer.t
@@ -163,6 +165,12 @@ test/error-stack-allocate-unsized-array.t
 error-stack-allocate-unsized-array.t:1:  cannot create storage of type []int
 test/error-store-to-length.t
 error-store-to-length.t:2:  expression is not an assignable value
+test/error-swizzle.t
+error-swizzle.t:6:  duplicate components in swizzle store
+error-swizzle.t:7:  invalid swizzle component 'w'
+error-swizzle.t:8:  invalid swizzle component 'w'
+error-swizzle.t:9:  invalid swizzle component 'q'
+error-swizzle.t:10:  invalid swizzle component 'a'
 test/error-syntax-error-in-included-file.t
 syntax-error.t:2: syntax error
 test/error-texture-from-buffer-incorrect-format.t

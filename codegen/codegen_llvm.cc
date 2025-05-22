@@ -1262,6 +1262,11 @@ Result CodeGenLLVM::Visit(InsertElementExpr* expr) {
   return builder_->CreateInsertElement(vec, newElement, index);
 }
 
+Result CodeGenLLVM::Visit(SwizzleExpr* node) {
+  llvm::Value* expr = GenerateLLVM(node->GetExpr());
+  return builder_->CreateShuffleVector(expr, node->GetIndices());
+}
+
 Result CodeGenLLVM::Visit(IfStatement* ifStmt) {
   llvm::Value* v = GenerateLLVM(ifStmt->GetExpr());
   DestroyTemporaries();

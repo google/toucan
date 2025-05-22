@@ -59,6 +59,8 @@ class SemanticPass : public CopyVisitor {
   Expr*   MakeConstantOne(Type* type);
   Expr*   MakeLoad(Expr* expr);
   Expr*   MakeReadOnlyTempVar(Expr* expr);
+  Result  MakeSwizzle(int srcLength, Expr* expr, const std::string& id);
+  Expr*   MakeSwizzleForStore(int srcLength, Expr* expr, const std::string& id, Expr* rhs);
   Result  ResolveMethodCall(Expr* expr, ClassType* classType, std::string id, ArgList* arglist);
   Expr*   MakeDefaultInitializer(Type* type);
   void    AddDefaultInitializers(Type* type, std::vector<Expr*>* exprs);

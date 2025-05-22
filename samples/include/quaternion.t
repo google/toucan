@@ -6,9 +6,7 @@ class Quaternion {
   Quaternion(axis : float<3>, angle : float) {
     var scaledAxis = axis * Math.sin(angle * 0.5);
 
-    q.x = scaledAxis.x;
-    q.y = scaledAxis.y;
-    q.z = scaledAxis.z;
+    q.xyz = scaledAxis;
     q.w = Math.cos(angle * 0.5);
   }
   len() : float { return Math.sqrt(Utils.dot(q, q)); }

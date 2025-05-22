@@ -53,6 +53,7 @@ class CopyVisitor : public Visitor {
   Result        Visit(SmartToRawPtr* node) override;
   Result        Visit(Stmts* stmts) override;
   Result        Visit(StoreStmt* node) override;
+  Result        Visit(SwizzleExpr* node) override;
   Result        Visit(TempVarExpr* node) override;
   Result        Visit(UIntConstant* constant) override;
   Result        Visit(UnaryOp* node) override;

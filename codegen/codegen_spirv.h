@@ -89,6 +89,7 @@ class CodeGenSPIRV : public Visitor {
   Result   Visit(ExtractElementExpr* expr) override;
   Result   Visit(LoadExpr* expr) override;
   Result   Visit(StoreStmt* stmt) override;
+  Result   Visit(SwizzleExpr* node) override;
   Result   Visit(ZeroInitStmt* node) override;
   Result   Visit(UIntConstant* node) override;
   Result   Visit(UnaryOp* node) override;

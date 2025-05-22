@@ -122,6 +122,10 @@ Result CopyVisitor::Visit(StoreStmt* node) {
   return Make<StoreStmt>(Resolve(node->GetLHS()), Resolve(node->GetRHS()));
 }
 
+Result CopyVisitor::Visit(SwizzleExpr* node) {
+  return Make<SwizzleExpr>(Resolve(node->GetExpr()), node->GetIndices());
+}
+
 Result CopyVisitor::Visit(TempVarExpr* node) {
   return Make<TempVarExpr>(ResolveType(node->GetType()), Resolve(node->GetInitExpr()));
 }
