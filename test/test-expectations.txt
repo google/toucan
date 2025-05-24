@@ -75,9 +75,9 @@ error-array-size-non-integer.t:3: array size is not an integer constant
 error-array-size-non-integer.t:4: array size is not an integer constant
 error-array-size-non-integer.t:5: array size is not an integer constant
 test/error-assign-padded-array.t
-error-assign-padded-array.t:20:  expression is not of indexable type
-error-assign-padded-array.t:21:  expression is not of indexable type
-error-assign-padded-array.t:22:  expression is not of indexable type
+Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
+test/error-assign-padded-array.t:21: expectation failed
+test/error-assign-padded-array.t:22: expectation failed
 test/error-assign-to-method.t
 error-assign-to-method.t:8:  expression is not an assignable value
 test/error-cast-weak-ptr-to-strong.t

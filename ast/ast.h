@@ -74,6 +74,7 @@ class Expr : public ASTNode {
   virtual bool  IsUnresolvedSwizzleExpr() const { return false; }
   virtual bool  IsUnresolvedListExpr() const { return false; }
   virtual bool  IsIntConstant() const { return false; }
+  virtual bool  IsTempVarExpr() const { return false; }
   virtual bool  IsVarExpr() const { return false; }
 };
 
@@ -427,6 +428,7 @@ class TempVarExpr : public Expr {
   TempVarExpr(Type* type, Expr* initExpr = nullptr);
   Result Accept(Visitor* visitor) override;
   Type*  GetType(TypeTable* types) override;
+  bool   IsTempVarExpr() const override { return true; }
   Type*  GetType() const { return type_; }
   Expr*  GetInitExpr() const { return initExpr_; }
 

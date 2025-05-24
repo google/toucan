@@ -86,20 +86,13 @@ Type* FieldAccess::GetType(TypeTable* types) {
 
 Type* ArrayAccess::GetType(TypeTable* types) {
   Type* type = expr_->GetType(types);
-  if (type->IsPtr()) { type = static_cast<PtrType*>(type)->GetBaseType(); }
+  assert(type->IsRawPtr());
+  type = static_cast<RawPtrType*>(type)->GetBaseType();
   int qualifiers;
   type = type->GetUnqualifiedType(&qualifiers);
-  Type* result;
-  if (type->IsArray()) {
-    result = static_cast<ArrayType*>(type)->GetElementType();
-  } else if (type->IsVector()) {
-    result = static_cast<VectorType*>(type)->GetComponentType();
-  } else if (type->IsMatrix()) {
-    result = static_cast<MatrixType*>(type)->GetColumnType();
-  } else {
-    assert(false);
-  }
-  return types->GetRawPtrType(types->GetQualifiedType(result, qualifiers));
+  assert(type->IsArray());
+  type = static_cast<ArrayType*>(type)->GetElementType();
+  return types->GetRawPtrType(types->GetQualifiedType(type, qualifiers));
 }
 
 ASTNode::~ASTNode() {}

@@ -161,7 +161,7 @@ Type* FindType(const char* str) {
 %left '+' '-'
 %left '*' '/' '%'
 %right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS ':'
-%left '.' '[' ']' '(' ')'
+%left '.' '[' ']' '(' ')' '{' '}'
 %expect 2   /* we expect 2 shift/reduce: dangling-else, and one for new-expr used as opt_initializer */
 %%
 program:
@@ -467,7 +467,6 @@ arith_expr:
   | assignable T_MINUSMINUS                 { $$ = IncDec(IncDecExpr::Op::Dec, false, $1); }
   | '(' arith_expr ')'                      { $$ = $2; }
   | '(' type ')' arith_expr %prec UNARYMINUS      { $$ = Make<CastExpr>($2, $4); }
-  | initializer                             { $$ = $1; }
   | T_INT_LITERAL                           { $$ = Make<IntConstant>($1, 32); }
   | T_UINT_LITERAL                          { $$ = Make<UIntConstant>($1, 32); }
   | T_BYTE_LITERAL                          { $$ = Make<IntConstant>($1, 8); }
@@ -521,6 +520,7 @@ assignable:
   | simple_type '.' T_IDENTIFIER '(' arguments ')'
                                             { $$ = MakeStaticMethodCall($1, $3, $5); }
   | assignable ':'                          { $$ = Make<SmartToRawPtr>(Make<LoadExpr>($1)); }
+  | initializer                             { $$ = Make<TempVarExpr>(nullptr, $1); }
   ;
 
 %%

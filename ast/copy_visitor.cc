@@ -122,6 +122,10 @@ Result CopyVisitor::Visit(StoreStmt* node) {
   return Make<StoreStmt>(Resolve(node->GetLHS()), Resolve(node->GetRHS()));
 }
 
+Result CopyVisitor::Visit(TempVarExpr* node) {
+  return Make<TempVarExpr>(ResolveType(node->GetType()), Resolve(node->GetInitExpr()));
+}
+
 Result CopyVisitor::Visit(BinOpNode* node) {
   Expr* rhs = Resolve(node->GetRHS());
   Expr* lhs = Resolve(node->GetLHS());

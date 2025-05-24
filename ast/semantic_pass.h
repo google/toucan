@@ -37,6 +37,7 @@ class SemanticPass : public CopyVisitor {
   Result Visit(LoadExpr* node) override;
   Result Visit(ReturnStatement* node) override;
   Result Visit(SmartToRawPtr* expr) override;
+  Result Visit(TempVarExpr* node) override;
   Result Visit(Stmts* stmts) override;
   Result Visit(IncDecExpr* node) override;
   Result Visit(StoreStmt* node) override;
@@ -56,6 +57,8 @@ class SemanticPass : public CopyVisitor {
  private:
   void    UnwindStack(Scope* scope, Stmts* stmts);
   Expr*   MakeConstantOne(Type* type);
+  Expr*   MakeLoad(Expr* expr);
+  Expr*   MakeReadOnlyTempVar(Expr* expr);
   Result  ResolveMethodCall(Expr* expr, ClassType* classType, std::string id, ArgList* arglist);
   Expr*   MakeDefaultInitializer(Type* type);
   void    AddDefaultInitializers(Type* type, std::vector<Expr*>* exprs);
@@ -68,6 +71,7 @@ class SemanticPass : public CopyVisitor {
   Stmts*  InitializeArray(Expr* dest, Type* elementType, Expr* length, ExprList* exprList);
   int     FindFormalArg(Arg* arg, Method* m, TypeTable* types);
   bool    MatchArgs(Expr* thisExpr, ArgList* args, Method* m, TypeTable* types, std::vector<Expr*>* newArgList);
+  Expr*   AutoDereference(Expr* expr);
   Method* FindMethod(Expr*               thisExpr,
                      ClassType*          classType,
                      const std::string&  name,

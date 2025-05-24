@@ -43,6 +43,7 @@ bool IsValidLocalVar(Type* type) {
 
 bool NeedsUnfolding(Type* type) {
   if (type->IsPtr()) { return NeedsUnfolding(static_cast<PtrType*>(type)->GetBaseType()); }
+  type = type->GetUnqualifiedType();
   if (type->IsClass()) {
     auto classType = static_cast<ClassType*>(type);
     // If this is a non-native class with no fields, unfold it into nothing.
@@ -89,6 +90,9 @@ Result ShaderPrepPass::Visit(CastExpr* node) {
 Result ShaderPrepPass::Visit(FieldAccess* node) {
   auto base = Resolve(node->GetExpr());
   if (NeedsUnfolding(base->GetType(types_))) {
+    if (base->IsTempVarExpr()) {
+      base = static_cast<TempVarExpr*>(base)->GetInitExpr();
+    }
     assert(base->IsVarExpr());
     Var* baseVar = static_cast<VarExpr*>(base)->GetVar();
     if (baseVar->type->IsRawPtr()) {
@@ -531,7 +535,7 @@ Result ShaderPrepPass::Visit(ToRawArray* node) {
 }
 
 Result ShaderPrepPass::Default(ASTNode* node) {
-  assert(false);
+  assert(!"unsupported node type in ShaderPrepPass");
   return nullptr;
 }
 

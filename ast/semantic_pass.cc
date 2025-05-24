@@ -48,10 +48,9 @@ Result SemanticPass::Visit(ArrayAccess* node) {
   Expr* index = Resolve(node->GetIndex());
   if (!index) return nullptr;
 
-  if (auto indexableExpr = MakeIndexable(expr)) {
-    expr = indexableExpr;
-  } else {
-    Error("expression is not of indexable type");
+  expr = MakeIndexable(expr);
+  if (!expr) {
+    return Error("expression is not of indexable type");
   }
 
   return Make<ArrayAccess>(expr, index);
@@ -208,7 +207,7 @@ Stmts* SemanticPass::InitializeArray(Expr* dest, Type* elementType, Expr* length
     body = Make<StoreStmt>(lhs, exprList->Get()[0]);
   } else {
     Type* type = types_->GetArrayType(elementType, numArgs, MemoryLayout::Default);
-    auto value = Make<Initializer>(type, exprList);
+    auto value = Make<TempVarExpr>(type, Make<Initializer>(type, exprList));
     auto rhs = Make<LoadExpr>(Make<ArrayAccess>(MakeIndexable(value), Make<LoadExpr>(index)));
     body = Make<StoreStmt>(lhs, rhs);
   }
@@ -285,7 +284,12 @@ Result SemanticPass::ResolveMethodCall(Expr*       expr,
   }
   WidenArgList(newArgList, method->formalArgList);
   auto* exprList = Make<ExprList>(std::move(newArgList));
-  return Make<MethodCall>(method, exprList);
+  Expr* result = Make<MethodCall>(method, exprList);
+  if (!method->returnType->IsRawPtr()) {
+    // All non-rawptr return values are turned into rawptr to enable chaining.
+    return MakeReadOnlyTempVar(result);
+  }
+  return result;
 }
 
 Expr* SemanticPass::Widen(Expr* node, Type* dstType) {
@@ -298,23 +302,21 @@ Expr* SemanticPass::Widen(Expr* node, Type* dstType) {
     return Make<SmartToRawPtr>(node);
   } else if (dstType->IsRawPtr() && static_cast<RawPtrType*>(dstType)->GetBaseType()->IsArray()) {
     return MakeIndexable(node);
+  } else if (srcType->IsRawPtr() && dstType->IsRawPtr()) {
+    return node;
   } else {
     return Make<CastExpr>(dstType, node);
   }
 }
 
 Expr* SemanticPass::MakeIndexable(Expr* expr) {
+  expr = AutoDereference(expr);
   Type* type = expr->GetType(types_);
-  if (type->IsStrongPtr() || type->IsWeakPtr()) {
-    return Make<SmartToRawPtr>(expr);
-  } else if (!type->IsRawPtr()) {
-    return MakeIndexable(Make<TempVarExpr>(type, expr));
-  }
+  assert(type->IsRawPtr());
   type = static_cast<RawPtrType*>(type)->GetBaseType();
+  type = type->GetUnqualifiedType();
   if (type->IsUnsizedArray()) {
     return expr;
-  } else if (type->IsStrongPtr() || type->IsWeakPtr()) {
-    return Make<SmartToRawPtr>(Make<LoadExpr>(expr));
   }
   int length;
   Type* elementType;
@@ -441,20 +443,10 @@ Result SemanticPass::Visit(UnresolvedMethodCall* node) {
   if (!expr) return nullptr;
   ArgList* arglist = Resolve(node->GetArgList());
   if (!arglist) return nullptr;
+  expr = AutoDereference(expr);
   Type* type = expr->GetType(types_);
-  Type* thisPtrType;
-  if (type->IsRawPtr()) { type = static_cast<RawPtrType*>(type)->GetBaseType(); }
-  if (type->IsPtr()) {
-    thisPtrType = type;
-    type = static_cast<PtrType*>(type)->GetBaseType();
-    if (expr->GetType(types_)->IsRawPtr()) { expr = Make<LoadExpr>(expr); }
-  } else {
-    if (!expr->GetType(types_)->IsRawPtr()) {
-      expr = Make<TempVarExpr>(expr->GetType(types_), expr);
-    }
-    thisPtrType = expr->GetType(types_);
-  }
-  if (!type) { return Error("calling method on void pointer?"); }
+  assert(type->IsRawPtr());
+  type = static_cast<RawPtrType*>(type)->GetBaseType();
   type = type->GetUnqualifiedType();
   if (!type->IsClass()) { return Error("expression does not evaluate to class type"); }
   ClassType* classType = static_cast<ClassType*>(type);
@@ -469,6 +461,14 @@ Result SemanticPass::Visit(UnresolvedStaticMethodCall* node) {
   return ResolveMethodCall(nullptr, classType, id, arglist);
 }
 
+Expr* SemanticPass::MakeLoad(Expr* expr) {
+  assert(expr->GetType(types_)->IsRawPtr());
+  if (expr->IsTempVarExpr()) {
+    return static_cast<TempVarExpr*>(expr)->GetInitExpr();
+  }
+  return Make<LoadExpr>(expr);
+}
+
 Result SemanticPass::Visit(LoadExpr* node) {
   Expr* expr = Resolve(node->GetExpr());
   if (!expr) return nullptr;
@@ -478,12 +478,7 @@ Result SemanticPass::Visit(LoadExpr* node) {
     Expr* loadedBase = Make<LoadExpr>(swizzle->GetExpr());
     return Make<ExtractElementExpr>(loadedBase, swizzle->GetIndex());
   }
-  if (!expr->GetType(types_)->IsRawPtr()) {
-    // Method calls and length expressions can get a spurious load when converted from
-    // "assignable".
-    return expr;
-  }
-  return Make<LoadExpr>(expr);
+  return MakeLoad(expr);
 }
 
 Result SemanticPass::Visit(UnresolvedIdentifier* node) {
@@ -511,23 +506,22 @@ Result SemanticPass::Visit(UnresolvedIdentifier* node) {
 Result SemanticPass::Visit(UnresolvedDot* node) {
   Expr* expr = Resolve(node->GetExpr());
   if (!expr) return nullptr;
+  expr = AutoDereference(expr);
   Type* type = expr->GetType(types_);
-  if (type->IsRawPtr()) { type = static_cast<RawPtrType*>(type)->GetBaseType(); }
+  assert(type->IsRawPtr());
+  type = static_cast<RawPtrType*>(type)->GetBaseType();
   std::string id = node->GetID();
-  if (type->IsStrongPtr() || type->IsWeakPtr()) {
-    type = static_cast<PtrType*>(type)->GetBaseType();
-    if (expr->GetType(types_)->IsRawPtr()) { expr = Make<LoadExpr>(expr); }
-    expr = Make<SmartToRawPtr>(expr);
-  }
   type = type->GetUnqualifiedType();
   if (type->IsArray()) {
     if (id == "length") {
       ArrayType* atype = static_cast<ArrayType*>(type);
+      Expr* lengthExpr;
       if (atype->GetNumElements() > 0) {
-        return Make<IntConstant>(atype->GetNumElements(), 32);  // FIXME: uint?
+        lengthExpr = Make<IntConstant>(atype->GetNumElements(), 32);
       } else {
-        return Make<LengthExpr>(expr);
+        lengthExpr = Make<LengthExpr>(expr);
       }
+      return MakeReadOnlyTempVar(lengthExpr);
     } else {
       return Error("unknown array property \"%s\"", id.c_str());
     }
@@ -561,7 +555,7 @@ Result SemanticPass::Visit(UnresolvedStaticDot* node) {
     auto enumType = static_cast<EnumType*>(type);
     const EnumValue* enumValue = enumType->FindValue(id);
     if (enumValue) {
-      return Make<EnumConstant>(enumValue);
+      return MakeReadOnlyTempVar(Make<EnumConstant>(enumValue));
     } else {
       return Error("value \"%s\" not found on enum \"%s\"", id.c_str(),
                    enumType->ToString().c_str());
@@ -582,6 +576,12 @@ Expr* SemanticPass::MakeConstantOne(Type* type) {
     assert(!"unexpected type for constant");
     return nullptr;
   }
+}
+
+Expr* SemanticPass::MakeReadOnlyTempVar(Expr* expr) {
+  auto type = expr->GetType(types_);
+  type = types_->GetQualifiedType(type, Type::Qualifier::ReadOnly);
+  return Make<TempVarExpr>(type, expr);
 }
 
 Result SemanticPass::Visit(IncDecExpr* node) {
@@ -918,6 +918,12 @@ Result SemanticPass::Visit(ReturnStatement* stmt) {
   return stmts;
 }
 
+Result SemanticPass::Visit(TempVarExpr* node) {
+  Expr* initExpr = Resolve(node->GetInitExpr());
+  if (!initExpr) return nullptr;
+  return Make<TempVarExpr>(initExpr->GetType(types_), initExpr);
+}
+
 int SemanticPass::FindFormalArg(Arg* arg, Method* m, TypeTable* types) {
   for (int i = 0; i < m->formalArgList.size(); ++i) {
     Var* formalArg = m->formalArgList[i].get();
@@ -1028,6 +1034,18 @@ Result SemanticPass::Error(const char* fmt, ...) {
   fprintf(stderr, "\n");
   numErrors_++;
   return nullptr;
+}
+
+Expr* SemanticPass::AutoDereference(Expr* expr) {
+  auto type = expr->GetType(types_);
+  assert(type->IsRawPtr());
+  type = static_cast<RawPtrType*>(type)->GetBaseType();
+  type = type->GetUnqualifiedType();
+  if (type->IsStrongPtr() || type->IsWeakPtr()) {
+    expr = MakeLoad(expr);
+    return Make<SmartToRawPtr>(expr);
+  }
+  return expr;
 }
 
 };  // namespace Toucan
