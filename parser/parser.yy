@@ -121,7 +121,7 @@ Type* FindType(const char* str) {
 %type <type> scalar_type type class_header enum_header
 %type <type> simple_type opt_return_type
 %type <classType> template_class_header
-%type <expr> expr opt_expr assignable arith_expr expr_or_list opt_initializer opt_length
+%type <expr> expr opt_expr assignable arith_expr expr_or_list opt_initializer opt_length list_initializer
 %type <initializer> initializer initializer_or_type
 %type <arg> argument
 %type <stmt> statement expr_statement for_loop_stmt
@@ -162,7 +162,7 @@ Type* FindType(const char* str) {
 %left '*' '/' '%'
 %right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS ':'
 %left '.' '[' ']' '(' ')' '{' '}'
-%expect 2   /* we expect 2 shift/reduce: dangling-else, and one for new-expr used as opt_initializer */
+%expect 1   /* we expect 1 shift/reduce: dangling-else */
 %%
 program:
     statements                              { *rootStmts_ = $1; }
@@ -494,13 +494,18 @@ expr:
   | T_STRING_LITERAL                        { $$ = StringLiteral($1); }
   ;
 
+list_initializer:
+    '{' arguments '}'                       { $$ = Make<UnresolvedListExpr>($2); }
+  ;
+
 expr_or_list:
     expr
-  | '{' arguments '}'                       { $$ = Make<UnresolvedListExpr>($2); }
+  | list_initializer
   ;
 
 opt_initializer:
-    ':' expr_or_list                        { $$ = $2; }
+    ':' list_initializer                    { $$ = $2; }
+  | ':' initializer                         { $$ = $2; }
   | /* nothing */                           { $$ = nullptr; }
   ;
 
