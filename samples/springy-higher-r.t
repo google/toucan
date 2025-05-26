@@ -137,7 +137,7 @@ class DrawBindings {
 class DrawPipeline {
   vertex main(vb : &VertexBuiltins) {
     var matrix = bindings.Get().uniforms.Map().matrix;
-    vb.position = matrix * Utils.makeFloat4(vertices.Get());
+    vb.position = matrix * Utils.makeFloat4(vertices.Get(), 0.0, 1.0);
   }
   fragment main(fb : &FragmentBuiltins) {
     fragColor.Set(bindings.Get().uniforms.Map().color);
