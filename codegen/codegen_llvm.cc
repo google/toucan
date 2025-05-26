@@ -492,9 +492,12 @@ llvm::Intrinsic::ID CodeGenLLVM::FindIntrinsic(Method* method) {
     const char*         methodName;
     llvm::Intrinsic::ID id;
   } intrinsics[] = {
-      "Math", "sqrt", llvm::Intrinsic::sqrt, "Math", "sin",  llvm::Intrinsic::sin,
-      "Math", "cos",  llvm::Intrinsic::cos,  "Math", "fabs", llvm::Intrinsic::fabs,
-      "Math", "clz",  llvm::Intrinsic::ctlz,
+      "Math", "sqrt", llvm::Intrinsic::sqrt,    "Math", "sin",   llvm::Intrinsic::sin,
+      "Math", "cos",  llvm::Intrinsic::cos,     "Math", "fabs",  llvm::Intrinsic::fabs,
+      "Math", "clz",  llvm::Intrinsic::ctlz,    "Math", "floor", llvm::Intrinsic::floor,
+      "Math", "ceil", llvm::Intrinsic::ceil,    "Math", "tan",   llvm::Intrinsic::tan,
+      "Math", "min",  llvm::Intrinsic::minimum, "Math", "max",   llvm::Intrinsic::maximum,
+      "Math", "pow",  llvm::Intrinsic::pow
   };
 
   for (auto intrinsic : intrinsics) {
@@ -688,14 +691,48 @@ llvm::Value* CodeGenLLVM::GenerateTranspose(llvm::Value* srcMatrix, MatrixType* 
   return dstMatrix;
 }
 
-llvm::Value* CodeGenLLVM::GenerateDotProduct(llvm::Value* lhs, llvm::Value* rhs, VectorType* type) {
+llvm::Value* CodeGenLLVM::GenerateDotProduct(llvm::Value* lhs, llvm::Value* rhs) {
+  unsigned length = llvm::cast<llvm::FixedVectorType>(lhs->getType())->getNumElements();
   llvm::Value* product = builder_->CreateFMul(lhs, rhs);
   llvm::Value* sum = builder_->CreateExtractElement(product, Int(0));
-  for (int i = 1; i < type->GetLength(); ++i) {
+  for (unsigned i = 1; i < length; ++i) {
     llvm::Value* value = builder_->CreateExtractElement(product, Int(i));
     sum = builder_->CreateFAdd(sum, value);
   }
   return sum;
+}
+
+llvm::Value* CodeGenLLVM::GenerateCrossProduct(llvm::Value* lhs, llvm::Value* rhs) {
+  assert(llvm::cast<llvm::FixedVectorType>(lhs->getType())->getNumElements() == 3);
+  llvm::Value* dst = llvm::ConstantAggregateZero::get(lhs->getType());
+  for (int i = 0; i < 3; ++i) {
+    llvm::Value* l1 = builder_->CreateExtractElement(lhs, Int((i + 1) % 3));
+    llvm::Value* l2 = builder_->CreateExtractElement(lhs, Int((i + 2) % 3));
+    llvm::Value* r1 = builder_->CreateExtractElement(rhs, Int((i + 1) % 3));
+    llvm::Value* r2 = builder_->CreateExtractElement(rhs, Int((i + 2) % 3));
+    llvm::Value* product1 = builder_->CreateFMul(l1, r2);
+    llvm::Value* product2 = builder_->CreateFMul(l2, r1);
+    llvm::Value* result = builder_->CreateFSub(product1, product2);
+    dst = builder_->CreateInsertElement(dst, result, Int(i));
+  }
+  return dst;
+}
+
+llvm::Value* CodeGenLLVM::GenerateVectorLength(llvm::Value* value) {
+  auto dotProduct = GenerateDotProduct(value, value);
+  std::vector<llvm::Type*> params;
+  auto type = value->getType()->getContainedType(0);
+  auto function = llvm::Intrinsic::getDeclaration(module_, llvm::Intrinsic::sqrt, {type});
+  return builder_->CreateCall(function, {dotProduct});
+}
+
+llvm::Value* CodeGenLLVM::GenerateVectorNormalize(llvm::Value* value) {
+  auto length = GenerateVectorLength(value);
+  auto one = llvm::ConstantFP::get(floatType_, 1.0);
+  auto recip = builder_->CreateFDiv(one, length);
+  unsigned numElts = llvm::cast<llvm::FixedVectorType>(value->getType())->getNumElements();
+  auto scale = builder_->CreateVectorSplat(numElts, recip);
+  return builder_->CreateFMul(value, scale);
 }
 
 llvm::Value* CodeGenLLVM::GenerateMatrixMultiply(llvm::Value* lhs,
@@ -721,7 +758,7 @@ llvm::Value* CodeGenLLVM::GenerateMatrixMultiply(llvm::Value* lhs,
     llvm::Value* rhsCol = builder_->CreateExtractValue(rhs, col);
     llvm::Value* dstColumn = llvm::ConstantAggregateZero::get(columnTypeLLVM);
     for (unsigned row = 0; row < numRows; ++row) {
-      llvm::Value* value = GenerateDotProduct(lhsRows[row], rhsCol, columnType);
+      llvm::Value* value = GenerateDotProduct(lhsRows[row], rhsCol);
       dstColumn = builder_->CreateInsertElement(dstColumn, value, Int(row));
     }
     dstMatrix = builder_->CreateInsertValue(dstMatrix, dstColumn, {col});
@@ -786,7 +823,7 @@ Result CodeGenLLVM::Visit(BinOpNode* node) {
     ret = llvm::ConstantAggregateZero::get(ConvertType(vectorType));
     for (int i = 0; i < vectorType->GetLength(); i += 1) {
       llvm::Value* row = builder_->CreateExtractValue(lhsT, i);
-      llvm::Value* value = GenerateDotProduct(row, rhs, vectorType);
+      llvm::Value* value = GenerateDotProduct(row, rhs);
       ret = builder_->CreateInsertElement(ret, value, Int(i));
     }
   } else {
@@ -1289,10 +1326,29 @@ Result CodeGenLLVM::Visit(IfStatement* ifStmt) {
   return nullptr;
 }
 
+llvm::Value* CodeGenLLVM::GenerateInlineAPIMethod(Method* method, ExprList* argList) {
+  auto args = argList->Get();
+  if (method->classType->GetName() == "Math") {
+    if (method->name == "dot") {
+      return GenerateDotProduct(GenerateLLVM(args[0]), GenerateLLVM(args[1]));
+    } else if (method->name == "cross") {
+      return GenerateCrossProduct(GenerateLLVM(args[0]), GenerateLLVM(args[1]));
+    } else if (method->name == "length") {
+      return GenerateVectorLength(GenerateLLVM(args[0]));
+    } else if (method->name == "normalize") {
+      return GenerateVectorNormalize(GenerateLLVM(args[0]));
+    } else if (method->name == "transpose") {
+      return GenerateTranspose(GenerateLLVM(args[0]), static_cast<MatrixType*>(args[0]->GetType(types_)));
+    }
+  }
+  return nullptr;
+}
+
 llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
                                              ExprList*           argList,
                                              Type*               returnType,
                                              const FileLocation& location) {
+  if (auto result = GenerateInlineAPIMethod(method, argList)) { return result; }
   std::vector<llvm::Value*> args;
   llvm::Function*           function = GetOrCreateMethodStub(method);
   if (auto builtin = FindBuiltin(method)) { return std::invoke(builtin, this, location); }

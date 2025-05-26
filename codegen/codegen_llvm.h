@@ -99,7 +99,10 @@ class CodeGenLLVM : public Visitor {
   llvm::Value*          CreateMalloc(llvm::Type* type, llvm::Value* arraySize);
   void                  GenerateFree(llvm::Value* value);
   llvm::Value*          GenerateLLVM(Expr* expr);
-  llvm::Value*          GenerateDotProduct(llvm::Value* lhs, llvm::Value* rhs, VectorType* type);
+  llvm::Value*          GenerateDotProduct(llvm::Value* lhs, llvm::Value* rhs);
+  llvm::Value*          GenerateCrossProduct(llvm::Value* lhs, llvm::Value* rhs);
+  llvm::Value*          GenerateVectorLength(llvm::Value* value);
+  llvm::Value*          GenerateVectorNormalize(llvm::Value* value);
   llvm::Value*          GenerateTranspose(llvm::Value* value, MatrixType* matrixType);
   llvm::Value*          GenerateMatrixMultiply(llvm::Value* lhs,
                                                llvm::Value* rhs,
@@ -155,6 +158,7 @@ class CodeGenLLVM : public Visitor {
                           Type*        dstType,
                           llvm::Value* value,
                           llvm::Type*  dstLLVMType);
+  llvm::Value* GenerateInlineAPIMethod(Method* method, ExprList* argList);
   llvm::Value* GenerateMethodCall(Method*             method,
                                   ExprList*           args,
                                   Type*               returnType,
