@@ -163,9 +163,8 @@ for (var i = 0; i < bodies.length; ++i) {
   var x = i % width;
   var y = i % (width * height) / width;
   var z = i / (width * height);
-  var pos = Utils.makeVector((float) (x - width / 2) + 0.5,
-                             (float) (y - height / 2) + 0.5,
-                             (float) (z - depth / 2) + 0.5, Vector(0.0));
+  var pos = float<2>((float) (x - width / 2) + 0.5,
+                     (float) (y - height / 2) + 0.5);
   bodies[i].position = pos;
   bodies[i].mass = Math.rand() * 2.5 + 1.25;
   bodies[i].velocity = Vector(0.0);
