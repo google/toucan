@@ -173,6 +173,9 @@ error-swizzle.t:7:  invalid swizzle component 'w'
 error-swizzle.t:8:  invalid swizzle component 'w'
 error-swizzle.t:9:  invalid swizzle component 'q'
 error-swizzle.t:10:  invalid swizzle component 'a'
+error-swizzle.t:11:  cannot store a value of type "int" to a location of type "int<2>"
+error-swizzle.t:12:  cannot store a value of type "int<3>" to a location of type "int<2>"
+error-swizzle.t:13:  cannot store a value of type "null" to a location of type "int"
 test/error-syntax-error-in-included-file.t
 syntax-error.t:2: syntax error
 test/error-texture-from-buffer-incorrect-format.t

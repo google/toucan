@@ -198,8 +198,7 @@ Stmt* SemanticPass::Initialize(Expr* dest, Expr* initExpr) {
   if (initExpr) {
     Type* initExprType = initExpr->GetType(types_);
     if (!initExprType->CanWidenTo(type)) {
-      Error("cannot store a value of type \"%s\" to a location of type \"%s\"",
-            initExprType->ToString().c_str(), type->ToString().c_str());
+      WideningError(initExprType, type);
       return nullptr;
     }
     initExpr = Widen(initExpr, type);
@@ -547,9 +546,14 @@ Result SemanticPass::MakeSwizzle(int srcLength, Expr* lhs, const std::string& sw
   return Make<TempVarExpr>(expr->GetType(types_), expr);
 }
 
-Expr* SemanticPass::MakeSwizzleForStore(int exprLength, Expr* expr, const std::string& swizzle, Expr* rhs) {
+Result SemanticPass::WideningError(Type* srcType, Type* dstType) {
+  return Error("cannot store a value of type \"%s\" to a location of type \"%s\"",
+               srcType->ToString().c_str(), dstType->ToString().c_str());
+}
+
+Expr* SemanticPass::MakeSwizzleForStore(VectorType* lhsType, Expr* lhs, const std::string& swizzle, Expr* rhs) {
   auto indices = std::vector<int>(swizzle.size());
-  size_t resultLength = ParseSwizzle(swizzle, exprLength, indices.data());
+  size_t resultLength = ParseSwizzle(swizzle, lhsType->GetLength(), indices.data());
   if (resultLength < swizzle.size()) {
     Error("invalid swizzle component '%c'", swizzle[resultLength]);
     return nullptr;
@@ -558,13 +562,25 @@ Expr* SemanticPass::MakeSwizzleForStore(int exprLength, Expr* expr, const std::s
     Error("duplicate components in swizzle store");
     return nullptr;
   }
+  Type* rhsType = rhs->GetType(types_);
+  auto dstType = types_->GetVector(lhsType->GetComponentType(), indices.size());
   if (indices.size() == 1) {
-    expr = Make<InsertElementExpr>(expr, rhs, indices[0]);
-  } else for (int i = 0; i < indices.size(); ++i) {
-    auto value = Make<ExtractElementExpr>(rhs, i);
-    expr = Make<InsertElementExpr>(expr, value, indices[i]);
+    if (!rhsType->CanWidenTo(lhsType->GetComponentType())) {
+      WideningError(rhsType, lhsType->GetComponentType());
+      return nullptr;
+    }
+    lhs = Make<InsertElementExpr>(lhs, rhs, indices[0]);
+  } else {
+    if (!rhsType->CanWidenTo(dstType)) {
+      WideningError(rhsType, dstType);
+      return nullptr;
+    }
+    for (int i = 0; i < indices.size(); ++i) {
+      auto value = Make<ExtractElementExpr>(rhs, i);
+      lhs = Make<InsertElementExpr>(lhs, value, indices[i]);
+    }
   }
-  return expr;
+  return lhs;
 }
 
 Result SemanticPass::Visit(UnresolvedDot* node) {
@@ -670,10 +686,11 @@ Result SemanticPass::Visit(StoreStmt* node) {
     auto dot = static_cast<UnresolvedDot*>(node->GetLHS());
     auto base = Resolve(dot->GetExpr());
     if (!base) return nullptr;
+    base = AutoDereference(base);
     Expr* expr = MakeLoad(base);
     auto exprType = expr->GetType(types_);
     if (exprType->IsVector()) {
-      rhs = MakeSwizzleForStore(static_cast<VectorType*>(exprType)->GetLength(), expr, dot->GetID(), rhs);
+      rhs = MakeSwizzleForStore(static_cast<VectorType*>(exprType), expr, dot->GetID(), rhs);
       if (!rhs) return nullptr;
       lhs = base;
     }
@@ -690,8 +707,7 @@ Result SemanticPass::Visit(StoreStmt* node) {
   if (qualifiers & Type::Qualifier::ReadOnly) {
     return Error("expression is not an assignable value");
   } else if (!rhsType->CanWidenTo(lhsType)) {
-    return Error("cannot store a value of type \"%s\" to a location of type \"%s\"",
-                 rhsType->ToString().c_str(), lhsType->ToString().c_str());
+    return WideningError(rhsType, lhsType);
   }
   rhs = Widen(rhs, lhsType);
   if (lhsType->NeedsDestruction()) {
