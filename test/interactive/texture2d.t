@@ -51,7 +51,7 @@ class Pipeline {
 var pipeline = new RenderPipeline<Pipeline>(device);
 var tex = new sampleable Texture2D<RGBA8unorm>(device, {2, 2});
 var width = tex.MinBufferWidth();
-var buffer = new writeonly Buffer<[]ubyte<4>>(device, 2 * width);
+var buffer = new hostwriteable Buffer<[]ubyte<4>>(device, 2 * width);
 var data = buffer.Map();
 data[0] =         ubyte<4>(255ub,   0ub,   0ub, 255ub);
 data[1] =         ubyte<4>(  0ub, 255ub,   0ub, 255ub);

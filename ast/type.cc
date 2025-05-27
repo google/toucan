@@ -38,6 +38,8 @@ std::string QualifiersToString(int qualifiers, std::string sep) {
   if (qualifiers & Type::Qualifier::Renderable) { result += "renderable" + sep; }
   if (qualifiers & Type::Qualifier::ReadOnly) { result += "readonly" + sep; }
   if (qualifiers & Type::Qualifier::WriteOnly) { result += "writeonly" + sep; }
+  if (qualifiers & Type::Qualifier::HostReadable) { result += "hostreadable" + sep; }
+  if (qualifiers & Type::Qualifier::HostWriteable) { result += "hostwriteable" + sep; }
   if (qualifiers & Type::Qualifier::Coherent) { result += "coherent" + sep; }
   return result;
 }

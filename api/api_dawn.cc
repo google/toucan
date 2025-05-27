@@ -352,7 +352,6 @@ static wgpu::BlendState toDawnBlendState(BlendState state) {
 
 // FIXME: this should handle a mask, properly
 static wgpu::BufferUsage toDawnBufferUsage(int qualifiers) {
-  if (qualifiers == 0) { qualifiers = Type::Qualifier::WriteOnly; }
   wgpu::BufferUsage result = wgpu::BufferUsage::None;
   bool              gpu = false;
   if (qualifiers & Type::Qualifier::Index) {
@@ -374,10 +373,10 @@ static wgpu::BufferUsage toDawnBufferUsage(int qualifiers) {
   if (gpu) {
     result |= wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
   } else {
-    if (!(qualifiers & (Type::Qualifier::WriteOnly))) {
+    if (qualifiers & (Type::Qualifier::HostReadable)) {
       result |= wgpu::BufferUsage::MapRead | wgpu::BufferUsage::CopyDst;
     }
-    if (!(qualifiers & (Type::Qualifier::ReadOnly))) {
+    if (qualifiers & (Type::Qualifier::HostWriteable)) {
       result |= wgpu::BufferUsage::MapWrite | wgpu::BufferUsage::CopySrc;
     }
   }
@@ -1184,9 +1183,9 @@ Buffer* Buffer_Buffer_Device_T(int qualifiers, Type* type, Device* device, void*
   return result;
 }
 
-Object* Buffer_Map_readonly_Buffer(Buffer* buffer) { return MapSync(wgpu::MapMode::Read, buffer); }
+Object* Buffer_Map_hostreadable_Buffer(Buffer* buffer) { return MapSync(wgpu::MapMode::Read, buffer); }
 
-Object* Buffer_Map_writeonly_Buffer(Buffer* buffer) { return MapSync(wgpu::MapMode::Write, buffer); }
+Object* Buffer_Map_hostwriteable_Buffer(Buffer* buffer) { return MapSync(wgpu::MapMode::Write, buffer); }
 
 void Buffer_Unmap(Buffer* buffer) {
   buffer->buffer.Unmap();

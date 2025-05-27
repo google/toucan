@@ -50,7 +50,7 @@ class Pipeline {
 };
 var pipeline = new RenderPipeline<Pipeline>(device);
 var tex = new sampleable TextureCube<RGBA8unorm>(device, {2, 2});
-var buffer = new writeonly Buffer<[]ubyte<4>>(device, 64 * 2 * 2);
+var buffer = new hostwriteable Buffer<[]ubyte<4>>(device, 64 * 2 * 2);
 var data = buffer.Map();
 data[0]   =  ubyte<4>(255ub,   0ub,   0ub, 255ub);
 data[1]   =  ubyte<4>(  0ub, 255ub,   0ub, 255ub);

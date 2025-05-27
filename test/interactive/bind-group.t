@@ -27,7 +27,7 @@ class Pipeline {
 var objectData : ObjectData;
 objectData.uniforms = new uniform Buffer<Uniforms>(device);
 var bg = new BindGroup<ObjectData>(device, &objectData);
-var stagingBuffer = new writeonly Buffer<Uniforms>(device);
+var stagingBuffer = new hostwriteable Buffer<Uniforms>(device);
 var pipeline = new RenderPipeline<Pipeline>(device);
 while (System.IsRunning()) {
   var encoder = new CommandEncoder(device);

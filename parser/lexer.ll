@@ -112,6 +112,8 @@ readonly { return T_READONLY; }
 writeonly { return T_WRITEONLY; }
 deviceonly { return T_DEVICEONLY; }
 coherent { return T_COHERENT; }
+hostreadable { return T_HOSTREADABLE; }
+hostwriteable { return T_HOSTWRITEABLE; }
 using   { return T_USING; }
 inline  { return T_INLINE; }
 include BEGIN(include);

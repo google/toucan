@@ -138,6 +138,17 @@ error-named-param-missing-one.t:7:  class Bar has no method Foo(f = float)
 error-named-param-missing-one.t:7:  Bar.Foo(int, float) : float
 test/error-new-with-missing-constructor.t
 error-new-with-missing-constructor.t:5:  matching constructor not found
+test/error-non-addable-qualifiers.t
+error-non-addable-qualifiers.t:3:  cannot store a value of type "*Buffer<float>" to a location of type "*uniform Buffer<float>"
+error-non-addable-qualifiers.t:4:  cannot store a value of type "*Buffer<float>" to a location of type "*storage Buffer<float>"
+error-non-addable-qualifiers.t:5:  cannot store a value of type "*Buffer<float>" to a location of type "*vertex Buffer<float>"
+error-non-addable-qualifiers.t:6:  cannot store a value of type "*Buffer<float>" to a location of type "*index Buffer<float>"
+error-non-addable-qualifiers.t:7:  cannot store a value of type "*Buffer<float>" to a location of type "*uniform storage Buffer<float>"
+error-non-addable-qualifiers.t:10:  cannot store a value of type "float" to a location of type "hostreadable float"
+error-non-addable-qualifiers.t:11:  cannot store a value of type "float" to a location of type "hostwriteable float"
+error-non-addable-qualifiers.t:14:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*sampleable Texture2D<RGBA8unorm>"
+error-non-addable-qualifiers.t:15:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*renderable Texture2D<RGBA8unorm>"
+error-non-addable-qualifiers.t:16:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*sampleable renderable Texture2D<RGBA8unorm>"
 test/error-non-static-method-called-statically.t
 error-non-static-method-called-statically.t:5:  attempt to call non-static method "bar" on class "Foo"
 test/error-partial-template.t
@@ -185,7 +196,7 @@ test/error-syntax-error-in-included-file.t
 syntax-error.t:2: syntax error
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
-error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(*CommandEncoder, *writeonly Buffer<[]float<4>>, int)
+error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(*CommandEncoder, *hostwriteable Buffer<[]float<4>>, int)
 error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromBuffer(&CommandEncoder, &Buffer<[]ubyte<4>>, uint, uint) 
 test/error-uint-literal-too-large.t
 test/error-unknown-param-type.t
@@ -272,6 +283,7 @@ test/post-increment-with-side-effects.t
 test/raw-ptr.t
 test/really-simple.t
 test/recursive-type.t
+test/removable-qualifiers.t
 test/scope-test.t
 test/short-vector.t
 test/short.t

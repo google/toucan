@@ -144,7 +144,7 @@ Type* FindType(const char* str) {
 %token <d> T_DOUBLE_LITERAL
 %token T_TRUE T_FALSE T_NULL T_IF T_ELSE T_FOR T_WHILE T_DO T_RETURN T_NEW
 %token T_CLASS T_ENUM T_VAR
-%token T_READONLY T_WRITEONLY T_COHERENT T_DEVICEONLY
+%token T_READONLY T_WRITEONLY T_COHERENT T_DEVICEONLY T_HOSTREADABLE T_HOSTWRITEABLE
 %token T_INT T_UINT T_FLOAT T_DOUBLE T_BOOL T_BYTE T_UBYTE T_SHORT T_USHORT
 %token T_HALF
 %token T_STATIC T_NATIVE T_VERTEX T_FRAGMENT T_COMPUTE T_THIS
@@ -377,6 +377,8 @@ type_qualifier:
   | T_RENDERABLE                            { $$ = Type::Qualifier::Renderable; }
   | T_READONLY                              { $$ = Type::Qualifier::ReadOnly; }
   | T_WRITEONLY                             { $$ = Type::Qualifier::WriteOnly; }
+  | T_HOSTREADABLE                          { $$ = Type::Qualifier::HostReadable; }
+  | T_HOSTWRITEABLE                         { $$ = Type::Qualifier::HostWriteable; }
   | T_COHERENT                              { $$ = Type::Qualifier::Coherent; }
   ;
 

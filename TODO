@@ -30,7 +30,6 @@
 - texture formats
 - prevent calls into null via native methods in api.t that don't exist
 - implement long, ulong
-- implement readonly, writeonly, readwrite
 - Make ClassTemplate take a vector of TemplateTypes, not just Type*
   - or maybe just a vector of std::string?
 - do parameter translation on API entry, exit

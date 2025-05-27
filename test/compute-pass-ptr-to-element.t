@@ -32,7 +32,7 @@ var device = new Device();
 var computePipeline = new ComputePipeline<Compute>(device);
 
 var storageBuf = new writeonly storage Buffer<[]int>(device, 3);
-var hostBuf = new readonly Buffer<[]int>(device, 3);
+var hostBuf = new hostreadable Buffer<[]int>(device, 3);
 
 var bg = new BindGroup<ComputeBindings>(device, {buffer = storageBuf});
 

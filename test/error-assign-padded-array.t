@@ -10,7 +10,7 @@ uniforms.array = {42, 21, 7};
 var device = new Device();
 
 var uniformBuf = new uniform Buffer<Uniforms>(device, &uniforms);
-var hostBuf = new readonly Buffer<Uniforms>(device);
+var hostBuf = new hostreadable Buffer<Uniforms>(device);
 
 var encoder = new CommandEncoder(device);
 hostBuf.CopyFromBuffer(encoder, uniformBuf);
