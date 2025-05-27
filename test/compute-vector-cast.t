@@ -1,7 +1,7 @@
 include "include/test.t"
 
 class ComputeBindings {
-  var buffer : *writeonly storage Buffer<[]uint<2>>;
+  var buffer : *storage Buffer<[]uint<2>>;
 }
 
 class Compute {
@@ -17,7 +17,7 @@ var device = new Device();
 
 var computePipeline = new ComputePipeline<Compute>(device);
 
-var storageBuf = new writeonly storage Buffer<[]uint<2>>(device, 1);
+var storageBuf = new storage Buffer<[]uint<2>>(device, 1);
 var hostBuf = new hostreadable Buffer<[]uint<2>>(device, 1);
 
 var bg = new BindGroup<ComputeBindings>(device, {buffer = storageBuf});

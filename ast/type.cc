@@ -26,6 +26,9 @@ namespace Toucan {
 
 namespace {
 
+constexpr int kNonRemovableQualifiers = Type::Qualifier::ReadOnly | Type::Qualifier::WriteOnly;
+constexpr int kNonAddableQualifiers = Type::Qualifier::Uniform | Type::Qualifier::Storage | Type::Qualifier::Vertex | Type::Qualifier::Index | Type::Qualifier::Sampleable | Type::Qualifier::Renderable | Type::Qualifier::HostReadable | Type::Qualifier::HostWriteable;
+
 inline int roundUpTo(int modulus, int value) { return (value + modulus - 1) / modulus * modulus; }
 
 std::string QualifiersToString(int qualifiers, std::string sep) {
@@ -44,13 +47,35 @@ std::string QualifiersToString(int qualifiers, std::string sep) {
   return result;
 }
 
+bool CheckQualifiers(int src, int dst) {
+  int srcNonRemovable = src & kNonRemovableQualifiers;
+  int dstNonAddable = dst & kNonAddableQualifiers;
+  return (dst & srcNonRemovable) == srcNonRemovable &&
+         (src & dstNonAddable) == dstNonAddable;
+}
+
 }  // namespace
+
+Type* Type::CheckAndRemoveQualifiers(Type* other) const {
+  int dst;
+  other = other->GetUnqualifiedType(&dst);
+  if (!CheckQualifiers(0, dst)) { return nullptr; }
+  return other;
+}
+
+bool Type::CanWidenTo(Type* type) const {
+  int qualifiers;
+  type = type->GetUnqualifiedType(&qualifiers);
+  return type == this && CheckQualifiers(0, qualifiers);
+}
 
 BoolType::BoolType() {}
 
 IntegerType::IntegerType(int bits, bool s) : bits_(bits), signed_(s) {}
 
 bool IntegerType::CanWidenTo(Type* other) const {
+  other = CheckAndRemoveQualifiers(other);
+  if (!other) return false;
   if (!other->IsInteger()) { return false; }
   IntegerType* otherInteger = static_cast<IntegerType*>(other);
   return (otherInteger->GetBits() >= bits_);
@@ -73,6 +98,8 @@ std::string IntegerType::ToString() const {
 FloatingPointType::FloatingPointType(int bits) : bits_(bits) {}
 
 bool FloatingPointType::CanWidenTo(Type* other) const {
+  other = CheckAndRemoveQualifiers(other);
+  if (!other) return false;
   if (!other->IsFloatingPoint()) { return false; }
   FloatingPointType* otherFloatingPoint = static_cast<FloatingPointType*>(other);
   return (otherFloatingPoint->GetBits() >= bits_);
@@ -124,7 +151,8 @@ std::string VectorType::ToString() const {
 }
 
 bool VectorType::CanWidenTo(Type* type) const {
-  if (type == this) return true;
+  type = CheckAndRemoveQualifiers(type);
+  if (!type) return false;
   if (type->IsVector()) {
     VectorType* vectorType = static_cast<VectorType*>(type);
     return length_ == vectorType->GetLength() &&
@@ -185,6 +213,8 @@ ArrayType::ArrayType(Type* elementType, int numElements, MemoryLayout memoryLayo
     : elementType_(elementType), numElements_(numElements), memoryLayout_(memoryLayout) {}
 
 bool ArrayType::CanWidenTo(Type* type) const {
+  type = CheckAndRemoveQualifiers(type);
+  if (!type) return false;
   if (type->IsArray()) {
     auto arrayType = static_cast<ArrayType*>(type);
     if (arrayType->GetElementType() != GetElementType()) { return false; }
@@ -239,16 +269,10 @@ QualifiedType::QualifiedType(Type* base, int qualifiers)
     : baseType_(base), qualifiers_(qualifiers) {}
 
 bool QualifiedType::CanWidenTo(Type* type) const {
-  if (type == this) return true;
-  if (type->IsQualified()) {
-    auto* qualifiedType = static_cast<QualifiedType*>(type);
-    if (!baseType_->CanWidenTo(qualifiedType->GetBaseType())) { return false; }
-    int qualifiers = qualifiedType->GetQualifiers();
-    return (qualifiers_ & qualifiers) == qualifiers;
-  } else if (baseType_->CanWidenTo(type)) {
-    return true;
-  }
-  return false;
+  int dst;
+  type = type->GetUnqualifiedType(&dst);
+  if (!CheckQualifiers(qualifiers_, dst)) { return false; }
+  return baseType_->CanWidenTo(type);
 }
 
 Type* QualifiedType::GetUnqualifiedType(int* qualifiers) {
@@ -286,8 +310,7 @@ int EnumType::GetSizeInBytes() const { return 4; }
 std::string EnumType::ToString() const { return name_; }
 
 bool EnumType::CanWidenTo(Type* type) const {
-  if (type == this) return true;
-  return type->IsInt() || type->IsUInt();
+  return type == this || type->IsInt() || type->IsUInt();
 }
 
 Method::Method(int m, Type* r, std::string n, ClassType* c)
@@ -496,6 +519,8 @@ int ClassType::GetSizeInBytes(int dynamicArrayLength) const {
 }
 
 bool ClassType::CanWidenTo(Type* type) const {
+  type = CheckAndRemoveQualifiers(type);
+  if (!type) return false;
   for (const ClassType* t = this; t != nullptr; t = t->GetParent()) {
     if (t == type) { return true; }
   }
@@ -566,6 +591,8 @@ StrongPtrType::StrongPtrType(Type* baseType) : PtrType(baseType) {}
 WeakPtrType::WeakPtrType(Type* baseType) : PtrType(baseType) {}
 
 bool WeakPtrType::CanWidenTo(Type* type) const {
+  type = CheckAndRemoveQualifiers(type);
+  if (!type) return false;
   if (type == this) return true;
   if (type->IsRawPtr()) {
     auto other = static_cast<RawPtrType*>(type);
@@ -584,7 +611,8 @@ std::string StrongPtrType::ToString() const {
 }
 
 bool StrongPtrType::CanWidenTo(Type* type) const {
-  if (type == this) return true;
+  type = CheckAndRemoveQualifiers(type);
+  if (!type) return false;
   if (type->IsPtr()) {
     PtrType* ptrType = static_cast<PtrType*>(type);
     if (GetBaseType()->IsVoid() && !type->IsRawPtr()) { return true; }
@@ -594,7 +622,8 @@ bool StrongPtrType::CanWidenTo(Type* type) const {
 };
 
 bool RawPtrType::CanWidenTo(Type* type) const {
-  if (type == this) return true;
+  type = CheckAndRemoveQualifiers(type);
+  if (!type) return false;
   if (type->IsRawPtr()) {
     auto ptrType = static_cast<PtrType*>(type);
     return GetBaseType()->CanWidenTo(ptrType->GetBaseType());

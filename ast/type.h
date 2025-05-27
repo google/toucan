@@ -81,11 +81,12 @@ class Type {
     if (qualifiers) *qualifiers = 0;
     return this;
   }
+  Type*               CheckAndRemoveQualifiers(Type* type) const;
   virtual std::string ToString() const = 0;
   virtual int         GetSizeInBytes() const = 0;
   virtual int         GetSizeInBytes(int dynamicArrayLength) const { return GetSizeInBytes(); }
   virtual int         GetAlignmentInBytes() const { return GetSizeInBytes(); }
-  virtual bool        CanWidenTo(Type* type) const { return type == this; }
+  virtual bool        CanWidenTo(Type* type) const;
   virtual bool        CanNarrowTo(Type* type) const { return type == this; }
   virtual bool        CanInitFrom(const ListType* type) const { return false; }
   virtual bool        ContainsRawPtr() const { return false; }

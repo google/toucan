@@ -11,6 +11,7 @@ test/abort-on-weak-null-deref.t
 test/abort.t
   Y__Y
 --\__(x)==     (pining for the fjords)
+test/addable-qualifiers.t
 test/aggregate-return.t
 test/allocate-unsized-class.t
 test/array-assign.t
@@ -82,8 +83,6 @@ test/error-assign-padded-array.t
 Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/error-assign-padded-array.t:21: expectation failed
 test/error-assign-padded-array.t:22: expectation failed
-test/error-assign-to-method.t
-error-assign-to-method.t:8:  expression is not an assignable value
 test/error-cast-weak-ptr-to-strong.t
 error-cast-weak-ptr-to-strong.t:3:  cannot cast value of type ^int to *int
 test/error-constructor-not-found.t
@@ -144,11 +143,14 @@ error-non-addable-qualifiers.t:4:  cannot store a value of type "*Buffer<float>"
 error-non-addable-qualifiers.t:5:  cannot store a value of type "*Buffer<float>" to a location of type "*vertex Buffer<float>"
 error-non-addable-qualifiers.t:6:  cannot store a value of type "*Buffer<float>" to a location of type "*index Buffer<float>"
 error-non-addable-qualifiers.t:7:  cannot store a value of type "*Buffer<float>" to a location of type "*uniform storage Buffer<float>"
-error-non-addable-qualifiers.t:10:  cannot store a value of type "float" to a location of type "hostreadable float"
-error-non-addable-qualifiers.t:11:  cannot store a value of type "float" to a location of type "hostwriteable float"
-error-non-addable-qualifiers.t:14:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*sampleable Texture2D<RGBA8unorm>"
-error-non-addable-qualifiers.t:15:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*renderable Texture2D<RGBA8unorm>"
-error-non-addable-qualifiers.t:16:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*sampleable renderable Texture2D<RGBA8unorm>"
+error-non-addable-qualifiers.t:8:  cannot store a value of type "*Buffer<float>" to a location of type "*hostreadable Buffer<float>"
+error-non-addable-qualifiers.t:9:  cannot store a value of type "*Buffer<float>" to a location of type "*hostwriteable Buffer<float>"
+error-non-addable-qualifiers.t:12:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*sampleable Texture2D<RGBA8unorm>"
+error-non-addable-qualifiers.t:13:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*renderable Texture2D<RGBA8unorm>"
+error-non-addable-qualifiers.t:14:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*sampleable renderable Texture2D<RGBA8unorm>"
+test/error-non-removable-qualifiers.t
+error-non-removable-qualifiers.t:4:  cannot store a value of type "&readonly float" to a location of type "&float"
+error-non-removable-qualifiers.t:5:  cannot store a value of type "&writeonly float" to a location of type "&float"
 test/error-non-static-method-called-statically.t
 error-non-static-method-called-statically.t:5:  attempt to call non-static method "bar" on class "Foo"
 test/error-partial-template.t

@@ -321,14 +321,14 @@ Result SemanticPass::ResolveMethodCall(Expr*       expr,
   Expr* result = Make<MethodCall>(method, exprList);
   if (!method->returnType->IsRawPtr()) {
     // All non-rawptr return values are turned into rawptr to enable chaining.
-    return MakeReadOnlyTempVar(result);
+    return Make<TempVarExpr>(method->returnType, result);
   }
   return result;
 }
 
 Expr* SemanticPass::Widen(Expr* node, Type* dstType) {
   Type* srcType = node->GetType(types_);
-  if (srcType == dstType) {
+  if (srcType->GetUnqualifiedType() == dstType->GetUnqualifiedType()) {
     return node;
   } else if (node->IsUnresolvedListExpr()) {
     return ResolveListExpr(static_cast<UnresolvedListExpr*>(node), dstType);
