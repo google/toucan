@@ -452,7 +452,7 @@ Result ShaderPrepPass::ResolveNativeMethodCall(MethodCall* node) {
   } else if (classType->GetTemplate() == NativeClass::VertexInput ||
              (classType->GetTemplate() == NativeClass::Buffer && method->name == "Get")) {
     return Make<LoadExpr>(Resolve(args[0]));
-  } else if (classType->GetTemplate() == NativeClass::Buffer && method->name == "Map") {
+  } else if (classType->GetTemplate() == NativeClass::Buffer && (method->name == "Map" || method->name == "MapRead" || method->name == "MapWrite")) {
     return Resolve(args[0]);
   } else if (classType->GetTemplate() == NativeClass::BindGroup && method->name == "Get") {
     return Resolve(args[0]);

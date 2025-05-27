@@ -19,7 +19,7 @@ class Bindings {
 class Pipeline {
   vertex main(vb : &VertexBuiltins) { vb.position = vertices.Get(); }
   fragment main(fb : &FragmentBuiltins) {
-    fragColor.Set(bindings.Get().uniforms.Map().color);
+    fragColor.Set(bindings.Get().uniforms.MapRead().color);
   }
   var vertices : *VertexInput<Vertex>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;

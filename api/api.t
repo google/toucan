@@ -43,11 +43,11 @@ native class Buffer<T> {
  ~Buffer();
   SetData(data : &T);
   CopyFromBuffer(encoder : &CommandEncoder, source : &Buffer<T>);
-  deviceonly Map() uniform : ^readonly uniform T;
-  deviceonly Map() writeonly storage : ^writeonly storage T;
+  deviceonly MapRead() uniform : ^readonly uniform T;
+  deviceonly MapWrite() writeonly storage : ^writeonly storage T;
   deviceonly Map() storage : ^storage T;
-  Map() hostreadable : ^readonly T;
-  Map() hostwriteable : ^writeonly T;
+  MapRead() hostreadable : ^readonly T;
+  MapWrite() hostwriteable : ^writeonly T;
   Unmap();
 }
 

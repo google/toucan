@@ -2,7 +2,7 @@ var device = new Device();
 var window = new Window(device, {0, 0}, {640, 480});
 var tex = new sampleable Texture1D<RGBA8unorm>(device, 1);
 var buffer = new hostwriteable Buffer<[]float<4>>(device);
-var data = buffer.Map();
+var data = buffer.MapWrite();
 data[0] = float<4>(1.0, 1.0, 1.0, 1.0);
 buffer.Unmap();
 var encoder = new CommandEncoder(device);

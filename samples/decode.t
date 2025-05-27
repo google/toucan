@@ -10,7 +10,7 @@ var image = new ImageDecoder<RGBA8unorm>(inline("third_party/libjpeg-turbo/testi
 var imageSize = image.GetSize();
 var texture = new sampleable Texture2D<Format>(device, imageSize);
 var buffer = new hostwriteable Buffer<[]Format:HostType>(device, texture.MinBufferWidth() * imageSize.y);
-var b = buffer.Map();
+var b = buffer.MapWrite();
 image.Decode(b, texture.MinBufferWidth());
 buffer.Unmap();
 var copyEncoder = new CommandEncoder(device);

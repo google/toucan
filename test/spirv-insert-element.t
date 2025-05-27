@@ -6,7 +6,7 @@ class ComputeBindings {
 
 class Compute {
   compute(1, 1, 1) main(cb : &ComputeBuiltins) {
-    var buffer = bindings.Get().buffer.Map();
+    var buffer = bindings.Get().buffer.MapWrite();
     buffer.y = 42;
   }
   var bindings : *BindGroup<ComputeBindings>;
@@ -29,4 +29,4 @@ computePass.End();
 hostBuf.CopyFromBuffer(encoder, storageBuf);
 device.GetQueue().Submit(encoder.Finish());
 
-Test.Expect(hostBuf.Map().y == 42);
+Test.Expect(hostBuf.MapRead().y == 42);

@@ -17,7 +17,7 @@ class CubeLoader {
     var image = new ImageDecoder<Format>(data);
     var size = image.GetSize();
     var buffer = new hostwriteable Buffer<[]Format:HostType>(device, texture.MinBufferWidth() * size.y);
-    var b = buffer.Map();
+    var b = buffer.MapWrite();
     image.Decode(b, texture.MinBufferWidth());
     buffer.Unmap();
     var encoder = new CommandEncoder(device);
@@ -128,7 +128,7 @@ class BicubicComputePipeline {
     var controlPoints = bindings.Get().controlPoints.Map();
     var controlIndices = bindings.Get().controlIndices.Map();
     var vertices = bindings.Get().vertices.Map();
-    var uniforms = bindings.Get().uniforms.Map();
+    var uniforms = bindings.Get().uniforms.MapRead();
     var u = (float) cb.globalInvocationId.x * uniforms.scale;
     var v = (float) cb.globalInvocationId.y * uniforms.scale;
     if (u > 1.0 || v > 1.0) {
@@ -155,7 +155,7 @@ class BicubicComputePipeline {
 class SkyboxPipeline : DrawPipeline {
     vertex main(vb : &VertexBuiltins) : float<3> {
         var v = position.Get();
-        var uniforms = bindings.Get().uniforms.Map();
+        var uniforms = bindings.Get().uniforms.MapRead();
         var pos = float<4>(v.x, v.y, v.z, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
@@ -173,7 +173,7 @@ class ReflectionPipeline : DrawPipeline {
     vertex main(vb : &VertexBuiltins) : Vertex {
         var v = vert.Get();
         var n = Math.normalize(v.normal);
-        var uniforms = bindings.Get().uniforms.Map();
+        var uniforms = bindings.Get().uniforms.MapRead();
         var viewModel = uniforms.view * uniforms.model;
         var pos = viewModel * float<4>(v.position.x, v.position.y, v.position.z, 1.0);
         var normal = viewModel * float<4>(n.x, n.y, n.z, 0.0);
@@ -185,7 +185,7 @@ class ReflectionPipeline : DrawPipeline {
     }
     fragment main(fb : &FragmentBuiltins, varyings : Vertex) {
       var b = bindings.Get();
-      var uniforms = b.uniforms.Map();
+      var uniforms = b.uniforms.MapRead();
       var p = Math.normalize(varyings.position);
       var n = Math.normalize(varyings.normal);
       var r = Math.reflect(p, n);

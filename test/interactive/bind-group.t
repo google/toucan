@@ -17,7 +17,7 @@ class ObjectData {
 class Pipeline {
   vertex main(vb : &VertexBuiltins) { vb.position = vert.Get(); }
   fragment main(fb : &FragmentBuiltins) {
-    var u = objectData.Get().uniforms.Map();
+    var u = objectData.Get().uniforms.MapRead();
     fragColor.Set(u.color);
   }
   var vert : *VertexInput<Vertex>;
@@ -45,7 +45,7 @@ while (System.IsRunning()) {
   while (System.HasPendingEvents()) {
     var event = System.GetNextEvent();
     if (event.type == EventType.MouseMove) {
-      var s = stagingBuffer.Map();
+      var s = stagingBuffer.MapWrite();
       s.color = float<4>((float) event.position.x / 640.0, (float) event.position.y / 480.0, 0.0, 1.0);
       stagingBuffer.Unmap();
     }

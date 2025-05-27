@@ -81,7 +81,7 @@ class ComputeForces : ComputeBase {
   compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var bodies = bindings.Get().bodyStorage.Map();
     var springs = bindings.Get().springStorage.Map();
-    var u = bindings.Get().uniforms.Map();
+    var u = bindings.Get().uniforms.MapRead();
     var i = cb.globalInvocationId.x;
     var spring = springs[i];
     var body1 = bodies[spring.body1];
@@ -94,7 +94,7 @@ class ApplyForces : ComputeBase {
   compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var bodies = bindings.Get().bodyStorage.Map();
     var springs = bindings.Get().springStorage.Map();
-    var u = bindings.Get().uniforms.Map();
+    var u = bindings.Get().uniforms.MapRead();
     var i = cb.globalInvocationId.x;
     var body = bodies[i];
     body.force = u.gravity + u.wind;
@@ -136,11 +136,11 @@ class DrawBindings {
 
 class DrawPipeline {
   vertex main(vb : &VertexBuiltins) {
-    var matrix = bindings.Get().uniforms.Map().matrix;
+    var matrix = bindings.Get().uniforms.MapRead().matrix;
     vb.position = matrix * Utils.makeFloat4(vertices.Get(), 0.0, 1.0);
   }
   fragment main(fb : &FragmentBuiltins) {
-    fragColor.Set(bindings.Get().uniforms.Map().color);
+    fragColor.Set(bindings.Get().uniforms.MapRead().color);
   }
   var vertices : *VertexInput<Vector>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;

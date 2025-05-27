@@ -13,7 +13,7 @@ class Compute {
     p = value;
   }
   compute(1, 1,1) main(cb : &ComputeBuiltins) {
-    var buffer = bindings.Get().buffer.Map();
+    var buffer = bindings.Get().buffer.MapWrite();
     var i : int;
     var array : [1]int;
     var struct : Struct;
@@ -44,6 +44,6 @@ computePass.End();
 hostBuf.CopyFromBuffer(encoder, storageBuf);
 device.GetQueue().Submit(encoder.Finish());
 
-Test.Expect(hostBuf.Map()[0] == 7);
-Test.Expect(hostBuf.Map()[1] == 21);
-Test.Expect(hostBuf.Map()[2] == 42);
+Test.Expect(hostBuf.MapRead()[0] == 7);
+Test.Expect(hostBuf.MapRead()[1] == 21);
+Test.Expect(hostBuf.MapRead()[2] == 42);
