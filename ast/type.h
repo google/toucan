@@ -614,6 +614,7 @@ class TypeTable {
   std::unordered_map<std::string, FormalTemplateArg*>  formalTemplateArgs_;
   std::unordered_map<TypeAndInt, QualifiedType*>       qualifiedTypes_;
   std::unordered_map<TypeAndId, UnresolvedScopedType*> unresolvedScopedTypes_;
+  std::vector<ListType*>                               listTypes_;
   BoolType*                                            bool_;
   StringType*                                          string_;
   VoidType*                                            void_;

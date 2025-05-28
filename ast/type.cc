@@ -707,8 +707,20 @@ VoidType* TypeTable::GetVoid() { return void_; }
 AutoType* TypeTable::GetAuto() { return auto_; }
 
 ListType* TypeTable::GetList(VarVector&& types) {
-  // FIXME: implement caching?
-  return Make<ListType>(types);
+  auto matchVarVectors = [](const VarVector& types1, const VarVector& types2) {
+    if (types1.size() != types2.size()) return false;
+    for (size_t i = 0; i < types1.size(); ++i) {
+      if (types1[i]->name != types2[i]->name ||
+          types1[i]->type != types2[i]->type) return false;
+    }
+    return true;
+  };
+  for (auto type : listTypes_) {
+    if (matchVarVectors(type->GetTypes(), types)) { return type; }
+  }
+  auto type = Make<ListType>(types);
+  listTypes_.push_back(type);
+  return type;
 }
 
 StrongPtrType* TypeTable::GetStrongPtrType(Type* baseType) {
