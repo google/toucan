@@ -1037,12 +1037,6 @@ Result SemanticPass::Visit(ReturnStatement* stmt) {
   return stmts;
 }
 
-Result SemanticPass::Visit(TempVarExpr* node) {
-  Expr* initExpr = Resolve(node->GetInitExpr());
-  if (!initExpr) return nullptr;
-  return Make<TempVarExpr>(initExpr->GetType(types_), initExpr);
-}
-
 int SemanticPass::FindFormalArg(Arg* arg, Method* m, TypeTable* types) {
   for (int i = 0; i < m->formalArgList.size(); ++i) {
     Var* formalArg = m->formalArgList[i].get();

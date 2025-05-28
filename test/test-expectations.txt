@@ -201,7 +201,6 @@ test/error-return-raw-ptr.t
 error-return-raw-ptr.t:6:  cannot return a raw pointer
 error-return-raw-ptr.t:10:  cannot return a raw pointer
 error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
-error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
 error-return-raw-ptr.t:14:  cannot return a raw pointer
 test/error-shader-validation.t
 error-shader-validation.t:3:  "new" operator is prohibited in shader methods

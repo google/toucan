@@ -50,7 +50,9 @@ Type* IncDecExpr::GetType(TypeTable* types) {
 
 Type* VarExpr::GetType(TypeTable* types) { return types->GetRawPtrType(var_->type); }
 
-Type* TempVarExpr::GetType(TypeTable* types) { return types->GetRawPtrType(type_); }
+Type* TempVarExpr::GetType(TypeTable* types) {
+  return types->GetRawPtrType(type_ ? type_ : initExpr_->GetType(types));
+}
 
 Type* SmartToRawPtr::GetType(TypeTable* types) {
   Type* type = expr_->GetType(types);
