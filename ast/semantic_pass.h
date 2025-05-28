@@ -35,6 +35,7 @@ class SemanticPass : public CopyVisitor {
   Result Visit(ArrayAccess* node) override;
   Result Visit(BinOpNode* node) override;
   Result Visit(CastExpr* expr) override;
+  Result Visit(ConstDecl* decl) override;
   Result Visit(UnresolvedClassDefinition* defn) override;
   Result Visit(Data* expr) override;
   Result Visit(Decls* decls) override;

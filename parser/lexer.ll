@@ -85,6 +85,7 @@ EXPONENT        ([Ee]("-"|"+")?[0-9]+)
 [0-9]+u               { yylval.i = readUInt(yytext, 10); return T_UINT_LITERAL; }
 
 var     { return T_VAR; }
+const   { return T_CONST; }
 false   { return T_FALSE; }
 null    { return T_NULL; }
 true    { return T_TRUE; }

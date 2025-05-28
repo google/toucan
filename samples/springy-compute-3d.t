@@ -4,9 +4,9 @@ include "transform.t"
 
 using Vector = float<3>;
 
-var width =  20;
-var height = 20;
-var depth =  20;
+const width =  20;
+const height = 20;
+const depth =  20;
 
 class Body {
   var position : Vector;

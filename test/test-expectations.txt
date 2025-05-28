@@ -70,6 +70,7 @@ test/compute-simple.t
 test/compute-swizzle.t
 test/compute-vector-cast.t
 test/constant-folding.t
+test/constants.t
 test/constructor-calls-initializer.t
 test/constructor-with-default-arg.t
 test/constructor-with-explicit-initializer.t
@@ -108,6 +109,13 @@ test/error-assign-padded-array.t:21: expectation failed
 test/error-assign-padded-array.t:22: expectation failed
 test/error-cast-weak-ptr-to-strong.t
 error-cast-weak-ptr-to-strong.t:3:  cannot cast value of type ^int to *int
+test/error-constant-not-constant.t
+error-constant-not-constant.t:4:  expression is not constant
+error-constant-not-constant.t:5:  expression is not constant
+error-constant-not-constant.t:6:  expression is not constant
+error-constant-not-constant.t:7:  expression is not constant
+error-constant-not-constant.t:8:  expression is not constant
+error-constant-not-constant.t:9:  expression is not constant
 test/error-constructor-not-found.t
 error-constructor-not-found.t:1:  matching constructor not found
 test/error-dereference.t
@@ -217,6 +225,8 @@ error-stack-allocate-raw-ptr-aggregate.t:17:  cannot allocate a type containing 
 error-stack-allocate-raw-ptr-aggregate.t:18:  cannot allocate a type containing a raw pointer
 test/error-stack-allocate-unsized-array.t
 error-stack-allocate-unsized-array.t:1:  cannot create storage of type []int
+test/error-store-to-constant.t
+error-store-to-constant.t:2:  expression is not an assignable value
 test/error-store-to-length.t
 error-store-to-length.t:2:  expression is not an assignable value
 test/error-swizzle.t

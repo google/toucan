@@ -189,6 +189,9 @@ Method* MethodDecl::CreateMethod(ClassType* classType, TypeTable* types) {
   return method;
 }
 
+ConstDecl::ConstDecl(std::string id, Expr* expr)
+    : id_(id), expr_(expr) {}
+
 VarDeclaration::VarDeclaration(std::string id, Type* type, Expr* initExpr)
     : id_(id), type_(type), initExpr_(initExpr) {}
 
@@ -386,6 +389,7 @@ Result ArrayAccess::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result BinOpNode::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result BoolConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result CastExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ConstDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Data::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result EnumConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprList::Accept(Visitor* visitor) { return visitor->Visit(this); }

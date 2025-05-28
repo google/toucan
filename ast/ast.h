@@ -670,6 +670,18 @@ class MethodDecl : public Stmt {
   Expr*                   initializer_;
 };
 
+class ConstDecl : public Stmt {
+ public:
+              ConstDecl(std::string id, Expr* expr);
+  Result      Accept(Visitor* visitor) override;
+  std::string GetID() { return id_; }
+  Expr*       GetExpr() { return expr_; }
+
+ private:
+  std::string id_;
+  Expr*       expr_;
+};
+
 class VarDeclaration : public Stmt {
  public:
   VarDeclaration(std::string id, Type* type, Expr* initExpr);
@@ -825,6 +837,7 @@ class Visitor {
   virtual Result Visit(BinOpNode* node) { return Default(node); }
   virtual Result Visit(BoolConstant* node) { return Default(node); }
   virtual Result Visit(CastExpr* node) { return Default(node); }
+  virtual Result Visit(ConstDecl* node) { return Default(node); }
   virtual Result Visit(Data* node) { return Default(node); }
   virtual Result Visit(EnumConstant* node) { return Default(node); }
   virtual Result Visit(SmartToRawPtr* node) { return Default(node); }

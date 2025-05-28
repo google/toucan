@@ -301,7 +301,7 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
   std::string id = decl->GetID();
   Type*       type = decl->GetType();
   if (symbols_.PeekScope()->FindID(id)) {
-    return Error("variable \"%s\" already defined in this scope", id.c_str());
+    return Error("identifier \"%s\" already defined in this scope", id.c_str());
   }
   if (!type) return nullptr;
   Expr* initExpr = nullptr;
@@ -329,6 +329,27 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
   Expr* varExpr = Make<VarExpr>(var.get());
   symbols_.DefineID(id, var->type->IsRawPtr() ? Make<LoadExpr>(varExpr) : varExpr);
   return Initialize(varExpr, initExpr);
+}
+
+Result SemanticPass::Visit(ConstDecl* decl) {
+  std::string id = decl->GetID();
+  if (symbols_.PeekScope()->FindID(id)) {
+    return Error("identifier \"%s\" already defined in this scope", id.c_str());
+  }
+  auto expr = Resolve(decl->GetExpr());
+  if (!expr) return nullptr;
+  auto type = expr->GetType(types_);
+
+  if (!expr->IsConstant(types_)) {
+    return Error("expression is not constant");
+  }
+  typesToValidate_.push_back({type, decl->GetFileLocation()});
+
+  // This will be removed by the load expression added by the parser to turn assignable to expr.
+  expr = MakeReadOnlyTempVar(expr);
+
+  symbols_.DefineID(id, expr);
+  return {};
 }
 
 Result SemanticPass::ResolveMethodCall(Expr*       expr,
