@@ -14,6 +14,7 @@
 
 source_set("gen_bindings_sources") {
   sources = [
+    "dump_as_source_pass.cc",
     "gen_bindings.cc",
   ]
   include_dirs = [ ".." ]

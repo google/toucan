@@ -19,6 +19,8 @@
 #endif
 #include <stdlib.h>
 
+#include <fstream>
+
 #include <ast/semantic_pass.h>
 #include <ast/symbol.h>
 #include <parser/parser.h>
@@ -28,22 +30,22 @@ using namespace Toucan;
 
 int main(int argc, char** argv) {
   int   opt;
-  FILE* outfile = stdout;
-  FILE* headerfile = nullptr;
+  std::ofstream outfile;
+  std::ofstream headerfile;
   char  optstring[] = "o:h:";
   while ((opt = getopt(argc, argv, optstring)) > 0) {
     switch (opt) {
       case 'o':
-        outfile = fopen(optarg, "w");
-        if (!outfile) {
-          perror(optarg);
+        outfile.open(optarg, std::ofstream::out);
+        if (outfile.fail()) {
+          std::perror(optarg);
           exit(3);
         }
         break;
       case 'h':
-        headerfile = fopen(optarg, "w");
-        if (!headerfile) {
-          perror(optarg);
+        headerfile.open(optarg, std::ofstream::out);
+        if (headerfile.fail()) {
+          std::perror(optarg);
           exit(4);
         }
     }
@@ -69,7 +71,7 @@ int main(int argc, char** argv) {
   Stmts*       semanticStmts = semanticPass.Resolve(rootStmts);
   if (semanticPass.GetNumErrors() > 0) { exit(2); }
 
-  GenBindings genBindings(&symbols, &types, outfile, headerfile, true);
-  genBindings.Run();
+  GenBindings genBindings(outfile, headerfile, true);
+  genBindings.Run(types.GetTypes());
   return 0;
 }

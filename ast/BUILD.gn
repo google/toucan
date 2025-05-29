@@ -15,7 +15,6 @@
 source_set("ast") {
   sources = [
     "ast.cc",
-    "dump_as_source_pass.cc",
     "native_class.cc",
     "copy_visitor.cc",
     "semantic_pass.cc",

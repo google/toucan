@@ -30,9 +30,8 @@ int main(int argc, char** argv) {
   SymbolTable symbols;
   TypeTable   types;
   NodeVector  nodes;
-  InitTypes(&symbols, &types, &nodes);
+  _type_list = InitTypes(&symbols, &types, &nodes);
   types.ComputeFieldOffsets();
-  _type_list = types.GetTypes().data();
   toucan_main();
   return 0;
 }

@@ -152,6 +152,7 @@ class CodeGenLLVM : public Visitor {
   void               ICE(ASTNode* node);
   void               SetDebugOutput(bool debugOutput) { debugOutput_ = debugOutput; }
   llvm::GlobalValue* GetTypeList() const { return typeList_; }
+  const std::vector<Type*>& GetReferencedTypes() { return referencedTypes_; }
 
  private:
   llvm::Value* CreateCast(Type*        srcType,
@@ -197,6 +198,8 @@ class CodeGenLLVM : public Visitor {
   std::unordered_map<Method*, llvm::Function*>          functions_;
   std::unordered_map<ClassType*, llvm::GlobalVariable*> vtables_;
   std::unordered_map<ClassType*, llvm::StructType*>     classPlaceholders_;
+  std::vector<Type*>                                    referencedTypes_;
+  std::unordered_map<Type*, llvm::Value*>               typeMap_;
 };
 
 };  // namespace Toucan

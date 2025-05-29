@@ -14,9 +14,8 @@
 
 #include "gen_bindings.h"
 
-#include <stdlib.h>
-#include <string.h>
 #include <cassert>
+#include <iostream>
 
 #include <ast/symbol.h>
 
@@ -79,299 +78,293 @@ std::string ConvertType(Type* type, const std::string& str) {
 
 }  // namespace
 
-GenBindings::GenBindings(SymbolTable* symbols,
-                         TypeTable*   types,
-                         FILE*        file,
-                         FILE*        header,
-                         bool         dumpStmtsAsSource)
-    : symbols_(symbols),
-      types_(types),
-      file_(file),
+GenBindings::GenBindings(std::ostream& file,
+                         std::ostream& header,
+                         bool          emitScopesAndStatements)
+    : file_(file),
       header_(header),
-      dumpStmtsAsSource_(dumpStmtsAsSource),
-      sourcePass_(file_, &typeMap_) {}
+      emitScopesAndStatements_(emitScopesAndStatements),
+      sourcePass_(file_, this) {}
 
-void GenBindings::GenType(Type* type) {
+int GenBindings::EmitType(Type* type) {
+  if (!type) return -1;
+  auto iter = typeMap_.find(type);
+  if (iter != typeMap_.end()) {
+    return iter->second;
+  }
+  int id = numTypes_++;
+  typeMap_[type] = id;
+  std::string prefix = "  auto* type" + std::to_string(id) + " = ";
   if (type->IsInteger()) {
     IntegerType* i = static_cast<IntegerType*>(type);
-    fprintf(file_, "types->GetInteger(%d, %s)", i->GetBits(), i->Signed() ? "true" : "false");
+    file_ << prefix << "types->GetInteger(" << std::to_string(i->GetBits()) << ", "
+          << (i->Signed() ? "true" : "false") << ");\n";
   } else if (type->IsFloatingPoint()) {
     FloatingPointType* f = static_cast<FloatingPointType*>(type);
-    fprintf(file_, "types->GetFloatingPoint(%d)", f->GetBits());
+    file_ << prefix << "types->GetFloatingPoint(" << std::to_string(f->GetBits()) << ");\n";
   } else if (type->IsBool()) {
-    fprintf(file_, "types->GetBool()");
+    file_ << prefix << "types->GetBool();\n";
   } else if (type->IsVector()) {
     VectorType* v = static_cast<VectorType*>(type);
-    fprintf(file_, "types->GetVector(");
-    GenType(v->GetComponentType());
-    fprintf(file_, ", %d)", v->GetLength());
+    auto componentTypeID = EmitType(v->GetComponentType());
+    file_ << prefix << "types->GetVector(type" << componentTypeID << ", "
+          << v->GetLength() << ");\n";
   } else if (type->IsMatrix()) {
     MatrixType* m = static_cast<MatrixType*>(type);
-    fprintf(file_, "types->GetMatrix(");
-    GenType(m->GetColumnType());
-    fprintf(file_, ", %d)", m->GetNumColumns());
+    auto columnTypeID = EmitType(m->GetColumnType());
+    file_ << prefix << "types->GetMatrix(type" << columnTypeID << ", " << m->GetNumColumns()
+                    << ");\n";
   } else if (type->IsString()) {
-    fprintf(file_, "types->GetString()");
+    file_ << prefix << "types->GetString();\n";
   } else if (type->IsVoid()) {
-    fprintf(file_, "types->GetVoid()");
+    file_ << prefix << "types->GetVoid();\n";
   } else if (type->IsAuto()) {
-    fprintf(file_, "types->GetAuto()");
+    file_ << prefix << "types->GetAuto();\n";
   } else if (type->IsClassTemplate()) {
     ClassTemplate* classTemplate = static_cast<ClassTemplate*>(type);
-    fprintf(file_, "  types->Make<ClassTemplate>(\"%s\", TypeList({",
-            classTemplate->GetName().c_str());
+    file_ << prefix << "types->Make<ClassTemplate>(\"" << classTemplate->GetName()
+           << "\", TypeList({";
     for (Type* const& type : classTemplate->GetFormalTemplateArgs()) {
       assert(type->IsFormalTemplateArg());
-      fprintf(file_, "types->GetFormalTemplateArg(\"%s\")",
-              static_cast<FormalTemplateArg*>(type)->GetName().c_str());
-      if (&type != &classTemplate->GetFormalTemplateArgs().back()) { fprintf(file_, ", "); }
+      file_ << "types->GetFormalTemplateArg(\""
+             << static_cast<FormalTemplateArg*>(type)->GetName() << "\")";
+      if (&type != &classTemplate->GetFormalTemplateArgs().back()) file_ << ", ";
     }
-    if (header_) { fprintf(header_, "struct %s;\n", classTemplate->GetName().c_str()); }
-    fprintf(file_, "}))");
+    if (header_) {
+      header_ << "struct " << classTemplate->GetName() << ";\n";
+    }
+    file_ << "}));\n";
+    classes_.push_back(classTemplate);
   } else if (type->IsClass()) {
     ClassType* classType = static_cast<ClassType*>(type);
     if (classType->GetTemplate()) {
-      fprintf(file_,
-              "  types->GetClassTemplateInstance(static_cast<ClassTemplate*>(typeList[%d]), {",
-              typeMap_[classType->GetTemplate()]);
-      for (Type* const& type : classType->GetTemplateArgs()) {
-        fprintf(file_, "typeList[%d]", typeMap_[type]);
-        if (&type != &classType->GetTemplateArgs().back()) { fprintf(file_, ", "); }
+      int templateID = EmitType(classType->GetTemplate());
+      std::vector<int> args;
+      for (auto type : classType->GetTemplateArgs()) {
+        args.push_back(EmitType(type));
       }
-      fprintf(file_, "} )");
+      file_ << prefix << "types->GetClassTemplateInstance(type" << templateID << ", {";
+      for (auto arg : args) {
+        file_ << "type" << arg;
+        if (&arg != &args.back()) { file_ << ", "; }
+      }
+      file_ << "});\n";
     } else {
-      fprintf(file_, "  types->Make<ClassType>(\"%s\")", classType->GetName().c_str());
+      file_ << prefix << "types->Make<ClassType>(\"" << classType->GetName() << "\");\n";
       if (header_) {
         int pad = 0;
         if (classType->GetFields().size() > 0) {
           classType->ComputeFieldOffsets();
-          fprintf(header_, "struct %s {\n", classType->GetName().c_str());
+          header_ << "struct " << classType->GetName() << " {\n";
           for (const auto& field : classType->GetFields()) {
-            fprintf(header_, "  %s;\n", ConvertType(field->type, field->name).c_str());
+            header_ << "  " << ConvertType(field->type, field->name) << ";\n";
             if (field->padding > 0) {
-              fprintf(header_, "  uint8_t pad%d[%zu];\n", pad++, field->padding);
+              header_ << "  uint8_t pad" << pad++ << "[" << field->padding << "];\n";
             }
           }
-          fprintf(header_, "};\n");
+          header_ << "};\n";
         } else {
-          fprintf(header_, "struct %s;\n", classType->GetName().c_str());
+          header_ << "struct " << classType->GetName() << ";\n";
         }
       }
     }
-#if 0
-    if (nativeClasses && classType->IsNative()) {
-      fprintf(nativeClasses, "  ClassType* %s;";
-    }
-#endif
+    classes_.push_back(classType);
   } else if (type->IsEnum()) {
     EnumType* enumType = static_cast<EnumType*>(type);
-    fprintf(file_, "  types->Make<EnumType>(\"%s\")", enumType->GetName().c_str());
+    file_ << prefix << "types->Make<EnumType>(\"" << enumType->GetName() << "\");\n";
     if (header_) {
-      fprintf(header_, "enum class %s {\n", enumType->GetName().c_str());
+      header_ << "enum class " << enumType->GetName() << " {\n";
       const EnumValueVector& values = enumType->GetValues();
       for (EnumValue const& v : values) {
-        fprintf(header_, "  %s = %d,\n", v.id.c_str(), v.value);
+        header_ << "  " << v.id << " = " << v.value << ",\n";
       }
-      fprintf(header_, "};\n");
+      header_ << "};\n";
     }
+    for (const EnumValue& v : enumType->GetValues()) {
+      file_ << "  type" << id << "->Append(\"" << v.id << "\", " << v.value << ");\n";
+    }
+    file_ << "  symbols->DefineType(\"" << enumType->GetName() << "\", type" << id << ");\n";
   } else if (type->IsPtr()) {
     PtrType* ptrType = static_cast<PtrType*>(type);
-    fprintf(file_, "types->Get%sPtrType(",
-            type->IsStrongPtr() ? "Strong"
-            : type->IsWeakPtr() ? "Weak"
-                                : "Raw");
-    if (ptrType->GetBaseType()) {
-      fprintf(file_, "typeList[%d]", typeMap_[ptrType->GetBaseType()]);
-    } else {
-      fprintf(file_, "nullptr");
-    }
-    fprintf(file_, ")");
+    std::string baseType = "type" + std::to_string(EmitType(ptrType->GetBaseType()));
+    file_ << prefix << "types->Get" << (type->IsStrongPtr() ? "Strong" : type->IsWeakPtr()
+                                                             ? "Weak" : "Raw") << "PtrType("
+          << baseType << ");\n";
   } else if (type->IsArray()) {
     ArrayType* arrayType = static_cast<ArrayType*>(type);
-    fprintf(file_, "types->GetArrayType((typeList[%d]), %d, MemoryLayout::%s)",
-            typeMap_[arrayType->GetElementType()], arrayType->GetNumElements(),
-            MemoryLayoutToString(arrayType->GetMemoryLayout()));
+    auto elementTypeID = EmitType(arrayType->GetElementType());
+    file_ << prefix << "types->GetArrayType(type" << elementTypeID << ", "
+          << arrayType->GetNumElements() << ", MemoryLayout::"
+          << MemoryLayoutToString(arrayType->GetMemoryLayout()) << ");\n";
   } else if (type->IsFormalTemplateArg()) {
     FormalTemplateArg* formalTemplateArg = static_cast<FormalTemplateArg*>(type);
-    fprintf(file_, "types->GetFormalTemplateArg(\"%s\")", formalTemplateArg->GetName().c_str());
+    file_ << prefix << "types->GetFormalTemplateArg(\"" << formalTemplateArg->GetName()
+          << "\");\n";
   } else if (type->IsQualified()) {
     QualifiedType* qualifiedType = static_cast<QualifiedType*>(type);
-    fprintf(file_, "types->GetQualifiedType(typeList[%d], %d)",
-            typeMap_[qualifiedType->GetBaseType()], qualifiedType->GetQualifiers());
+    int baseTypeID = EmitType(qualifiedType->GetBaseType());
+    file_ << prefix << "types->GetQualifiedType(type" << baseTypeID << ", "
+          << qualifiedType->GetQualifiers() << ");\n";
   } else if (type->IsUnresolvedScopedType()) {
     auto unresolvedScopedType = static_cast<UnresolvedScopedType*>(type);
-    fprintf(file_,
-            "types->GetUnresolvedScopedType(static_cast<FormalTemplateArg*>(typeList[%d]), \"%s\")",
-            typeMap_[unresolvedScopedType->GetBaseType()], unresolvedScopedType->GetID().c_str());
+    auto baseTypeID = EmitType(unresolvedScopedType->GetBaseType());
+    file_ << prefix << "types->GetUnresolvedScopedType(type" << baseTypeID << ", \""
+          << unresolvedScopedType->GetID() << "\");\n";
   } else if (type->IsList()) {
-    // This is technically correct, but builds very large list types that aren't used.
-    // It also causes the WASM backend to fail with "too many locals".
-#if 0
     const VarVector& vars = static_cast<ListType*>(type)->GetTypes();
-    fprintf(file_, "types->GetList(VarVector{");
+    std::vector<int> varIDs;
     for (auto var : vars) {
-      fprintf(file_, "std::make_shared<Var>(\"%s\", typeList[%d])", var->name.c_str(), typeMap_[var->type]);
-      if (var != vars.back()) { fprintf(file_, ", "); }
+      varIDs.push_back(EmitType(var->type));
     }
-    fprintf(file_,"})");
-#endif
-    // For now, just emit a placeholder type that will still cause the type IDs in
-    // CodeGenLLVM::CreateTypePtr() to match the indices in the type table.
-    fprintf(file_, "types->GetPlaceholder()");
+    file_ << prefix << "types->GetList(VarVector{";
+    int i = 0;
+    for (auto var : vars) {
+      file_ << "std::make_shared<Var>(\"" << var->name << "\", type" << varIDs[i++] << ")";
+      if (var != vars.back()) file_ << ", ";
+    }
+    file_ << "});\n";
   } else {
     assert(!"unknown type");
     exit(-1);
   }
+  return id;
 }
 
-void GenBindings::Run() {
-  const TypeVector& types = types_->GetTypes();
+void GenBindings::Run(const TypeVector& referencedTypes) {
   typeMap_.clear();
-  // First assign ID's to all resolved types.
-  int numTypes = types.size();
-  fprintf(file_, "#include <cstdint>\n");
-  fprintf(file_, "#include <ast/ast.h>\n");
-  fprintf(file_, "#include <ast/native_class.h>\n");
-  fprintf(file_, "#include <ast/symbol.h>\n");
-  fprintf(file_, "#include <ast/type.h>\n");
-  fprintf(file_, "namespace Toucan {\n\n");
-  fprintf(file_, "void InitTypes(SymbolTable* symbols, TypeTable* types, NodeVector* nodes) {\n");
-  fprintf(file_, "  ClassType* c;\n");
-  fprintf(file_, "  EnumType* e;\n");
-  fprintf(file_, "  Type** typeList = new Type*[%d];\n", numTypes);
-  fprintf(file_, "  ASTNode** nodeList = new ASTNode*[%d];\n", 1000 /* FIXME num_nodes */);
-  fprintf(file_, "  Expr** exprs = reinterpret_cast<Expr**>(nodeList);\n");
-  fprintf(file_, "  ArgList** argLists = reinterpret_cast<ArgList**>(nodeList);\n");
-  fprintf(file_, "  ExprList** exprLists = reinterpret_cast<ExprList**>(nodeList);\n");
-  fprintf(file_, "  Stmt** stmts = reinterpret_cast<Stmt**>(nodeList);\n");
-  fprintf(file_, "  Stmts** stmtss = reinterpret_cast<Stmts**>(nodeList);\n");
-  fprintf(file_, "  Arg** args = reinterpret_cast<Arg**>(nodeList);\n");
-  fprintf(file_, "  Scope* scope;\n");
-  fprintf(file_, "  std::shared_ptr<Var> v;\n");
-  fprintf(file_, "  Type* returnType;\n");
-  fprintf(file_, "  Method *m;\n");
-  fprintf(file_, "  nodeList[0] = nullptr;\n");
-  fprintf(file_, "\n");
+  file_ << "#include <cstdint>\n";
+  file_ << "#include <ast/ast.h>\n";
+  file_ << "#include <ast/native_class.h>\n";
+  file_ << "#include <ast/symbol.h>\n";
+  file_ << "#include <ast/type.h>\n";
+  file_ << "\n";
+  file_ << "namespace Toucan {\n\n";
+  file_ << "Type** InitTypes(SymbolTable* symbols, TypeTable* types, NodeVector* nodes) {\n";
+  if (referencedTypes.empty()) {
+    file_ << "  return nullptr;\n"
+          << "}\n}\n";
+    return;
+  }
+  file_ << "  static Type* typeList[" << referencedTypes.size() << "];\n\n";
+  file_ << "  ClassType* c;\n";
+  file_ << "  Scope* scope;\n";
+  file_ << "  Method *m;\n";
+  file_ << "\n";
   if (header_) {
-    fprintf(header_, "#include <cstdint>\n");
-    fprintf(header_, "extern \"C\" {\n");
-    fprintf(header_, "namespace Toucan {\n\n");
-    fprintf(header_, "class ClassType;\n");
-    fprintf(header_, "class Type;\n\n");
-    fprintf(header_, "struct ControlBlock {\n");
-    fprintf(header_, "  uint32_t    strongRefs = 0;\n");
-    fprintf(header_, "  uint32_t    weakRefs = 0;\n");
-    fprintf(header_, "  uint32_t    arrayLength;\n");
-    fprintf(header_, "  Type*       type = nullptr;\n");
-    fprintf(header_, "  void*       vtable = nullptr;\n");
-    fprintf(header_, "};\n\n");
-    fprintf(header_, "struct Object {\n");
-    fprintf(header_, "  void*          ptr;\n");
-    fprintf(header_, "  ControlBlock  *controlBlock;\n");
-    fprintf(header_, "};\n\n");
-    fprintf(header_, "struct Array {\n");
-    fprintf(header_, "  void*          ptr;\n");
-    fprintf(header_, "  uint32_t       length;\n");
-    fprintf(header_, "};\n\n");
+    header_ << "#include <cstdint>\n";
+    header_ << "extern \"C\" {\n";
+    header_ << "namespace Toucan {\n\n";
+    header_ << "class ClassType;\n";
+    header_ << "class Type;\n\n";
+    header_ << "struct ControlBlock {\n";
+    header_ << "  uint32_t    strongRefs = 0;\n";
+    header_ << "  uint32_t    weakRefs = 0;\n";
+    header_ << "  uint32_t    arrayLength;\n";
+    header_ << "  Type*       type = nullptr;\n";
+    header_ << "  void*       vtable = nullptr;\n";
+    header_ << "};\n\n";
+    header_ << "struct Object {\n";
+    header_ << "  void*          ptr;\n";
+    header_ << "  ControlBlock  *controlBlock;\n";
+    header_ << "};\n\n";
+    header_ << "struct Array {\n";
+    header_ << "  void*          ptr;\n";
+    header_ << "  uint32_t       length;\n";
+    header_ << "};\n\n";
   }
-  int id = 0;
-  for (auto type : types) {
-    typeMap_[type] = id;
-    fprintf(file_, "  typeList[%d] = ", id++);
-    GenType(type);
-    fprintf(file_, ";\n");
+  for (auto type : referencedTypes) {
+    EmitType(type);
   }
-  // Now that we have defined the types, resolve the references.
-  for (auto type : types) {
-    if (type->IsClass()) {
-      GenBindingsForClass(static_cast<ClassType*>(type));
-    } else if (type->IsEnum()) {
-      GenBindingsForEnum(static_cast<EnumType*>(type));
-    }
+  while (!classes_.empty()) {
+    auto classType = classes_.front();
+    classes_.pop_front();
+    EmitClass(classType);
   }
-  fprintf(file_, "  assert(types->GetTypes().size() == %d);\n", numTypes);
-  fprintf(file_, "  delete[] typeList;\n");
-  fprintf(file_, "  delete[] nodeList;\n");
-  fprintf(file_, "}\n\n");
-  fprintf(file_, "};\n");
-  if (header_) { fprintf(header_, "\n};\n}\n"); }
+  int i = 0;
+  for (auto type : referencedTypes) {
+    file_ << "  typeList[" << i++ << "] = type" << typeMap_[type] << ";\n";
+  }
+  file_ << "  return typeList;\n";
+  file_ << "}\n\n";
+  file_ << "};\n";
+  if (header_) {
+    header_ << "\n};\n}\n";
+  }
 }
 
-void PrintNativeType(FILE* file, Type* type) {
+void PrintNativeType(std::ostream& result, Type* type) {
   if (type->IsVoid()) {
-    fprintf(file, "void");
+    result << "void";
   } else if (type->IsInteger()) {
     IntegerType* integerType = static_cast<IntegerType*>(type);
-    fprintf(file, "%sint%d_t", integerType->Signed() ? "" : "u", integerType->GetBits());
+    result << (integerType->Signed() ? "int" : "uint") << integerType->GetBits() << "_t";
   } else if (type->IsBool()) {
-    fprintf(file, "bool");
+    result << "bool";
   } else if (type->IsFloat()) {
-    fprintf(file, "float");
+    result << "float";
   } else if (type->IsDouble()) {
-    fprintf(file, "double");
+    result << "double";
   } else if (type->IsClass()) {
-    ClassType* c = static_cast<ClassType*>(type);
-    fprintf(file, "%s", c->GetName().c_str());
+    result << static_cast<ClassType*>(type)->GetName();
   } else if (type->IsEnum()) {
-    EnumType* e = static_cast<EnumType*>(type);
-    fprintf(file, "%s", e->GetName().c_str());
+    result << static_cast<EnumType*>(type)->GetName();
   } else if (type->IsRawPtr()) {
     auto baseType = static_cast<RawPtrType*>(type)->GetBaseType();
     baseType = baseType->GetUnqualifiedType();
     if (baseType->IsClass()) {
-      PrintNativeType(file, baseType);
-      fprintf(file, "*");
+      PrintNativeType(result, baseType);
+      result << "*";
     } else if (baseType->IsUnsizedArray()) {
-      fprintf(file, "Array*");
+      result << "Array*";
     } else {
-      fprintf(file, "void*");
+      result << "void*";
     }
   } else if (type->IsStrongPtr() || type->IsWeakPtr()) {
     Type* baseType = static_cast<PtrType*>(type)->GetBaseType()->GetUnqualifiedType();
     if (baseType->IsClass() && static_cast<ClassType*>(baseType)->IsNative()) {
-      PrintNativeType(file, baseType);
-      fprintf(file, "*");
+      PrintNativeType(result, baseType);
+      result << "*";
     } else {
-      fprintf(file, "Object*");
+      result << "Object*";
     }
   } else if (type->IsArray()) {
     ArrayType* arrayType = static_cast<ArrayType*>(type);
     Type*      elementType = arrayType->GetElementType();
     if (elementType->IsVector()) {
-      PrintNativeType(file, static_cast<VectorType*>(type)->GetComponentType());
+      PrintNativeType(result, static_cast<VectorType*>(type)->GetComponentType());
     } else if (elementType->IsMatrix()) {
-      PrintNativeType(file, static_cast<MatrixType*>(type)->GetColumnType()->GetComponentType());
+      PrintNativeType(result, static_cast<MatrixType*>(type)->GetColumnType()->GetComponentType());
     } else {
-      PrintNativeType(file, elementType);
+      PrintNativeType(result, elementType);
     }
-    fprintf(file, "*");
+    result << "*";
   } else if (type->IsVector()) {
-    fprintf(file, "const ");
-    PrintNativeType(file, static_cast<VectorType*>(type)->GetComponentType());
-    fprintf(file, "*");
+    result << "const ";
+    PrintNativeType(result, static_cast<VectorType*>(type)->GetComponentType());
+    result << "*";
   } else if (type->IsMatrix()) {
-    PrintNativeType(file, static_cast<MatrixType*>(type)->GetColumnType()->GetComponentType());
-    fprintf(file, "*");
+    PrintNativeType(result, static_cast<MatrixType*>(type)->GetColumnType()->GetComponentType());
+    result << "*";
   } else if (type->IsQualified()) {
-    PrintNativeType(file, static_cast<QualifiedType*>(type)->GetBaseType());
+    PrintNativeType(result, static_cast<QualifiedType*>(type)->GetBaseType());
   } else {
-    fprintf(stderr, "PrintNativeType():  unknown type \"%s\"\n", type->ToString().c_str());
+    std::cerr << "PrintNativeType():  unknown type \"" << type->ToString() << "\"\n";
     exit(-2);
   }
 }
 
-void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
-  fprintf(file_, "  returnType = typeList[%d];\n", typeMap_[method->returnType]);
-  fprintf(file_, "  m = new Method(0");
-  if (method->modifiers & Method::Modifier::Static) { fprintf(file_, " | Method::Modifier::Static"); }
-  if (method->modifiers & Method::Modifier::Virtual) { fprintf(file_, " | Method::Modifier::Virtual"); }
-  if (method->modifiers & Method::Modifier::DeviceOnly) { fprintf(file_, " | Method::Modifier::DeviceOnly"); }
-  if (method->modifiers & Method::Modifier::Vertex) { fprintf(file_, " | Method::Modifier::Vertex"); }
-  if (method->modifiers & Method::Modifier::Fragment) { fprintf(file_, " | Method::Modifier::Fragment"); }
-  if (method->modifiers & Method::Modifier::Compute) { fprintf(file_, " | Method::Modifier::Compute"); }
+void GenBindings::EmitMethod(Method* method) {
+  int classTypeID = EmitType(method->classType);
+  int returnTypeID = EmitType(method->returnType);
+  file_ << "  m = new Method(0";
+  if (method->modifiers & Method::Modifier::Static) { file_ << " | Method::Modifier::Static"; }
+  if (method->modifiers & Method::Modifier::Virtual) { file_ << " | Method::Modifier::Virtual"; }
+  if (method->modifiers & Method::Modifier::DeviceOnly) { file_ << " | Method::Modifier::DeviceOnly"; }
+  if (method->modifiers & Method::Modifier::Vertex) { file_ << " | Method::Modifier::Vertex"; }
+  if (method->modifiers & Method::Modifier::Fragment) { file_ << " | Method::Modifier::Fragment"; }
+  if (method->modifiers & Method::Modifier::Compute) { file_ << " | Method::Modifier::Compute"; }
   std::string name = method->name;
-  fprintf(file_, ", returnType, \"%s\", static_cast<ClassType*>(typeList[%d]));\n", name.c_str(),
-          typeMap_[method->classType]);
+  file_ << ", type" << returnTypeID << ", \"" << name << "\", type" << classTypeID << ");\n";
   const VarVector& argList = method->formalArgList;
   for (int i = 0; i < argList.size(); ++i) {
     Var* var = argList[i].get();
@@ -381,38 +374,38 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
     // TODO: fix this through proper constant folding.
     Expr* defaultValue = method->classType->IsNative() ? method->defaultArgs[i] : nullptr;
     int defaultValueId = defaultValue ? sourcePass_.Resolve(defaultValue) : 0;
-    fprintf(file_, "  m->AddFormalArg(\"%s\", typeList[%d], ", var->name.c_str(),
-            typeMap_[var->type]);
+    int varTypeID = EmitType(var->type);
+    file_ << "  m->AddFormalArg(\"" << var->name << "\", type" << varTypeID << ", ";
     if (defaultValue) {
-      fprintf(file_, "exprs[%d]", defaultValueId);
+      file_ << "node" << defaultValueId;
     } else {
-      fprintf(file_, "nullptr");
+      file_ << "nullptr";
     }
-    fprintf(file_, ");\n");
+    file_ << ");\n";
   }
-  fprintf(file_, "  c->AddMethod(m);\n");
+  file_ << "  c->AddMethod(m);\n";
   if (method->modifiers & Method::Modifier::Virtual) {
     assert(method->index == 0); // Destructors are the only supported virtual
-    fprintf(file_, "  c->SetVTable(0, m);\n");
+    file_ << "  c->SetVTable(0, m);\n";
   }
   bool skipFirst = false;
-  if (classType->IsNative()) {
+  if (method->classType->IsNative()) {
     if (header_ && !(method->modifiers & Method::Modifier::DeviceOnly)) {
 #if TARGET_OS_IS_WIN
-      fprintf(header_, "__declspec(dllexport) ");
+      header_ << "__declspec(dllexport) ";
 #endif
       PrintNativeType(header_, method->returnType);
-      fprintf(header_, " %s(", method->GetMangledName().c_str());
+      header_ << " " << method->GetMangledName() << "(";
       if (method->IsConstructor()) {
         skipFirst = true;
-        if (classType->IsClassTemplate()) {
-          fprintf(header_, "int qualifiers, ");
-          ClassTemplate* classTemplate = static_cast<ClassTemplate*>(classType);
+        if (method->classType->IsClassTemplate()) {
+          header_ << "int qualifiers, ";
+          ClassTemplate* classTemplate = static_cast<ClassTemplate*>(method->classType);
           for (Type* arg : classTemplate->GetFormalTemplateArgs()) {
             FormalTemplateArg* formalTemplateArg = static_cast<FormalTemplateArg*>(arg);
-            fprintf(header_, "Type* %s", formalTemplateArg->GetName().c_str());
+            header_ << "Type* " << formalTemplateArg->GetName();
             if (arg != classTemplate->GetFormalTemplateArgs().back() || !argList.empty()) {
-              fprintf(header_, ", ");
+              header_ << ", ";
             }
           }
         }
@@ -421,79 +414,81 @@ void GenBindings::GenBindingsForMethod(ClassType* classType, Method* method) {
         if (skipFirst) { skipFirst = false; continue; }
         PrintNativeType(header_, var->type);
         if (var->name == "this") {
-          fprintf(header_, " This");
+          header_ << " This";
         } else {
-          fprintf(header_, " %s", var->name.c_str());
+          header_ << " " << var->name;
         }
-        if (&var != &argList.back()) { fprintf(header_, ", "); }
+        if (&var != &argList.back()) { header_ << ", "; }
       }
-      fprintf(header_, ");\n");
+      header_ << ");\n";
     }
   }
   if ((method->modifiers & (Method::Modifier::Vertex | Method::Modifier::Fragment | Method::Modifier::Compute))) {
-  } else if (dumpStmtsAsSource_ && method->stmts) {
+  } else if (emitScopesAndStatements_ && method->stmts) {
     int id = sourcePass_.Resolve(method->stmts);
-    fprintf(file_, "  m->stmts = stmtss[%d];\n", id);
+    file_ << "  m->stmts = node" << id << ";\n";
   }
   if (!method->spirv.empty()) {
-    fprintf(file_, "  m->spirv = {\n");
+    file_ << "  m->spirv = {\n";
     for (uint32_t op : method->spirv) {
-      fprintf(file_, "%d, ", op);
+      file_ << op << ", ";
     }
-    fprintf(file_, "};\n");
+    file_ << "};\n";
   }
-  if (!method->wgsl.empty()) { fprintf(file_, "  m->wgsl = R\"(%s)\";\n", method->wgsl.c_str()); }
+  if (!method->wgsl.empty()) { file_ << "  m->wgsl = R\"(" << method->wgsl << ")\";\n"; }
 }
 
-void GenBindings::GenBindingsForClass(ClassType* classType) {
+void GenBindings::EmitClass(ClassType* classType) {
   if (classType->GetTemplate() && classType->IsNative()) { return; }
-  fprintf(file_, "  c = static_cast<ClassType*>(typeList[%d]);\n", typeMap_[classType]);
+  auto id = EmitType(classType);
+  file_ << "\n  c = type" << id << ";\n";
   if (classType->IsNative()) {
-    fprintf(file_, "  c->SetNative(true);\n");
-    fprintf(file_, "  NativeClass::%s = c;\n;", classType->GetName().c_str());
+    file_ << "  c->SetNative(true);\n"
+          << "  NativeClass::" << classType->GetName() << " = c;\n";
   }
-  fprintf(file_, "  c->SetMemoryLayout(MemoryLayout::%s);\n",
-          MemoryLayoutToString(classType->GetMemoryLayout()));
-  fprintf(file_, "  scope = symbols->PushNewScope();\n");
-  fprintf(file_, "  scope->classType = c;\n");
-  fprintf(file_, "  c->SetScope(scope);\n");
-  if (ClassType* parent = classType->GetParent()) {
-    fprintf(file_, "  c->SetParent(static_cast<ClassType*>(typeList[%d]));\n", typeMap_[parent]);
-  }
-  for (const auto& i : classType->GetFields()) {
-    Field* field = i.get();
-    int    defaultValueId = field->defaultValue ? sourcePass_.Resolve(field->defaultValue) : 0;
-    fprintf(file_, "  c->AddField(\"%s\", typeList[%d], ", field->name.c_str(),
-            typeMap_[field->type]);
-    if (field->defaultValue) {
-      fprintf(file_, "exprs[%d]", defaultValueId);
-    } else {
-      fprintf(file_, "nullptr");
+  file_ << "  c->SetMemoryLayout(MemoryLayout::" <<
+    MemoryLayoutToString(classType->GetMemoryLayout()) << ");\n";
+    if (emitScopesAndStatements_) {
+      file_ << "  scope = symbols->PushNewScope();\n"
+            << "  symbols->PopScope();\n"
+            << "  scope->classType = c;\n"
+            << "  c->SetScope(scope);\n";
     }
-    fprintf(file_, ");\n");
+  if (ClassType* parent = classType->GetParent()) {
+    int parentID = EmitType(classType->GetParent());
+    file_ << "  c->SetParent(type" << parentID << ");\n";
   }
-  for (const auto& m : classType->GetMethods()) {
-    Method* method = m.get();
-    GenBindingsForMethod(classType, method);
+  for (const auto& field : classType->GetFields()) {
+    int typeID = EmitType(field->type);
+    int    defaultValueId = field->defaultValue ? sourcePass_.Resolve(field->defaultValue) : 0;
+    file_ << "  c->AddField(\"" << field->name << "\", type" << EmitType(field->type) << ", ";
+    if (field->defaultValue) {
+      file_ << "node" << defaultValueId;
+    } else {
+      file_ << "nullptr";
+    }
+    file_ << ");\n";
+  }
+  for (const auto& method : classType->GetMethods()) {
+    EmitMethod(method.get());
   }
   if (classType->GetScope()) {
     for (const auto& pair : classType->GetScope()->types) {
-      fprintf(file_, "  scope->types[\"%s\"] = typeList[%d];\n", pair.first.c_str(),
-              typeMap_[pair.second]);
+      int typeID = EmitType(pair.second);
+      if (emitScopesAndStatements_) {
+        file_ << "  scope->types[\"" << pair.first << "\"] = ";
+        if (typeID >= 0) {
+          file_ << "type" << typeID;
+        } else {
+          file_ << "nullptr";
+        }
+        file_ << ";\n";
+      }
     }
   }
-  fprintf(file_, "  symbols->PopScope();\n");
   if (!classType->GetTemplate()) {
-    fprintf(file_, "  symbols->DefineType(\"%s\", c);\n\n", classType->GetName().c_str());
+    file_ << "  symbols->DefineType(\"" << classType->GetName() << "\", c);\n";
   }
-}
-
-void GenBindings::GenBindingsForEnum(EnumType* enumType) {
-  fprintf(file_, "  e = static_cast<EnumType*>(typeList[%d]);\n", typeMap_[enumType]);
-  for (const EnumValue& v : enumType->GetValues()) {
-    fprintf(file_, "  e->Append(\"%s\", %d);\n", v.id.c_str(), v.value);
-  }
-  fprintf(file_, "  symbols->DefineType(\"%s\", e);\n\n", enumType->GetName().c_str());
 }
 
 };  // namespace Toucan

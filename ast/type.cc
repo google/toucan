@@ -723,12 +723,6 @@ ListType* TypeTable::GetList(VarVector&& types) {
   return type;
 }
 
-Type* TypeTable::GetPlaceholder() {
-  // These are uncached, in order to make TypeIDs used in LLVM codegen
-  // to match the TypeTable indices generated in GenBindings.
-  return Make<VoidType>();
-}
-
 StrongPtrType* TypeTable::GetStrongPtrType(Type* baseType) {
   StrongPtrType* type = strongPtrTypes_[baseType];
   if (type == nullptr) {
@@ -820,13 +814,6 @@ ClassType* TypeTable::PopInstanceQueue() {
   ClassType* instance = instanceQueue_.back();
   instanceQueue_.pop_back();
   return instance;
-}
-
-int TypeTable::GetTypeID(Type* type) const {
-  for (int i = 0; i < types_.size(); i++) {
-    if (types_[i] == type) { return i; }
-  }
-  return -1;
 }
 
 bool TypeTable::VectorScalar(Type* lhs, Type* rhs) {

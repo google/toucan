@@ -13,143 +13,145 @@
 // limitations under the License.
 
 #include "dump_as_source_pass.h"
+#include "bindings/gen_bindings.h"
 
 #include <stdarg.h>
 
-#include "symbol.h"
+#include "ast/symbol.h"
 
 namespace Toucan {
 
-DumpAsSourcePass::DumpAsSourcePass(FILE* file, std::unordered_map<Type*, int>* typeMap)
-    : file_(file), typeMap_(typeMap) {
+DumpAsSourcePass::DumpAsSourcePass(std::ostream& file, GenBindings* genBindings)
+    : file_(file), genBindings_(genBindings) {
   map_[nullptr] = 0;
 }
-
 
 int DumpAsSourcePass::Resolve(ASTNode* node) {
   if (!map_[node]) { node->Accept(this); }
   return map_[node];
 }
 
-int DumpAsSourcePass::Output(ASTNode* node, const char* fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
-  fprintf(file_, "  nodeList[%d] = nodes->", nodeCount_);
-  vfprintf(file_, fmt, ap);
-  fprintf(file_, ";\n");
-  map_[node] = nodeCount_;
-  return nodeCount_++;
+std::ostream& DumpAsSourcePass::Output(ASTNode* node) {
+  file_ << "  auto* node" << nodeCount_ << " = nodes->";
+  map_[node] = nodeCount_++;
+  return file_;
 }
 
 Result DumpAsSourcePass::Visit(ArgList* node) {
   // For now, support only empty ArgList.
   assert(node->GetArgs().size() == 0);
-  Output(node, "Make<ArgList>()");
+  Output(node) << "Make<ArgList>();\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(ArrayAccess* node) {
   int expr = Resolve(node->GetExpr());
   int index = Resolve(node->GetIndex());
-  Output(node, "Make<ArrayAccess>(nodeList[%d], nodeList[%d])", expr, index);
+  Output(node) << "Make<ArrayAccess>(node" << expr << ", node" << index << ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(CastExpr* node) {
-  int type = (*typeMap_)[node->GetType()];
+  int type = genBindings_->EmitType(node->GetType());
   int expr = Resolve(node->GetExpr());
-  Output(node, "Make<CastExpr>(typeList[%d], exprs[%d])", type, expr);
+  Output(node) << "Make<CastExpr>(type" << type << ", node" << expr << ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(IntConstant* node) {
-  Output(node, "Make<IntConstant>(%d, %d)", node->GetValue(), node->GetBits());
+  Output(node) << "Make<IntConstant>(" << node->GetValue() << ", " << node->GetBits() << ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(UIntConstant* node) {
-  Output(node, "Make<UIntConstant>(%u, %d)", node->GetValue(), node->GetBits());
+  Output(node) << "Make<UIntConstant>(" << node->GetValue() << ", " << node->GetBits() << ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(EnumConstant* node) {
   const EnumValue* value = node->GetValue();
-  int type = (*typeMap_)[value->type];
-  Output(node, "Make<EnumConstant>(static_cast<EnumType*>(typeList[%d])->FindValue(\"%s\"))", type, value->id.c_str());
+  int type = genBindings_->EmitType(value->type);
+  Output(node) << "Make<EnumConstant>(type" << type << "->FindValue(\"" << value->id << "\"));\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(FloatConstant* node) {
-  Output(node, "Make<FloatConstant>(%g)", node->GetValue());
+  Output(node) << "Make<FloatConstant>(" << node->GetValue() << ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(DoubleConstant* node) {
-  Output(node, "Make<DoubleConstant>(%lg)", node->GetValue());
+  Output(node) << "Make<DoubleConstant>(" << node->GetValue() << ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(BoolConstant* node) {
-  Output(node, "Make<BoolConstant>(%s)", node->GetValue() ? "true" : "false");
+  Output(node) << "Make<BoolConstant>(" << (node->GetValue() ? "true" : "false") << ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(NullConstant* node) {
-  Output(node, "Make<NullConstant>()");
+  Output(node) << "Make<NullConstant>();\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(Stmts* stmts) {
-  int id = Output(stmts, "Make<Stmts>()");
+  Output(stmts) << "Make<Stmts>();\n";
+  int id = map_[stmts];
+
   if (stmts->GetScope()) {
-    fprintf(file_, "  stmtss[%d]->SetScope(symbols->PushNewScope());\n", id);
+    file_ << "  node" << id << "->SetScope(symbols->PushNewScope());\n";
   }
   // FIXME: create an actual Stmts from elements
   for (Stmt* const& it : stmts->GetStmts()) {
-    fprintf(file_, "  stmtss[%d]->Append(stmts[%d]);\n", id, Resolve(it));
+    auto stmtsID = Resolve(it);
+    file_ << "  node" << id << "->Append(node" << stmtsID << ");\n";
   }
-  if (stmts->GetScope()) { fprintf(file_, "  symbols->PopScope();\n"); }
+  if (stmts->GetScope()) { file_ << "  symbols->PopScope();\n"; }
   return {};
 }
 
 Result DumpAsSourcePass::Visit(ExprList* a) {
-  int id = Output(a, "Make<ExprList>()");
+  Output(a) << "Make<ExprList>();\n";
+  int id = map_[a];
   for (auto expr : a->Get()) {
-    fprintf(file_, "  exprLists[%d]->Append(exprs[%d]);\n", id, Resolve(expr));
+    int exprID = Resolve(expr);
+    file_ << "  node" << id << "->Append(node" << exprID << ");\n";
   }
   return {};
 }
 
 Result DumpAsSourcePass::Visit(ExprStmt* stmt) {
-  Output(stmt, "Make<ExprStmt>(exprs[%d])", Resolve(stmt->GetExpr()));
+  int id = Resolve(stmt->GetExpr());
+  Output(stmt) << "Make<ExprStmt>(node" << id << ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(Initializer* node) {
-  int type = (*typeMap_)[node->GetType()];
+  int type = genBindings_->EmitType(node->GetType());
   int argList = Resolve(node->GetArgList());
-  Output(node, "Make<Initializer>(typeList[%d], exprLists[%d])", type, argList);
+  Output(node) << "Make<Initializer>(type" << type << ", node" << argList << ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(VarDeclaration* decl) {
-  int type = (*typeMap_)[decl->GetType()];
+  int type = genBindings_->EmitType(decl->GetType());
   int initExpr = Resolve(decl->GetInitExpr());
-  Output(decl, "Make<VarDeclaration>(\"%s\", typeList[%d], exprs[%d])", decl->GetID().c_str(), type,
-         initExpr);
+  Output(decl) << "Make<VarDeclaration>(\"" << decl->GetID() << "\", type" << type << ", node"
+               << initExpr <<  ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(LoadExpr* node) {
   int expr = Resolve(node->GetExpr());
-  Output(node, "Make<LoadExpr>(exprs[%d])", expr);
+  Output(node) << "Make<LoadExpr>(node" << expr << ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(StoreStmt* node) {
   int lhs = Resolve(node->GetLHS());
   int rhs = Resolve(node->GetRHS());
-  Output(node, "Make<StoreStmt>(exprs[%d], exprs[%d])", lhs, rhs);
+  Output(node) << "Make<StoreStmt>(node" << lhs << ", node" << rhs << ");\n";
   return {};
 }
 
@@ -173,24 +175,24 @@ static const char* GetOp(BinOpNode::Op op) {
 Result DumpAsSourcePass::Visit(BinOpNode* node) {
   int lhs = Resolve(node->GetLHS());
   int rhs = Resolve(node->GetRHS());
-  Output(node, "Make<BinOpNode>(BinOpNode::%s, exprs[%d], exprs[%d])", GetOp(node->GetOp()), lhs,
-         rhs);
+  Output(node) << "Make<BinOpNode>(BinOpNode::" << GetOp(node->GetOp()) << ", node" << lhs
+               << ", node" << rhs << ");\n";
   return {};
 }
 
 
 Result DumpAsSourcePass::Visit(UnresolvedListExpr* node) {
   int argList = Resolve(node->GetArgList());
-  Output(node, "Make<UnresolvedListExpr>(argLists[%d])", argList);
+  Output(node) << "Make<UnresolvedListExpr>(node" << argList << ");\n";
   return {};
 }
 
 Result DumpAsSourcePass::Visit(ReturnStatement* stmt) {
   if (stmt->GetExpr()) {
     int expr = Resolve(stmt->GetExpr());
-    Output(stmt, "Make<ReturnStatement>(exprs[%d])", expr);
+    Output(stmt) << "Make<ReturnStatement>(node" << expr << ");\n";
   } else {
-    Output(stmt, "Make<ReturnStatement>(nullptr)");
+    Output(stmt) << "Make<ReturnStatement>(nullptr);\n";
   }
   return {};
 }

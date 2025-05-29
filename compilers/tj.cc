@@ -107,7 +107,6 @@ int main(int argc, char** argv) {
   NodeVector  nodes;
   symbols.PushNewScope();
   InitTypes(&symbols, &types, &nodes);
-  const TypeVector& apiTypes = types.GetTypes();
   Stmts*            rootStmts;
   int syntaxErrors = ParseProgram(filename, &symbols, &types, &nodes, includePaths, &rootStmts);
   if (syntaxErrors > 0) { exit(1); }
@@ -188,7 +187,7 @@ int main(int argc, char** argv) {
   engine->DisableLazyCompilation();
 #endif
   codeGenLLVM.Run(stmts);
-  auto typeList = types.GetTypes().data();
+  auto typeList = codeGenLLVM.GetReferencedTypes().data();
   engine->addGlobalMapping(codeGenLLVM.GetTypeList(), &typeList);
   if (verifyFunction(*main)) { printf("LLVM main function is broken; aborting\n"); }
   Toucan::exitOnAbort = true;

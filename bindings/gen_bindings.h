@@ -15,41 +15,40 @@
 #ifndef _BINDINGS_GEN_BINDINGS_H_
 #define _BINDINGS_GEN_BINDINGS_H_
 
-#include <stdio.h>
+#include <list>
+#include <ostream>
 #include <unordered_map>
 
-#include <ast/dump_as_source_pass.h>
+#include "dump_as_source_pass.h"
 
 namespace Toucan {
 
-class SymbolTable;
-class TypeTable;
 class ClassType;
-class EnumType;
 class Method;
-class Symbol;
 class Type;
 
 class GenBindings {
  public:
-  GenBindings(SymbolTable* symbols,
-              TypeTable*   types,
-              FILE*        file,
-              FILE*        header,
-              bool         dumpStmtsAsSource);
-  void Run();
-  void GenType(Type* type);
-  void GenBindingsForClass(ClassType* classType);
-  void GenBindingsForEnum(EnumType* enumType);
-  void GenBindingsForMethod(ClassType* classType, Method* method);
+  GenBindings(std::ostream&  file,
+              std::ostream&  header,
+              bool           emitScopesAndStatements);
+  void Run(const TypeVector& referencedTypes);
+  int  EmitType(Type* type);
+
+ private:
+  void EmitClass(ClassType* classType);
+  void EmitMethod(Method* method);
 
  private:
   SymbolTable*                   symbols_;
   TypeTable*                     types_;
-  FILE*                          file_;
-  FILE*                          header_;
-  bool                           dumpStmtsAsSource_;
+  TypeVector                     referencedTypes_;
+  std::list<ClassType*>          classes_;
+  std::ostream&                  file_;
+  std::ostream&                  header_;
+  bool                           emitScopesAndStatements_;
   std::unordered_map<Type*, int> typeMap_;
+  int                            numTypes_ = 0;
   DumpAsSourcePass               sourcePass_;
 };
 

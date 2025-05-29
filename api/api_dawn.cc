@@ -479,7 +479,12 @@ static wgpu::BindGroupLayoutEntry CreateBindGroupLayoutEntry(uint32_t binding,
     entry.visibility =
         wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
   }
+  if (classType == NativeClass::Sampler) {
+    entry.sampler.type = wgpu::SamplerBindingType::Filtering;
+    return entry;
+  }
   ClassType* templ = classType->GetTemplate();
+  assert(templ);
   if (templ == NativeClass::Buffer) {
     entry.buffer.type = toDawnBufferBindingType(qualifiers);
   } else if (templ == NativeClass::SampleableTexture1D) {
@@ -497,8 +502,6 @@ static wgpu::BindGroupLayoutEntry CreateBindGroupLayoutEntry(uint32_t binding,
   } else if (templ == NativeClass::SampleableTextureCube) {
     entry.texture.sampleType = ToDawnTextureSampleType(classType, qualifiers);
     entry.texture.viewDimension = wgpu::TextureViewDimension::Cube;
-  } else if (classType == NativeClass::Sampler) {
-    entry.sampler.type = wgpu::SamplerBindingType::Filtering;
   } else {
     assert(!"invalid field type in bind group");
   }
@@ -554,19 +557,24 @@ wgpu::BindGroupEntry CreateBindGroupEntry(Type* type, int binding, void* data) {
   type = type->GetUnqualifiedType(&qualifiers);
   assert(type->IsClass() && "bind group entry must be of class type");
   ClassType* c = static_cast<ClassType*>(type);
+  if (c == NativeClass::Sampler) {
+    Sampler* sampler = static_cast<Sampler*>(data);
+    entry.sampler = sampler->sampler;
+    return entry;
+  }
   ClassType* templ = c->GetTemplate();
+  assert(templ);
   if (templ == NativeClass::SampleableTexture1D || templ == NativeClass::SampleableTexture2D ||
       templ == NativeClass::SampleableTexture3D || templ == NativeClass::SampleableTexture2DArray ||
       templ == NativeClass::SampleableTextureCube) {
     TextureView* textureView = static_cast<TextureView*>(data);
     entry.textureView = textureView->view;
-  } else if (c == NativeClass::Sampler) {
-    Sampler* sampler = static_cast<Sampler*>(data);
-    entry.sampler = sampler->sampler;
   } else if (templ == NativeClass::Buffer) {
     Buffer* buffer = static_cast<Buffer*>(data);
     entry.buffer = buffer->buffer;
     entry.size = buffer->sizeInBytes;
+  } else {
+    assert("!unknown BindGroup entry type");
   }
   return entry;
 }

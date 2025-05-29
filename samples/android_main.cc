@@ -34,8 +34,7 @@ void android_main(struct android_app* app) {
   SymbolTable symbols;
   TypeTable   types;
   NodeVector  nodes;
-  InitTypes(&symbols, &types, &nodes);
+  _type_list = InitTypes(&symbols, &types, &nodes);
   types.ComputeFieldOffsets();
-  _type_list = types.GetTypes().data();
   toucan_main();
 }

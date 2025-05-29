@@ -286,7 +286,13 @@ void CodeGenLLVM::FillVTable(ClassType* classType) {
 
 llvm::Value* CodeGenLLVM::CreateTypePtr(Type* type) {
   llvm::Value* ptr = builder_->CreateLoad(typeListType_, typeList_);
-  ptr = builder_->CreateGEP(typeListType_, ptr, {Int(types_->GetTypeID(type))});
+  llvm::Value* typeID = typeMap_[type];
+  if (!typeID) {
+    typeID = Int(referencedTypes_.size());
+    typeMap_[type] = typeID;
+    referencedTypes_.push_back(type);
+  }
+  ptr = builder_->CreateGEP(typeListType_, ptr, {typeID});
   return builder_->CreateLoad(voidPtrType_, ptr);
 }
 

@@ -18,6 +18,7 @@
 #include <unistd.h>
 #endif
 
+#include <fstream>
 #include <iostream>
 
 #include <llvm-c/Target.h>
@@ -87,8 +88,8 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  FILE* initTypesFile = fopen(initTypesFilename.c_str(), "w");
-  if (!initTypesFile) { perror(initTypesFilename.c_str()); }
+  std::ofstream initTypesFile(initTypesFilename.c_str(), std::ofstream::out);
+  if (initTypesFile.fail()) { std::perror(initTypesFilename.c_str()); }
 
   SymbolTable symbols;
   TypeTable   types;
@@ -229,8 +230,9 @@ int main(int argc, char** argv) {
 
       pass.run(*module);
       dest.flush();
-      GenBindings bindings(&symbols, &types, initTypesFile, nullptr, false);
-      bindings.Run();
+      std::ofstream headerPlaceholder;
+      GenBindings bindings(initTypesFile, headerPlaceholder, false);
+      bindings.Run(codeGenLLVM.GetReferencedTypes());
     }
     llvm::llvm_shutdown();
   }

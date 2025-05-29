@@ -15,24 +15,20 @@
 #ifndef _AST_DUMP_AS_SOURCE_PASS_H_
 #define _AST_DUMP_AS_SOURCE_PASS_H_
 
-#include "ast.h"
+#include "ast/ast.h"
 
-#ifdef __gnuc__
-#define CHECK_FORMAT(archetype, string_index, first_to_check) \
-  __attribute__((format(archetype, string_index, first_to_check)))
-#else
-#define CHECK_FORMAT(...)
-#endif
+#include <ostream>
 
 namespace Toucan {
 
+class GenBindings;
 class SymbolTable;
 
 class DumpAsSourcePass : public Visitor {
  public:
-  DumpAsSourcePass(FILE* file, std::unordered_map<Type*, int>* typeMap);
+  DumpAsSourcePass(std::ostream& file, GenBindings* genBindings);
   int    Resolve(ASTNode* node);
-  int    Output(ASTNode* node, const char* fmt, ...) CHECK_FORMAT(printf, 3, 4);
+  std::ostream& Output(ASTNode* node);
   Result Visit(ArgList* node) override;
   Result Visit(ArrayAccess* node) override;
   Result Visit(BinOpNode* node) override;
@@ -56,9 +52,9 @@ class DumpAsSourcePass : public Visitor {
   Result Default(ASTNode* node) override;
 
  private:
-  FILE*                             file_;
+  std::ostream&                     file_;
   std::unordered_map<ASTNode*, int> map_;
-  std::unordered_map<Type*, int>*   typeMap_;
+  GenBindings*                      genBindings_;
   int                               nodeCount_ = 1;
 };
 
