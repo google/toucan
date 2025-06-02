@@ -27,10 +27,8 @@ const Type* const* _type_list;
 }
 
 int main(int argc, char** argv) {
-  SymbolTable symbols;
   TypeTable   types;
-  NodeVector  nodes;
-  _type_list = InitTypes(&symbols, &types, &nodes);
+  _type_list = InitTypes(&types);
   types.ComputeFieldOffsets();
   toucan_main();
   return 0;

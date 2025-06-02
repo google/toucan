@@ -37,7 +37,7 @@
 #include <llvm/Transforms/Scalar/GVN.h>
 #include <llvm/Transforms/Utils.h>
 
-#include <api/init_types.h>
+#include <api/init_api.h>
 #include <ast/ast.h>
 #include <ast/semantic_pass.h>
 #include <ast/symbol.h>
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
   TypeTable   types;
   NodeVector  nodes;
   symbols.PushNewScope();
-  InitTypes(&symbols, &types, &nodes);
+  InitAPI(&symbols, &types, &nodes);
   auto*             apiStmts = nodes.Make<Stmts>();
   const TypeVector& apiTypes = types.GetTypes();
   Stmts*            rootStmts;

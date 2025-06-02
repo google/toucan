@@ -31,7 +31,7 @@ class GenBindings {
  public:
   GenBindings(std::ostream&  file,
               std::ostream&  header,
-              bool           emitScopesAndStatements);
+              bool           emitSymbolsAndStatements);
   void Run(const TypeVector& referencedTypes);
   int  EmitType(Type* type);
 
@@ -46,7 +46,7 @@ class GenBindings {
   std::list<ClassType*>          classes_;
   std::ostream&                  file_;
   std::ostream&                  header_;
-  bool                           emitScopesAndStatements_;
+  bool                           emitSymbolsAndStatements_;
   std::unordered_map<Type*, int> typeMap_;
   int                            numTypes_ = 0;
   DumpAsSourcePass               sourcePass_;
