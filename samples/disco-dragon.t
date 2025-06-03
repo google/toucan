@@ -213,7 +213,7 @@ var lightExtentMin = float<3>{-50.0, -30.0, -50.0};
 var lightExtentMax = float<3>{ 50.0, 50.0, 50.0};
 
 var device = new Device();
-var window = new Window({0, 0}, System.GetScreenSize());
+var window = new Window(System.GetScreenSize());
 
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var windowSize = window.GetSize();

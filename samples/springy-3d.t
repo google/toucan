@@ -134,7 +134,7 @@ for (var i = 0; i < bodies.length; ++i) {
 }
 
 var device = new Device();
-var window = new Window({0, 0}, {960, 960});
+var window = new Window({960, 960});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var physicsSystem = new ParticleSystem(bodies, springs);
 

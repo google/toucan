@@ -1,5 +1,5 @@
 var device = new Device();
-var window = new Window(device, {0, 0}, {640, 480});
+var window = new Window({640, 480});
 var tex = new sampleable Texture1D<RGBA8unorm>(device, 1);
 var buffer = new hostwriteable Buffer<[]float<4>>(device);
 {

@@ -1,5 +1,5 @@
 var device = new Device();
-var window = new Window({0, 0}, {640, 480});
+var window = new Window({640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 var positions = [3]float<2>{

@@ -33,7 +33,7 @@ var copyEncoder = new CommandEncoder(device);
 texture.CopyFromBuffer(copyEncoder, buffer, imageSize);
 device.GetQueue().Submit(copyEncoder.Finish());
 
-var window = new Window({0, 0}, imageSize);
+var window = new Window(imageSize);
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var verts = [4]Vertex{
   { position = {-1.0,  1.0}, texCoord = {0.0, 0.0} },

@@ -62,7 +62,7 @@ struct Window {
   uint32_t       size[2] = {0, 0};
 };
 
-Window* Window_Window(const int32_t* position, const uint32_t* size) {
+Window* Window_Window(const uint32_t* size, const int32_t* position) {
   ANativeWindow* window;
   if (gNumWindows == 0) {
     WaitForMainWindow();

@@ -258,7 +258,7 @@ native class ComputePass<T> {
 }
 
 native class Window {
-  Window(position : int<2>, size : uint<2>);
+  Window(size : uint<2>, position = int<2>(0, 0));
   GetSize() : uint<2>;
  ~Window();
 }

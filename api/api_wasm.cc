@@ -86,7 +86,7 @@ EM_JS(int, createWindow, (int32_t x, int32_t y, int32_t width, int32_t height), 
     return w.id = Module.numWindows++;
 });
 
-Window* Window_Window(const int32_t* position, const uint32_t* size) {
+Window* Window_Window(const uint32_t* size, const int32_t* position) {
   int id = EM_ASM_INT({ createWindow($0, $1, $2, $3) }, position[0], position[1], size[0], size[1]);
 
   return gWindows[id] = new Window(id, size);

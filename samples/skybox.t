@@ -32,7 +32,7 @@ CubeLoader.Load(device, inline("third_party/home-cube/bottom.jpg"), texture, 3);
 CubeLoader.Load(device, inline("third_party/home-cube/front.jpg"), texture, 4);
 CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 
-var window = new Window({0, 0}, System.GetScreenSize());
+var window = new Window(System.GetScreenSize());
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
 var cubeVB = new vertex Buffer<[]float<3>>(device, &cubeVerts);

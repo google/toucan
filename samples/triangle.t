@@ -5,7 +5,7 @@ class Pipeline {
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
 }
 var device = new Device();
-var window = new Window({0, 0}, System.GetScreenSize());
+var window = new Window(System.GetScreenSize());
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 var verts = [3]float<2>{ { 0.0, 1.0 }, {-1.0, -1.0 }, { 1.0, -1.0 } };
 var vb = new vertex Buffer<[]float<2>>(device, &verts);
