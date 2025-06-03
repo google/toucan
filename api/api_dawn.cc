@@ -1136,25 +1136,28 @@ EM_ASYNC_JS(WGPUBufferMapAsyncStatus,
 #endif
 
 static Object* MapSync(wgpu::MapMode mapMode, Buffer* buffer) {
-  WGPUBufferMapAsyncStatus status = WGPUBufferMapAsyncStatus_Unknown;
   if (buffer->mappedObject.ptr != nullptr) {
     buffer->mappedObject.controlBlock->weakRefs++;
     return &buffer->mappedObject;
   }
-  auto callback = [](WGPUBufferMapAsyncStatus status, void* userData) {
-    *(WGPUBufferMapAsyncStatus*)userData = status;
-  };
 #if TARGET_OS_IS_WASM
-  status =
+  auto status =
       JSMapSync(buffer->buffer.Get(), static_cast<WGPUMapMode>(mapMode), 0, buffer->sizeInBytes);
+  if (status != WGPUBufferMapAsyncStatus_Success) { return &buffer->mappedObject; }
 #else
-  buffer->buffer.MapAsync(mapMode, 0, buffer->sizeInBytes, callback, &status);
-  while (status == WGPUBufferMapAsyncStatus_Unknown) {
-    buffer->device.Tick();
+  wgpu::MapAsyncStatus mapStatus = wgpu::MapAsyncStatus::Error;
+  wgpu::Future future = buffer->buffer.MapAsync(mapMode, 0, buffer->sizeInBytes, wgpu::CallbackMode::WaitAnyOnly,
+                                                [&mapStatus](wgpu::MapAsyncStatus s, wgpu::StringView) {
+                                                  mapStatus = s;
+                                                });
+  auto instance = buffer->device.GetAdapter().GetInstance();
+  wgpu::FutureWaitInfo waitInfo = {future};
+  if (instance.WaitAny(1, &waitInfo, UINT64_MAX) != wgpu::WaitStatus::Success) {
+    return &buffer->mappedObject;
   }
+  if (mapStatus != wgpu::MapAsyncStatus::Success) { return &buffer->mappedObject; }
 #endif
   Object result;
-  if (status != WGPUBufferMapAsyncStatus_Success) { return &buffer->mappedObject; }
   if (!(mapMode & wgpu::MapMode::Write)) {
     const void* ptr = buffer->buffer.GetConstMappedRange();
     buffer->mappedObject.ptr = const_cast<void*>(ptr);
@@ -1414,7 +1417,9 @@ wgpu::Device CreateDawnDevice(wgpu::BackendType type, wgpu::ErrorCallback errorC
   static std::unique_ptr<dawn::native::Instance> nativeInstance;
 
   if (!nativeInstance) {
-    nativeInstance = std::make_unique<dawn::native::Instance>();
+    WGPUInstanceDescriptor desc = { 0 };
+    desc.features.timedWaitAnyEnable = true;
+    nativeInstance = std::make_unique<dawn::native::Instance>(&desc);
     DawnProcTable backendProcs = dawn::native::GetProcs();
     dawnProcSetProcs(&backendProcs);
   }

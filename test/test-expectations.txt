@@ -39,13 +39,9 @@ test/class-constructor.t
 test/class-initializer.t
 test/complex-method.t
 test/compute-pass-ptr-to-element.t
-Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/compute-simple.t
-Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/compute-swizzle.t
-Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/compute-vector-cast.t
-Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/constant-folding.t
 test/constructor-calls-initializer.t
 test/constructor-with-default-arg.t
@@ -81,7 +77,6 @@ error-array-size-non-integer.t:3: array size is not an integer constant
 error-array-size-non-integer.t:4: array size is not an integer constant
 error-array-size-non-integer.t:5: array size is not an integer constant
 test/error-assign-padded-array.t
-Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/error-assign-padded-array.t:21: expectation failed
 test/error-assign-padded-array.t:22: expectation failed
 test/error-cast-weak-ptr-to-strong.t
@@ -295,9 +290,7 @@ test/simple.t
 test/spirv-call-graph.t
 test/spirv-if-stmt.t
 test/spirv-insert-element.t
-Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/spirv-uint.t
-Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/stack-method-call.t
 test/static-method-with-args.t
 test/static-method.t
@@ -322,7 +315,6 @@ test/ubyte.t
 test/uint.t
 test/unary-minus.t
 test/unfilterable.t
-Warning: Old MapAsync APIs are deprecated. If using C please pass a CallbackInfo struct that has two userdatas. Otherwise, if using C++, please use templated helpers.
 test/unspecified-template-destructor.t
 test/ushort-vector.t
 test/ushort.t
