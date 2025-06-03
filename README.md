@@ -23,7 +23,7 @@ If you simply wish to try some live Toucan demos without building the toolchain,
 
 - Python 3.0
 - CMake
-- A C++17 toolchain (clang, gcc, or MSVC)
+- A C++20 toolchain (clang, gcc, or MSVC)
 - GNU flex
 - GNU bison
 - node.js and npm (for the WebAssembly build)

@@ -27,8 +27,6 @@ namespace Toucan {
 
 namespace {
 
-void PrintDeviceError(WGPUErrorType, const char* message, void*) { OutputDebugString(message); }
-
 unsigned ToToucanEventModifiers(WPARAM wParam) {
   unsigned result = 0;
 
@@ -127,7 +125,16 @@ const uint32_t* System_GetScreenSize() {
 void Window_Destroy(Window* This) { delete This; }
 
 Device* Device_Device() {
-  wgpu::Device device = CreateDawnDevice(wgpu::BackendType::D3D12, PrintDeviceError);
+  wgpu::DeviceDescriptor desc;
+  desc.SetUncapturedErrorCallback(
+    [](const wgpu::Device&, wgpu::ErrorType type, wgpu::StringView message) {
+      OutputDebugString("WebGPU Error:\n");
+      OutputDebugString(message.data);
+      OutputDebugString("\n");
+    }
+  );
+
+  wgpu::Device device = CreateDawnDevice(wgpu::BackendType::D3D12, &desc);
   if (!device) { return nullptr; }
   return new Device(device);
 }

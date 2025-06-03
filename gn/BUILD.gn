@@ -31,15 +31,15 @@ config("default") {
     } else {
       cflags = [ "/MD" ]
     }
-    cflags_cc = [ "/std:c++17" ]
+    cflags_cc = [ "/std:c++20" ]
     defines = [
       "_HAS_EXCEPTIONS=0",
       "NOMINMAX",
     ]
     ldflags = [ "/DEBUG:FASTLINK" ]
   } else {
-    cflags_cc = [ "-std=c++17" ]
-    cflags_objcc = [ "-std=c++17" ]
+    cflags_cc = [ "-std=c++20" ]
+    cflags_objcc = [ "-std=c++20" ]
     defines = []
     if (is_linux) {
       cflags = [ "-fPIC" ]

@@ -130,6 +130,7 @@ struct Texture {
                       wgpu::Buffer         source,
                       wgpu::Extent3D       extent,
                       wgpu::Origin3D       origin) {
+#if TARGET_OS_IS_WASM
     wgpu::ImageCopyBuffer sourceICB;
     sourceICB.buffer = source;
     sourceICB.layout.bytesPerRow = MinBufferWidth() * BytesPerPixel(format);
@@ -138,6 +139,16 @@ struct Texture {
     destICT.texture = texture;
     destICT.origin = origin;
     encoder.CopyBufferToTexture(&sourceICB, &destICT, &extent);
+#else
+    wgpu::TexelCopyBufferInfo sourceInfo;
+    sourceInfo.buffer = source;
+    sourceInfo.layout.bytesPerRow = MinBufferWidth() * BytesPerPixel(format);
+    sourceInfo.layout.rowsPerImage = size.height;
+    wgpu::TexelCopyTextureInfo destInfo;
+    destInfo.texture = texture;
+    destInfo.origin = origin;
+    encoder.CopyBufferToTexture(&sourceInfo, &destInfo, &extent);
+#endif
   }
   wgpu::TextureView CreateView(wgpu::TextureViewDimension dimension,
                                uint32_t                   arrayLayer,
@@ -437,6 +448,7 @@ wgpu::VertexBufferLayout toDawnVertexBufferLayout(Type*                         
   }
   wgpu::VertexBufferLayout input;
   input.arrayStride = vertexInput->GetSizeInBytes();
+  input.stepMode = wgpu::VertexStepMode::Vertex;
   input.attributeCount = vaDescs->size() - start;
   // Cast the start offset to pointer; this will be added to the vaDesc pointer
   // in FinalizeVertexLayouts. This is necessary to accommodate reallocation
@@ -455,7 +467,11 @@ wgpu::BufferBindingType toDawnBufferBindingType(int qualifiers) {
     }
   }
   assert(!"invalid qualifiers for buffer binding");
+#if TARGET_OS_IS_WASM
   return wgpu::BufferBindingType::Undefined;
+#else
+  return wgpu::BufferBindingType::BindingNotUsed;
+#endif
 }
 
 // FIXME: store this in Device.
@@ -863,7 +879,11 @@ ComputePipeline* ComputePipeline_ComputePipeline(int     qualifiers,
       computeShader = createShaderModule(device, method.get());
     }
   }
+#if TARGET_OS_IS_WASM
   wgpu::ProgrammableStageDescriptor computeState;
+#else
+  wgpu::ComputeState computeState;
+#endif
   computeState.module = computeShader;
   computeState.entryPoint = "main";
   wgpu::ComputePipelineDescriptor cpDesc;
@@ -1152,10 +1172,10 @@ static Object* MapSync(wgpu::MapMode mapMode, Buffer* buffer) {
                                                 });
   auto instance = buffer->device.GetAdapter().GetInstance();
   wgpu::FutureWaitInfo waitInfo = {future};
-  if (instance.WaitAny(1, &waitInfo, UINT64_MAX) != wgpu::WaitStatus::Success) {
+  if (instance.WaitAny(1, &waitInfo, UINT64_MAX) != wgpu::WaitStatus::Success
+      || mapStatus != wgpu::MapAsyncStatus::Success) {
     return &buffer->mappedObject;
   }
-  if (mapStatus != wgpu::MapAsyncStatus::Success) { return &buffer->mappedObject; }
 #endif
   Object result;
   if (!(mapMode & wgpu::MapMode::Write)) {
@@ -1379,6 +1399,7 @@ void SwapChain_Resize(SwapChain* swapChain, const uint32_t* size) {
   config.format = swapChain->format;
   config.width = size[0];
   config.height = size[1];
+  config.presentMode = wgpu::PresentMode::Fifo;
 
   swapChain->surface.Configure(&config);
   swapChain->extent = {size[0], size[1], 1};
@@ -1413,26 +1434,22 @@ void System_Destroy(System* This) {}
 void Event_Destroy(Event* This) { delete This; }
 
 #if !TARGET_OS_IS_WASM
-wgpu::Device CreateDawnDevice(wgpu::BackendType type, wgpu::ErrorCallback errorCallback) {
+wgpu::Device CreateDawnDevice(wgpu::BackendType type, const wgpu::DeviceDescriptor* desc) {
   static std::unique_ptr<dawn::native::Instance> nativeInstance;
 
   if (!nativeInstance) {
-    WGPUInstanceDescriptor desc = { 0 };
-    desc.features.timedWaitAnyEnable = true;
+    wgpu::InstanceDescriptor desc;
+    desc.capabilities.timedWaitAnyEnable = true;
     nativeInstance = std::make_unique<dawn::native::Instance>(&desc);
     DawnProcTable backendProcs = dawn::native::GetProcs();
     dawnProcSetProcs(&backendProcs);
   }
 
-  wgpu::DeviceDescriptor desc;
-  desc.uncapturedErrorCallbackInfo.callback = errorCallback;
-
-  for (auto adapter : nativeInstance->EnumerateAdapters()) {
-    wgpu::AdapterInfo info;
-    adapter.GetInfo(&info);
-    if (info.backendType == type) { return adapter.CreateDevice(&desc); }
-  }
-  return nullptr;
+  wgpu::RequestAdapterOptions options;
+  options.backendType = type;
+  auto adapters = nativeInstance->EnumerateAdapters(&options);
+  if (adapters.empty()) return nullptr;
+  return adapters[0].CreateDevice(desc);
 }
 #endif
 

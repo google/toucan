@@ -42,7 +42,7 @@ struct SwapChain {
 
 wgpu::TextureFormat GetPreferredSwapChainFormat();
 wgpu::TextureFormat ToDawnTextureFormat(Type* type);
-wgpu::Device CreateDawnDevice(wgpu::BackendType type, wgpu::ErrorCallback callback);
+wgpu::Device CreateDawnDevice(wgpu::BackendType type, const wgpu::DeviceDescriptor* desc);
 
 }  // namespace Toucan
 #endif  // _APIINTERNAL_H

@@ -84,12 +84,15 @@ const uint32_t* Window_GetSize(Window* This) {
   return This->size;
 }
 
-static void PrintDeviceError(WGPUErrorType, const char* message, void*) {
-  LOGV("Device error: %s", message);
-}
-
 Device* Device_Device() {
-  wgpu::Device device = CreateDawnDevice(wgpu::BackendType::Vulkan, PrintDeviceError);
+ wgpu::DeviceDescriptor desc;
+  desc.SetUncapturedErrorCallback(
+   [](const wgpu::Device&, wgpu::ErrorType type, wgpu::StringView message) {
+      LOGV("WebGPU Error:\n%s\n", message.data);
+    }
+  );
+
+  wgpu::Device device = CreateDawnDevice(wgpu::BackendType::Vulkan, &desc);
   if (!device) { return nullptr; }
   return new Device(device);
 }
@@ -147,6 +150,7 @@ SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Win
   config.format = ToDawnTextureFormat(format);
   config.width = ANativeWindow_getWidth(window->window);
   config.height = ANativeWindow_getHeight(window->window);
+  config.presentMode = wgpu::PresentMode::Fifo;
 
   surface.Configure(&config);
 
