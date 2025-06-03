@@ -92,9 +92,9 @@ while (System.IsRunning()) {
   orientation.normalize();
   var uniforms : Uniforms;
   uniforms.projection = projection;
-  uniforms.view = Transform.translate(0.0, 0.0, -handler.distance);
+  uniforms.view = Transform.translation({0.0, 0.0, -handler.distance});
   uniforms.view *= orientation.toMatrix();
-  uniforms.model = Transform.scale(100.0, 100.0, 100.0);
+  uniforms.model = Transform.scale({100.0, 100.0, 100.0});
   cubeBindings.uniforms.SetData(&uniforms);
   var encoder = new CommandEncoder(device);
   var p : SkyboxPipeline;

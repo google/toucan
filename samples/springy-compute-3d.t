@@ -259,7 +259,7 @@ while(System.IsRunning()) {
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
   var matrix = projection;
-  matrix *= Transform.translate(0.0, 0.0, -handler.distance);
+  matrix *= Transform.translation({0.0, 0.0, -handler.distance});
   matrix *= orientation.toMatrix();
 
   springUBO.SetData({matrix = matrix, color = {1.0, 1.0, 1.0, 1.0}});

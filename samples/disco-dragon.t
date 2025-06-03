@@ -334,7 +334,7 @@ var pi = 3.141592653589;
 var projectionMatrix = Transform.perspective((2.0 * pi) / 5.0, aspect, 1.0, 2000.0);
 
 // Move the model so it's centered.
-var modelMatrix = Transform.translate(0.0, -45.0, 0.0);
+var modelMatrix = Transform.translation({0.0, -45.0, 0.0});
 
 // Compute the inverse transpose for transforming normals.
 var invertTransposeModelMatrix = Transform.invert(modelMatrix);
@@ -347,7 +347,7 @@ var startTime = System.GetCurrentTime();
 while (System.IsRunning()) {
   // Rotate the camera around the origin based on time.
   var rad = pi * (float) ((System.GetCurrentTime() - startTime) / 5.0d);
-  var rotation = Transform.translate(origin.x, origin.y, origin.z) * Transform.rotate({0.0, 1.0, 0.0}, rad);
+  var rotation = Transform.translation(origin) * Transform.rotation({0.0, 1.0, 0.0}, rad);
   var rp4 = rotation * float<4>{@eyePosition, 1.0};
   rp4 /= rp4.w;
   var rotatedEyePosition = rp4.xyz;

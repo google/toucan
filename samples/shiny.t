@@ -222,12 +222,12 @@ while (System.IsRunning()) {
     uniforms.projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
     prevWindowSize = newSize;
   }
-  uniforms.view = Transform.translate(0.0, 0.0, -handler.distance);
+  uniforms.view = Transform.translation({0.0, 0.0, -handler.distance});
   uniforms.view *= orientation.toMatrix();
-  uniforms.model = Transform.scale(100.0, 100.0, 100.0);
+  uniforms.model = Transform.scale({100.0, 100.0, 100.0});
   uniforms.viewInverse = Transform.invert(uniforms.view);
   cubeBindings.uniforms.SetData(&uniforms);
-  uniforms.model = teapotRotation * Transform.scale(2.0, 2.0, 2.0);
+  uniforms.model = teapotRotation * Transform.scale({2.0, 2.0, 2.0});
   teapotBindings.uniforms.SetData(&uniforms);
   var encoder = new CommandEncoder(device);
   var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);

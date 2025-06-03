@@ -7,19 +7,19 @@ class Transform {
                       float<4>(0.0, 0.0, 1.0, 0.0),
                       float<4>(0.0, 0.0, 0.0, 1.0));
   }
-  static scale(x : float, y : float, z : float) : float<4,4> {
-    return float<4,4>(float<4>(  x, 0.0, 0.0, 0.0),
-                      float<4>(0.0,   y, 0.0, 0.0),
-                      float<4>(0.0, 0.0,   z, 0.0),
+  static scale(v : float<3>) : float<4,4> {
+    return float<4,4>(float<4>(v.x, 0.0, 0.0, 0.0),
+                      float<4>(0.0, v.y, 0.0, 0.0),
+                      float<4>(0.0, 0.0, v.z, 0.0),
                       float<4>(0.0, 0.0, 0.0, 1.0));
   }
-  static translate(x : float, y : float, z : float) : float<4,4> {
+  static translation(v : float<3>) : float<4,4> {
     return float<4,4>(float<4>(1.0, 0.0, 0.0, 0.0),
                       float<4>(0.0, 1.0, 0.0, 0.0),
                       float<4>(0.0, 0.0, 1.0, 0.0),
-                      float<4>(  x,   y,   z, 1.0));
+                      float<4>(v.x, v.y, v.z, 1.0));
   }
-  static rotate(axis : float<3>, angle : float) : float<4,4> {
+  static rotation(axis : float<3>, angle : float) : float<4,4> {
     var q = Quaternion(axis, angle);
     return q.toMatrix();
   }

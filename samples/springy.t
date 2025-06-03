@@ -167,7 +167,7 @@ while(System.IsRunning()) {
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
   drawUniforms.matrix = projection;
-  drawUniforms.matrix *= Transform.translate(0.0, 0.0, -handler.distance);
+  drawUniforms.matrix *= Transform.translation({0.0, 0.0, -handler.distance});
   drawUniforms.matrix *= orientation.toMatrix();
   drawUniforms.color = float<4>(1.0, 1.0, 1.0, 1.0);
   springBindings.uniforms.SetData(&drawUniforms);
