@@ -41,6 +41,8 @@ bool exitOnAbort;
 
 namespace {
 
+wgpu::Instance gInstance;
+
 uint32_t BytesPerPixel(wgpu::TextureFormat format) {
   switch (format) {
     case wgpu::TextureFormat::RGBA8Unorm:
@@ -130,16 +132,6 @@ struct Texture {
                       wgpu::Buffer         source,
                       wgpu::Extent3D       extent,
                       wgpu::Origin3D       origin) {
-#if TARGET_OS_IS_WASM
-    wgpu::ImageCopyBuffer sourceICB;
-    sourceICB.buffer = source;
-    sourceICB.layout.bytesPerRow = MinBufferWidth() * BytesPerPixel(format);
-    sourceICB.layout.rowsPerImage = size.height;
-    wgpu::ImageCopyTexture destICT;
-    destICT.texture = texture;
-    destICT.origin = origin;
-    encoder.CopyBufferToTexture(&sourceICB, &destICT, &extent);
-#else
     wgpu::TexelCopyBufferInfo sourceInfo;
     sourceInfo.buffer = source;
     sourceInfo.layout.bytesPerRow = MinBufferWidth() * BytesPerPixel(format);
@@ -148,7 +140,6 @@ struct Texture {
     destInfo.texture = texture;
     destInfo.origin = origin;
     encoder.CopyBufferToTexture(&sourceInfo, &destInfo, &extent);
-#endif
   }
   wgpu::TextureView CreateView(wgpu::TextureViewDimension dimension,
                                uint32_t                   arrayLayer,
@@ -879,11 +870,7 @@ ComputePipeline* ComputePipeline_ComputePipeline(int     qualifiers,
       computeShader = createShaderModule(device, method.get());
     }
   }
-#if TARGET_OS_IS_WASM
-  wgpu::ProgrammableStageDescriptor computeState;
-#else
   wgpu::ComputeState computeState;
-#endif
   computeState.module = computeShader;
   computeState.entryPoint = "main";
   wgpu::ComputePipelineDescriptor cpDesc;
@@ -1140,43 +1127,23 @@ void Buffer_CopyFromBuffer(Buffer* This, CommandEncoder* encoder, Buffer* source
   encoder->encoder.CopyBufferToBuffer(source->buffer, 0, This->buffer, 0, source->sizeInBytes);
 }
 
-#if TARGET_OS_IS_WASM
-EM_ASYNC_JS(WGPUBufferMapAsyncStatus,
-            JSMapSync,
-            (WGPUBuffer bufferID, WGPUMapMode mode, int offset, int size),
-            {
-              const bufferWrapper = WebGPU.mgrBuffer.objects[bufferID];
-              const buffer = bufferWrapper.object;
-
-              const result = await buffer.mapAsync(mode, offset, size);
-              bufferWrapper.mapMode = mode;
-              bufferWrapper.onUnmap = [];
-              return result;
-            });
-#endif
-
 static Object* MapSync(wgpu::MapMode mapMode, Buffer* buffer) {
   if (buffer->mappedObject.ptr != nullptr) {
     buffer->mappedObject.controlBlock->weakRefs++;
     return &buffer->mappedObject;
   }
-#if TARGET_OS_IS_WASM
-  auto status =
-      JSMapSync(buffer->buffer.Get(), static_cast<WGPUMapMode>(mapMode), 0, buffer->sizeInBytes);
-  if (status != WGPUBufferMapAsyncStatus_Success) { return &buffer->mappedObject; }
-#else
+
   wgpu::MapAsyncStatus mapStatus = wgpu::MapAsyncStatus::Error;
   wgpu::Future future = buffer->buffer.MapAsync(mapMode, 0, buffer->sizeInBytes, wgpu::CallbackMode::WaitAnyOnly,
                                                 [&mapStatus](wgpu::MapAsyncStatus s, wgpu::StringView) {
                                                   mapStatus = s;
                                                 });
-  auto instance = buffer->device.GetAdapter().GetInstance();
   wgpu::FutureWaitInfo waitInfo = {future};
-  if (instance.WaitAny(1, &waitInfo, UINT64_MAX) != wgpu::WaitStatus::Success
+  if (gInstance.WaitAny(1, &waitInfo, UINT64_MAX) != wgpu::WaitStatus::Success
       || mapStatus != wgpu::MapAsyncStatus::Success) {
     return &buffer->mappedObject;
   }
-#endif
+
   Object result;
   if (!(mapMode & wgpu::MapMode::Write)) {
     const void* ptr = buffer->buffer.GetConstMappedRange();
@@ -1373,13 +1340,9 @@ CommandBuffer* CommandEncoder_Finish(CommandEncoder* encoder) {
 void CommandBuffer_Destroy(CommandBuffer* This) { delete This; }
 
 Texture2D* SwapChain_GetCurrentTexture(SwapChain* swapChain) {
-#if TARGET_OS_IS_WASM
-  wgpu::Texture texture = swapChain->swapChain.GetCurrentTexture();
-#else
   wgpu::SurfaceTexture surfaceTexture;
   swapChain->surface.GetCurrentTexture(&surfaceTexture);
   wgpu::Texture texture = surfaceTexture.texture;
-#endif
 
   return new Texture2D(texture, texture.CreateView(), swapChain->extent, swapChain->format);
 }
@@ -1392,7 +1355,6 @@ void SwapChain_Present(SwapChain* swapChain) { swapChain->surface.Present(); }
 void SwapChain_Destroy(SwapChain* This) { delete This; }
 #endif
 
-#if !TARGET_OS_IS_WASM
 void SwapChain_Resize(SwapChain* swapChain, const uint32_t* size) {
   wgpu::SurfaceConfiguration config;
   config.device = swapChain->device;
@@ -1404,7 +1366,6 @@ void SwapChain_Resize(SwapChain* swapChain, const uint32_t* size) {
   swapChain->surface.Configure(&config);
   swapChain->extent = {size[0], size[1], 1};
 }
-#endif
 
 float Math_rand() { return (float)(rand() % 100) / 100.0f; }
 
@@ -1433,24 +1394,38 @@ void System_Destroy(System* This) {}
 
 void Event_Destroy(Event* This) { delete This; }
 
-#if !TARGET_OS_IS_WASM
 wgpu::Device CreateDawnDevice(wgpu::BackendType type, const wgpu::DeviceDescriptor* desc) {
-  static std::unique_ptr<dawn::native::Instance> nativeInstance;
-
-  if (!nativeInstance) {
-    wgpu::InstanceDescriptor desc;
-    desc.capabilities.timedWaitAnyEnable = true;
-    nativeInstance = std::make_unique<dawn::native::Instance>(&desc);
+  if (!gInstance) {
+#if !TARGET_OS_IS_WASM
     DawnProcTable backendProcs = dawn::native::GetProcs();
     dawnProcSetProcs(&backendProcs);
+#endif
+    wgpu::InstanceDescriptor instanceDesc;
+    instanceDesc.capabilities.timedWaitAnyEnable = true;
+    gInstance = wgpu::CreateInstance(&instanceDesc);
   }
 
-  wgpu::RequestAdapterOptions options;
-  options.backendType = type;
-  auto adapters = nativeInstance->EnumerateAdapters(&options);
-  if (adapters.empty()) return nullptr;
-  return adapters[0].CreateDevice(desc);
-}
+  wgpu::Adapter adapter;
+  wgpu::RequestAdapterOptions adapterOptions;
+#if !TARGET_IS_WASM
+  adapterOptions.backendType = type;
 #endif
+  auto adapterFuture = gInstance.RequestAdapter(&adapterOptions, wgpu::CallbackMode::WaitAnyOnly,
+      [&adapter](wgpu::RequestAdapterStatus status, wgpu::Adapter a, const char *msg) {
+    adapter = a;
+  });
+  wgpu::FutureWaitInfo aWaitInfo = { adapterFuture };
+  if (gInstance.WaitAny(1, &aWaitInfo, UINT64_MAX) != wgpu::WaitStatus::Success) { return nullptr; }
+  if (!adapter) return nullptr;
+
+  wgpu::Device device;
+  auto deviceFuture = adapter.RequestDevice(desc, wgpu::CallbackMode::WaitAnyOnly,
+      [&device](wgpu::RequestDeviceStatus status, wgpu::Device d, const char* msg) {
+    device = d;
+  });
+  wgpu::FutureWaitInfo dWaitInfo = { deviceFuture };
+  if (gInstance.WaitAny(1, &dWaitInfo, UINT64_MAX) != wgpu::WaitStatus::Success) { return nullptr; }
+  return device;
+}
 
 };  // namespace Toucan

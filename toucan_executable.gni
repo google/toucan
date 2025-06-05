@@ -53,14 +53,15 @@ template("toucan_executable") {
       "../ast:ast",
       "//samples:main",
       "//third_party/build/libjpeg-turbo",
+      "//third_party/dawn/include/dawn:cpp_headers",
     ]
     if (!is_wasm) {
       deps += [
         "//third_party/dawn/src/dawn:proc_shared",
-        "//third_party/dawn/src/dawn:cpp",
         "//third_party/dawn/src/dawn/native:shared",
       ]
     }
+
     include_dirs = [ ".." ]
     sources = get_target_outputs(":${make_action}")
     if (is_linux) {
@@ -94,7 +95,6 @@ template("toucan_executable") {
     if (is_wasm) {
       ldflags = [
         "--shell-file", rebase_path("//emscripten/shell.html", root_build_dir),
-        "-sUSE_WEBGPU=1",
         "-sINITIAL_MEMORY=67108864",
         "-sSTACK_SIZE=4194304",
         "-sASYNCIFY=2",

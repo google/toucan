@@ -46,16 +46,20 @@ void copyTouches(emscripten::val touches, Event* result) {
 }  // namespace
 
 struct Window {
-  Window(int i, wgpu::Surface s, const uint32_t sz[2])
-      : id(i), surface(s) { size[0] = sz[0]; size[1] = sz[1]; }
+  Window(int i, const uint32_t sz[2])
+      : id(i) { size[0] = sz[0]; size[1] = sz[1]; }
   int           id;
-  wgpu::Surface surface;
   uint32_t      size[2];
 };
 
 EM_JS(int, createWindow, (int32_t x, int32_t y, int32_t width, int32_t height), {
     var w;
     var canvas;
+    if (Module.numWindows === undefined) {
+      Module.numWindows = 0;
+      Module.events = [];
+      Module.newInput = null;
+    }
     if (Module.numWindows == 0) {
       w = window;
       canvas = w.document.getElementById("canvas");
@@ -85,14 +89,7 @@ EM_JS(int, createWindow, (int32_t x, int32_t y, int32_t width, int32_t height), 
 Window* Window_Window(const int32_t* position, const uint32_t* size) {
   int id = EM_ASM_INT({ createWindow($0, $1, $2, $3) }, position[0], position[1], size[0], size[1]);
 
-  wgpu::SurfaceDescriptorFromCanvasHTMLSelector canvasDesc{};
-  canvasDesc.selector = "!toucanvas";
-
-  wgpu::SurfaceDescriptor surfDesc{};
-  surfDesc.nextInChain = &canvasDesc;
-  wgpu::Instance instance = wgpuCreateInstance(nullptr);
-  wgpu::Surface  surface = instance.CreateSurface(&surfDesc);
-  return gWindows[id] = new Window(id, surface, size);
+  return gWindows[id] = new Window(id, size);
 }
 
 void Window_Destroy(Window* This) { delete This; }
@@ -101,26 +98,18 @@ const uint32_t* Window_GetSize(Window* This) {
   return This->size;
 }
 
-static void PrintDeviceError(WGPUErrorType, const char* message, void*) {
-  printf("WebGPU error:\n%s\n", message);
-}
-
-EM_ASYNC_JS(WGPUDevice, JSInitDevice, (), {
-  const adapter = await navigator.gpu.requestAdapter();
-  const device = await  adapter.requestDevice();
-  const deviceWrapper = {queueId : WebGPU.mgrQueue.create(device["queue"])};
-  return WebGPU.mgrDevice.create(device, deviceWrapper);
-});
-
 Device* Device_Device() {
-  wgpu::Device device = wgpu::Device::Acquire(JSInitDevice());
-  EM_ASM({
-    Module.numWindows = 0;
-    Module.events = [];
-    Module.newInput = null;
-  });
-  if (!device) { return nullptr; }
-  device.SetUncapturedErrorCallback(PrintDeviceError, nullptr);
+  wgpu::DeviceDescriptor desc;
+  desc.SetUncapturedErrorCallback(
+    [](const wgpu::Device&, wgpu::ErrorType type, wgpu::StringView message) {
+      fprintf(stderr, "WebGPU Error:\n%s\n", message.data);
+    }
+  );
+
+
+  // Backend type will be ignored.
+  wgpu::Device device = CreateDawnDevice(wgpu::BackendType::Undefined, &desc);
+  if (!device) return nullptr;
   return new Device(device);
 }
 
@@ -195,24 +184,26 @@ wgpu::TextureFormat GetPreferredSwapChainFormat() {
 }
 
 SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Window* window) {
-  wgpu::SwapChainDescriptor desc;
-  desc.usage = wgpu::TextureUsage::RenderAttachment;
-  desc.format = ToDawnTextureFormat(format);
-  desc.width = window->size[0];
-  desc.height = window->size[1];
-  desc.presentMode = wgpu::PresentMode::Fifo;
-  wgpu::SwapChain swapChain = device->device.CreateSwapChain(window->surface, &desc);
-  return new SwapChain(swapChain, window->surface, device->device, {desc.width, desc.height, 1}, desc.format, nullptr);
-}
+  wgpu::EmscriptenSurfaceSourceCanvasHTMLSelector canvasHTMLDesc;
+  canvasHTMLDesc.selector = "!toucanvas";
 
-void SwapChain_Resize(SwapChain* swapChain, const uint32_t* size) {
-  wgpu::SwapChainDescriptor desc;
-  desc.usage = wgpu::TextureUsage::RenderAttachment;
-  desc.format = swapChain->format;
-  desc.width = size[0];
-  desc.height = size[1];
-  desc.presentMode = wgpu::PresentMode::Fifo;
-  swapChain->swapChain = swapChain->device.CreateSwapChain(swapChain->surface, &desc);
+  wgpu::SurfaceDescriptor surfaceDesc;
+  surfaceDesc.nextInChain = &canvasHTMLDesc;
+
+  static wgpu::Instance instance = wgpu::CreateInstance({});
+
+  wgpu::Surface surface = instance.CreateSurface(&surfaceDesc);
+
+  wgpu::SurfaceConfiguration config;
+  config.device = device->device;
+  config.format = ToDawnTextureFormat(format);
+  config.width = window->size[0];
+  config.height = window->size[1];
+  config.presentMode = wgpu::PresentMode::Fifo;
+
+  surface.Configure(&config);
+
+  return new SwapChain(surface, device->device, {config.width, config.height, 1}, config.format, nullptr);
 }
 
 EM_ASYNC_JS(void, JSWaitForRAF, (), {

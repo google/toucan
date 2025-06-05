@@ -25,6 +25,7 @@ build_with_angle = false
 dawn_abseil_dir = "//third_party/abseil-cpp"
 dawn_jinja2_dir = "//third_party/jinja2"
 dawn_egl_registry_dir = "//third_party/egl-registry"
+dawn_emscripten_dir = "//third_party/emscripten"
 dawn_opengl_registry_dir = "//third_party/opengl-registry"
 dawn_spirv_tools_dir = "//third_party/SPIRV-Tools"
 dawn_vulkan_headers_dir = "//third_party/Vulkan-Headers"

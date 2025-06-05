@@ -56,6 +56,12 @@ source_set("api") {
     "../third_party/libjpeg-turbo",
     "../third_party/build/libjpeg-turbo",
   ]
+  if (is_wasm) {
+    deps += [
+      "//third_party/dawn/src/emdawnwebgpu:emdawnwebgpu_headers",
+    ]
+  }
+
   if (is_win) {
     sources += [ "api_win.cc" ]
   }

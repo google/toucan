@@ -146,22 +146,24 @@ int main(int argc, char** argv) {
     LLVMInitializeNativeAsmPrinter();
 
 #if TARGET_CPU_IS_WASM
-    std::string targetTriple = "wasm32-unknown-unknown";
+    std::string targetTripleStr = "wasm32-unknown-unknown";
 #elif TARGET_OS_IS_ANDROID
 #if TARGET_CPU_IS_ARM64
-    std::string targetTriple = "aarch64-linux-android";
+    std::string targetTripleStr = "aarch64-linux-android";
 #elif TARGET_CPU_IS_ARM32
-    std::string targetTriple = "armv7a-linux-androideabi";
+    std::string targetTripleStr = "armv7a-linux-androideabi";
 #elif TARGET_CPU_IS_X64
-    std::string targetTriple = "x86_64-linux-android";
+    std::string targetTripleStr = "x86_64-linux-android";
 #elif TARGET_CPU_IS_X86
-    std::string targetTriple = "i686-linux-android";
+    std::string targetTripleStr = "i686-linux-android";
 #else
 #error unsupported Android CPU
 #endif
 #else
-    std::string targetTriple = llvm::sys::getDefaultTargetTriple();
+    std::string targetTripleStr = llvm::sys::getDefaultTargetTriple();
 #endif
+
+    llvm::Triple targetTriple(targetTripleStr);
 
     std::string error;
     auto        target = llvm::TargetRegistry::lookupTarget(targetTriple, error);
