@@ -26,7 +26,7 @@
 
 import("llvm_libs.gni")
 
-llvm_lib_dirs = [ "../third_party/llvm/llvm/out/$debug_or_release/lib" ]
+llvm_lib_dir = "//third_party/llvm/llvm/out/$debug_or_release/lib"
 if (is_win) {
   dawn_needs_libs = [
     "ws2_32.lib",
@@ -51,9 +51,13 @@ executable("tj") {
     "..",
   ]
   include_dirs += llvm_include_dirs
-  libs = llvm_libs
+  if (is_linux) {
+    libs = [ "LLVM" ]
+  } else {
+    libs = llvm_libs
+  }
   libs += dawn_needs_libs
-  lib_dirs = llvm_lib_dirs
+  lib_dirs = [ llvm_lib_dir ]
   if (is_win) {
     libs += [
       "gdi32.lib",
@@ -67,6 +71,7 @@ executable("tj") {
     ]
     ldflags = [
       "-Wl,-rpath=\$ORIGIN",
+      "-Wl,-rpath=\$ORIGIN/" + rebase_path(llvm_lib_dir, root_build_dir),
       "-export-dynamic",
     ]
   }
@@ -105,7 +110,7 @@ executable("tc") {
   ]
   include_dirs += llvm_include_dirs
   libs = llvm_libs
-  lib_dirs = llvm_lib_dirs
+  lib_dirs = [ llvm_lib_dir ]
   libs += dawn_needs_libs
   sources = [ "tc.cc", ]
   deps = [

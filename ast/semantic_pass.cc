@@ -697,6 +697,7 @@ Result SemanticPass::Visit(StoreStmt* node) {
   }
   if (!lhs) {
     lhs = Resolve(node->GetLHS());
+    if (!lhs) return nullptr;
   }
   Type* lhsType = lhs->GetType(types_);
   if (!lhsType->IsRawPtr()) { return Error("expression is not an assignable value"); }

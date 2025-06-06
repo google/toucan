@@ -50,7 +50,7 @@ These will be retrieved by the git-sync-deps script.
    pushd third_party/llvm/llvm
    mkdir -p out/Release
    cd out/Release
-   cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="lld;clang" -DLLVM_TARGETS_TO_BUILD="host;X86;ARM;AArch64;WebAssembly" -DLLVM_INCLUDE_BENCHMARKS=false -DLLVM_INCLUDE_EXAMPLES=false -DLLVM_INCLUDE_TESTS=false ../..
+   cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="lld;clang" -DLLVM_TARGETS_TO_BUILD="host;X86;ARM;AArch64;WebAssembly" -DLLVM_BUILD_LLVM_DYLIB=On -DLLVM_DYLIB_COMPONENTS=all -DLLVM_INCLUDE_BENCHMARKS=false -DLLVM_INCLUDE_EXAMPLES=false -DLLVM_INCLUDE_TESTS=false ../..
    make
    popd
 ```
