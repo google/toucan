@@ -533,7 +533,7 @@ class ListType : public Type {
   ListType(const VarVector& types);
   bool             IsList() const override { return true; }
   bool             IsPOD() const override { return false; }  // FIXME: true if all types are POD?
-  std::string      ToString() const override { return "ListType"; }
+  std::string      ToString() const override;
   bool             CanWidenTo(Type* type) const override { return type->CanInitFrom(this); }
   int              GetSizeInBytes() const override;
   const VarVector& GetTypes() const { return types_; }

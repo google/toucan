@@ -453,8 +453,9 @@ Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
       auto matrixType = static_cast<MatrixType*>(dstType);
       elementType = matrixType->GetColumnType();
       length = matrixType->GetNumColumns();
-    } else {
-      assert(!"unexpected type in arglist");
+   } else {
+      assert(!"invalid type in list expression");
+      return nullptr;
     }
     if (argList->GetArgs().size() == 1) {
       Expr* arg = Widen(argList->GetArgs()[0]->GetExpr(), elementType);

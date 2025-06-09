@@ -135,6 +135,21 @@ int ListType::GetSizeInBytes() const {
   return size;
 }
 
+std::string ListType::ToString() const {
+  std::string result = "{ ";
+  bool first = true;
+  for (auto var : types_) {
+    if (!first) result += ", "; else first = false;
+    if (!var->name.empty()) {
+      result += var->name;
+      result += ": ";
+    }
+    result += var->type->ToString();
+  }
+  result += " }";
+  return result;
+}
+
 FormalTemplateArg::FormalTemplateArg(std::string name) : name_(name) {}
 
 std::string FormalTemplateArg::ToString() const { return name_; }
@@ -539,6 +554,9 @@ bool ClassType::CanInitFrom(const ListType* listType) const {
     }
   } else {
     if (types.size() != fields_.size()) { return false; }
+    for (size_t i = 0; i < types.size(); ++i) {
+      if (!types[i]->type->CanWidenTo(fields_[i]->type)) { return false; }
+    }
   }
   return true;
 }

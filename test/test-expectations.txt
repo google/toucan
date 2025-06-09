@@ -33,6 +33,7 @@ test/cast-int-vector-to-float-vector.t
 test/cast-static-array-to-dynamic.t
 test/cast-uint-to-float.t
 test/cast-uint-vector-to-float-vector.t
+test/chained-array-access.t
 test/chained-method-call.t
 test/class-constructor-calls-constructor.t
 test/class-constructor.t
@@ -112,6 +113,13 @@ error-invalid-forward-decl.t:8: type is already declared as non-enum
 test/error-invalid-return-value.t
 error-invalid-return-value.t:4:  cannot return a value of type &int from a function of type ^int
 error-invalid-return-value.t:14:  implicit void return, in method returning non-void.
+test/error-listexpr-mismatch.t
+error-listexpr-mismatch.t:9:  cannot store a value of type "{ {  }, { float, float } }" to a location of type "C"
+error-listexpr-mismatch.t:10:  cannot store a value of type "{ { int }, { float, float } }" to a location of type "C"
+error-listexpr-mismatch.t:11:  cannot store a value of type "{ { int, int }, { float, float } }" to a location of type "C"
+error-listexpr-mismatch.t:12:  cannot store a value of type "{ uint<2>, { float, float } }" to a location of type "C"
+error-listexpr-mismatch.t:13:  cannot store a value of type "{ int, { float, float } }" to a location of type "C"
+error-listexpr-mismatch.t:14:  cannot store a value of type "{ ubyte }" to a location of type "C"
 test/error-missing-class.t
 error-missing-class.t:3: syntax error
 test/error-missing-field.t
