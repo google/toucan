@@ -51,8 +51,14 @@ executable("tj") {
     "..",
   ]
   include_dirs += llvm_include_dirs
-  if (is_linux) {
+  ldflags = []
+  if (use_llvm_dylib) {
     libs = [ "LLVM" ]
+    if (is_linux) {
+      ldflags += [ "-Wl,-rpath=" + rebase_path(llvm_lib_dir) ]
+    } else if (is_mac) {
+      ldflags += [ "-rpath", rebase_path(llvm_lib_dir) ]
+    }
   } else {
     libs = llvm_libs
   }
@@ -69,9 +75,8 @@ executable("tj") {
       "X11",
       "X11-xcb",
     ]
-    ldflags = [
+    ldflags += [
       "-Wl,-rpath=\$ORIGIN",
-      "-Wl,-rpath=\$ORIGIN/" + rebase_path(llvm_lib_dir, root_build_dir),
       "-export-dynamic",
     ]
   }
@@ -109,7 +114,17 @@ executable("tc") {
     "..",
   ]
   include_dirs += llvm_include_dirs
-  libs = llvm_libs
+  ldflags = []
+  if (use_llvm_dylib) {
+    libs = [ "LLVM" ]
+    if (is_linux) {
+      ldflags += [ "-Wl,-rpath=" + rebase_path(llvm_lib_dir) ]
+    } else if (is_mac) {
+      ldflags += [ "-rpath", rebase_path(llvm_lib_dir) ]
+    }
+  } else {
+    libs = llvm_libs
+  }
   lib_dirs = [ llvm_lib_dir ]
   libs += dawn_needs_libs
   sources = [ "tc.cc", ]

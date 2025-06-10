@@ -88,6 +88,8 @@ if (is_win) {
   llvm_include_dirs += [ "../third_party/llvm/llvm/out/$debug_or_release/include" ]
 }
 
+use_llvm_dylib = !is_win
+
 set_defaults("executable") {
   configs = default_configs
 }
