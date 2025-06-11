@@ -13,6 +13,7 @@ test/abort.t
 --\__(x)==     (pining for the fjords)
 test/addable-qualifiers.t
 test/aggregate-return.t
+test/allocate-in-class-initializer.t
 test/allocate-unsized-class.t
 test/array-assign.t
 test/array-class.t

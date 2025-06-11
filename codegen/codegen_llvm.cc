@@ -1302,7 +1302,6 @@ Result CodeGenLLVM::Visit(Initializer* node) {
         if (arg) {
           llvm::Value* v = GenerateLLVM(arg);
           result = builder_->CreateInsertValue(result, v, field->paddedIndex);
-          AppendTemporary(v, arg->GetType(types_));
         }
       }
     }
