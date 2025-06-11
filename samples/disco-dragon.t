@@ -248,19 +248,20 @@ var writeGBuffersPipeline = new RenderPipeline<WriteGBuffers>(
 var gBuffersDebugViewPipeline = new RenderPipeline<GBuffersDebugView>(device);
 var deferredRenderPipeline = new RenderPipeline<DeferredRender>(device);
 
-var writeGBufferPassDescriptor : WriteGBuffers;
-writeGBufferPassDescriptor.normals = gBufferTexture2DFloat16.CreateColorAttachment(
-  clearValue = {0.0, 0.0, 0.0, 1.0},
-  loadOp = LoadOp.Clear
-);
-writeGBufferPassDescriptor.albedo = gBufferTextureAlbedo.CreateColorAttachment(
-  clearValue = {0.0, 0.0, 0.0, 1.0},
-  loadOp = LoadOp.Clear
-);
-writeGBufferPassDescriptor.depth = depthTexture.CreateDepthStencilAttachment(
-  depthLoadOp = LoadOp.Clear,
-  depthClearValue = 1.0
-);
+var writeGBufferPassDescriptor = WriteGBuffers{
+  normals = gBufferTexture2DFloat16.CreateColorAttachment(
+    clearValue = {0.0, 0.0, 0.0, 1.0},
+    loadOp = LoadOp.Clear
+  ),
+  albedo = gBufferTextureAlbedo.CreateColorAttachment(
+    clearValue = {0.0, 0.0, 0.0, 1.0},
+    loadOp = LoadOp.Clear
+  ),
+  depth = depthTexture.CreateDepthStencilAttachment(
+    depthLoadOp = LoadOp.Clear,
+    depthClearValue = 1.0
+  )
+};
 
 enum Mode {
   Rendering,
@@ -363,16 +364,14 @@ while (System.IsRunning()) {
   var commandEncoder = new CommandEncoder(device);
   {
   // Write position, normal, albedo etc. data to gBuffers.
-    var gBufferPass = new RenderPass<WriteGBuffers>(commandEncoder,
-      &writeGBufferPassDescriptor
-    );
+    var gBufferPass = new RenderPass<WriteGBuffers>(commandEncoder, &writeGBufferPassDescriptor);
     gBufferPass.SetPipeline(writeGBuffersPipeline);
-    gBufferPass.Set({bindings = sceneUniformBindGroup});
-    gBufferPass.Set({vertexes = new VertexInput<Vertex>(vertexBuffer)});
-    gBufferPass.Set({indexes = indexBuffer});
+    gBufferPass.Set({bindings = sceneUniformBindGroup,
+                     vertexes = new VertexInput<Vertex>(vertexBuffer),
+                     indexes = indexBuffer});
     gBufferPass.DrawIndexed(mesh.indices.length, 1, 0, 0, 0);
-    gBufferPass.Set({vertexes = new VertexInput<Vertex>(groundPlaneVertexBuffer)});
-    gBufferPass.Set({indexes = groundPlaneIndexBuffer});
+    gBufferPass.Set({vertexes = new VertexInput<Vertex>(groundPlaneVertexBuffer),
+                     indexes = groundPlaneIndexBuffer});
     gBufferPass.DrawIndexed(groundPlaneIndexes.length, 1, 0, 0, 0);
     gBufferPass.End();
   }
@@ -398,8 +397,8 @@ while (System.IsRunning()) {
     var windowSizeBuffer = new uniform Buffer<uint<2>>(device, &windowSize);
     var windowSizeBindGroup = new BindGroup<WindowSizeBindings>(device, {windowSizeBuffer});
     debugViewPass.SetPipeline(gBuffersDebugViewPipeline);
-    debugViewPass.Set({textureBindings = gBufferTexturesBindGroup});
-    debugViewPass.Set({windowSizeBindings = windowSizeBindGroup});
+    debugViewPass.Set({textureBindings = gBufferTexturesBindGroup,
+                       windowSizeBindings = windowSizeBindGroup});
     debugViewPass.Draw(6, 1, 0, 0);
     debugViewPass.End();
   } else {
@@ -411,8 +410,8 @@ while (System.IsRunning()) {
       fragColor = fb
     });
     deferredRenderingPass.SetPipeline(deferredRenderPipeline);
-    deferredRenderingPass.Set({textureBindings = gBufferTexturesBindGroup});
-    deferredRenderingPass.Set({bufferBindings = lightsBufferBindGroup});
+    deferredRenderingPass.Set({textureBindings = gBufferTexturesBindGroup,
+                               bufferBindings = lightsBufferBindGroup});
     deferredRenderingPass.Draw(6, 1, 0, 0);
     deferredRenderingPass.End();
   }

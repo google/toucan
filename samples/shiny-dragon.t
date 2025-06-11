@@ -97,39 +97,41 @@ class ReflectionPipeline : DrawPipeline {
       var p = Math.normalize(varyings.position);
       var n = Math.normalize(varyings.normal);
       var r = Math.reflect(p, n);
-      var r4 = uniforms.viewInverse * float<4>(r.x, r.y, r.z, 0.0);
-      fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-r4.x, r4.y, r4.z)));
+      var invR = uniforms.viewInverse * float<4>(@r, 0.0);
+      fragColor.Set(b.textureView.Sample(b.sampler, float<3>(-invR.x, invR.y, invR.z)));
     }
     var vert : *VertexInput<Vertex>;
 };
 
 var cubePipeline = new RenderPipeline<SkyboxPipeline>(device);
-var cubeBindings : Bindings;
-cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
-cubeBindings.sampler = new Sampler(device);
-cubeBindings.textureView = texture.CreateSampleableView();
+var cubeBindings = Bindings{
+  uniforms = new uniform Buffer<Uniforms>(device),
+  sampler = new Sampler(device),
+  textureView = texture.CreateSampleableView()
+};
 
-var cubeData : SkyboxPipeline;
 var cubeVB = new vertex Buffer<[]float<3>>(device, &cubeVerts);
-cubeData.position = new VertexInput<float<3>>(cubeVB);
-cubeData.indexBuffer = new index Buffer<[]uint>(device, &cubeIndices);
-cubeData.bindings = new BindGroup<Bindings>(device, &cubeBindings);
+var cubeData = SkyboxPipeline{
+  position = new VertexInput<float<3>>(cubeVB),
+  indexBuffer = new index Buffer<[]uint>(device, &cubeIndices),
+  bindings = new BindGroup<Bindings>(device, &cubeBindings)
+};
 
 var reflectionPipeline = new RenderPipeline<ReflectionPipeline>(device);
-var dragonBindings : Bindings;
-dragonBindings.sampler = cubeBindings.sampler;
-dragonBindings.textureView = cubeBindings.textureView;
-dragonBindings.uniforms = new uniform Buffer<Uniforms>(device);
+var dragonBindings = Bindings{
+  sampler = cubeBindings.sampler,
+  textureView = cubeBindings.textureView,
+  uniforms = new uniform Buffer<Uniforms>(device)
+};
 
 var dragonVB = new vertex Buffer<[]Vertex>(device, dragon.vertices);
-var reflectionData : ReflectionPipeline;
-reflectionData.vert = new VertexInput<Vertex>(dragonVB);
-reflectionData.indexBuffer = new index Buffer<[]uint>(device, dragon.indices);
-reflectionData.bindings = new BindGroup<Bindings>(device, &dragonBindings);
+var reflectionData = ReflectionPipeline{
+  vert = new VertexInput<Vertex>(dragonVB),
+  indexBuffer = new index Buffer<[]uint>(device, dragon.indices),
+  bindings = new BindGroup<Bindings>(device, &dragonBindings)
+};
 
-var handler : EventHandler;
-handler.rotation = float<2>(0.0, 0.0);
-handler.distance = 10.0;
+var handler = EventHandler{ distance = 10.0 };
 var dragonQuat = Quaternion(float<3>(1.0, 0.0, 0.0), -3.1415926 / 2.0);
 dragonQuat.normalize();
 var depthBuffer = new renderable Texture2D<Depth24Plus>(device, window.GetSize());
@@ -140,8 +142,7 @@ while (System.IsRunning()) {
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
   var newSize = window.GetSize();
-  // FIXME: relationals should work on vectors
-  if (newSize.x != prevWindowSize.x || newSize.y != prevWindowSize.y) {
+  if (Math.any(newSize != prevWindowSize)) {
     swapChain.Resize(newSize);
     depthBuffer = new renderable Texture2D<Depth24Plus>(device, newSize);
     var aspectRatio = (float) newSize.x / (float) newSize.y;

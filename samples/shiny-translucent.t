@@ -137,7 +137,7 @@ class SkyboxPipeline : DrawPipeline {
     vertex main(vb : &VertexBuiltins) : float<3> {
         var v = position.Get();
         var uniforms = bindings.Get().uniforms.MapRead();
-        var pos = float<4>(v.x, v.y, v.z, 1.0);
+        var pos = float<4>(@v, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
@@ -156,12 +156,12 @@ class ReflectionPipeline : DrawPipeline {
         var n = Math.normalize(v.normal);
         var uniforms = bindings.Get().uniforms.MapRead();
         var viewModel = uniforms.view * uniforms.model;
-        var pos = viewModel * float<4>(v.position.x, v.position.y, v.position.z, 1.0);
-        var normal = viewModel * float<4>(n.x, n.y, n.z, 0.0);
+        var pos = viewModel * float<4>(@v.position, 1.0);
+        var normal = viewModel * float<4>(@n, 0.0);
         vb.position = uniforms.projection * pos;
         var varyings : Vertex;
-        varyings.position = float<3>(pos.x, pos.y, pos.z);
-        varyings.normal = float<3>(normal.x, normal.y, normal.z);
+        varyings.position = pos.xyz;
+        varyings.normal = normal.xyz;
         return varyings;
     }
     fragment main(fb : &FragmentBuiltins, varyings : Vertex) {
@@ -170,45 +170,47 @@ class ReflectionPipeline : DrawPipeline {
       var p = Math.normalize(varyings.position);
       var n = Math.normalize(varyings.normal);
       var r = Math.reflect(p, n);
-      var r4 = uniforms.viewInverse * float<4>(r.x, r.y, r.z, 0.0);
-      var c = b.textureView.Sample(b.sampler, float<3>(-r4.x, r4.y, r4.z));
-      c = { c.x, c.y, c.z, 0.4 };
+      var invR = uniforms.viewInverse * float<4>(@r, 0.0);
+      var c = b.textureView.Sample(b.sampler, float<3>(-invR.x, invR.y, invR.z));
+      c.a = 0.4;
       fragColor.Set(c);
     }
     var vert : *VertexInput<Vertex>;
 };
 
 var cubePipeline = new RenderPipeline<SkyboxPipeline>(device);
-var cubeBindings : Bindings;
-cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
-cubeBindings.sampler = new Sampler(device);
-cubeBindings.textureView = texture.CreateSampleableView();
+var cubeBindings = Bindings{
+  uniforms = new uniform Buffer<Uniforms>(device),
+  sampler = new Sampler(device),
+  textureView = texture.CreateSampleableView()
+};
 
-var cubeData : SkyboxPipeline;
 var cubeVB = new vertex Buffer<[]float<3>>(device, &cubeVerts);
-cubeData.position = new VertexInput<float<3>>(cubeVB);
-cubeData.indexBuffer = new index Buffer<[]uint>(device, &cubeIndices);
-cubeData.bindings = new BindGroup<Bindings>(device, &cubeBindings);
+var cubeData = SkyboxPipeline{
+  position = new VertexInput<float<3>>(cubeVB),
+  indexBuffer = new index Buffer<[]uint>(device, &cubeIndices),
+  bindings = new BindGroup<Bindings>(device, &cubeBindings)
+};
 
 var blendState : BlendState;
 blendState.color.srcFactor = BlendFactor.SrcAlpha;
 blendState.color.dstFactor = BlendFactor.OneMinusSrcAlpha;
 var teapotFrontPipeline = new RenderPipeline<ReflectionPipeline>(device = device, cullMode = CullMode.Front, blendState = &blendState);
 var teapotBackPipeline = new RenderPipeline<ReflectionPipeline>(device = device, cullMode = CullMode.Back, blendState = &blendState);
-var teapotBindings : Bindings;
-teapotBindings.sampler = cubeBindings.sampler;
-teapotBindings.textureView = cubeBindings.textureView;
-teapotBindings.uniforms = new uniform Buffer<Uniforms>(device);
+var teapotBindings = Bindings{
+  sampler = cubeBindings.sampler,
+  textureView = cubeBindings.textureView,
+  uniforms = new uniform Buffer<Uniforms>(device)
+};
 
 var teapotVB = new vertex Buffer<[]Vertex>(device, tessTeapot.vertices);
-var teapotData : ReflectionPipeline;
-teapotData.vert = new VertexInput<Vertex>(teapotVB);
-teapotData.indexBuffer = new index Buffer<[]uint>(device, tessTeapot.indices);
-teapotData.bindings = new BindGroup<Bindings>(device, &teapotBindings);
+var teapotData = ReflectionPipeline{
+  vert = new VertexInput<Vertex>(teapotVB),
+  indexBuffer = new index Buffer<[]uint>(device, tessTeapot.indices),
+  bindings = new BindGroup<Bindings>(device, &teapotBindings)
+};
 
-var handler : EventHandler;
-handler.rotation = float<2>(0.0, 0.0);
-handler.distance = 10.0;
+var handler = EventHandler{ distance = 10.0 };
 var teapotQuat = Quaternion(float<3>(1.0, 0.0, 0.0), -3.1415926 / 2.0);
 teapotQuat.normalize();
 var teapotRotation = teapotQuat.toMatrix();
@@ -220,8 +222,7 @@ while (System.IsRunning()) {
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
   var newSize = window.GetSize();
-  // FIXME: relationals should work on vectors
-  if (newSize.x != prevWindowSize.x || newSize.y != prevWindowSize.y) {
+  if (Math.any(newSize != prevWindowSize)) {
     swapChain.Resize(newSize);
     depthBuffer = new renderable Texture2D<Depth24Plus>(device, newSize);
     var aspectRatio = (float) newSize.x / (float) newSize.y;

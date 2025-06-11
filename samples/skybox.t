@@ -55,7 +55,7 @@ class SkyboxPipeline {
     vertex main(vb : &VertexBuiltins) : float<3> {
         var v = vertices.Get();
         var uniforms = bindings.Get().uniforms.MapRead();
-        var pos = float<4>(v.x, v.y, v.z, 1.0);
+        var pos = float<4>(@v, 1.0);
         vb.position = uniforms.projection * uniforms.view * uniforms.model * pos;
         return v;
     }
@@ -73,15 +73,14 @@ class SkyboxPipeline {
 };
 
 var cubePipeline = new RenderPipeline<SkyboxPipeline>(device);
-var cubeBindings : Bindings;
-cubeBindings.uniforms = new uniform Buffer<Uniforms>(device);
-cubeBindings.sampler = new Sampler(device);
-cubeBindings.textureView = texture.CreateSampleableView();
+var cubeBindings = Bindings{
+  uniforms = new uniform Buffer<Uniforms>(device),
+  sampler = new Sampler(device),
+  textureView = texture.CreateSampleableView()
+};
 var cubeBindGroup = new BindGroup<Bindings>(device, &cubeBindings);
 
-var handler : EventHandler;
-handler.rotation = float<2>(0.0, 0.0);
-handler.distance = 10.0;
+var handler = EventHandler{ distance = 10.0 };
 var windowSize = window.GetSize();
 var aspectRatio = (float) windowSize.x / (float) windowSize.y;
 var projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
