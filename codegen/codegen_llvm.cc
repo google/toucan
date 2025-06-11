@@ -1278,32 +1278,31 @@ Result CodeGenLLVM::Visit(FieldAccess* node) {
 
 Result CodeGenLLVM::Visit(Initializer* node) {
   llvm::Type*  type = ConvertType(node->GetType());
+  auto         args = node->GetArgList()->Get();
   llvm::Value* result = llvm::ConstantAggregateZero::get(type);
   if (node->GetType()->IsVector()) {
     int i = 0;
-    for (auto arg : node->GetArgList()->Get()) {
+    for (auto arg : args) {
       llvm::Value* elt = GenerateLLVM(arg);
       llvm::Value* idx = llvm::ConstantInt::get(intType_, i++, true);
       result = builder_->CreateInsertElement(result, elt, idx);
     }
   } else if (node->GetType()->IsArray() || node->GetType()->IsMatrix()) {
     int i = 0;
-    for (auto arg : node->GetArgList()->Get()) {
+    for (auto arg : args) {
       llvm::Value* v = GenerateLLVM(arg);
       result = builder_->CreateInsertValue(result, v, i++);
     }
   } else if (node->GetType()->IsClass()) {
     auto classType = static_cast<ClassType*>(node->GetType());
-    auto args = node->GetArgList()->Get();
+    assert(args.size() == classType->GetTotalFields());
     for (; classType != nullptr; classType = classType->GetParent()) {
       for (auto& field : classType->GetFields()) {
-        if (field->index < args.size()) {
-          auto arg = args[field->index];
-          if (arg) {
-            llvm::Value* v = GenerateLLVM(arg);
-            result = builder_->CreateInsertValue(result, v, field->paddedIndex);
-            AppendTemporary(v, arg->GetType(types_));
-          }
+        auto arg = args[field->index];
+        if (arg) {
+          llvm::Value* v = GenerateLLVM(arg);
+          result = builder_->CreateInsertValue(result, v, field->paddedIndex);
+          AppendTemporary(v, arg->GetType(types_));
         }
       }
     }

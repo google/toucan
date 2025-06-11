@@ -65,7 +65,7 @@ class SemanticPass : public CopyVisitor {
   Result  ResolveMethodCall(Expr* expr, ClassType* classType, std::string id, ArgList* arglist);
   Expr*   MakeDefaultInitializer(Type* type);
   void    AddDefaultInitializers(Type* type, std::vector<Expr*>* exprs);
-  Expr*   ResolveListExpr(UnresolvedListExpr* node, Type* dstType);
+  Expr*   ResolveListExpr(ArgList* argList, Type* dstType);
   void    WidenArgList(std::vector<Expr*>& argList, const VarVector& formalArgList);
   Expr*   Widen(Expr* expr, Type* dstType);
   Expr*   MakeIndexable(Expr* expr);
