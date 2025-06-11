@@ -247,20 +247,20 @@ wgpu::TextureSampleType ToDawnTextureSampleType(ClassType* type, int qualifiers)
 static wgpu::VertexFormat toDawnVertexFormat(Type* type) {
   if (type->IsVector()) {
     VectorType* v = static_cast<VectorType*>(type);
-    if (v->GetComponentType()->IsInt()) {
-      switch (v->GetLength()) {
+    if (v->GetElementType()->IsInt()) {
+      switch (v->GetNumElements()) {
         case 2: return wgpu::VertexFormat::Sint32x2;
         case 3: return wgpu::VertexFormat::Sint32x3;
         case 4: return wgpu::VertexFormat::Sint32x4;
       }
-    } else if (v->GetComponentType()->IsFloat()) {
-      switch (v->GetLength()) {
+    } else if (v->GetElementType()->IsFloat()) {
+      switch (v->GetNumElements()) {
         case 2: return wgpu::VertexFormat::Float32x2;
         case 3: return wgpu::VertexFormat::Float32x3;
         case 4: return wgpu::VertexFormat::Float32x4;
       }
-    } else if (v->GetComponentType()->IsUInt()) {
-      switch (v->GetLength()) {
+    } else if (v->GetElementType()->IsUInt()) {
+      switch (v->GetNumElements()) {
         case 2: return wgpu::VertexFormat::Uint32x2;
         case 3: return wgpu::VertexFormat::Uint32x3;
         case 4: return wgpu::VertexFormat::Uint32x4;

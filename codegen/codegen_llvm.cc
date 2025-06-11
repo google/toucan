@@ -229,8 +229,8 @@ llvm::Type* CodeGenLLVM::ConvertType(Type* type) {
     return boolType_;
   } else if (type->IsVector()) {
     VectorType* v = static_cast<VectorType*>(type);
-    llvm::Type* componentType = ConvertType(v->GetComponentType());
-    return llvm::VectorType::get(componentType, v->GetLength(), false);
+    llvm::Type* componentType = ConvertType(v->GetElementType());
+    return llvm::VectorType::get(componentType, v->GetNumElements(), false);
   } else if (type->IsMatrix()) {
     MatrixType* m = static_cast<MatrixType*>(type);
     return llvm::ArrayType::get(ConvertType(m->GetColumnType()), m->GetNumColumns());
@@ -680,9 +680,9 @@ llvm::Value* CodeGenLLVM::ConvertFromNative(Type* type, llvm::Value* value) {
 llvm::Value* CodeGenLLVM::GenerateTranspose(llvm::Value* srcMatrix, MatrixType* srcMatrixType) {
   VectorType* srcColumnType = srcMatrixType->GetColumnType();
   unsigned    numSrcColumns = srcMatrixType->GetNumColumns();
-  unsigned    numSrcRows = srcColumnType->GetLength();
+  unsigned    numSrcRows = srcColumnType->GetNumElements();
 
-  VectorType* dstColumnType = types_->GetVector(srcColumnType->GetComponentType(), numSrcColumns);
+  VectorType* dstColumnType = types_->GetVector(srcColumnType->GetElementType(), numSrcColumns);
   MatrixType* dstMatrixType = types_->GetMatrix(dstColumnType, numSrcRows);
 
   // Extract all the columns of the src matrix.
@@ -760,7 +760,7 @@ llvm::Value* CodeGenLLVM::GenerateMatrixMultiply(llvm::Value* lhs,
   llvm::Type* matrixTypeLLVM = ConvertType(rhsType);
 
   unsigned numColumns = rhsType->GetNumColumns();
-  unsigned numRows = columnType->GetLength();
+  unsigned numRows = columnType->GetNumElements();
 
   std::vector<llvm::Value*> lhsRows(numRows);
   for (unsigned row = 0; row < numRows; ++row) {
@@ -818,16 +818,16 @@ Result CodeGenLLVM::Visit(BinOpNode* node) {
     ret = GenerateBinOp(node, lhs, rhs, lhsType);
   } else if (TypeTable::VectorScalar(lhsType, rhsType)) {
     VectorType* lhsVectorType = static_cast<VectorType*>(lhsType);
-    if (lhsVectorType->GetComponentType() == rhsType) {
-      rhs = builder_->CreateVectorSplat(lhsVectorType->GetLength(), rhs);
+    if (lhsVectorType->GetElementType() == rhsType) {
+      rhs = builder_->CreateVectorSplat(lhsVectorType->GetNumElements(), rhs);
       ret = GenerateBinOp(node, lhs, rhs, lhsType);
     } else {
       assert(false);
     }
   } else if (TypeTable::ScalarVector(lhsType, rhsType)) {
     VectorType* rhsVectorType = static_cast<VectorType*>(rhsType);
-    if (rhsVectorType->GetComponentType() == lhsType) {
-      lhs = builder_->CreateVectorSplat(rhsVectorType->GetLength(), lhs);
+    if (rhsVectorType->GetElementType() == lhsType) {
+      lhs = builder_->CreateVectorSplat(rhsVectorType->GetNumElements(), lhs);
       ret = GenerateBinOp(node, lhs, rhs, lhsType);
     } else {
       assert(false);
@@ -838,7 +838,7 @@ Result CodeGenLLVM::Visit(BinOpNode* node) {
     auto         columnType = matrixType->GetColumnType();
     llvm::Value* lhsT = GenerateTranspose(lhs, matrixType);
     ret = llvm::ConstantAggregateZero::get(ConvertType(vectorType));
-    for (int i = 0; i < vectorType->GetLength(); i += 1) {
+    for (int i = 0; i < vectorType->GetNumElements(); i += 1) {
       llvm::Value* row = builder_->CreateExtractValue(lhsT, i);
       llvm::Value* value = GenerateDotProduct(row, rhs);
       ret = builder_->CreateInsertElement(ret, value, Int(i));
@@ -898,8 +898,8 @@ llvm::Value* CodeGenLLVM::CreateCast(Type*        srcType,
   } else if (srcType->IsEnum() && (dstType->IsInteger())) {
     return value;
   } else if (srcType->IsVector() && dstType->IsVector()) {
-    return CreateCast(static_cast<VectorType*>(srcType)->GetComponentType(),
-                      static_cast<VectorType*>(dstType)->GetComponentType(), value,
+    return CreateCast(static_cast<VectorType*>(srcType)->GetElementType(),
+                      static_cast<VectorType*>(dstType)->GetElementType(), value,
                       ConvertType(dstType));
   } else if (srcType->IsPtr() && dstType->IsPtr()) {
     if (srcType->IsStrongPtr() && dstType->IsWeakPtr()) {

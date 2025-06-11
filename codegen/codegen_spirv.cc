@@ -486,8 +486,8 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
     resultId = AppendTypeDecl(spv::Op::OpTypeBool, {});
   } else if (type->IsVector()) {
     VectorType* v = static_cast<VectorType*>(type);
-    uint32_t    componentType = ConvertType(v->GetComponentType());
-    resultId = AppendTypeDecl(spv::Op::OpTypeVector, {componentType, v->GetLength()});
+    uint32_t    componentType = ConvertType(v->GetElementType());
+    resultId = AppendTypeDecl(spv::Op::OpTypeVector, {componentType, v->GetNumElements()});
   } else if (type->IsMatrix()) {
     auto*    m = static_cast<MatrixType*>(type);
     uint32_t columnType = ConvertType(m->GetColumnType());
@@ -564,7 +564,7 @@ uint32_t CodeGenSPIRV::ConvertPointerToType(Type* type, uint32_t storageClass) {
 uint32_t CodeGenSPIRV::CreateVectorSplat(uint32_t value, VectorType* type) {
   uint32_t resultType = ConvertType(type);
   Code     args;
-  for (int i = 0; i < type->GetLength(); ++i) {
+  for (int i = 0; i < type->GetNumElements(); ++i) {
     args.push_back(value);
   }
   return AppendCode(spv::Op::OpCompositeConstruct, resultType, args);
@@ -625,8 +625,8 @@ uint32_t CodeGenSPIRV::CreateCast(Type*    srcType,
   } else if (dstType->IsVector() && srcType->IsVector()) {
     VectorType* srcVectorType = static_cast<VectorType*>(srcType);
     VectorType* dstVectorType = static_cast<VectorType*>(dstType);
-    assert(srcVectorType->GetLength() == dstVectorType->GetLength());
-    return CreateCast(srcVectorType->GetComponentType(), dstVectorType->GetComponentType(),
+    assert(srcVectorType->GetNumElements() == dstVectorType->GetNumElements());
+    return CreateCast(srcVectorType->GetElementType(), dstVectorType->GetElementType(),
                       resultType, valueId);
   } else if (dstType->IsUnsizedArray() && srcType->IsUnsizedArray()) {
     NOTIMPLEMENTED();

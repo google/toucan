@@ -167,18 +167,8 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
     auto* exprList = Make<ExprList>(std::move(constructorArgs));
     Expr* result = Make<MethodCall>(constructor, exprList);
     return Make<LoadExpr>(result);
-  } else if (type->IsVector() && args.size() == 1) {
-    unsigned int length = static_cast<VectorType*>(type)->GetLength();
-    for (int i = 0; i < length; ++i) {
-      exprs.push_back(args[0]->GetExpr());
-    }
-  } else if (type->IsArray() && args.size() == 1) {
-    unsigned int length = static_cast<ArrayType*>(type)->GetNumElements();
-    for (int i = 0; i < length; ++i) {
-      exprs.push_back(args[0]->GetExpr());
-    }
-  } else if (type->IsMatrix() && args.size() == 1) {
-    unsigned int length = static_cast<MatrixType*>(type)->GetNumColumns();
+  } else if (type->IsArrayLike() && args.size() == 1) {
+    int length = static_cast<ArrayLikeType*>(type)->GetNumElements();
     for (int i = 0; i < length; ++i) {
       exprs.push_back(args[0]->GetExpr());
     }
@@ -352,26 +342,17 @@ Expr* SemanticPass::MakeIndexable(Expr* expr) {
   if (type->IsUnsizedArray()) {
     return expr;
   }
-  int length;
-  Type* elementType;
-  MemoryLayout memoryLayout = MemoryLayout::Default;
-  if (type->IsMatrix()) {
-    auto matrixType = static_cast<MatrixType*>(type);
-    length = matrixType->GetNumColumns();
-    elementType = matrixType->GetColumnType();
-  } else if (type->IsVector()) {
-    auto vectorType = static_cast<VectorType*>(type);
-    length = vectorType->GetLength();
-    elementType = vectorType->GetComponentType();
-  } else if (type->IsArray()) {
-    auto arrayType = static_cast<ArrayType*>(type);
-    length = arrayType->GetNumElements();
-    elementType = arrayType->GetElementType();
-    memoryLayout = arrayType->GetMemoryLayout();
-  } else {
+  if (!type->IsArrayLike()) {
     return nullptr;
   }
-  return Make<ToRawArray>(expr, Make<IntConstant>(length, 32), elementType, memoryLayout);
+
+  auto arrayLikeType = static_cast<ArrayLikeType*>(type);
+  MemoryLayout memoryLayout = MemoryLayout::Default;
+  if (type->IsArray()) {
+    memoryLayout = static_cast<ArrayType*>(type)->GetMemoryLayout();
+  }
+  auto lengthExpr = Make<IntConstant>(arrayLikeType->GetNumElements(), 32);
+  return Make<ToRawArray>(expr, lengthExpr, arrayLikeType->GetElementType(), memoryLayout);
 }
 
 Expr* SemanticPass::MakeDefaultInitializer(Type* type) {
@@ -441,19 +422,11 @@ Expr* SemanticPass::ResolveListExpr(UnresolvedListExpr* node, Type* dstType) {
     }
     Type* elementType;
     int length;
-    if (dstType->IsVector()) {
-      auto vectorType = static_cast<VectorType*>(dstType);
-      elementType = vectorType->GetComponentType();
-      length = vectorType->GetLength();
-    } else if (dstType->IsArray()) {
-      auto arrayType = static_cast<ArrayType*>(dstType);
-      elementType = arrayType->GetElementType();
-      length = arrayType->GetNumElements();
-    } else if (dstType->IsMatrix()) {
-      auto matrixType = static_cast<MatrixType*>(dstType);
-      elementType = matrixType->GetColumnType();
-      length = matrixType->GetNumColumns();
-   } else {
+    if (dstType->IsArrayLike()) {
+      auto arrayLikeType = static_cast<ArrayLikeType*>(dstType);
+      elementType = arrayLikeType->GetElementType();
+      length = arrayLikeType->GetNumElements();
+    } else {
       assert(!"invalid type in list expression");
       return nullptr;
     }
@@ -554,7 +527,7 @@ Result SemanticPass::WideningError(Type* srcType, Type* dstType) {
 
 Expr* SemanticPass::MakeSwizzleForStore(VectorType* lhsType, Expr* lhs, const std::string& swizzle, Expr* rhs) {
   auto indices = std::vector<int>(swizzle.size());
-  size_t resultLength = ParseSwizzle(swizzle, lhsType->GetLength(), indices.data());
+  size_t resultLength = ParseSwizzle(swizzle, lhsType->GetNumElements(), indices.data());
   if (resultLength < swizzle.size()) {
     Error("invalid swizzle component '%c'", swizzle[resultLength]);
     return nullptr;
@@ -564,10 +537,10 @@ Expr* SemanticPass::MakeSwizzleForStore(VectorType* lhsType, Expr* lhs, const st
     return nullptr;
   }
   Type* rhsType = rhs->GetType(types_);
-  auto dstType = types_->GetVector(lhsType->GetComponentType(), indices.size());
+  auto dstType = types_->GetVector(lhsType->GetElementType(), indices.size());
   if (indices.size() == 1) {
-    if (!rhsType->CanWidenTo(lhsType->GetComponentType())) {
-      WideningError(rhsType, lhsType->GetComponentType());
+    if (!rhsType->CanWidenTo(lhsType->GetElementType())) {
+      WideningError(rhsType, lhsType->GetElementType());
       return nullptr;
     }
     lhs = Make<InsertElementExpr>(lhs, rhs, indices[0]);
@@ -617,7 +590,7 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
                    classType->ToString().c_str());
     }
   } else if (type->IsVector()) {
-    return MakeSwizzle(static_cast<VectorType*>(type)->GetLength(), expr, id);
+    return MakeSwizzle(static_cast<VectorType*>(type)->GetNumElements(), expr, id);
   } else {
     return Error("Expression is not of class, reference or vector type");
   }

@@ -215,7 +215,7 @@ SwizzleExpr::SwizzleExpr(Expr* expr, const std::vector<int>& indices) : expr_(ex
 Type* SwizzleExpr::GetType(TypeTable* types) {
   auto exprType = expr_->GetType(types);
   assert(exprType->IsVector());
-  auto componentType = static_cast<VectorType*>(exprType)->GetComponentType();
+  auto componentType = static_cast<VectorType*>(exprType)->GetElementType();
   auto size = indices_.size();
   if (size == 1) {
     return componentType;
@@ -229,7 +229,7 @@ ExtractElementExpr::ExtractElementExpr(Expr* expr, int index) : expr_(expr), ind
 Type* ExtractElementExpr::GetType(TypeTable* types) {
   Type* type = expr_->GetType(types)->GetUnqualifiedType();
   assert(type->IsVector());
-  return static_cast<VectorType*>(type)->GetComponentType();
+  return static_cast<VectorType*>(type)->GetElementType();
 }
 
 InsertElementExpr::InsertElementExpr(Expr* expr, Expr* newElement, int index)

@@ -94,7 +94,7 @@ Type* TypeReplacementPass::ResolveType(Type* type) {
                                 atype->GetMemoryLayout());
   } else if (type->IsVector()) {
     VectorType* vtype = static_cast<VectorType*>(type);
-    return types_->GetVector(ResolveType(vtype->GetComponentType()), vtype->GetLength());
+    return types_->GetVector(ResolveType(vtype->GetElementType()), vtype->GetNumElements());
   } else if (type->IsMatrix()) {
     MatrixType* mtype = static_cast<MatrixType*>(type);
     VectorType* columnType = static_cast<VectorType*>(ResolveType(mtype->GetColumnType()));

@@ -154,16 +154,20 @@ FormalTemplateArg::FormalTemplateArg(std::string name) : name_(name) {}
 
 std::string FormalTemplateArg::ToString() const { return name_; }
 
-VectorType::VectorType(Type* componentType, unsigned int length)
-    : componentType_(componentType), length_(length) {}
+
+ArrayLikeType::ArrayLikeType(Type* elementType, uint32_t numElements)
+    : elementType_(elementType), numElements_(numElements) {}
+
+VectorType::VectorType(Type* componentType, uint32_t length)
+    : ArrayLikeType(componentType, length) {}
 
 int VectorType::GetSizeInBytes() const {
-  unsigned int length = length_ == 3 ? 4 : length_;
-  return length * componentType_->GetSizeInBytes();
+  uint32_t length = numElements_ == 3 ? 4 : numElements_;
+  return length * elementType_->GetSizeInBytes();
 }
 
 std::string VectorType::ToString() const {
-  return componentType_->ToString() + "<" + std::to_string(length_) + ">";
+  return elementType_->ToString() + "<" + std::to_string(numElements_) + ">";
 }
 
 bool VectorType::CanWidenTo(Type* type) const {
@@ -171,8 +175,8 @@ bool VectorType::CanWidenTo(Type* type) const {
   if (!type) return false;
   if (type->IsVector()) {
     VectorType* vectorType = static_cast<VectorType*>(type);
-    return length_ == vectorType->GetLength() &&
-           componentType_->CanWidenTo(vectorType->GetComponentType());
+    return numElements_ == vectorType->GetNumElements() &&
+           elementType_->CanWidenTo(vectorType->GetElementType());
   }
   return false;
 }
@@ -180,8 +184,8 @@ bool VectorType::CanWidenTo(Type* type) const {
 bool VectorType::CanNarrowTo(Type* type) const {
   if (type->IsVector()) {
     VectorType* vectorType = static_cast<VectorType*>(type);
-    return length_ == vectorType->GetLength() &&
-           componentType_->CanNarrowTo(vectorType->GetComponentType());
+    return numElements_ == vectorType->GetNumElements() &&
+           elementType_->CanNarrowTo(vectorType->GetElementType());
   }
   return false;
 }
@@ -190,9 +194,9 @@ bool VectorType::CanInitFrom(const ListType* listType) const {
   if (listType->IsNamed()) { return false; }
 
   auto types = listType->GetTypes();
-  if (types.size() != length_) { return false; }
+  if (types.size() != numElements_) { return false; }
   for (auto type : types) {
-    if (!type->type->CanWidenTo(componentType_)) { return false; }
+    if (!type->type->CanWidenTo(elementType_)) { return false; }
   }
   return true;
 }
@@ -203,30 +207,30 @@ int VectorType::GetSwizzle(const std::string& str) const {
   char c = str[0];
   if (c == 'x' || c == 'r') return 0;
   if (c == 'y' || c == 'g') return 1;
-  if ((c == 'z' || c == 'b') && length_ >= 3) return 2;
-  if ((c == 'w' || c == 'a') && length_ >= 4) return 3;
+  if ((c == 'z' || c == 'b') && numElements_ >= 3) return 2;
+  if ((c == 'w' || c == 'a') && numElements_ >= 4) return 3;
   return -1;
 }
 
-MatrixType::MatrixType(VectorType* columnType, unsigned int numColumns)
-    : columnType_(columnType), numColumns_(numColumns) {}
+MatrixType::MatrixType(VectorType* columnType, uint32_t numColumns)
+    : ArrayLikeType(columnType, numColumns) {}
 
 std::string MatrixType::ToString() const {
-  return columnType_->ToString() + "<" + std::to_string(numColumns_) + ">";
+  return elementType_->ToString() + "<" + std::to_string(numElements_) + ">";
 }
 
 bool MatrixType::CanInitFrom(const ListType* listType) const {
   if (listType->IsNamed()) { return false; }
   auto types = listType->GetTypes();
-  if (types.size() != numColumns_) { return false; }
+  if (types.size() != numElements_) { return false; }
   for (auto type : types) {
-    if (!type->type->CanWidenTo(columnType_)) { return false; }
+    if (!type->type->CanWidenTo(elementType_)) { return false; }
   }
   return true;
 }
 
-ArrayType::ArrayType(Type* elementType, int numElements, MemoryLayout memoryLayout)
-    : elementType_(elementType), numElements_(numElements), memoryLayout_(memoryLayout) {}
+ArrayType::ArrayType(Type* elementType, uint32_t numElements, MemoryLayout memoryLayout)
+    : ArrayLikeType(elementType, numElements), memoryLayout_(memoryLayout) {}
 
 bool ArrayType::CanWidenTo(Type* type) const {
   type = CheckAndRemoveQualifiers(type);
@@ -383,8 +387,8 @@ std::string Method::GetMangledName() const {
           result += static_cast<ClassType*>(arg->type)->GetName();
         } else if (arg->type->IsVector()) {
           auto vectorType = static_cast<VectorType*>(arg->type);
-          result +=
-              vectorType->GetComponentType()->ToString() + std::to_string(vectorType->GetLength());
+          result += vectorType->GetElementType()->ToString()
+                  + std::to_string(vectorType->GetNumElements());
         } else {
           result += arg->type->ToString();
         }
@@ -835,14 +839,14 @@ ClassType* TypeTable::PopInstanceQueue() {
 }
 
 bool TypeTable::VectorScalar(Type* lhs, Type* rhs) {
-  return lhs->IsVector() && static_cast<VectorType*>(lhs)->GetComponentType() == rhs;
+  return lhs->IsVector() && static_cast<VectorType*>(lhs)->GetElementType() == rhs;
 }
 
 bool TypeTable::ScalarVector(Type* lhs, Type* rhs) { return VectorScalar(rhs, lhs); }
 
 bool TypeTable::MatrixScalar(Type* lhs, Type* rhs) {
   return lhs->IsMatrix() &&
-         static_cast<MatrixType*>(lhs)->GetColumnType()->GetComponentType() == rhs;
+         static_cast<MatrixType*>(lhs)->GetColumnType()->GetElementType() == rhs;
 }
 
 bool TypeTable::ScalarMatrix(Type* lhs, Type* rhs) { return MatrixScalar(rhs, lhs); }
