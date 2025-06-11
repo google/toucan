@@ -28,7 +28,7 @@ ClassType* NativeClass::ComputePipeline;
 ClassType* NativeClass::DepthStencilAttachment;
 ClassType* NativeClass::Device;
 ClassType* NativeClass::Event;
-ClassType* NativeClass::ImageDecoder;
+ClassType* NativeClass::Image;
 ClassType* NativeClass::Math;
 ClassType* NativeClass::Queue;
 ClassType* NativeClass::RenderPass;

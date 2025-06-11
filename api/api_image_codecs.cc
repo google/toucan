@@ -25,11 +25,12 @@
 
 namespace Toucan {
 
-struct ImageDecoder {
+struct Image {
   Type*                         pixelFormat;
   struct jpeg_decompress_struct cinfo;
   struct jpeg_error_mgr         jerr;
   uint32_t                      size[2];
+  Object                        encodedImage;
 };
 
 namespace {
@@ -43,10 +44,14 @@ void AssertSupportedPixelFormat(Type* pixelFormat) {
 }
 }  // namespace
 
-ImageDecoder* ImageDecoder_ImageDecoder(int qualifiers, Type* pixelFormat, Object* encodedImage) {
+Image* Image_Image(int qualifiers, Type* pixelFormat, Object* encodedImage) {
+  if (!encodedImage->ptr) return nullptr; 
   uint32_t length = encodedImage->controlBlock->arrayLength;
-  auto     result = new ImageDecoder();
+  auto     result = new Image();
   result->pixelFormat = pixelFormat;
+  result->encodedImage = *encodedImage;
+  result->encodedImage.controlBlock->strongRefs++;
+  result->encodedImage.controlBlock->weakRefs++;
   AssertSupportedPixelFormat(pixelFormat);
   result->cinfo.err = jpeg_std_error(&result->jerr);
   jpeg_create_decompress(&result->cinfo);
@@ -57,9 +62,9 @@ ImageDecoder* ImageDecoder_ImageDecoder(int qualifiers, Type* pixelFormat, Objec
   return result;
 }
 
-const uint32_t* ImageDecoder_GetSize(ImageDecoder* This) { return This->size; }
+const uint32_t* Image_GetSize(Image* This) { return This->size; }
 
-void ImageDecoder_Decode(ImageDecoder* This, Object* dest, uint32_t bufferWidth) {
+void Image_Decode(Image* This, Array* dest, uint32_t bufferWidth) {
   jpeg_start_decompress(&This->cinfo);
   uint32_t* p = static_cast<uint32_t*>(dest->ptr);
 
@@ -83,6 +88,12 @@ void ImageDecoder_Decode(ImageDecoder* This, Object* dest, uint32_t bufferWidth)
         uint8_t b = *buf++;
         p[x] = 0xFF000000 | r << rshift | g << gshift | b << bshift;
       }
+    } else if (This->cinfo.output_components == 1) {
+      uint8_t* buf = scanline[0];
+      for (int x = 0; x < This->size[0]; x++) {
+        uint8_t r = *buf++;
+        p[x] = 0xFF000000 | r << rshift | r << gshift | r << bshift;
+      }
     } else {
       assert(!"unsupported jpeg component count");
     }
@@ -91,8 +102,19 @@ void ImageDecoder_Decode(ImageDecoder* This, Object* dest, uint32_t bufferWidth)
   jpeg_finish_decompress(&This->cinfo);
 }
 
-void ImageDecoder_Destroy(ImageDecoder* This) {
+void Image_Destroy(Image* This) {
+  // FIXME: make wrappers create Toucan null for native null
+  if (This == nullptr) return;
+
   jpeg_destroy_decompress(&This->cinfo);
+  This->encodedImage.controlBlock->strongRefs--;
+  if (This->encodedImage.controlBlock->strongRefs == 0) {
+    free(This->encodedImage.ptr);
+  }
+  This->encodedImage.controlBlock->weakRefs--;
+  if (This->encodedImage.controlBlock->weakRefs == 0) {
+    free(This->encodedImage.controlBlock);
+  }
   delete This;
 }
 

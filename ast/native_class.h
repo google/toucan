@@ -34,7 +34,7 @@ class NativeClass {
   static ClassType* DepthStencilAttachment;
   static ClassType* Device;
   static ClassType* Event;
-  static ClassType* ImageDecoder;
+  static ClassType* Image;
   static ClassType* Math;
   static ClassType* Queue;
   static ClassType* RenderPass;

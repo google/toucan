@@ -243,6 +243,7 @@ Hello, world.
 test/hello.t
 Hello, world.
 test/if-stmt.t
+test/image.t
 test/implicit-return.t
 test/inc-dec-byte.t
 test/inc-dec-float.t
