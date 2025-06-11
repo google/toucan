@@ -1,4 +1,5 @@
 include "cube.t"
+include "cube-loader.t"
 include "cubic.t"
 include "event-handler.t"
 include "quaternion.t"
@@ -8,20 +9,6 @@ include "teapot.t"
 class Vertex {
   var position : float<3>;
   var normal : float<3>;
-}
-
-using Format = RGBA8unorm;
-
-class CubeLoader {
-  static Load(device : *Device, data : *[]ubyte, texture : ^TextureCube<Format>, face : uint) {
-    var image = new Image<Format>(data);
-    var size = image.GetSize();
-    var buffer = new hostwriteable Buffer<[]Format:HostType>(device, texture.MinBufferWidth() * size.y);
-    image.Decode(buffer.MapWrite(), texture.MinBufferWidth());
-    var encoder = new CommandEncoder(device);
-    texture.CopyFromBuffer(encoder, buffer, {size.x, size.y, 1}, uint<3>(0, 0, face));
-    device.GetQueue().Submit(encoder.Finish());
-  }
 }
 
 var device = new Device();
