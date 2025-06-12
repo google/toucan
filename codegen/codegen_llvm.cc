@@ -1187,6 +1187,13 @@ Result CodeGenLLVM::Visit(StoreStmt* stmt) {
   return {};
 }
 
+void CodeGenLLVM::CallSystemAbort() {
+  llvm::Type* voidType = llvm::Type::getVoidTy(*context_);
+  llvm::FunctionType* ft = llvm::FunctionType::get(voidType, false);
+  llvm::FunctionCallee systemAbort = module_->getOrInsertFunction("System_Abort", ft);
+  builder_->CreateCall(systemAbort, {});
+}
+
 Result CodeGenLLVM::Visit(ArrayAccess* node) {
   llvm::Value* expr = GenerateLLVM(node->GetExpr());
   llvm::Value* index = GenerateLLVM(node->GetIndex());
@@ -1194,13 +1201,22 @@ Result CodeGenLLVM::Visit(ArrayAccess* node) {
   assert(type->IsRawPtr());
   type = static_cast<RawPtrType*>(type)->GetBaseType();
   assert(type->IsUnsizedArray());
+  auto arrayType = static_cast<ArrayType*>(type);
   llvm::Type* llvmType = ConvertType(type);
-  expr = builder_->CreateExtractValue(expr, {0});
-  // FIXME: do bounds checking here
-  if (type->IsArray() && static_cast<ArrayType*>(type)->GetElementPadding() > 0) {
-    return builder_->CreateGEP(llvmType, expr, {Int(0), index, Int(0)});
+  auto value = builder_->CreateExtractValue(expr, {0});
+  auto length = builder_->CreateExtractValue(expr, {1});
+  llvm::Value*      condition = GenerateBinOpUInt(builder_, BinOpNode::Op::GE, index, length);
+  llvm::BasicBlock* outOfBounds = CreateBasicBlock("outOfBounds");
+  llvm::BasicBlock* okBlock = CreateBasicBlock("ok");
+  builder_->CreateCondBr(condition, outOfBounds, okBlock);
+  builder_->SetInsertPoint(outOfBounds);
+  CallSystemAbort();
+  builder_->CreateBr(okBlock);
+  builder_->SetInsertPoint(okBlock);
+  if (arrayType->GetElementPadding() > 0) {
+    return builder_->CreateGEP(llvmType, value, {Int(0), index, Int(0)});
   } else {
-    return builder_->CreateGEP(llvmType, expr, {Int(0), index});
+    return builder_->CreateGEP(llvmType, value, {Int(0), index});
   }
 }
 
@@ -1210,10 +1226,7 @@ Result CodeGenLLVM::Visit(SmartToRawPtr* node) {
   auto controlBlock = builder_->CreateExtractValue(expr, {1});
   llvm::BasicBlock* afterBlock = NullControlBlockCheck(controlBlock, BinOpNode::Op::EQ);
   llvm::BasicBlock* abortBlock = builder_->GetInsertBlock();
-  llvm::Type* voidType = llvm::Type::getVoidTy(*context_);
-  llvm::FunctionType* ft = llvm::FunctionType::get(voidType, false);
-  llvm::FunctionCallee systemAbort = module_->getOrInsertFunction("System_Abort", ft);
-  builder_->CreateCall(systemAbort, {});
+  CallSystemAbort();
   builder_->CreateBr(afterBlock);
   builder_->SetInsertPoint(afterBlock);
   if (type->IsWeakPtr()) {

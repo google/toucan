@@ -8,6 +8,18 @@ test/abort-on-strong-null-deref.t
 test/abort-on-weak-null-deref.t
   Y__Y
 --\__(x)==     (pining for the fjords)
+test/abort-out-of-bounds-array.t
+  Y__Y
+--\__(x)==     (pining for the fjords)
+test/abort-out-of-bounds-heap-array.t
+  Y__Y
+--\__(x)==     (pining for the fjords)
+test/abort-out-of-bounds-matrix.t
+  Y__Y
+--\__(x)==     (pining for the fjords)
+test/abort-out-of-bounds-vector.t
+  Y__Y
+--\__(x)==     (pining for the fjords)
 test/abort.t
   Y__Y
 --\__(x)==     (pining for the fjords)

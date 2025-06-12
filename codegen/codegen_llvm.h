@@ -156,6 +156,7 @@ class CodeGenLLVM : public Visitor {
   const std::vector<Type*>& GetReferencedTypes() { return referencedTypes_; }
 
  private:
+  void         CallSystemAbort();
   llvm::Value* CreateCast(Type*        srcType,
                           Type*        dstType,
                           llvm::Value* value,
