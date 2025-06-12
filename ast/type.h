@@ -294,7 +294,6 @@ struct Field {
   Expr*       defaultValue;
   size_t      offset = 0;
   size_t      padding = 0;
-  int         paddedIndex = -1;
 };
 
 typedef std::vector<std::unique_ptr<Field>> FieldVector;

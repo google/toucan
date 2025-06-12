@@ -155,13 +155,20 @@ void CodeGenLLVM::Run(Stmts* stmts) {
   stmts->Accept(this);
 }
 
+llvm::Type* CodeGenLLVM::PadType(llvm::Type* type, int padding) {
+  if (padding == 0) return type;
+
+  std::vector<llvm::Type*> types;
+  types.push_back(type);
+  types.push_back(llvm::ArrayType::get(byteType_, padding));
+  return llvm::StructType::get(*context_, types);
+}
+
 void CodeGenLLVM::ConvertAndAppendFieldTypes(ClassType*                classType,
                                              std::vector<llvm::Type*>* types) {
   if (classType->GetParent()) { ConvertAndAppendFieldTypes(classType->GetParent(), types); }
   for (const auto& field : classType->GetFields()) {
-    field->paddedIndex = types->size();
-    types->push_back(ConvertType(field->type));
-    if (field->padding) { types->push_back(llvm::ArrayType::get(byteType_, field->padding)); }
+    types->push_back(PadType(ConvertType(field->type), field->padding));
   }
   if (int padding = classType->GetPadding()) {
     types->push_back(llvm::ArrayType::get(byteType_, padding));
@@ -247,13 +254,7 @@ llvm::Type* CodeGenLLVM::ConvertType(Type* type) {
 llvm::Type* CodeGenLLVM::ConvertArrayElementType(ArrayType* arrayType) {
   Type*       elementType = arrayType->GetElementType();
   llvm::Type* result = ConvertType(arrayType->GetElementType());
-  if (int padding = arrayType->GetElementPadding()) {
-    std::vector<llvm::Type*> types;
-    types.push_back(result);
-    types.push_back(llvm::ArrayType::get(byteType_, padding));
-    result = llvm::StructType::get(*context_, types);
-  }
-  return result;
+  return PadType(result, arrayType->GetElementPadding());
 }
 
 llvm::Type* CodeGenLLVM::ConvertTypeToNative(Type* type) {
@@ -1271,7 +1272,9 @@ Result CodeGenLLVM::Visit(FieldAccess* node) {
     expr = allocaInst;
   }
   Field* field = node->GetField();
-  auto result = builder_->CreateGEP(ConvertType(type), expr, {Int(0), Int(field->paddedIndex)});
+  std::vector<llvm::Value*> indices = { Int(0), Int(field->index) };
+  if (field->padding) indices.push_back(Int(0));
+  auto result = builder_->CreateGEP(ConvertType(type), expr, indices);
   if (field->type->IsUnsizedArray()) { result = CreatePointer(result, length); }
   return result;
 }
@@ -1301,7 +1304,12 @@ Result CodeGenLLVM::Visit(Initializer* node) {
         auto arg = args[field->index];
         if (arg) {
           llvm::Value* v = GenerateLLVM(arg);
-          result = builder_->CreateInsertValue(result, v, field->paddedIndex);
+          if (field->padding) {
+            auto type = PadType(ConvertType(field->type), field->padding);
+            auto wrapper = llvm::ConstantAggregateZero::get(type);
+            v = builder_->CreateInsertValue(wrapper, v, 0);
+          }
+          result = builder_->CreateInsertValue(result, v, field->index);
         }
       }
     }

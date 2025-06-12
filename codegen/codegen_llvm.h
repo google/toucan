@@ -66,6 +66,7 @@ class CodeGenLLVM : public Visitor {
   llvm::Type*     ConvertType(Type* type);
   llvm::Type*     ConvertArrayElementType(ArrayType* type);
   llvm::Type*     ConvertTypeToNative(Type* type);
+  llvm::Type*     PadType(llvm::Type* type, int padding);
   void            ConvertAndAppendFieldTypes(ClassType* classType, std::vector<llvm::Type*>* types);
   llvm::Type*     ControlBlockType();
   llvm::Constant* Int(int value);
