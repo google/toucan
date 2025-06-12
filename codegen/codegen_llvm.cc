@@ -492,7 +492,8 @@ llvm::Intrinsic::ID CodeGenLLVM::FindIntrinsic(Method* method) {
       "Math", "clz",  llvm::Intrinsic::ctlz,    "Math", "floor", llvm::Intrinsic::floor,
       "Math", "ceil", llvm::Intrinsic::ceil,    "Math", "tan",   llvm::Intrinsic::tan,
       "Math", "min",  llvm::Intrinsic::minimum, "Math", "max",   llvm::Intrinsic::maximum,
-      "Math", "pow",  llvm::Intrinsic::pow
+      "Math", "pow",  llvm::Intrinsic::pow,     "Math", "any",   llvm::Intrinsic::vector_reduce_or,
+      "Math", "all",  llvm::Intrinsic::vector_reduce_and,
   };
 
   for (auto intrinsic : intrinsics) {

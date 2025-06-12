@@ -112,11 +112,14 @@ bool BinOpNode::IsRelOp() const {
 }
 
 Type* BinOpNode::GetType(TypeTable* types) {
+  Type* lhsType = lhs_->GetType(types);
+  Type* rhsType = rhs_->GetType(types);
   if (IsRelOp()) {
+    if (lhsType->IsVector()) {
+      return types->GetVector(types->GetBool(), static_cast<VectorType*>(lhsType)->GetNumElements());
+    }
     return types->GetBool();
   } else {
-    Type* lhsType = lhs_->GetType(types);
-    Type* rhsType = rhs_->GetType(types);
     if (lhsType == rhsType) { return lhsType; }
     if (lhsType->IsVector()) {
       return lhsType;

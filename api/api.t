@@ -273,6 +273,12 @@ native class SwapChain<T> {
 
 native class Math {
  ~Math();
+  static all(v : bool<2>)   : bool;
+  static all(v : bool<3>)   : bool;
+  static all(v : bool<4>)   : bool;
+  static any(v : bool<2>)   : bool;
+  static any(v : bool<3>)   : bool;
+  static any(v : bool<4>)   : bool;
   static sqrt(v : float)    : float;
   static sqrt(v : float<2>) : float<2>;
   static sqrt(v : float<3>) : float<3>;

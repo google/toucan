@@ -873,8 +873,10 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
   } else if (isMath(method->classType)) {
     uint32_t resultType = ConvertType(expr->GetType(types_));
     ExprList* argList = expr->GetArgList();
-    if (method->name == "sqrt") {
-      return AppendExtInst(GLSLstd450Sqrt, resultType, argList);
+    if (method->name == "all") {
+      return AppendCodeFromExprList(spv::Op::OpAll, resultType, argList);
+    } else if (method->name == "any") {
+      return AppendCodeFromExprList(spv::Op::OpAny, resultType, argList);
     } else if (method->name == "sin") {
       return AppendExtInst(GLSLstd450Sin, resultType, argList);
     } else if (method->name == "cos") {
