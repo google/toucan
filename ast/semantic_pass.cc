@@ -133,6 +133,7 @@ Result SemanticPass::Visit(Stmts* stmts) {
 }
 
 Result SemanticPass::Visit(ArgList* node) {
+  auto* result = Make<ArgList>();
   for (auto arg : node->GetArgs()) {
     if (node->IsNamed()) {
       if (arg->GetID().empty()) {
@@ -143,8 +144,21 @@ Result SemanticPass::Visit(ArgList* node) {
         return Error("if one argument is unnamed, all arguments must be unnamed");
       }
     }
+    auto value = Resolve(arg);
+    if (value->IsUnfold()) {
+      auto type = value->GetExpr()->GetType(types_);
+      if (!type->IsVector()) {
+        return Error("non-vector argument to @ operator");
+      }
+      auto len = static_cast<VectorType*>(type)->GetNumElements();
+      for (int i = 0; i < len; ++i) {
+        result->Append(Make<Arg>("", Make<ExtractElementExpr>(value->GetExpr(), i)));
+      }
+    } else {
+      result->Append(value);
+    }
   }
-  return CopyVisitor::Visit(node);
+  return result;
 }
 
 Result SemanticPass::Visit(UnresolvedInitializer* node) {

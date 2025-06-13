@@ -160,7 +160,7 @@ Type* FindType(const char* str) {
 %left T_LT T_LE T_GE T_GT
 %left '+' '-'
 %left '*' '/' '%'
-%right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS ':'
+%right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS ':' '@'
 %left '.' '[' ']' '(' ')' '{' '}'
 %expect 1   /* we expect 1 shift/reduce: dangling-else */
 %%
@@ -433,6 +433,7 @@ non_empty_arguments:
 argument:
     T_IDENTIFIER '=' expr_or_list           { $$ = Make<Arg>($1, $3); }
   | expr_or_list                            { $$ = Make<Arg>("", $1); }
+  | '@' expr_or_list                        { $$ = Make<Arg>("", $2, true); }
   ;
 
 initializer:

@@ -97,7 +97,7 @@ Type* ArrayAccess::GetType(TypeTable* types) {
 
 ASTNode::~ASTNode() {}
 
-Arg::Arg(std::string id, Expr* expr) : id_(id), expr_(expr) {}
+Arg::Arg(std::string id, Expr* expr, bool unfold) : id_(id), expr_(expr), unfold_(unfold) {}
 
 ArgList::ArgList() {}
 

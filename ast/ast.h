@@ -207,14 +207,16 @@ class NullConstant : public Expr {
 
 class Arg : public ASTNode {
  public:
-  Arg(std::string id, Expr* expr);
+  Arg(std::string id, Expr* expr, bool unfold = false);
   Result      Accept(Visitor* visitor) override;
   std::string GetID() { return id_; }
   Expr*       GetExpr() { return expr_; }
+  bool        IsUnfold() { return unfold_; }
 
  private:
   std::string id_;
   Expr*       expr_;
+  bool        unfold_;
 };
 
 class ArgList : public ASTNode {

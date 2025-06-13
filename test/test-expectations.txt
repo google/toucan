@@ -337,6 +337,7 @@ test/ubyte.t
 test/uint.t
 test/unary-minus.t
 test/unfilterable.t
+test/unfold-vector.t
 test/unspecified-template-destructor.t
 test/ushort-vector.t
 test/ushort.t

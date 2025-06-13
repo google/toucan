@@ -20,7 +20,7 @@ CopyVisitor::CopyVisitor(NodeVector* nodes) : nodes_(nodes) {}
 
 Type* CopyVisitor::ResolveType(Type* type) { return type; }
 
-Result CopyVisitor::Visit(Arg* node) { return Make<Arg>(node->GetID(), Resolve(node->GetExpr())); }
+Result CopyVisitor::Visit(Arg* node) { return Make<Arg>(node->GetID(), Resolve(node->GetExpr()), node->IsUnfold()); }
 
 Result CopyVisitor::Visit(ArrayAccess* node) {
   Expr* expr = Resolve(node->GetExpr());
