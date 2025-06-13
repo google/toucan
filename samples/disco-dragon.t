@@ -80,9 +80,9 @@ class WriteGBuffers {
     // Transform the vertex position by the model and viewProjection matrices.
     // Transform the vertex normal by the normalModelMatrix (inverse transpose of the model).
     var output : VertexOutput;
-    var worldPosition = uniforms.modelMatrix * Utils.makeFloat4(v.position, 1.0);
-    vb.position = camera.viewProjectionMatrix * Utils.makeFloat4(worldPosition.xyz, 1.0);
-    var fragNormal = uniforms.normalModelMatrix * Utils.makeFloat4(v.normal, 1.0);
+    var worldPosition = uniforms.modelMatrix * float<4>{@v.position, 1.0};
+    vb.position = camera.viewProjectionMatrix * float<4>{@worldPosition.xyz, 1.0};
+    var fragNormal = uniforms.normalModelMatrix * float<4>{@v.normal, 1.0};
     output.fragNormal = fragNormal.xyz;
     output.fragUV = v.uv;
     return output;
@@ -92,8 +92,8 @@ class WriteGBuffers {
     var uv = Math.floor(30.0 * varyings.fragUV);
     var c = 0.2 + 0.5 * ((uv.x + uv.y) - 2.0 * Math.floor((uv.x + uv.y) / 2.0));
 
-    normals.Set(Utils.makeFloat4(Math.normalize(varyings.fragNormal), 1.0));
-    albedo.Set(float<4>(c, c, c, 1.0));
+    normals.Set({@Math.normalize(varyings.fragNormal), 1.0});
+    albedo.Set({c, c, c, 1.0});
   }
 
   var normals : *ColorAttachment<RGBA16float>;
@@ -109,7 +109,7 @@ class TextureQuadPass {
     var pos : [6]float<2> = {
       { -1.0, -1.0 }, { 1.0, -1.0 }, { -1.0,  1.0 },
       { -1.0,  1.0 }, { 1.0, -1.0 }, {  1.0,  1.0 } };
-    vb.position = Utils.makeFloat4(pos[vb.vertexIndex], 0.0, 1.0);
+    vb.position = {@pos[vb.vertexIndex], 0.0, 1.0};
   }
 
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
@@ -201,7 +201,7 @@ class DeferredRender : TextureQuadPass {
     // Add some manual ambient.
     result += float<3>(0.2);
 
-    fragColor.Set(Utils.makeFloat4(result, 1.0));
+    fragColor.Set({@result, 1.0});
   }
 
   var textureBindings : *BindGroup<GBufferTextureBindings>;
@@ -348,7 +348,7 @@ while (System.IsRunning()) {
   // Rotate the camera around the origin based on time.
   var rad = pi * (float) ((System.GetCurrentTime() - startTime) / 5.0d);
   var rotation = Transform.translate(origin.x, origin.y, origin.z) * Transform.rotate({0.0, 1.0, 0.0}, rad);
-  var rp4 = rotation * Utils.makeFloat4(eyePosition, 1.0);
+  var rp4 = rotation * float<4>{@eyePosition, 1.0};
   rp4 /= rp4.w;
   var rotatedEyePosition = rp4.xyz;
 

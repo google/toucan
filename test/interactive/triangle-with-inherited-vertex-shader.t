@@ -1,17 +1,20 @@
-using Vertex = float<4>;
-var device = new Device();
-var window = new Window({0, 0}, System.GetScreenSize());
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-var verts : [3]Vertex = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 } };
-var vb = new vertex Buffer<[]Vertex>(device, &verts);
+using Vertex = float<2>;
+
 class PipelineBase {
-  vertex main(vb : &VertexBuiltins) { vb.position = vertices.Get(); }
+  vertex main(vb : &VertexBuiltins) { vb.position = {@vertices.Get(), 0.0, 1.0}; }
   var vertices : *VertexInput<Vertex>;
 }
+
 class Pipeline : PipelineBase {
   fragment main(fb : &FragmentBuiltins) { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
 }
+
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var verts : [3]Vertex = { { 0.0, 1.0 }, {-1.0, -1.0 }, { 1.0, -1.0 } };
+var vb = new vertex Buffer<[]Vertex>(device, &verts);
 var pipeline = new RenderPipeline<Pipeline>(device);
 var encoder = new CommandEncoder(device);
 var vi = new VertexInput<Vertex>(vb);

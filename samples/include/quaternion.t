@@ -1,5 +1,3 @@
-include "utils.t"
-
 class Quaternion {
   Quaternion(x : float, y : float, z : float, w : float) { q = float<4>(x, y, z, w); }
   Quaternion(v : float<4>) { q = v; }

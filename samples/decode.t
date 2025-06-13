@@ -1,42 +1,8 @@
 class Vertex {
-    var position : float<4>;
-    var texCoord : float<2>;
+  var position : float<2>;
+  var texCoord : float<2>;
 };
 
-var device = new Device();
-
-using Format = RGBA8unorm;
-var image = new Image<RGBA8unorm>(inline("third_party/libjpeg-turbo/testimages/testorig.jpg"));
-var imageSize = image.GetSize();
-var texture = new sampleable Texture2D<Format>(device, imageSize);
-var buffer = new hostwriteable Buffer<[]Format:HostType>(device, texture.MinBufferWidth() * imageSize.y);
-var b = buffer.MapWrite();
-image.Decode(b, texture.MinBufferWidth());
-buffer.Unmap();
-var copyEncoder = new CommandEncoder(device);
-texture.CopyFromBuffer(copyEncoder, buffer, imageSize);
-device.GetQueue().Submit(copyEncoder.Finish());
-
-var window = new Window({0, 0}, imageSize);
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-var verts = [4] new Vertex;
-verts[0].position = float<4>(-1.0,  1.0, 0.0, 1.0);
-verts[1].position = float<4>( 1.0,  1.0, 0.0, 1.0);
-verts[2].position = float<4>(-1.0, -1.0, 0.0, 1.0);
-verts[3].position = float<4>( 1.0, -1.0, 0.0, 1.0);
-verts[0].texCoord = float<2>(0.0, 0.0);
-verts[1].texCoord = float<2>(1.0, 0.0);
-verts[2].texCoord = float<2>(0.0, 1.0);
-verts[3].texCoord = float<2>(1.0, 1.0);
-var indices = [6] new uint;
-indices[0] = 0;
-indices[1] = 1;
-indices[2] = 2;
-indices[3] = 1;
-indices[4] = 2;
-indices[5] = 3;
-var vb = new vertex Buffer<[]Vertex>(device, verts);
-var ib = new index Buffer<[]uint>(device, indices);
 class Bindings {
   var sampler : *Sampler;
   var textureView : *SampleableTexture2D<float>;
@@ -44,31 +10,54 @@ class Bindings {
 
 class Pipeline {
     vertex main(vb : &VertexBuiltins) : float<2> {
-        var v = vert.Get();
-        vb.position = v.position;
+        var v = vertices.Get();
+        vb.position = {@v.position, 0.0, 1.0};
         return v.texCoord;
     }
     fragment main(fb : &FragmentBuiltins, texCoord : float<2>) {
       fragColor.Set(bindings.Get().textureView.Sample(bindings.Get().sampler, texCoord));
     }
-    var vert : *VertexInput<Vertex>;
-    var indexBuffer : *index Buffer<[]uint>;
+    var vertices : *VertexInput<Vertex>;
+    var indices : *index Buffer<[]uint>;
     var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
     var bindings : *BindGroup<Bindings>;
 };
+
+var device = new Device();
+var image = new Image<RGBA8unorm>(inline("third_party/libjpeg-turbo/testimages/testorig.jpg"));
+var imageSize = image.GetSize();
+var texture = new sampleable Texture2D<RGBA8unorm>(device, imageSize);
+var buffer = new hostwriteable Buffer<[]ubyte<4>>(device, texture.MinBufferWidth() * imageSize.y);
+image.Decode(buffer.MapWrite(), texture.MinBufferWidth());
+buffer.Unmap();
+var copyEncoder = new CommandEncoder(device);
+texture.CopyFromBuffer(copyEncoder, buffer, imageSize);
+device.GetQueue().Submit(copyEncoder.Finish());
+
+var window = new Window({0, 0}, imageSize);
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var verts = [4]Vertex{
+  { position = {-1.0,  1.0}, texCoord = {0.0, 0.0} },
+  { position = { 1.0,  1.0}, texCoord = {1.0, 0.0} },
+  { position = {-1.0, -1.0}, texCoord = {0.0, 1.0} },
+  { position = { 1.0, -1.0}, texCoord = {1.0, 1.0} }
+};
+var indices = [6]uint{ 0, 1, 2, 1, 2, 3 };
+var vb = new vertex Buffer<[]Vertex>(device, &verts);
+var ib = new index Buffer<[]uint>(device, &indices);
 var pipeline = new RenderPipeline<Pipeline>(device);
-var sampler = new Sampler(device);
-var texView = texture.CreateSampleableView();
-var bindings : Bindings;
-bindings.sampler = sampler;
-bindings.textureView = texView;
+var bindings = Bindings{
+  sampler = new Sampler(device),
+  textureView = texture.CreateSampleableView()
+};
 var bindGroup = new BindGroup<Bindings>(device, &bindings);
 var encoder = new CommandEncoder(device);
-var p : Pipeline;
-p.vert = new VertexInput<Vertex>(vb);
-p.indexBuffer = ib;
-p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
-p.bindings = bindGroup;
+var p = Pipeline{
+  vertices = new VertexInput<Vertex>(vb),
+  indices = ib,
+  fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear),
+  bindings = bindGroup
+};
 var renderPass = new RenderPass<Pipeline>(encoder, &p);
 renderPass.SetPipeline(pipeline);
 renderPass.DrawIndexed(6, 1, 0, 0, 0);

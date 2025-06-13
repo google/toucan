@@ -1,54 +1,40 @@
 class Vertex {
-  var position : float<4>;
+  var position : float<2>;
   var texCoord : float<2>;
 };
-class Varyings {
-  var texCoord : float<2>;
-};
-
-var device = new Device();
-var window = new Window({0, 0}, {640, 480});
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-var verts = [4] new Vertex;
-verts[0].position = float<4>(-1.0, -1.0, 0.0, 1.0);
-verts[1].position = float<4>( 1.0, -1.0, 0.0, 1.0);
-verts[2].position = float<4>(-1.0,  1.0, 0.0, 1.0);
-verts[3].position = float<4>( 1.0,  1.0, 0.0, 1.0);
-verts[0].texCoord = float<2>(0.0, 0.0);
-verts[1].texCoord = float<2>(1.0, 0.0);
-verts[2].texCoord = float<2>(0.0, 1.0);
-verts[3].texCoord = float<2>(1.0, 1.0);
-var indices = [6] new uint;
-indices[0] = 0;
-indices[1] = 1;
-indices[2] = 2;
-indices[3] = 1;
-indices[4] = 2;
-indices[5] = 3;
 
 class Bindings {
   var textureView : *SampleableTexture2D<float>;
 }
 
 class Pipeline {
-    vertex main(vb : &VertexBuiltins) : Varyings {
-        var v = vert.Get();
-        vb.position = v.position;
-        var varyings : Varyings;
-        varyings.texCoord = v.texCoord;
-        return varyings;
+    vertex main(vb : &VertexBuiltins) : float<2> {
+        var v = vertices.Get();
+        vb.position = {@v.position, 0.0, 1.0};
+        return v.texCoord;
     }
-    fragment main(fb : &FragmentBuiltins, varyings : Varyings) {
+    fragment main(fb : &FragmentBuiltins, texCoord : float<2>) {
       var b = bindings.Get();
-      var intCoord = varyings.texCoord * float<2>(2.0, 2.0);
+      var intCoord = texCoord * float<2>(2.0, 2.0);
       var coord = int<2>((int) intCoord.x, (int) intCoord.y);
       fragColor.Set(b.textureView.Load(coord, 0));
     }
-    var vert : *VertexInput<Vertex>;
+    var vertices : *VertexInput<Vertex>;
     var indices : *index Buffer<[]uint>;
     var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
     var bindings : *BindGroup<Bindings>;
 };
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var verts = [4]Vertex{
+  { position = {-1.0,  1.0}, texCoord = {0.0, 0.0} },
+  { position = { 1.0,  1.0}, texCoord = {1.0, 0.0} },
+  { position = {-1.0, -1.0}, texCoord = {0.0, 1.0} },
+  { position = { 1.0, -1.0}, texCoord = {1.0, 1.0} }
+};
+var indices = [6]uint{ 0, 1, 2, 1, 2, 3 };
+var vb = new vertex Buffer<[]Vertex>(device, &verts);
 var pipeline = new RenderPipeline<Pipeline>(device);
 var tex = new sampleable Texture2D<RGBA8unorm>(device, {2, 2});
 var width = tex.MinBufferWidth();
@@ -62,16 +48,17 @@ buffer.Unmap();
 var copyEncoder = new CommandEncoder(device);
 tex.CopyFromBuffer(copyEncoder, buffer, {2, 2});
 device.GetQueue().Submit(copyEncoder.Finish());
-var bindings : Bindings;
-bindings.textureView = tex.CreateSampleableView();
-var bindGroup = new BindGroup<Bindings>(device, &bindings);
+var bindGroup = new BindGroup<Bindings>(device, {
+  textureView = tex.CreateSampleableView()
+});
 
 var encoder = new CommandEncoder(device);
-var p : Pipeline;
-p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
-p.vert = new VertexInput<Vertex>(new vertex Buffer<[]Vertex>(device, verts));
-p.indices = new index Buffer<[]uint>(device, indices);
-p.bindings = bindGroup;
+var p = Pipeline{
+  vertices = new VertexInput<Vertex>(vb),
+  indices = new index Buffer<[]uint>(device, &indices),
+  fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear),
+  bindings = bindGroup
+};
 var renderPass = new RenderPass<Pipeline>(encoder, &p);
 renderPass.SetPipeline(pipeline);
 renderPass.DrawIndexed(6, 1, 0, 0, 0);

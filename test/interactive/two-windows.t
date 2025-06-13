@@ -1,3 +1,6 @@
+class Pipeline {
+  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+}
 var green = float<4>(0.0, 1.0, 0.0, 1.0);
 var blue = float<4>(0.0, 0.0, 1.0, 1.0);
 var device = new Device();
@@ -8,16 +11,11 @@ var swapChain1 = new SwapChain<PreferredSwapChainFormat>(device, window1);
 var swapChain2 = new SwapChain<PreferredSwapChainFormat>(device, window2);
 var framebuffer1 = swapChain1.GetCurrentTexture();
 var framebuffer2 = swapChain2.GetCurrentTexture();
-class Pipeline {
-  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
-}
 var encoder = new CommandEncoder(device);
-var p1 : Pipeline;
-p1.fragColor = framebuffer1.CreateColorAttachment(LoadOp.Clear, StoreOp.Store, green);
+var p1 = Pipeline{ framebuffer1.CreateColorAttachment(LoadOp.Clear, StoreOp.Store, green) };
 var renderPass1 = new RenderPass<Pipeline>(encoder, &p1);
 renderPass1.End();
-var p2 : Pipeline;
-p2.fragColor = framebuffer2.CreateColorAttachment(LoadOp.Clear, StoreOp.Store, blue);
+var p2 = Pipeline{ framebuffer2.CreateColorAttachment(LoadOp.Clear, StoreOp.Store, blue) };
 var renderPass2 = new RenderPass<Pipeline>(encoder, &p2);
 renderPass2.End();
 device.GetQueue().Submit(encoder.Finish());

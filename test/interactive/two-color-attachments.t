@@ -1,14 +1,7 @@
-using Vertex = float<4>;
-var device = new Device();
-var window = new Window({0, 0}, {640, 480});
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-var verts = [3] new Vertex;
-verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
-verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
-verts[2] = float<4>( 1.0, -1.0, 0.0, 1.0);
-var vb = new vertex Buffer<[]Vertex>(device, verts);
+using Vertex = float<2>;
+
 class RTTPipeline {
-  vertex main(vb : &VertexBuiltins) { vb.position = vert.Get(); }
+  vertex main(vb : &VertexBuiltins) { vb.position = {@vert.Get(), 0.0, 1.0}; }
   fragment main(fb : &FragmentBuiltins) {
     red.Set(float<4>(1.0, 0.0, 0.0, 1.0));
     green.Set(float<4>(0.0, 1.0, 0.0, 1.0));
@@ -25,7 +18,7 @@ class Bindings {
 }
 
 class Pipeline {
-  vertex main(vb : &VertexBuiltins) { vb.position = vert.Get(); }
+  vertex main(vb : &VertexBuiltins) { vb.position = {@vert.Get(), 0.0, 1.0}; }
   fragment main(fb : &FragmentBuiltins) {
     var b = bindings.Get();
     var onehalf = float<2>(0.5, 0.5);
@@ -35,6 +28,12 @@ class Pipeline {
   var vert : *VertexInput<Vertex>;
   var bindings : *BindGroup<Bindings>;
 }
+
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var verts = [3]Vertex{ {0.0, 1.0}, {-1.0, -1.0}, {1.0, -1.0} };
+var vb = new vertex Buffer<[]Vertex>(device, &verts);
 var encoder = new CommandEncoder(device);
 var redTex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());
 var greenTex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize());
@@ -48,14 +47,16 @@ rttPass.SetPipeline(rttPipeline);
 rttPass.Draw(3, 1, 0, 0);
 rttPass.End();
 var pipeline = new RenderPipeline<Pipeline>(device);
-var p : Pipeline;
-p.vert = new VertexInput<Vertex>(vb);
-p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
-var b : Bindings;
-b.sampler = new Sampler(device);
-b.red = redTex.CreateSampleableView();
-b.green = greenTex.CreateSampleableView();
-p.bindings = new BindGroup<Bindings>(device, &b);
+var b = new BindGroup<Bindings>(device, {
+  sampler = new Sampler(device),
+  red = redTex.CreateSampleableView(),
+  green = greenTex.CreateSampleableView()
+});
+var p = Pipeline{
+  vert = new VertexInput<Vertex>(vb),
+  fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear),
+  bindings = b
+};
 var drawPass = new RenderPass<Pipeline>(encoder, &p);
 drawPass.SetPipeline(pipeline);
 drawPass.Draw(3, 1, 0, 0);

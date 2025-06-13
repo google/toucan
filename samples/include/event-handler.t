@@ -1,5 +1,3 @@
-include "utils.t"
-
 class EventHandler {
   Rotate(diff : int<2>) {
     rotation += (float<2>) diff / 200.0;

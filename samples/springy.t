@@ -1,7 +1,6 @@
 include "event-handler.t"
 include "quaternion.t"
 include "transform.t"
-include "utils.t"
 
 using Vector = float<2>;
 
@@ -91,7 +90,7 @@ class Bindings {
 class DrawPipeline {
   vertex main(vb : &VertexBuiltins) {
     var matrix = bindings.Get().uniforms.MapRead().matrix;
-    vb.position = matrix * Utils.makeFloat4(vertices.Get(), 0.0, 1.0);
+    vb.position = matrix * float<4>{@vertices.Get(), 0.0, 1.0};
   }
   fragment main(fb : &FragmentBuiltins) {
     fragColor.Set(bindings.Get().uniforms.MapRead().color);

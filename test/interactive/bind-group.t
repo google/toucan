@@ -1,41 +1,39 @@
-using Vertex = float<4>;
-var device = new Device();
-var window = new Window({0, 0}, {640, 480});
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-var verts = [3] new Vertex;
-verts[0] = float<4>( 0.0,  1.0, 0.0, 1.0);
-verts[1] = float<4>(-1.0, -1.0, 0.0, 1.0);
-verts[2] = float<4>( 1.0, -1.0, 0.0, 1.0);
-var vb = new vertex Buffer<[]Vertex>(device, verts);
+using Vertex = float<2>;
+
 class Uniforms {
   var color : float<4>;
 }
+
 class ObjectData {
   var uniforms : *uniform Buffer<Uniforms>;
 }
 
 class Pipeline {
-  vertex main(vb : &VertexBuiltins) { vb.position = vert.Get(); }
+  vertex main(vb : &VertexBuiltins) { vb.position = {@vertices.Get(), 0.0, 1.0}; }
   fragment main(fb : &FragmentBuiltins) {
-    var u = objectData.Get().uniforms.MapRead();
-    fragColor.Set(u.color);
+    fragColor.Set(objectData.Get().uniforms.MapRead().color);
   }
-  var vert : *VertexInput<Vertex>;
+  var vertices : *VertexInput<Vertex>;
   var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
   var objectData : *BindGroup<ObjectData>;
 }
-var objectData : ObjectData;
-objectData.uniforms = new uniform Buffer<Uniforms>(device);
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var verts = [3]Vertex{ { 0.0,  1.0 }, {-1.0, -1.0 }, { 1.0, -1.0 } };
+var vb = new vertex Buffer<[]Vertex>(device, &verts);
+var objectData = ObjectData{ new uniform Buffer<Uniforms>(device) };
 var bg = new BindGroup<ObjectData>(device, &objectData);
 var stagingBuffer = new hostwriteable Buffer<Uniforms>(device);
 var pipeline = new RenderPipeline<Pipeline>(device);
 while (System.IsRunning()) {
   var encoder = new CommandEncoder(device);
   objectData.uniforms.CopyFromBuffer(encoder, stagingBuffer);
-  var p : Pipeline;
-  p.vert = new VertexInput<Vertex>(vb);
-  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
-  p.objectData = bg;
+  var p = Pipeline{
+    vertices = new VertexInput<Vertex>(vb),
+    fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear),
+    objectData = bg
+  };
   var renderPass = new RenderPass<Pipeline>(encoder, &p);
   renderPass.SetPipeline(pipeline);
   renderPass.Draw(3, 1, 0, 0);

@@ -1,17 +1,12 @@
-var device = new Device();
-var window = new Window({0, 0}, {640, 480});
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-var triVerts : [3]float<4> = { { 0.0,  1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0, -1.0, 0.0, 1.0 }};
-var triVB = new vertex Buffer<[]float<4>>(device, &triVerts);
 class GreenPipeline {
-    vertex main(vb : &VertexBuiltins) { vb.position = position.Get(); }
+    vertex main(vb : &VertexBuiltins) { vb.position = {@position.Get(), 0.0, 1.0}; }
     fragment main(fb : &FragmentBuiltins) { renderTex.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
-    var position : *VertexInput<float<4>>;
+    var position : *VertexInput<float<2>>;
     var renderTex : *ColorAttachment<RGBA8unorm>;
 }
 
 class QuadVertex {
-    var position : float<4>;
+    var position : float<2>;
     var texCoord : float<2>;
 };
 
@@ -23,7 +18,7 @@ class Bindings {
 class TexPipeline {
     vertex main(vb : &VertexBuiltins) : float<2> {
         var v = vertices.Get();
-        vb.position = v.position;
+        vb.position = {@v.position, 0.0, 1.0};
         return v.texCoord;
     }
     fragment main(fb : &FragmentBuiltins, texCoord : float<2>) {
@@ -36,11 +31,17 @@ class TexPipeline {
     var bindings : *BindGroup<Bindings>;
 };
 
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var triVerts : [3]float<2> = { { 0.0, 1.0 }, {-1.0, -1.0 }, { 1.0, -1.0 }};
+var triVB = new vertex Buffer<[]float<2>>(device, &triVerts);
+
 var quadVerts : [4]QuadVertex = {
-  { position = { -1.0, -1.0, 0.0, 1.0 }, texCoord = { 0.0, 1.0 } },
-  { position = {  1.0, -1.0, 0.0, 1.0 }, texCoord = { 1.0, 1.0 } },
-  { position = { -1.0,  1.0, 0.0, 1.0 }, texCoord = { 0.0, 0.0 } },
-  { position = {  1.0,  1.0, 0.0, 1.0 }, texCoord = { 1.0, 0.0 } }
+  { position = { -1.0, -1.0 }, texCoord = { 0.0, 1.0 } },
+  { position = {  1.0, -1.0 }, texCoord = { 1.0, 1.0 } },
+  { position = { -1.0,  1.0 }, texCoord = { 0.0, 0.0 } },
+  { position = {  1.0,  1.0 }, texCoord = { 1.0, 0.0 } }
 };
 var quadIndices : [6]uint = { 0, 1, 2, 1, 2, 3 };
 var quadVB = new vertex Buffer<[]QuadVertex>(device, &quadVerts);
@@ -52,7 +53,7 @@ var tex = new sampleable renderable Texture2D<RGBA8unorm>(device, window.GetSize
 var triPipeline = new RenderPipeline<GreenPipeline>(device);
 var encoder = new CommandEncoder(device);
 var gp : GreenPipeline;
-gp.position = new VertexInput<float<4>>(triVB);
+gp.position = new VertexInput<float<2>>(triVB);
 gp.renderTex = tex.CreateColorAttachment(LoadOp.Clear);
 var renderPass = new RenderPass<GreenPipeline>(encoder, &gp);
 renderPass.SetPipeline(triPipeline);

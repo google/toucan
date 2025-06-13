@@ -2,13 +2,13 @@ var device = new Device();
 var window = new Window({0, 0}, {640, 480});
 var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
 
-var positions : [3]float<2> = {
+var positions = [3]float<2>{
   { 0.0,  1.0 },
   {-1.0, -1.0 },
   { 1.0, -1.0 }
 };
 
-var colors : [3]float<3> = {
+var colors = [3]float<3>{
   {1.0, 0.0, 0.0},
   {0.0, 1.0, 0.0},
   {0.0, 0.0, 1.0}
@@ -16,8 +16,7 @@ var colors : [3]float<3> = {
 
 class Pipeline {
   vertex main(vb : &VertexBuiltins) : float<3> {
-    var v = position.Get();
-    vb.position = float<4>(v.x, v.y, 0.0, 1.0);
+    vb.position = { @position.Get(), 0.0, 1.0 };
     return color.Get();
   }
   fragment main(fb : &FragmentBuiltins, varyings : float<3>) {

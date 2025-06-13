@@ -8,20 +8,6 @@ class Uniforms {
   var alpha : float;
 }
 
-var device = new Device();
-var window = new Window({0, 0}, {640, 480});
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
-
-var verts = [3] new Vertex;
-verts[0].position = float<2>( 0.0,  1.0);
-verts[1].position = float<2>(-1.0, -1.0);
-verts[2].position = float<2>( 1.0, -1.0);
-verts[0].color = float<3>(1.0, 0.0, 0.0);
-verts[1].color = float<3>(0.0, 1.0, 0.0);
-verts[2].color = float<3>(0.0, 0.0, 1.0);
-
-var vb = new vertex Buffer<[]Vertex>(device, verts);
-
 class Bindings {
   var uniformBuffer : *uniform Buffer<Uniforms>;
 }
@@ -30,9 +16,8 @@ class Pipeline {
   vertex main(vb : &VertexBuiltins) : float<4> {
     var uniforms = bindings.Get().uniformBuffer.MapRead();
     var v = vertices.Get();
-    var position = float<4>(v.position.x, v.position.y, 0.0, 1.0);
-    vb.position = uniforms.mvpMatrix * position;
-    return float<4>(v.color.r, v.color.g, v.color.b, 1.0);
+    vb.position = uniforms.mvpMatrix * float<4>{@v.position, 0.0, 1.0};
+    return float<4>{@v.color, 1.0};
   }
   fragment main(fb : &FragmentBuiltins, varyings : float<4>) {
     fragColor.Set(varyings * bindings.Get().uniformBuffer.MapRead().alpha);
@@ -42,12 +27,24 @@ class Pipeline {
   var bindings : *BindGroup<Bindings>;
 }
 
+var device = new Device();
+var window = new Window({0, 0}, {640, 480});
+var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+
+var verts = [3]Vertex{
+  { position = { 0.0,  1.0}, color = {1.0, 0.0, 0.0} },
+  { position = {-1.0, -1.0}, color = {0.0, 1.0, 0.0} },
+  { position = { 1.0, -1.0}, color = {0.0, 0.0, 1.0} }
+};
+
+var vb = new vertex Buffer<[]Vertex>(device, &verts);
+
 var uniformBuffer = new uniform Buffer<Uniforms>(device);
 var uniformData : Uniforms;
-uniformData.mvpMatrix = float<4, 4>(float<4>(1.0, 0.0, 0.0, 0.0),
-                                    float<4>(0.0, 1.0, 0.0, 0.0),
-                                    float<4>(0.0, 0.0, 1.0, 0.0),
-                                    float<4>(0.0, 0.0, 0.0, 1.0));
+uniformData.mvpMatrix = {{1.0, 0.0, 0.0, 0.0},
+                         {0.0, 1.0, 0.0, 0.0},
+                         {0.0, 0.0, 1.0, 0.0},
+                         {0.0, 0.0, 0.0, 1.0}};
 uniformData.alpha = 0.5;
 var bg = new BindGroup<Bindings>(device, { uniformBuffer } );
 var pipeline = new RenderPipeline<Pipeline>(device);
