@@ -302,7 +302,7 @@ for (var j = 0; j < kMaxNumLights; j++) {
   for (var i = 0; i < 3; i++) {
     light.position[i] = Math.rand() * extent[i] + lightExtentMin[i];
   }
-  light.position[4] = 1.0;
+  light.position[3] = 1.0;
   light.color = {
     Math.rand() * 2.0,
     Math.rand() * 2.0,
