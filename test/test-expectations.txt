@@ -39,6 +39,8 @@ test/arrays.t
 test/binop-widen.t
 test/bitwise.t
 test/bool-constants.t
+test/buffer-double-map.t
+test/buffer-freed-with-mapped-data.t
 test/byte-vector.t
 test/byte.t
 test/cast-int-to-float.t
@@ -215,8 +217,8 @@ test/error-syntax-error-in-included-file.t
 syntax-error.t:2: syntax error
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:2:  matching constructor not found
-error-texture-from-buffer-incorrect-format.t:9:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(*CommandEncoder, *hostwriteable Buffer<[]float<4>>, int)
-error-texture-from-buffer-incorrect-format.t:9:  Texture1D<RGBA8unorm>.CopyFromBuffer(&CommandEncoder, &Buffer<[]ubyte<4>>, uint, uint) 
+error-texture-from-buffer-incorrect-format.t:10:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(*CommandEncoder, *hostwriteable Buffer<[]float<4>>, int)
+error-texture-from-buffer-incorrect-format.t:10:  Texture1D<RGBA8unorm>.CopyFromBuffer(&CommandEncoder, &Buffer<[]ubyte<4>>, uint, uint) 
 test/error-uint-literal-too-large.t
 test/error-unknown-param-type.t
 error-unknown-param-type.t:2: syntax error

@@ -38,16 +38,17 @@ var pipeline = new RenderPipeline<Pipeline>(device);
 var tex = new sampleable Texture2DArray<RGBA8unorm>(device, {2, 2, 2});
 var width = tex.MinBufferWidth();
 var buffer = new hostwriteable Buffer<[]ubyte<4>>(device, width * 2 * 2);
-var data = buffer.MapWrite();
-data[0] =         ubyte<4>(255ub,   0ub,   0ub, 255ub);
-data[1] =         ubyte<4>(  0ub, 255ub,   0ub, 255ub);
-data[width] =     ubyte<4>(  0ub,   0ub, 255ub, 255ub);
-data[width+1] =   ubyte<4>(  0ub, 255ub, 255ub, 255ub);
-data[width*2] =   ubyte<4>(255ub, 255ub,   0ub, 255ub);
-data[width*2+1] = ubyte<4>(  0ub, 255ub, 255ub, 255ub);
-data[width*3] =   ubyte<4>(255ub,   0ub, 255ub, 255ub);
-data[width*3+1] = ubyte<4>(255ub, 255ub, 255ub, 255ub);
-buffer.Unmap();
+{
+  var data = buffer.MapWrite();
+  data[0] =         ubyte<4>(255ub,   0ub,   0ub, 255ub);
+  data[1] =         ubyte<4>(  0ub, 255ub,   0ub, 255ub);
+  data[width] =     ubyte<4>(  0ub,   0ub, 255ub, 255ub);
+  data[width+1] =   ubyte<4>(  0ub, 255ub, 255ub, 255ub);
+  data[width*2] =   ubyte<4>(255ub, 255ub,   0ub, 255ub);
+  data[width*2+1] = ubyte<4>(  0ub, 255ub, 255ub, 255ub);
+  data[width*3] =   ubyte<4>(255ub,   0ub, 255ub, 255ub);
+  data[width*3+1] = ubyte<4>(255ub, 255ub, 255ub, 255ub);
+}
 var copyEncoder = new CommandEncoder(device);
 tex.CopyFromBuffer(copyEncoder, buffer, {2, 2, 2});
 device.GetQueue().Submit(copyEncoder.Finish());

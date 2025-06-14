@@ -20,4 +20,3 @@ var result = hostBuf.MapRead();
 Test.Expect(result.array[0] == 42);
 Test.Expect(result.array[1] == 21);
 Test.Expect(result.array[2] == 7);
-hostBuf.Unmap();

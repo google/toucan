@@ -43,12 +43,11 @@ native class Buffer<T> {
  ~Buffer();
   SetData(data : &T);
   CopyFromBuffer(encoder : &CommandEncoder, source : &Buffer<T>);
-  deviceonly MapRead() uniform : ^readonly uniform T;
-  deviceonly MapWrite() writeonly storage : ^writeonly storage T;
-  deviceonly Map() storage : ^storage T;
-  MapRead() hostreadable : ^readonly T;
-  MapWrite() hostwriteable : ^writeonly T;
-  Unmap();
+  deviceonly MapRead() uniform : *readonly uniform T;
+  deviceonly MapWrite() writeonly storage : *writeonly storage T;
+  deviceonly Map() storage : *storage T;
+  MapRead() hostreadable : *readonly T;
+  MapWrite() hostwriteable : *writeonly T;
 }
 
 class DepthStencilState {

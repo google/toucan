@@ -39,4 +39,3 @@ readbackBuf.CopyFromBuffer(encoder, resultBuf);
 device.GetQueue().Submit(encoder.Finish());
 var result = readbackBuf.MapRead()[0];
 Test.Expect(result == 1.0);
-readbackBuf.Unmap();

@@ -15,9 +15,7 @@ class CubeLoader {
     var image = new Image<Format>(data);
     var size = image.GetSize();
     var buffer = new hostwriteable Buffer<[]Format:HostType>(device, texture.MinBufferWidth() * size.y);
-    var b = buffer.MapWrite();
-    image.Decode(b, texture.MinBufferWidth());
-    buffer.Unmap();
+    image.Decode(buffer.MapWrite(), texture.MinBufferWidth());
     var encoder = new CommandEncoder(device);
     texture.CopyFromBuffer(encoder, buffer, {size.x, size.y, 1}, uint<3>(0, 0, face));
     device.GetQueue().Submit(encoder.Finish());

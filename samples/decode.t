@@ -29,7 +29,6 @@ var imageSize = image.GetSize();
 var texture = new sampleable Texture2D<RGBA8unorm>(device, imageSize);
 var buffer = new hostwriteable Buffer<[]ubyte<4>>(device, texture.MinBufferWidth() * imageSize.y);
 image.Decode(buffer.MapWrite(), texture.MinBufferWidth());
-buffer.Unmap();
 var copyEncoder = new CommandEncoder(device);
 texture.CopyFromBuffer(copyEncoder, buffer, imageSize);
 device.GetQueue().Submit(copyEncoder.Finish());

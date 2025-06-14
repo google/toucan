@@ -25,10 +25,8 @@ var stagingBuffer = new hostwriteable Buffer<Uniforms>(device);
 var pipeline = new RenderPipeline<Pipeline>(device);
 for (var i = 0; i < 300 && System.IsRunning(); ++i) {
   var encoder = new CommandEncoder(device);
-  var s = stagingBuffer.MapWrite();
   var f = (float) i / 300.0;
-  s.color = float<4>(1.0 - f, f, 0.0, 1.0);
-  stagingBuffer.Unmap();
+  stagingBuffer.MapWrite().color = float<4>(1.0 - f, f, 0.0, 1.0);
   uniformBuffer.CopyFromBuffer(encoder, stagingBuffer);
   var vi = new VertexInput<Vertex>(vb);
   var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);

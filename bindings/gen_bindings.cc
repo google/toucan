@@ -257,12 +257,14 @@ void GenBindings::Run(const TypeVector& referencedTypes) {
     header_ << "extern \"C\" {\n";
     header_ << "namespace Toucan {\n\n";
     header_ << "class ClassType;\n";
-    header_ << "class Type;\n\n";
+    header_ << "class Type;\n";
+    header_ << "using Deleter = void(*)(void*);\n\n";
     header_ << "struct ControlBlock {\n";
     header_ << "  uint32_t    strongRefs = 0;\n";
     header_ << "  uint32_t    weakRefs = 0;\n";
     header_ << "  uint32_t    arrayLength;\n";
     header_ << "  Type*       type = nullptr;\n";
+    header_ << "  Deleter     deleter = nullptr;\n";
     header_ << "};\n\n";
     header_ << "struct Object {\n";
     header_ << "  void*          ptr;\n";
