@@ -315,6 +315,7 @@ struct Method {
   std::string             GetMangledName() const;
   void                    AddFormalArg(std::string id, Type* type, Expr* defaultValue);
   bool                    IsConstructor() const;
+  bool                    IsDestructor() const;
   int                     modifiers;
   Type*                   returnType;
   std::string             name;
@@ -328,12 +329,11 @@ struct Method {
   std::string             wgsl;
   int                     index = -1;
   enum Modifier {
-    Static = 0x01,
-    Virtual = 0x02,
-    DeviceOnly = 0x04,
-    Vertex = 0x10,
-    Fragment = 0x20,
-    Compute = 0x40,
+    Static =     1<<0,
+    DeviceOnly = 1<<1,
+    Vertex =     1<<2,
+    Fragment =   1<<3,
+    Compute =    1<<4
   };
 };
 
@@ -438,11 +438,7 @@ class ClassType : public Type {
   bool        IsNative() const;
   void        SetNative(bool native) { native_ = native; }
   ClassType*  GetParent() const { return parent_; }
-  int         GetVTableSize() const { return vtable_.size(); }
-  void        SetVTable(int index, Method* method);
-  void        AppendToVTable(Method* method);
-  const std::vector<Method*>& GetVTable() { return vtable_; }
-  void                        SetVTable(const std::vector<Method*>& vtable) { vtable_ = vtable; }
+  Method*                     GetDestructor() { return destructor_; }
   Type*                       FindType(const std::string& id);
   void                        SetMemoryLayout(MemoryLayout memoryLayout, TypeTable* types);
   void                        SetMemoryLayout(MemoryLayout memoryLayout) { memoryLayout_ = memoryLayout; }
@@ -461,7 +457,7 @@ class ClassType : public Type {
   EnumVector           enums_;
   ClassTemplate*       template_ = nullptr;
   TypeList             templateArgs_;
-  std::vector<Method*> vtable_;
+  Method*              destructor_;
   int                  numFields_ = 0;  // includes inherited fields
   bool                 isDefined_ = false;
   bool                 native_ = false;

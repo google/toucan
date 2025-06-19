@@ -79,7 +79,7 @@ class CodeGenLLVM : public Visitor {
   llvm::Value*    GetWeakRefCountAddress(llvm::Value* controlBlock);
   llvm::Value*    GetArrayLengthAddress(llvm::Value* controlBlock);
   llvm::Value*    GetClassTypeAddress(llvm::Value* controlBlock);
-  llvm::Value*    GetVTableAddress(llvm::Value* controlBlock);
+  llvm::Value*    GetDestructorAddress(llvm::Value* controlBlock);
   llvm::BasicBlock*     NullControlBlockCheck(llvm::Value* controlBlock, BinOpNode::Op op);
   void                  RefStrongPtr(llvm::Value* ptr);
   void                  UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type);
@@ -91,8 +91,6 @@ class CodeGenLLVM : public Visitor {
   BuiltinCall           FindBuiltin(Method* method);
   llvm::Value*          GetSourceFile(const FileLocation& location);
   llvm::Value*          GetSourceLine(const FileLocation& location);
-  llvm::GlobalVariable* GetOrCreateVTable(ClassType* classType);
-  void                  FillVTable(ClassType* classType);
   void                  InitializeObject(llvm::Value* objPtr, ClassType* classType);
   llvm::AllocaInst*     CreateEntryBlockAlloca(llvm::Function* function, Var* var);
   llvm::Value*          CreatePointer(llvm::Value* obj, llvm::Value* controlBlockOrLength);
@@ -189,7 +187,6 @@ class CodeGenLLVM : public Visitor {
   llvm::PointerType*                                    voidPtrType_;
   llvm::Type*                                           controlBlockType_;
   llvm::PointerType*                                    controlBlockPtrType_;
-  llvm::Type*                                           vtableType_;
   bool                                                  debugOutput_;
   DerefList                                             temporaries_;
   RefPtrTemporaries                                     scopedTemporaries_;
@@ -198,7 +195,6 @@ class CodeGenLLVM : public Visitor {
   std::unordered_map<Expr*, llvm::Value*>               exprCache_;
   std::unordered_map<Var*, llvm::AllocaInst*>           allocas_;
   std::unordered_map<Method*, llvm::Function*>          functions_;
-  std::unordered_map<ClassType*, llvm::GlobalVariable*> vtables_;
   std::unordered_map<ClassType*, llvm::StructType*>     classPlaceholders_;
   std::vector<Type*>                                    referencedTypes_;
   std::unordered_map<Type*, llvm::Value*>               typeMap_;

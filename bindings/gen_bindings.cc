@@ -263,7 +263,6 @@ void GenBindings::Run(const TypeVector& referencedTypes) {
     header_ << "  uint32_t    weakRefs = 0;\n";
     header_ << "  uint32_t    arrayLength;\n";
     header_ << "  Type*       type = nullptr;\n";
-    header_ << "  void*       vtable = nullptr;\n";
     header_ << "};\n\n";
     header_ << "struct Object {\n";
     header_ << "  void*          ptr;\n";
@@ -365,7 +364,6 @@ void GenBindings::EmitMethod(Method* method) {
   int returnTypeID = EmitType(method->returnType);
   file_ << "  m = new Method(0";
   if (method->modifiers & Method::Modifier::Static) { file_ << " | Method::Modifier::Static"; }
-  if (method->modifiers & Method::Modifier::Virtual) { file_ << " | Method::Modifier::Virtual"; }
   if (method->modifiers & Method::Modifier::DeviceOnly) { file_ << " | Method::Modifier::DeviceOnly"; }
   if (method->modifiers & Method::Modifier::Vertex) { file_ << " | Method::Modifier::Vertex"; }
   if (method->modifiers & Method::Modifier::Fragment) { file_ << " | Method::Modifier::Fragment"; }
@@ -394,10 +392,6 @@ void GenBindings::EmitMethod(Method* method) {
     file_ << ");\n";
   }
   file_ << "  c->AddMethod(m);\n";
-  if (method->modifiers & Method::Modifier::Virtual) {
-    assert(method->index == 0); // Destructors are the only supported virtual
-    file_ << "  c->SetVTable(0, m);\n";
-  }
   bool skipFirst = false;
   if (method->classType->IsNative()) {
     if (header_ && !(method->modifiers & Method::Modifier::DeviceOnly)) {

@@ -852,7 +852,6 @@ static void BeginDestructor(int modifiers, Type* type) {
     return;
   }
   ClassType* classType = static_cast<ClassType*>(type);
-  modifiers |= Method::Modifier::Virtual;
   std::string name(std::string("~") + classType->GetName());
   Type* returnType = types_->GetVoid();
   BeginMethod(modifiers, name.c_str(), nullptr, nullptr, 0, returnType);

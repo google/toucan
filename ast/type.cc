@@ -362,7 +362,7 @@ std::string Method::ToString() const {
 
 std::string Method::GetMangledName() const {
   std::string result = classType->GetName() + "_";
-  if (name[0] == '~') {
+  if (IsDestructor()) {
     result += "Destroy";
   } else {
     result += name;
@@ -403,8 +403,11 @@ bool Method::IsConstructor() const {
   return name == classType->GetName();
 }
 
+bool Method::IsDestructor() const {
+  return name[0] == '~';
+}
+
 ClassType::ClassType(std::string name) : name_(name) {
-  vtable_.resize(1);
 }
 
 bool ClassType::IsPOD() const {
@@ -494,6 +497,7 @@ size_t ClassType::ComputeFieldOffsets() {
 
 void ClassType::AddMethod(Method* method) {
   methods_.push_back(std::unique_ptr<Method>(method));
+  if (method->IsDestructor()) destructor_ = method;
 }
 
 void ClassType::AddEnum(std::string name, EnumType* enumType) {
@@ -573,17 +577,6 @@ bool ClassType::IsNative() const {
 bool ClassType::IsUnsizedClass() const {
   if (fields_.size() == 0) { return false; }
   return (fields_.back()->type->IsUnsizedArray());
-}
-
-void ClassType::SetVTable(int index, Method* method) {
-  assert(index >= 0 && index < vtable_.size());
-  method->index = index;
-  vtable_[index] = method;
-}
-
-void ClassType::AppendToVTable(Method* method) {
-  method->index = vtable_.size();
-  vtable_.push_back(method);
 }
 
 void Method::AddFormalArg(std::string name, Type* type, Expr* defaultValue) {

@@ -130,7 +130,6 @@ CodeGenLLVM::CodeGenLLVM(llvm::LLVMContext*                 context,
   llvm::Type* voidType = llvm::Type::getVoidTy(*context_);
   funcPtrType_ = llvm::PointerType::get(llvm::FunctionType::get(voidType, false), 0);
   voidPtrType_ = llvm::PointerType::get(byteType_, 0);
-  vtableType_ = llvm::PointerType::get(funcPtrType_, 0);
   controlBlockType_ = ControlBlockType();
   controlBlockPtrType_ = llvm::PointerType::get(controlBlockType_, 0);
   typeListType_ = llvm::PointerType::get(llvm::PointerType::get(voidPtrType_, 0), 0);
@@ -149,7 +148,6 @@ void CodeGenLLVM::Run(Stmts* stmts) {
       for (const auto& mit : classType->GetMethods()) {
         GenCodeForMethod(mit.get());
       }
-      FillVTable(classType);
     }
   }
   stmts->Accept(this);
@@ -181,7 +179,7 @@ llvm::Type* CodeGenLLVM::ControlBlockType() {
   types.push_back(intType_);      // weak refcount
   types.push_back(intType_);      // array length
   types.push_back(voidPtrType_);  // ClassType
-  types.push_back(vtableType_);   // vtable
+  types.push_back(voidPtrType_);  // destructor
   return llvm::StructType::get(*context_, types);
 }
 
@@ -266,28 +264,6 @@ llvm::Type* CodeGenLLVM::ConvertTypeToNative(Type* type) {
 
 llvm::Constant* CodeGenLLVM::Int(int value) { return llvm::ConstantInt::get(intType_, value); }
 
-llvm::GlobalVariable* CodeGenLLVM::GetOrCreateVTable(ClassType* classType) {
-  if (auto vtable = vtables_[classType]) return vtable;
-
-  llvm::ArrayType*      arrayType = llvm::ArrayType::get(funcPtrType_, classType->GetVTableSize());
-  llvm::GlobalVariable* vtable = new llvm::GlobalVariable(
-      *module_, arrayType, true, llvm::GlobalVariable::ExternalLinkage, nullptr, "vtable");
-  return vtables_[classType] = vtable;
-}
-
-void CodeGenLLVM::FillVTable(ClassType* classType) {
-  llvm::GlobalVariable* vtable = GetOrCreateVTable(classType);
-  llvm::ArrayType*      arrayType = llvm::ArrayType::get(funcPtrType_, classType->GetVTableSize());
-  std::vector<llvm::Constant*> functions;
-  for (Method* const& method : classType->GetVTable()) {
-    llvm::Function* function = GetOrCreateMethodStub(method);
-    llvm::Constant* voidFunc = llvm::ConstantExpr::getBitCast(function, funcPtrType_);
-    functions.push_back(voidFunc);
-  }
-  llvm::Constant* initializer = llvm::ConstantArray::get(arrayType, functions);
-  vtable->setInitializer(initializer);
-}
-
 llvm::Value* CodeGenLLVM::CreateTypePtr(Type* type) {
   llvm::Value* ptr = builder_->CreateLoad(typeListType_, typeList_);
   llvm::Value* typeID = typeMap_[type];
@@ -309,11 +285,8 @@ llvm::Value* CodeGenLLVM::CreateControlBlock(Type* type) {
   builder_->CreateStore(CreateTypePtr(type), GetClassTypeAddress(controlBlock));
   type = type->GetUnqualifiedType();
   if (type->IsClass()) {
-    llvm::GlobalVariable* vtable = GetOrCreateVTable(static_cast<ClassType*>(type));
-    llvm::Value*          indices[] = {Int(0), Int(0)};
-    llvm::Type*           type = vtable->getValueType();
-    llvm::Value*          vtableValue = llvm::ConstantExpr::getGetElementPtr(type, vtable, indices);
-    builder_->CreateStore(vtableValue, GetVTableAddress(controlBlock));
+    llvm::Value* destructor = GetOrCreateMethodStub(static_cast<ClassType*>(type)->GetDestructor());
+    builder_->CreateStore(destructor, GetDestructorAddress(controlBlock));
   }
   return controlBlock;
 }
@@ -345,7 +318,7 @@ llvm::Value* CodeGenLLVM::GetClassTypeAddress(llvm::Value* controlBlock) {
   return builder_->CreateGEP(controlBlockType_, controlBlock, {Int(0), Int(3)});
 }
 
-llvm::Value* CodeGenLLVM::GetVTableAddress(llvm::Value* controlBlock) {
+llvm::Value* CodeGenLLVM::GetDestructorAddress(llvm::Value* controlBlock) {
   return builder_->CreateGEP(controlBlockType_, controlBlock, {Int(0), Int(4)});
 }
 
@@ -392,22 +365,17 @@ void CodeGenLLVM::UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type) {
   bool  isNativeClass = false;
   Type* baseType = type->GetBaseType()->GetUnqualifiedType();
   if (baseType->IsClass()) {
-    auto            classType = static_cast<ClassType*>(baseType);
-    Method*         destructor = classType->GetVTable()[0];
-    llvm::Function* function = GetOrCreateMethodStub(destructor);
-    llvm::Value*    v = GetVTableAddress(controlBlock);
-    llvm::Value*    vtable = builder_->CreateLoad(vtableType_, v);
-    llvm::Value*    gep = builder_->CreateGEP(funcPtrType_, vtable, Int(0));
-    llvm::Value*    func = builder_->CreateLoad(funcPtrType_, gep);
-    llvm::Value*    typedFunc =
-        builder_->CreateBitCast(func, llvm::PointerType::get(function->getFunctionType(), 0));
+    auto         classType = static_cast<ClassType*>(baseType);
     llvm::Value* arg = builder_->CreateExtractValue(ptr, {0});
     if (classType->IsUnsizedClass()) {
       auto length = builder_->CreateLoad(intType_, GetArrayLengthAddress(controlBlock));
       arg = CreatePointer(arg, length);
     }
     isNativeClass = classType->IsNative();
-    builder_->CreateCall(function->getFunctionType(), typedFunc, {arg});
+    llvm::Value*    v = GetDestructorAddress(controlBlock);
+    llvm::Value*    destructor = builder_->CreateLoad(funcPtrType_, v);
+    llvm::Function* function = GetOrCreateMethodStub(classType->GetDestructor());
+    builder_->CreateCall(function->getFunctionType(), destructor, {arg});
   }
   if (!isNativeClass) { GenerateFree(builder_->CreateExtractValue(ptr, {0})); }
   builder_->CreateBr(afterBlock);
@@ -1435,22 +1403,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
     // is_zero_poison: false
     args.push_back(llvm::ConstantInt::get(boolType_, 0, true));
   }
-  llvm::Value* result;
-  if (method->modifiers & Method::Modifier::Virtual) {
-    llvm::Value* objPtr = *args.begin();
-    int          index = method->index;
-    llvm::Value* controlBlock = builder_->CreateExtractValue(objPtr, {1});
-    llvm::Value* v = GetVTableAddress(controlBlock);
-    llvm::Value* vtable = builder_->CreateLoad(vtableType_, v, "vtable");
-    llvm::Value* indices[] = {llvm::ConstantInt::get(intType_, index)};
-    llvm::Value* gep = builder_->CreateGEP(funcPtrType_, vtable, indices);
-    llvm::Value* func = builder_->CreateLoad(funcPtrType_, gep, "func");
-    llvm::Value* typedFunc =
-        builder_->CreateBitCast(func, llvm::PointerType::get(function->getFunctionType(), 0));
-    result = builder_->CreateCall(function->getFunctionType(), typedFunc, args);
-  } else {
-    result = builder_->CreateCall(function, args);
-  }
+  llvm::Value* result = builder_->CreateCall(function, args);
   if (method->classType->IsNative() && !intrinsic) {
     result = ConvertFromNative(returnType, result);
   }

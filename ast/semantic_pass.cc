@@ -866,31 +866,10 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
 
   symbols_->PushScope(scope);
   Method* destructor = nullptr;
-  if (auto parent = classType->GetParent()) {
-    classType->SetVTable(parent->GetVTable());
-  }
   for (const auto& mit : classType->GetMethods()) {
     Method* method = mit.get();
-    if (method->name[0] == '~') {
+    if (method->IsDestructor()) {
       destructor = method;
-    } else {
-      Method* match = FindOverriddenMethod(classType->GetParent(), method);
-      if (match) {
-        if (method->modifiers & Method::Modifier::Virtual) {
-          if (!(match->modifiers & Method::Modifier::Virtual)) {
-            return Error("attempt to override a non-virtual method");
-          }
-        } else if (match->modifiers & Method::Modifier::Virtual) {
-          return Error("override of virtual method must be virtual");
-        }
-      }
-      if (method->modifiers & Method::Modifier::Virtual) {
-        if (match) {
-          classType->SetVTable(match->index, method);
-        } else {
-          classType->AppendToVTable(method);
-        }
-      }
     }
 
     if (method->stmts) {
@@ -918,12 +897,10 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
 
   if (!destructor) {
     std::string name(std::string("~") + classType->GetName());
-    destructor = new Method(Method::Modifier::Virtual, types_->GetVoid(), name, classType);
+    destructor = new Method(0, types_->GetVoid(), name, classType);
     destructor->AddFormalArg("this", types_->GetRawPtrType(classType), nullptr);
     classType->AddMethod(destructor);
   }
-
-  classType->SetVTable(0, destructor);
 
   if (!destructor->stmts) {
     Stmts* stmts = Make<Stmts>();
