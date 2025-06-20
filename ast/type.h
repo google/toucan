@@ -576,7 +576,7 @@ class TypeTable {
   RawPtrType*        GetRawPtrType(Type* type);
   ArrayType*         GetArrayType(Type* elementType, int size, MemoryLayout layout);
   FormalTemplateArg* GetFormalTemplateArg(std::string name);
-  ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs);
+  ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs, std::vector<ClassType*>* instanceQueue);
   Type*       GetQualifiedType(Type* type, int qualifiers);
   Type*       GetUnresolvedScopedType(FormalTemplateArg* baseType, std::string id);
   TypeList*   AppendTypeList(TypeList* type);
@@ -589,7 +589,6 @@ class TypeTable {
   void        SetMemoryLayout();
   void        ComputeFieldOffsets();
   const TypeVector& GetTypes() { return types_; }
-  ClassType*        PopInstanceQueue();
 
  private:
   TypeStorageVector                                    typesStorage_;
@@ -611,7 +610,6 @@ class TypeTable {
   StringType*                                          string_;
   VoidType*                                            void_;
   AutoType*                                            auto_;
-  std::vector<ClassType*>                              instanceQueue_;
 };
 
 };  // namespace Toucan

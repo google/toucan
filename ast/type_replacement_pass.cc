@@ -26,12 +26,14 @@ TypeReplacementPass::TypeReplacementPass(NodeVector*     nodes,
                                          SymbolTable*    symbols,
                                          TypeTable*      types,
                                          const TypeList& srcTypes,
-                                         const TypeList& dstTypes)
+                                         const TypeList& dstTypes,
+                                         std::vector<ClassType*>* instanceQueue)
     : CopyVisitor(nodes),
       symbols_(symbols),
       types_(types),
       srcTypes_(srcTypes),
-      dstTypes_(dstTypes) {}
+      dstTypes_(dstTypes),
+      instanceQueue_(instanceQueue) {}
 
 Method* TypeReplacementPass::ResolveMethod(Method* m) {
   Method* result = new Method(m->modifiers, ResolveType(m->returnType), m->name.c_str(),
@@ -117,7 +119,7 @@ Type* TypeReplacementPass::ResolveType(Type* type) {
     for (Type* const& arg : instance->GetTemplateArgs()) {
       newArgs.push_back(ResolveType(arg));
     }
-    return types_->GetClassTemplateInstance(instance->GetTemplate(), newArgs);
+    return types_->GetClassTemplateInstance(instance->GetTemplate(), newArgs, instanceQueue_);
   } else if (type->IsUnresolvedScopedType()) {
     auto  ust = static_cast<UnresolvedScopedType*>(type);
     Type* newType = ResolveType(ust->GetBaseType());

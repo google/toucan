@@ -45,6 +45,7 @@ static std::vector<std::string> includePaths_;
 static Stmts** rootStmts_;
 static std::unordered_set<std::string> includedFiles_;
 static std::stack<FileLocation> fileStack_;
+static std::vector<ClassType*> instanceQueue_;
 
 extern int yylex();
 extern int yylex_destroy();
@@ -84,6 +85,7 @@ static void CreateFieldsFromVarDecls(Stmts* stmts);
 static Type* GetArrayType(Type* elementType, int numElements);
 static Type* GetScopedType(Type* type, const char* id);
 static TypeList* AddIDToTypeList(const char* id, TypeList* list);
+static ClassType* GetClassTemplateInstance(Type* type, const TypeList& templateArgs);
 static ClassType* AsClassType(Type* type);
 static EnumType* AsEnumType(Type* type);
 static ClassTemplate* AsClassTemplate(Type* type);
@@ -240,7 +242,7 @@ var_decl_statement:
 simple_type:
     T_TYPENAME
   | scalar_type
-  | simple_type T_LT types T_GT             { $$ = types_->GetClassTemplateInstance(AsClassTemplate($1), *$3); }
+  | simple_type T_LT types T_GT             { $$ = GetClassTemplateInstance($1, *$3); }
   | simple_type T_LT T_INT_LITERAL T_GT     { $$ = types_->GetVector($1, $3); }
   | simple_type T_LT T_INT_LITERAL ',' T_INT_LITERAL T_GT 
     { $$ = types_->GetMatrix(types_->GetVector($1, $3), $5); }
@@ -918,12 +920,23 @@ static TypeList* AddIDToTypeList(const char* id, TypeList* list) {
   return list;
 }
 
+static ClassType* GetClassTemplateInstance(Type* type, const TypeList& templateArgs) {
+  return types_->GetClassTemplateInstance(AsClassTemplate(type), templateArgs, &instanceQueue_);
+}
+
+static ClassType* PopInstanceQueue() {
+  if (instanceQueue_.empty()) { return nullptr; }
+  ClassType* instance = instanceQueue_.back();
+  instanceQueue_.pop_back();
+  return instance;
+}
+
 static void InstantiateClassTemplates() {
-  while (ClassType* instance = types_->PopInstanceQueue()) {
+  while (ClassType* instance = PopInstanceQueue()) {
     Scope* scope = symbols_->PushNewScope();
     ClassTemplate* classTemplate = instance->GetTemplate();
     scope->classType = instance;
-    TypeReplacementPass pass(nodes_, symbols_, types_, classTemplate->GetFormalTemplateArgs(), instance->GetTemplateArgs());
+    TypeReplacementPass pass(nodes_, symbols_, types_, classTemplate->GetFormalTemplateArgs(), instance->GetTemplateArgs(), &instanceQueue_);
     pass.ResolveClassInstance(classTemplate, instance);
     numSyntaxErrors += pass.NumErrors();
     (*rootStmts_)->Append(Make<UnresolvedClassDefinition>(scope));

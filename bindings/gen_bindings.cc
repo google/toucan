@@ -146,7 +146,7 @@ int GenBindings::EmitType(Type* type) {
         file_ << "type" << arg;
         if (&arg != &args.back()) { file_ << ", "; }
       }
-      file_ << "});\n";
+      file_ << "}, nullptr);\n";
     } else {
       emitLHS() << "types->Make<ClassType>(\"" << classType->GetName() << "\");\n";
       if (header_) {

@@ -27,7 +27,8 @@ class TypeReplacementPass : public CopyVisitor {
                       SymbolTable*    symbols,
                       TypeTable*      types,
                       const TypeList& srcTypes,
-                      const TypeList& dstTypes);
+                      const TypeList& dstTypes,
+                      std::vector<ClassType*>* instanceQueue);
   Result    Error(const char* fmt, ...);
   Type*     ResolveType(Type* type) override;
   TypeList* ResolveTypes(TypeList* typeList);
@@ -43,6 +44,7 @@ class TypeReplacementPass : public CopyVisitor {
   TypeTable*   types_;
   TypeList     srcTypes_;
   TypeList     dstTypes_;
+  std::vector<ClassType*>* instanceQueue_;
   int          numErrors_ = 0;
 };
 

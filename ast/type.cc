@@ -811,23 +811,17 @@ Type* TypeTable::GetUnresolvedScopedType(FormalTemplateArg* baseType, std::strin
 }
 
 ClassType* TypeTable::GetClassTemplateInstance(ClassTemplate*  classTemplate,
-                                               const TypeList& templateArgs) {
+                                               const TypeList& templateArgs,
+                                               std::vector<ClassType*>* instanceQueue) {
   for (ClassType* const& i : classTemplate->GetInstances()) {
     if (i->GetTemplateArgs() == templateArgs) { return i; }
   }
   std::string name = classTemplate->GetName();
-  ClassType*  instance = Make<ClassType>(name);
+  auto instance = Make<ClassType>(name);
   instance->SetTemplate(classTemplate);
   instance->SetTemplateArgs(templateArgs);
   classTemplate->AddInstance(instance);
-  if (instance->IsFullySpecified()) { instanceQueue_.push_back(instance); }
-  return instance;
-}
-
-ClassType* TypeTable::PopInstanceQueue() {
-  if (instanceQueue_.empty()) { return nullptr; }
-  ClassType* instance = instanceQueue_.back();
-  instanceQueue_.pop_back();
+  if (instanceQueue && instance->IsFullySpecified()) instanceQueue->push_back(instance);
   return instance;
 }
 
