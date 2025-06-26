@@ -126,10 +126,15 @@ CodeGenLLVM::CodeGenLLVM(llvm::LLVMContext*                 context,
   doubleType_ = llvm::Type::getDoubleTy(*context_);
   byteType_ = llvm::Type::getInt8Ty(*context_);
   shortType_ = llvm::Type::getInt16Ty(*context_);
-  // This is used for function pointers, and void pointers.
   llvm::Type* voidType = llvm::Type::getVoidTy(*context_);
   funcPtrType_ = llvm::PointerType::get(llvm::FunctionType::get(voidType, false), 0);
   voidPtrType_ = llvm::PointerType::get(byteType_, 0);
+  deleterType_ = llvm::FunctionType::get(voidType, { voidPtrType_ }, false);
+#if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
+  freeFunc_ = module_->getOrInsertFunction("_aligned_free", deleterType_);
+#else
+  freeFunc_ = module_->getOrInsertFunction("free", deleterType_);
+#endif
   controlBlockType_ = ControlBlockType();
   controlBlockPtrType_ = llvm::PointerType::get(controlBlockType_, 0);
   typeListType_ = llvm::PointerType::get(llvm::PointerType::get(voidPtrType_, 0), 0);
@@ -179,7 +184,7 @@ llvm::Type* CodeGenLLVM::ControlBlockType() {
   types.push_back(intType_);      // weak refcount
   types.push_back(intType_);      // array length
   types.push_back(voidPtrType_);  // ClassType
-  types.push_back(voidPtrType_);  // destructor
+  types.push_back(voidPtrType_);  // deleter
   return llvm::StructType::get(*context_, types);
 }
 
@@ -284,10 +289,7 @@ llvm::Value* CodeGenLLVM::CreateControlBlock(Type* type) {
   builder_->CreateStore(Int(arrayLength), GetArrayLengthAddress(controlBlock));
   builder_->CreateStore(CreateTypePtr(type), GetClassTypeAddress(controlBlock));
   type = type->GetUnqualifiedType();
-  if (type->IsClass()) {
-    llvm::Value* destructor = GetOrCreateMethodStub(static_cast<ClassType*>(type)->GetDestructor());
-    builder_->CreateStore(destructor, GetDestructorAddress(controlBlock));
-  }
+  builder_->CreateStore(GetOrCreateDeleter(type), GetDeleterAddress(controlBlock));
   return controlBlock;
 }
 
@@ -318,7 +320,7 @@ llvm::Value* CodeGenLLVM::GetClassTypeAddress(llvm::Value* controlBlock) {
   return builder_->CreateGEP(controlBlockType_, controlBlock, {Int(0), Int(3)});
 }
 
-llvm::Value* CodeGenLLVM::GetDestructorAddress(llvm::Value* controlBlock) {
+llvm::Value* CodeGenLLVM::GetDeleterAddress(llvm::Value* controlBlock) {
   return builder_->CreateGEP(controlBlockType_, controlBlock, {Int(0), Int(4)});
 }
 
@@ -362,22 +364,10 @@ void CodeGenLLVM::UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type) {
   llvm::BasicBlock* trueBlock = CreateBasicBlock("trueBlock");
   builder_->CreateCondBr(isZero, trueBlock, afterBlock);
   builder_->SetInsertPoint(trueBlock);
-  bool  isNativeClass = false;
   Type* baseType = type->GetBaseType()->GetUnqualifiedType();
-  if (baseType->IsClass()) {
-    auto         classType = static_cast<ClassType*>(baseType);
-    llvm::Value* arg = builder_->CreateExtractValue(ptr, {0});
-    if (classType->IsUnsizedClass()) {
-      auto length = builder_->CreateLoad(intType_, GetArrayLengthAddress(controlBlock));
-      arg = CreatePointer(arg, length);
-    }
-    isNativeClass = classType->IsNative();
-    llvm::Value*    v = GetDestructorAddress(controlBlock);
-    llvm::Value*    destructor = builder_->CreateLoad(funcPtrType_, v);
-    llvm::Function* function = GetOrCreateMethodStub(classType->GetDestructor());
-    builder_->CreateCall(function->getFunctionType(), destructor, {arg});
-  }
-  if (!isNativeClass) { GenerateFree(builder_->CreateExtractValue(ptr, {0})); }
+  llvm::Value* arg = builder_->CreateExtractValue(ptr, {0});
+  llvm::Value* deleter = builder_->CreateLoad(funcPtrType_, GetDeleterAddress(controlBlock));
+  builder_->CreateCall(deleterType_, deleter, {arg});
   builder_->CreateBr(afterBlock);
   builder_->SetInsertPoint(afterBlock);
   UnrefWeakPtr(ptr);
@@ -413,10 +403,34 @@ void CodeGenLLVM::UnrefWeakPtr(llvm::Value* ptr) {
   llvm::BasicBlock* trueBlock = CreateBasicBlock("trueBlock");
   builder_->CreateCondBr(isZero, trueBlock, afterBlock);
   builder_->SetInsertPoint(trueBlock);
-  GenerateFree(controlBlock);
+  builder_->CreateCall(freeFunc_, controlBlock);
 
   builder_->CreateBr(afterBlock);
   builder_->SetInsertPoint(afterBlock);
+}
+
+llvm::Value* CodeGenLLVM::GetOrCreateDeleter(Type* type) {
+  if (!type->NeedsDestruction()) return freeFunc_.getCallee();
+  if (type->IsClass()) {
+    auto classType = static_cast<ClassType*>(type);
+    if (classType->IsNative()) {
+      // Native destructors will handle freeing, so just return the destructor.
+      return GetOrCreateMethodStub(classType->GetDestructor());
+    }
+  }
+  if (auto deleter = deleters_[type]) { return deleter; }
+  auto deleter = llvm::Function::Create(deleterType_, llvm::GlobalValue::InternalLinkage,
+                                        "__deleter", module_);
+  llvm::BasicBlock* whereWasI = builder_->GetInsertBlock();
+  llvm::BasicBlock* entry = llvm::BasicBlock::Create(*context_, "entry", deleter);
+  builder_->SetInsertPoint(entry);
+  llvm::Value* value = &*deleter->arg_begin();
+  Destroy(type, value);
+  builder_->CreateCall(freeFunc_, value);
+  builder_->CreateRet(nullptr);
+  builder_->SetInsertPoint(whereWasI);
+  fpm_->run(*deleter);
+  return deleters_[type] = deleter;
 }
 
 llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
@@ -464,7 +478,6 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
                                       method->GetMangledName(), module_);
   }
 
-  function->setCallingConv(llvm::CallingConv::C);
   return functions_[method] = function;
 }
 
@@ -565,7 +578,6 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
     builder_->CreateStore(&*ai, allocaInst);
   }
   if (method->stmts) { method->stmts->Accept(this); }
-  verifyFunction(*function);
   fpm_->run(*function);
   builder_->SetInsertPoint(whereWasI);
 #if !defined(NDEBUG)
@@ -595,20 +607,6 @@ llvm::Value* CodeGenLLVM::CreateMalloc(llvm::Type* type, llvm::Value* arraySize)
   llvm::Value*         ptr = builder_->CreateCall(malloc, sizeInt);
 #endif
   return builder_->CreateBitCast(ptr, ptrType);
-}
-
-void CodeGenLLVM::GenerateFree(llvm::Value* value) {
-  std::vector<llvm::Type*> args;
-  args.push_back(voidPtrType_);
-  llvm::Type*         voidType = llvm::Type::getVoidTy(*context_);
-  llvm::FunctionType* ft = llvm::FunctionType::get(voidType, args, false);
-#if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
-  llvm::FunctionCallee free = module_->getOrInsertFunction("_aligned_free", ft);
-#else
-  llvm::FunctionCallee free = module_->getOrInsertFunction("free", ft);
-#endif
-  value = builder_->CreateBitCast(value, voidPtrType_);
-  builder_->CreateCall(free, value);
 }
 
 llvm::Value* CodeGenLLVM::GenerateLLVM(Expr* expr) {
@@ -953,12 +951,16 @@ Result CodeGenLLVM::Visit(ExprStmt* stmt) {
   return nullptr;
 }
 
-Result CodeGenLLVM::Visit(DestroyStmt* node) {
-  auto type = node->GetExpr()->GetType(types_);
-  assert(type->IsRawPtr());
-  type = static_cast<RawPtrType*>(type)->GetBaseType();
-  auto value = GenerateLLVM(node->GetExpr());
-  if (type->IsRawPtr()) {
+void CodeGenLLVM::Destroy(Type* type, llvm::Value* value) {
+  if (type->IsClass()) {
+    auto classType = static_cast<ClassType*>(type);
+    auto destructor = classType->GetDestructor();
+    assert(destructor);
+    llvm::Function* function = GetOrCreateMethodStub(destructor);
+    builder_->CreateCall(function->getFunctionType(), function, {value});
+  } else if (type->IsArray()) {
+    // FIXME: do array deletion
+  } else if (type->IsRawPtr()) {
     auto temporary = scopedTemporaries_.find(value);
     if (temporary != scopedTemporaries_.end()) {
       type = temporary->second.type;
@@ -976,6 +978,14 @@ Result CodeGenLLVM::Visit(DestroyStmt* node) {
     value = builder_->CreateLoad(ConvertType(type), value);
     UnrefWeakPtr(value);
   }
+}
+
+Result CodeGenLLVM::Visit(DestroyStmt* node) {
+  auto type = node->GetExpr()->GetType(types_);
+  assert(type->IsRawPtr());
+  type = static_cast<RawPtrType*>(type)->GetBaseType();
+  auto value = GenerateLLVM(node->GetExpr());
+  Destroy(type, value);
   return nullptr;
 }
 

@@ -74,12 +74,13 @@ class CodeGenLLVM : public Visitor {
   llvm::Value*    Pop();
   llvm::Value*    GenerateBinOp(BinOpNode* node, llvm::Value* lhs, llvm::Value* rhs, Type* type);
   llvm::Function* GetOrCreateMethodStub(Method* method);
+  llvm::Value*    GetOrCreateDeleter(Type* type);
   void            GenCodeForMethod(Method* method);
   llvm::Value*    GetStrongRefCountAddress(llvm::Value* controlBlock);
   llvm::Value*    GetWeakRefCountAddress(llvm::Value* controlBlock);
   llvm::Value*    GetArrayLengthAddress(llvm::Value* controlBlock);
   llvm::Value*    GetClassTypeAddress(llvm::Value* controlBlock);
-  llvm::Value*    GetDestructorAddress(llvm::Value* controlBlock);
+  llvm::Value*    GetDeleterAddress(llvm::Value* controlBlock);
   llvm::BasicBlock*     NullControlBlockCheck(llvm::Value* controlBlock, BinOpNode::Op op);
   void                  RefStrongPtr(llvm::Value* ptr);
   void                  UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type);
@@ -96,7 +97,6 @@ class CodeGenLLVM : public Visitor {
   llvm::Value*          CreatePointer(llvm::Value* obj, llvm::Value* controlBlockOrLength);
   llvm::Value*          CreateControlBlock(Type* type);
   llvm::Value*          CreateMalloc(llvm::Type* type, llvm::Value* arraySize);
-  void                  GenerateFree(llvm::Value* value);
   llvm::Value*          GenerateLLVM(Expr* expr);
   llvm::Value*          GenerateDotProduct(llvm::Value* lhs, llvm::Value* rhs);
   llvm::Value*          GenerateCrossProduct(llvm::Value* lhs, llvm::Value* rhs);
@@ -168,6 +168,7 @@ class CodeGenLLVM : public Visitor {
   llvm::BasicBlock* CreateBasicBlock(const char* name);
   void         AppendTemporary(llvm::Value* value, Type* type);
   void         DestroyTemporaries();
+  void         Destroy(Type* type, llvm::Value* value);
   llvm::Value* CreateTypePtr(Type* type);
 
  private:
@@ -185,6 +186,8 @@ class CodeGenLLVM : public Visitor {
   llvm::Type*                                           shortType_;
   llvm::Type*                                           funcPtrType_;
   llvm::PointerType*                                    voidPtrType_;
+  llvm::FunctionType*                                   deleterType_;
+  llvm::FunctionCallee                                  freeFunc_;
   llvm::Type*                                           controlBlockType_;
   llvm::PointerType*                                    controlBlockPtrType_;
   bool                                                  debugOutput_;
@@ -195,6 +198,7 @@ class CodeGenLLVM : public Visitor {
   std::unordered_map<Expr*, llvm::Value*>               exprCache_;
   std::unordered_map<Var*, llvm::AllocaInst*>           allocas_;
   std::unordered_map<Method*, llvm::Function*>          functions_;
+  std::unordered_map<Type*, llvm::Function*>            deleters_;
   std::unordered_map<ClassType*, llvm::StructType*>     classPlaceholders_;
   std::vector<Type*>                                    referencedTypes_;
   std::unordered_map<Type*, llvm::Value*>               typeMap_;

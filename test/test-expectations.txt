@@ -110,7 +110,7 @@ test/error-forward-var.t
 error-forward-var.t:1:  unknown symbol "a"
 test/error-hex-literal-too-large.t
 test/error-implicit-void-return.t
-error-implicit-void-return.t:4:  implicit void return, in method returning non-void.
+error-implicit-void-return.t:4:  implicit void return, in method returning int.
 test/error-include-not-found.t
 error-include-not-found.t:1: file "include/bogus.t" not found
 test/error-index-buffer-get.t
@@ -125,7 +125,7 @@ error-invalid-forward-decl.t:5: type is already declared as non-class
 error-invalid-forward-decl.t:8: type is already declared as non-enum
 test/error-invalid-return-value.t
 error-invalid-return-value.t:4:  cannot return a value of type &int from a function of type ^int
-error-invalid-return-value.t:14:  implicit void return, in method returning non-void.
+error-invalid-return-value.t:14:  implicit void return, in method returning ^int.
 test/error-listexpr-mismatch.t
 error-listexpr-mismatch.t:9:  cannot store a value of type "{ {  }, { float, float } }" to a location of type "C"
 error-listexpr-mismatch.t:10:  cannot store a value of type "{ { int }, { float, float } }" to a location of type "C"

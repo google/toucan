@@ -458,7 +458,7 @@ class ClassType : public Type {
   EnumVector           enums_;
   ClassTemplate*       template_ = nullptr;
   TypeList             templateArgs_;
-  Method*              destructor_;
+  Method*              destructor_ = nullptr;
   int                  numFields_ = 0;  // includes inherited fields
   bool                 isDefined_ = false;
   bool                 native_ = false;

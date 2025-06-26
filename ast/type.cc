@@ -418,6 +418,7 @@ bool ClassType::IsPOD() const {
 }
 
 bool ClassType::NeedsDestruction() const {
+  if (destructor_) return true;
   if (parent_ && parent_->NeedsDestruction()) { return true; }
   for (const auto& field : fields_) {
     if (field->type->NeedsDestruction()) {

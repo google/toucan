@@ -427,11 +427,7 @@ void GenBindings::EmitMethod(Method* method) {
       header_ << ");\n";
     }
   }
-  if ((method->modifiers & (Method::Modifier::Vertex | Method::Modifier::Fragment | Method::Modifier::Compute))) {
-  } else if (emitSymbolsAndStatements_ && method->stmts) {
-    int id = sourcePass_.Resolve(method->stmts);
-    file_ << "  m->stmts = node" << id << ";\n";
-  }
+  if (emitSymbolsAndStatements_) assert(!method->stmts);
   if (!method->spirv.empty()) {
     file_ << "  m->spirv = {\n";
     for (uint32_t op : method->spirv) {

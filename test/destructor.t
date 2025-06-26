@@ -1,24 +1,23 @@
 include "include/test.t"
 
-class Foo {
-  var r : float;
-};
 class Bar {
-  Bar(f : *Foo) {
-    foo = f;
+  Bar(b: *bool) {
+    destroyed = b;
   }
  ~Bar() {
-    foo.r = 1234.0;
+    destroyed: = true;
   }
-  var foo : *Foo;
+  var destroyed: *bool;
 };
-var r = -1.0;
+
+var result = new bool;
 {
-  var f = new Foo;
-  f.r = -1.0;
-  {
-    var b = new Bar(f);
-  }
-  r = f.r;
+  var f = new Bar(result);
 }
-Test.Expect(r == 1234.0);
+Test.Expect(result: == true);
+
+result: = false;
+{
+  var f = Bar(result);
+}
+Test.Expect(result: == true);

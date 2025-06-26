@@ -867,13 +867,27 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   }
 
   symbols_->PushScope(scope);
-  Method* destructor = nullptr;
-  for (const auto& mit : classType->GetMethods()) {
-    Method* method = mit.get();
-    if (method->IsDestructor()) {
-      destructor = method;
+
+  if (classType->NeedsDestruction() && !classType->IsNative()) {
+    auto destructor = classType->GetDestructor();
+    if (!destructor) {
+      std::string name = std::string("~") + classType->GetName();
+      destructor = new Method(0, types_->GetVoid(), name, classType);
+      destructor->AddFormalArg("this", types_->GetRawPtrType(classType), nullptr);
+      destructor->stmts = Make<Stmts>();
+      classType->AddMethod(destructor);
     }
 
+    auto This = Make<LoadExpr>(Make<VarExpr>(destructor->formalArgList[0].get()));
+    for (const auto& field : classType->GetFields()) {
+      if (field->type->NeedsDestruction()) {
+        destructor->stmts->Append(Make<DestroyStmt>(Make<FieldAccess>(This, field.get())));
+      }
+    }
+  }
+
+  for (const auto& mit : classType->GetMethods()) {
+    auto method = mit.get();
     if (method->stmts) {
       Scope* scope = method->stmts->GetScope();
       method->stmts = Resolve(method->stmts);
@@ -889,9 +903,8 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
       // If last statement is not a return statement,
       if (!method->stmts->ContainsReturn()) {
         if (method->returnType != types_->GetVoid()) {
-          return Error("implicit void return, in method returning non-void.");
+          return Error("implicit void return, in method returning %s.", method->returnType->ToString().c_str());
         } else {
-          UnwindStack(method->stmts->GetScope(), method->stmts);
           method->stmts->Append(Make<ReturnStatement>(nullptr));
         }
       }
@@ -907,19 +920,6 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
     }
   }
 
-  if (!destructor) {
-    std::string name(std::string("~") + classType->GetName());
-    destructor = new Method(0, types_->GetVoid(), name, classType);
-    destructor->AddFormalArg("this", types_->GetRawPtrType(classType), nullptr);
-    classType->AddMethod(destructor);
-  }
-
-  if (!destructor->stmts) {
-    Stmts* stmts = Make<Stmts>();
-    stmts->Append(Make<ReturnStatement>(nullptr));
-    destructor->stmts = stmts;
-  }
-
   const auto& fields = classType->GetFields();
   for (const auto& field : fields) {
     if (field->type->IsAuto()) {
@@ -932,7 +932,6 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
     }
   }
   symbols_->PopScope();
-  // FIXME:  generate class destructor here?
   return nullptr;
 }
 

@@ -95,22 +95,6 @@ Result DumpAsSourcePass::Visit(NullConstant* node) {
   return {};
 }
 
-Result DumpAsSourcePass::Visit(Stmts* stmts) {
-  Output(stmts) << "Make<Stmts>();\n";
-  int id = map_[stmts];
-
-  if (stmts->GetScope()) {
-    file_ << "  node" << id << "->SetScope(symbols->PushNewScope());\n";
-  }
-  // FIXME: create an actual Stmts from elements
-  for (Stmt* const& it : stmts->GetStmts()) {
-    auto stmtsID = Resolve(it);
-    file_ << "  node" << id << "->Append(node" << stmtsID << ");\n";
-  }
-  if (stmts->GetScope()) { file_ << "  symbols->PopScope();\n"; }
-  return {};
-}
-
 Result DumpAsSourcePass::Visit(ExprList* a) {
   Output(a) << "Make<ExprList>();\n";
   int id = map_[a];
@@ -121,12 +105,6 @@ Result DumpAsSourcePass::Visit(ExprList* a) {
   return {};
 }
 
-Result DumpAsSourcePass::Visit(ExprStmt* stmt) {
-  int id = Resolve(stmt->GetExpr());
-  Output(stmt) << "Make<ExprStmt>(node" << id << ");\n";
-  return {};
-}
-
 Result DumpAsSourcePass::Visit(Initializer* node) {
   int type = genBindings_->EmitType(node->GetType());
   int argList = Resolve(node->GetArgList());
@@ -134,24 +112,9 @@ Result DumpAsSourcePass::Visit(Initializer* node) {
   return {};
 }
 
-Result DumpAsSourcePass::Visit(VarDeclaration* decl) {
-  int type = genBindings_->EmitType(decl->GetType());
-  int initExpr = Resolve(decl->GetInitExpr());
-  Output(decl) << "Make<VarDeclaration>(\"" << decl->GetID() << "\", type" << type << ", node"
-               << initExpr <<  ");\n";
-  return {};
-}
-
 Result DumpAsSourcePass::Visit(LoadExpr* node) {
   int expr = Resolve(node->GetExpr());
   Output(node) << "Make<LoadExpr>(node" << expr << ");\n";
-  return {};
-}
-
-Result DumpAsSourcePass::Visit(StoreStmt* node) {
-  int lhs = Resolve(node->GetLHS());
-  int rhs = Resolve(node->GetRHS());
-  Output(node) << "Make<StoreStmt>(node" << lhs << ", node" << rhs << ");\n";
   return {};
 }
 
@@ -184,16 +147,6 @@ Result DumpAsSourcePass::Visit(BinOpNode* node) {
 Result DumpAsSourcePass::Visit(UnresolvedListExpr* node) {
   int argList = Resolve(node->GetArgList());
   Output(node) << "Make<UnresolvedListExpr>(node" << argList << ");\n";
-  return {};
-}
-
-Result DumpAsSourcePass::Visit(ReturnStatement* stmt) {
-  if (stmt->GetExpr()) {
-    int expr = Resolve(stmt->GetExpr());
-    Output(stmt) << "Make<ReturnStatement>(node" << expr << ");\n";
-  } else {
-    Output(stmt) << "Make<ReturnStatement>(nullptr);\n";
-  }
   return {};
 }
 

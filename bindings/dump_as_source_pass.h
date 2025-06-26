@@ -36,19 +36,14 @@ class DumpAsSourcePass : public Visitor {
   Result Visit(CastExpr* expr) override;
   Result Visit(EnumConstant* node) override;
   Result Visit(ExprList* exprList) override;
-  Result Visit(ExprStmt* exprStmt) override;
   Result Visit(DoubleConstant* constant) override;
   Result Visit(FloatConstant* constant) override;
   Result Visit(Initializer* node) override;
   Result Visit(IntConstant* constant) override;
   Result Visit(NullConstant* constant) override;
-  Result Visit(ReturnStatement* stmt) override;
   Result Visit(LoadExpr* node) override;
-  Result Visit(Stmts* stmts) override;
-  Result Visit(StoreStmt* node) override;
   Result Visit(UIntConstant* constant) override;
   Result Visit(UnresolvedListExpr* node) override;
-  Result Visit(VarDeclaration* decl) override;
   Result Default(ASTNode* node) override;
 
  private:
