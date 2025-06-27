@@ -69,11 +69,9 @@ static void BeginMethod(int modifiers, std::string id, ArgList* workgroupSize,
                         Stmts* formalArguments, int thisQualifiers, Type* returnType);
 static void BeginConstructor(int modifiers, Type* type, Stmts* formalArguments);
 static void BeginDestructor(int modifiers, Type* type);
-static Method* EndMethod(Stmts* stmts);
-static Method* EndConstructor(Expr* initializer, Stmts* stmts);
+static Method* EndMethod(Stmts* stmts, Expr* initializer = nullptr);
 static void BeginBlock();
 static void EndBlock(Stmts* stmts);
-static Expr* ThisExpr();
 static Expr* Load(Expr* expr);
 static Stmt* Store(Expr* expr, Expr* value);
 static Expr* Identifier(const char* id);
@@ -332,7 +330,7 @@ class_body_decl:
     method_body                             { EndMethod($10); }
   | method_modifiers T_TYPENAME '(' formal_arguments ')'
                                             { BeginConstructor($1, $2, $4); }
-    opt_initializer method_body             { EndConstructor($7, $8); }
+    opt_initializer method_body             { EndMethod($8, $7); }
   | method_modifiers '~' T_TYPENAME '(' ')' { BeginDestructor($1, $3); }
     method_body                             { EndMethod($7); }
   | var_decl_statement ';'                  { CreateFieldsFromVarDecls($1); }
@@ -522,7 +520,7 @@ types:
 
 assignable:
     T_IDENTIFIER                            { $$ = Identifier($1); }
-  | T_THIS                                  { $$ = ThisExpr(); }
+  | T_THIS                                  { $$ = Make<UnresolvedIdentifier>("this"); }
   | assignable '[' expr ']'                 { $$ = MakeArrayAccess($1, $3); }
   | assignable '.' T_IDENTIFIER             { $$ = Make<UnresolvedDot>($1, $3); }
   | simple_type '.' T_IDENTIFIER            { $$ = Make<UnresolvedStaticDot>($1, $3); }
@@ -686,10 +684,6 @@ int GetLineNum() {
 
 void IncLineNum() {
   fileStack_.top().lineNum++;
-}
-
-static Expr* ThisExpr() {
-  return Make<UnresolvedIdentifier>("this");
 }
 
 static Stmt* Store(Expr* lhs, Expr* rhs) {
@@ -884,24 +878,11 @@ static Type* GetScopedType(Type* type, const char* id) {
   return scopedType;
 }
 
-static Method* EndConstructor(Expr* initializer, Stmts* stmts) {
-  if (stmts) {
-    stmts->Append(Make<ReturnStatement>(ThisExpr()));
-  }
-  Method* method = EndMethod(stmts);
-  if (method->stmts) {
-    if (!initializer) {
-      initializer = Make<UnresolvedListExpr>(Make<ArgList>());
-    }
-    method->stmts->Prepend(Make<StoreStmt>(ThisExpr(), initializer));
-  }
-  return method;
-}
-
-static Method* EndMethod(Stmts* stmts) {
+static Method* EndMethod(Stmts* stmts, Expr* initializer) {
   Scope* methodScope = symbols_->PopScope();
   Method* method = methodScope->method;
   method->stmts = stmts;
+  method->initializer = initializer;
   if (stmts) stmts->SetScope(methodScope);
   Scope* scope = symbols_->PeekScope();
   if (!scope || !scope->classType) {

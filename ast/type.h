@@ -325,6 +325,7 @@ struct Method {
   VarVector               formalArgList;
   std::vector<Expr*>      defaultArgs;
   Stmts*                  stmts = nullptr;
+  Expr*                   initializer = nullptr;   // only used for constructors
   std::vector<uint32_t>   spirv;
   std::string             wgsl;
   int                     index = -1;

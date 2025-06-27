@@ -873,7 +873,17 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
     }
 
     if (method->stmts) {
+      Scope* scope = method->stmts->GetScope();
       method->stmts = Resolve(method->stmts);
+      if (method->IsConstructor()) {
+        symbols_->PushScope(scope);
+        Expr* initializer = method->initializer ? Resolve(method->initializer)
+                            : ResolveListExpr(Make<ArgList>(), method->classType);
+        symbols_->PopScope();
+        auto This = Make<LoadExpr>(Make<VarExpr>(method->formalArgList[0].get()));
+        method->stmts->Prepend(Make<StoreStmt>(This, Widen(initializer, method->classType)));
+        method->stmts->Append(Make<ReturnStatement>(This));
+      }
       // If last statement is not a return statement,
       if (!method->stmts->ContainsReturn()) {
         if (method->returnType != types_->GetVoid()) {
