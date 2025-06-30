@@ -22,6 +22,7 @@
 #include <functional>
 #include <iostream>
 #include <unordered_map>
+#include <ranges>
 
 #include "symbol.h"
 #include "type_replacement_pass.h"
@@ -121,9 +122,10 @@ Result SemanticPass::Visit(Stmts* stmts) {
     // Append vars to new stmts for any vars in this scope.  Also
     // append destructor calls for any vars that need it.
     symbols_->PopScope();
-    for (auto p : scope->vars) {
-      auto var = p.second;
+    for (auto var : scope->vars) {
       newStmts->AppendVar(var);
+    }
+    for (auto var : std::views::reverse(scope->vars)) {
       if (var->type->NeedsDestruction() && !containsReturn) {
         newStmts->Append(Make<DestroyStmt>(Make<VarExpr>(var.get())));
       }
@@ -936,8 +938,7 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
 
 void SemanticPass::UnwindStack(Scope* scope, Stmts* stmts) {
   for(; scope && !scope->method && !scope->classType; scope = scope->parent) {
-    for (auto p : scope->vars) {
-      auto var = p.second;
+    for (auto var : scope->vars) {
       if (var->type->NeedsDestruction()) {
         stmts->Append(Make<DestroyStmt>(Make<VarExpr>(var.get())));
       }

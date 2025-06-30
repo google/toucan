@@ -42,8 +42,8 @@ Scope* SymbolTable::PeekScope() { return currentScope_; }
 Var* SymbolTable::FindVar(const std::string& identifier) const {
   Scope* scope = currentScope_;
   for (scope = currentScope_; scope != nullptr; scope = scope->parent) {
-    VarMap::const_iterator j = scope->vars.find(identifier);
-    if (j != scope->vars.end()) { return j->second.get(); }
+    VarMap::const_iterator j = scope->varMap.find(identifier);
+    if (j != scope->varMap.end()) { return j->second; }
     if (scope->method) {
       for (const auto& it : scope->method->formalArgList) {
         Var* var = it.get();
@@ -65,15 +65,16 @@ Field* SymbolTable::FindField(const std::string& identifier) const {
 
 Var* SymbolTable::FindVarInScope(const std::string& identifier) const {
   if (!currentScope_) return nullptr;
-  VarMap::const_iterator j = currentScope_->vars.find(identifier);
-  if (j != currentScope_->vars.end()) { return j->second.get(); }
+  VarMap::const_iterator j = currentScope_->varMap.find(identifier);
+  if (j != currentScope_->varMap.end()) { return j->second; }
   return 0;
 }
 
 Var* SymbolTable::DefineVar(std::string identifier, Type* type) {
   if (!currentScope_) return nullptr;
   auto var = std::make_shared<Var>(identifier, type);
-  currentScope_->vars[identifier] = var;
+  currentScope_->vars.push_back(var);
+  currentScope_->varMap[identifier] = var.get();
   return var.get();
 }
 
@@ -95,10 +96,9 @@ Type* SymbolTable::FindType(const std::string& identifier) const {
 void SymbolTable::Dump() {
   for (const auto& scope : scopes_) {
     printf("Scope%s:\n", scope->method ? " (method)" : "");
-    for (auto p : scope->vars) {
-      Var* v = p.second.get();
-      printf("  %s", v->type->ToString().c_str());
-      printf(" %s;\n", v->name.c_str());
+    for (auto var : scope->vars) {
+      printf("  %s", var->type->ToString().c_str());
+      printf(" %s;\n", var->name.c_str());
     }
     for (const auto& i : scope->types) {
       const char* name = i.first.c_str();
