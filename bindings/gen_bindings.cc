@@ -329,7 +329,7 @@ void PrintNativeType(std::ostream& result, Type* type) {
     }
   } else if (type->IsStrongPtr() || type->IsWeakPtr()) {
     Type* baseType = static_cast<PtrType*>(type)->GetBaseType()->GetUnqualifiedType();
-    if (baseType->IsClass() && static_cast<ClassType*>(baseType)->IsNative()) {
+    if (baseType->IsClass()) {
       PrintNativeType(result, baseType);
       result << "*";
     } else {
@@ -375,14 +375,9 @@ void GenBindings::EmitMethod(Method* method) {
   const VarVector& argList = method->formalArgList;
   for (int i = 0; i < argList.size(); ++i) {
     Var* var = argList[i].get();
-    // Only emit default values for native methods.
-    // The DumpAsSourcePass is not fully implemented for all types, and
-    // non-native default values are never used at runtime.
-    // TODO: fix this through proper constant folding.
-    Expr* defaultValue = method->classType->IsNative() ? method->defaultArgs[i] : nullptr;
     int defaultValueId = -1;
-    if (emitSymbolsAndStatements_ && defaultValue) {
-      defaultValueId = sourcePass_.Resolve(defaultValue);
+    if (emitSymbolsAndStatements_ && method->defaultArgs[i]) {
+      defaultValueId = sourcePass_.Resolve(method->defaultArgs[i]);
     }
     int varTypeID = EmitType(var->type);
     file_ << "  m->AddFormalArg(\"" << var->name << "\", type" << varTypeID << ", ";
@@ -395,7 +390,7 @@ void GenBindings::EmitMethod(Method* method) {
   }
   file_ << "  c->AddMethod(m);\n";
   bool skipFirst = false;
-  if (method->classType->IsNative()) {
+  if (method->IsNative()) {
     if (header_ && !(method->modifiers & Method::Modifier::DeviceOnly)) {
 #if TARGET_OS_IS_WIN
       header_ << "__declspec(dllexport) ";
@@ -441,12 +436,11 @@ void GenBindings::EmitMethod(Method* method) {
 }
 
 void GenBindings::EmitClass(ClassType* classType) {
-  if (classType->GetTemplate() && classType->IsNative()) { return; }
+  if (classType->GetTemplate() && classType->GetTemplate()->HasNativeMethods()) { return; }
   auto id = EmitType(classType);
   file_ << "\n  c = type" << id << ";\n";
-  if (classType->IsNative()) {
-    file_ << "  c->SetNative(true);\n"
-          << "  NativeClass::" << classType->GetName() << " = c;\n";
+  if (classType->HasNativeMethods() && !classType->GetTemplate()) {
+    file_ << "  NativeClass::" << classType->GetName() << " = c;\n";
   }
   file_ << "  c->SetMemoryLayout(MemoryLayout::" <<
     MemoryLayoutToString(classType->GetMemoryLayout()) << ");\n";

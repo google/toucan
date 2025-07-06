@@ -435,22 +435,18 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
            &annotations_);
   } else if (type->IsClass()) {
     ClassType* classType = static_cast<ClassType*>(type);
-    if (classType->IsNative()) {
-      if (isSampler(classType)) {
-        resultId = AppendTypeDecl(spv::Op::OpTypeSampler, {});
-      } else if (isSampleableTexture1D(classType)) {
-        resultId = AppendImageDecl(spv::Dim1D, false, qualifiers, classType->GetTemplateArgs());
-      } else if (isSampleableTexture2D(classType)) {
-        resultId = AppendImageDecl(spv::Dim2D, false, qualifiers, classType->GetTemplateArgs());
-      } else if (isSampleableTexture3D(classType)) {
-        resultId = AppendImageDecl(spv::Dim3D, false, qualifiers, classType->GetTemplateArgs());
-      } else if (isSampleableTexture2DArray(classType)) {
-        resultId = AppendImageDecl(spv::Dim2D, true, qualifiers, classType->GetTemplateArgs());
-      } else if (isSampleableTextureCube(classType)) {
-        resultId = AppendImageDecl(spv::DimCube, false, qualifiers, classType->GetTemplateArgs());
-      } else {
-        assert(!"unsupported native class type in shader");
-      }
+    if (isSampler(classType)) {
+      resultId = AppendTypeDecl(spv::Op::OpTypeSampler, {});
+    } else if (isSampleableTexture1D(classType)) {
+      resultId = AppendImageDecl(spv::Dim1D, false, qualifiers, classType->GetTemplateArgs());
+    } else if (isSampleableTexture2D(classType)) {
+      resultId = AppendImageDecl(spv::Dim2D, false, qualifiers, classType->GetTemplateArgs());
+    } else if (isSampleableTexture3D(classType)) {
+      resultId = AppendImageDecl(spv::Dim3D, false, qualifiers, classType->GetTemplateArgs());
+    } else if (isSampleableTexture2DArray(classType)) {
+      resultId = AppendImageDecl(spv::Dim2D, true, qualifiers, classType->GetTemplateArgs());
+    } else if (isSampleableTextureCube(classType)) {
+      resultId = AppendImageDecl(spv::DimCube, false, qualifiers, classType->GetTemplateArgs());
     } else {
       Code args;
       for (auto& field : classType->GetFields()) {
@@ -508,7 +504,6 @@ uint32_t CodeGenSPIRV::GetFunctionType(const Code& signature) {
 }
 
 void CodeGenSPIRV::GenCodeForMethod(Method* method, uint32_t resultId) {
-  auto     stmts = method->stmts;
   uint32_t resultType = ConvertType(method->returnType);
   Code     argTypes{resultType};
   for (auto arg : method->formalArgList) {
@@ -523,28 +518,25 @@ void CodeGenSPIRV::GenCodeForMethod(Method* method, uint32_t resultId) {
     fps.push_back(fp);
   }
   AppendCode(spv::Op::OpLabel, {NextId()});
-  assert(!method->classType->IsNative());
 
-  if (stmts) {
-    // Create function-local storage for any non-pointer arguments.
-    for (auto arg : method->formalArgList) {
-      if (!arg->type->IsPtr()) { DeclareVar(arg.get()); }
-    }
-    for (auto var : stmts->GetVars()) {
-      DeclareVar(var.get());
-    }
-    auto fp = fps.begin();
-    // Store non-pointer arguments into function-local variables.
-    for (auto arg : method->formalArgList) {
-      if (!arg->type->IsPtr()) {
-        AppendCode(spv::Op::OpStore, {vars_[arg.get()], *fp++});
-      } else {
-        vars_[arg.get()] = *fp++;
-      }
-      assert(vars_[arg.get()] != 0);
-    }
-    GenerateSPIRV(stmts);
+  // Create function-local storage for any non-pointer arguments.
+  for (auto arg : method->formalArgList) {
+    if (!arg->type->IsPtr()) { DeclareVar(arg.get()); }
   }
+  for (auto var : method->stmts->GetVars()) {
+    DeclareVar(var.get());
+  }
+  auto fp = fps.begin();
+  // Store non-pointer arguments into function-local variables.
+  for (auto arg : method->formalArgList) {
+    if (!arg->type->IsPtr()) {
+      AppendCode(spv::Op::OpStore, {vars_[arg.get()], *fp++});
+    } else {
+      vars_[arg.get()] = *fp++;
+    }
+    assert(vars_[arg.get()] != 0);
+  }
+  GenerateSPIRV(method->stmts);
 
   AppendCode(spv::Op::OpFunctionEnd, {});
 }

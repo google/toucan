@@ -527,19 +527,14 @@ static void CreateBindGroupLayoutEntries(ClassType*                             
   if (classType->GetParent()) {
     CreateBindGroupLayoutEntries(classType->GetParent(), qualifiers, entries);
   }
-  if (classType->IsNative()) {
-    auto entry = CreateBindGroupLayoutEntry(0, classType, qualifiers);
+  uint32_t bindingIndex = 0;
+  for (const auto& field : classType->GetFields()) {
+    assert(field->type->IsPtr());
+    Type* type = static_cast<PtrType*>(field->type)->GetBaseType();
+    type = type->GetUnqualifiedType(&qualifiers);
+    auto entry = CreateBindGroupLayoutEntry(bindingIndex, type, qualifiers);
+    bindingIndex++;
     entries->push_back(entry);
-  } else {
-    uint32_t bindingIndex = 0;
-    for (const auto& field : classType->GetFields()) {
-      assert(field->type->IsPtr());
-      Type* type = static_cast<PtrType*>(field->type)->GetBaseType();
-      type = type->GetUnqualifiedType(&qualifiers);
-      auto entry = CreateBindGroupLayoutEntry(bindingIndex, type, qualifiers);
-      bindingIndex++;
-      entries->push_back(entry);
-    }
   }
 }
 
@@ -897,7 +892,6 @@ BindGroup* BindGroup_BindGroup(int qualifiers, Type* type, Device* device, void*
   ClassType*                        classType = static_cast<ClassType*>(type);
   wgpu::BindGroupDescriptor         desc;
   std::vector<wgpu::BindGroupEntry> entries;
-  assert(!classType->IsNative());
   desc.entryCount = classType->GetFields().size();
   for (int i = 0; i < desc.entryCount; i++) {
     Field* field = classType->GetFields()[i].get();

@@ -106,7 +106,6 @@ uniform { return T_UNIFORM; }
 storage { return T_STORAGE; }
 sampleable { return T_SAMPLEABLE; }
 renderable { return T_RENDERABLE; }
-native  { return T_NATIVE; }
 this    { return T_THIS; }
 readonly { return T_READONLY; }
 writeonly { return T_WRITEONLY; }

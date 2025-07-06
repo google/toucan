@@ -893,7 +893,7 @@ void SemanticPass::PreVisit(UnresolvedClassDefinition* defn) {
   ClassType* classType = scope->classType;
 
   // Non-native template classes don't need inferred type resolution
-  if (!classType->IsNative() && classType->IsClassTemplate()) return;
+  if (!classType->HasNativeMethods() && classType->IsClassTemplate()) return;
 
   for (const auto& method : classType->GetMethods()) {
     for (int i = 0; i < method->defaultArgs.size(); ++i) {
@@ -921,7 +921,7 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
 
   symbols_->PushScope(scope);
 
-  if (classType->NeedsDestruction() && !classType->IsNative()) {
+  if (classType->NeedsDestruction()) {
     auto destructor = classType->GetDestructor();
     if (!destructor) {
       std::string name = std::string("~") + classType->GetName();
@@ -931,10 +931,12 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
       classType->AddMethod(destructor);
     }
 
-    auto This = Make<LoadExpr>(Make<VarExpr>(destructor->formalArgList[0].get()));
-    for (const auto& field : classType->GetFields()) {
-      if (field->type->NeedsDestruction()) {
-        destructor->stmts->Append(Make<DestroyStmt>(Make<FieldAccess>(This, field.get())));
+    if (destructor->stmts) {
+      auto This = Make<LoadExpr>(Make<VarExpr>(destructor->formalArgList[0].get()));
+      for (const auto& field : classType->GetFields()) {
+        if (field->type->NeedsDestruction()) {
+          destructor->stmts->Append(Make<DestroyStmt>(Make<FieldAccess>(This, field.get())));
+        }
       }
     }
   }

@@ -55,11 +55,11 @@ static Expr* UnOp(UnaryOp::Op op, Expr* expr);
 static Expr* IncDec(IncDecExpr::Op op, bool pre, Expr* expr);
 static Stmt* MakeReturnStatement(Expr* expr);
 static Expr* MakeStaticMethodCall(Type* type, const char *id, ArgList* arguments);
-static ClassType* DeclareClass(int native, const char* id);
+static ClassType* DeclareClass(const char* id);
 static EnumType* DeclareEnum(const char* id);
 static void DeclareUsing(const char* id, Type* type);
 static void BeginClass(Type* type, ClassType* parent);
-static ClassType*  BeginClassTemplate(int native, TypeList* templateArgs, const char* id);
+static ClassType*  BeginClassTemplate(TypeList* templateArgs, const char* id);
 static Stmt* EndClass();
 static void BeginEnum(Type* e);
 static void AppendEnum(const char* id);
@@ -134,7 +134,7 @@ Type* FindType(const char* str) {
 %type <typeList> types
 %type <typeList> template_formal_arguments
 %type <i> type_qualifier type_qualifiers opt_type_qualifiers
-%type <i> method_modifier method_modifiers class_or_native_class
+%type <i> method_modifier method_modifiers
 %type <type> opt_parent_class
 %token <identifier> T_IDENTIFIER T_STRING_LITERAL
 %token <type> T_TYPENAME
@@ -147,7 +147,7 @@ Type* FindType(const char* str) {
 %token T_READONLY T_WRITEONLY T_COHERENT T_DEVICEONLY T_HOSTREADABLE T_HOSTWRITEABLE
 %token T_INT T_UINT T_FLOAT T_DOUBLE T_BOOL T_BYTE T_UBYTE T_SHORT T_USHORT
 %token T_HALF
-%token T_STATIC T_NATIVE T_VERTEX T_FRAGMENT T_COMPUTE T_THIS
+%token T_STATIC T_VERTEX T_FRAGMENT T_COMPUTE T_THIS
 %token T_INDEX T_UNIFORM T_STORAGE T_SAMPLEABLE T_RENDERABLE
 %token T_USING T_INLINE T_UNFILTERABLE
 %right '=' T_ADD_EQUALS T_SUB_EQUALS T_MUL_EQUALS T_DIV_EQUALS
@@ -262,18 +262,14 @@ var_decl_list:
   | var_decl                                { $$ = Make<Stmts>(); if ($1) $$->Append($1); }
   ;
 
-class_or_native_class:
-    T_CLASS                                 { $$ = 0; }
-  | T_NATIVE T_CLASS                        { $$ = 1; }
-  ;
-
 class_header:
-    class_or_native_class T_IDENTIFIER      { $$ = DeclareClass($1, $2); }
-  | class_or_native_class T_TYPENAME        { $$ = AsClassType($2); }
+    T_CLASS T_IDENTIFIER                    { $$ = DeclareClass($2); }
+  | T_CLASS T_TYPENAME                      { $$ = AsClassType($2); }
   ;
 
 template_class_header:
-    class_or_native_class T_IDENTIFIER T_LT template_formal_arguments T_GT { $$ = BeginClassTemplate($1, $4, $2); }
+    T_CLASS T_IDENTIFIER T_LT template_formal_arguments T_GT
+                                            { $$ = BeginClassTemplate($4, $2); }
   ;
 
 class_forward_decl:
@@ -703,10 +699,9 @@ static Expr* MakeStaticMethodCall(Type* type, const char* id, ArgList* arguments
   return Make<UnresolvedStaticMethodCall>(static_cast<ClassType*>(type), id, arguments);
 }
 
-static ClassType* DeclareClass(int native, const char *id) {
+static ClassType* DeclareClass(const char *id) {
   assert(!symbols_->FindType(id));
   ClassType* c = types_->Make<ClassType>(id);
-  c->SetNative(native != 0);
   symbols_->DefineType(id, c);
   return c;
 }
@@ -736,11 +731,10 @@ static void BeginClass(Type* t, ClassType* parent) {
   c->SetScope(scope);
 }
 
-static ClassType* BeginClassTemplate(int native, TypeList* templateArgs, const char* id) {
+static ClassType* BeginClassTemplate(TypeList* templateArgs, const char* id) {
   ClassTemplate* t = types_->Make<ClassTemplate>(id, *templateArgs);
   symbols_->DefineType(id, t);
   t->SetDefined(true);
-  t->SetNative(native != 0);
   Scope* scope = symbols_->PushNewScope();
   scope->classType = t;
   t->SetScope(scope);

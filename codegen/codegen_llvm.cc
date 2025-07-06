@@ -412,10 +412,10 @@ void CodeGenLLVM::UnrefWeakPtr(llvm::Value* ptr) {
 llvm::Value* CodeGenLLVM::GetOrCreateDeleter(Type* type) {
   if (!type->NeedsDestruction()) return freeFunc_.getCallee();
   if (type->IsClass()) {
-    auto classType = static_cast<ClassType*>(type);
-    if (classType->IsNative()) {
+    auto destructor = static_cast<ClassType*>(type)->GetDestructor();
+    if (destructor && destructor->IsNative()) {
       // Native destructors will handle freeing, so just return the destructor.
-      return GetOrCreateMethodStub(classType->GetDestructor());
+      return GetOrCreateMethodStub(destructor);
     }
   }
   if (auto deleter = deleters_[type]) { return deleter; }
@@ -438,7 +438,7 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
   std::vector<llvm::Type*> params;
   llvm::Intrinsic::ID      intrinsic = llvm::Intrinsic::not_intrinsic;
   bool skipFirst = false;
-  if (method->classType->IsNative()) {
+  if (method->IsNative()) {
     if (method->templateMethod) { return GetOrCreateMethodStub(method->templateMethod); }
     if (method->IsConstructor()) {
       skipFirst = true;
@@ -453,7 +453,7 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
     }
     intrinsic = FindIntrinsic(method);
   }
-  bool nativeTypes = method->classType->IsNative() && !intrinsic;
+  bool nativeTypes = method->IsNative() && !intrinsic;
   for (const auto& it : method->formalArgList) {
     if (skipFirst) { skipFirst = false; continue; }
     Var* var = it.get();
@@ -564,7 +564,7 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
   }
   if (method->modifiers & Method::Modifier::DeviceOnly) { return; }
   llvm::Function* function = GetOrCreateMethodStub(method);
-  if (method->classType->IsNative()) return;
+  if (method->IsNative()) return;
   llvm::BasicBlock* whereWasI = builder_->GetInsertBlock();
   llvm::BasicBlock* entry = llvm::BasicBlock::Create(*context_, "entry", function);
   builder_->SetInsertPoint(entry);
@@ -578,7 +578,7 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
     auto allocaInst = CreateEntryBlockAlloca(function, var);
     builder_->CreateStore(&*ai, allocaInst);
   }
-  if (method->stmts) { method->stmts->Accept(this); }
+  method->stmts->Accept(this);
   fpm_->run(*function);
   builder_->SetInsertPoint(whereWasI);
 #if !defined(NDEBUG)
@@ -632,7 +632,7 @@ llvm::Value* CodeGenLLVM::ConvertFromNative(Type* type, llvm::Value* value) {
   if (type->IsStrongPtr() || type->IsWeakPtr()) {
     Type* baseType = static_cast<PtrType*>(type)->GetBaseType();
     Type* unqualifiedType = baseType->GetUnqualifiedType();
-    if (unqualifiedType->IsClass() && static_cast<ClassType*>(unqualifiedType)->IsNative()) {
+    if (unqualifiedType->IsClass() && static_cast<ClassType*>(unqualifiedType)->HasNativeMethods()) {
       return CreatePointer(value, CreateControlBlock(baseType));
     } else {
       // Dereference Object*.
@@ -1385,7 +1385,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
   llvm::Function*           function = GetOrCreateMethodStub(method);
   if (auto builtin = FindBuiltin(method)) { return std::invoke(builtin, this, location); }
   bool skipFirst = false;
-  if (method->classType->IsNative() && method->IsConstructor()) {
+  if (method->IsNative() && method->IsConstructor()) {
     skipFirst = true;
     if (method->classType->GetTemplate()) {
       auto allocation = argList->Get()[0];
@@ -1407,7 +1407,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
     llvm::Value* v = GenerateLLVM(arg);
     Type*        type = arg->GetType(types_);
     AppendTemporary(v, type);
-    if (method->classType->IsNative() && !intrinsic) { v = ConvertToNative(type, v); }
+    if (method->IsNative() && !intrinsic) { v = ConvertToNative(type, v); }
     args.push_back(v);
   }
   if (intrinsic == llvm::Intrinsic::ctlz) {
@@ -1415,7 +1415,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
     args.push_back(llvm::ConstantInt::get(boolType_, 0, true));
   }
   llvm::Value* result = builder_->CreateCall(function, args);
-  if (method->classType->IsNative() && !intrinsic) {
+  if (method->IsNative() && !intrinsic) {
     result = ConvertFromNative(returnType, result);
   }
   return result;

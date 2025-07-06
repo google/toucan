@@ -20,24 +20,24 @@ enum FrontFace { CCW, CW }
 
 enum CullMode { None, Front, Back }
 
-native class CommandBuffer {
+class CommandBuffer {
  ~CommandBuffer();
 }
 
-native class Queue {
+class Queue {
  ~Queue();
   Submit(commandBuffer : &CommandBuffer);
 }
 
-native class Device {
+class Device {
   Device();
  ~Device();
   GetQueue() : *Queue;
 }
 
-native class CommandEncoder;
+class CommandEncoder;
 
-native class Buffer<T> {
+class Buffer<T> {
   Buffer(device : &Device, size : uint = 1u);
   Buffer(device : &Device, t : &T);
  ~Buffer();
@@ -94,17 +94,17 @@ class BlendState {
   var alpha : BlendComponent;
 }
 
-native class RenderPipeline<T> {
+class RenderPipeline<T> {
   RenderPipeline(device : &Device, primitiveTopology = PrimitiveTopology.TriangleList, frontFace = FrontFace.CCW, cullMode = CullMode.None, depthStencilState : &DepthStencilState = {}, blendState : &BlendState = {});
  ~RenderPipeline();
 }
 
-native class ComputePipeline<T> {
+class ComputePipeline<T> {
   ComputePipeline(device : &Device);
  ~ComputePipeline();
 }
 
-native class BindGroup<T> {
+class BindGroup<T> {
   BindGroup(device : &Device, data : &T);
  ~BindGroup();
   deviceonly Get() : T;
@@ -122,18 +122,18 @@ enum StoreOp {
   Discard
 }
 
-native class VertexInput<T> {
+class VertexInput<T> {
   VertexInput(buffer : &vertex Buffer<[]T>);
   deviceonly Get() : T;
  ~VertexInput();
 }
 
-native class ColorAttachment<PF> {
+class ColorAttachment<PF> {
   deviceonly Set(value : PF:DeviceType<4>);
  ~ColorAttachment();
 }
 
-native class DepthStencilAttachment<PF> {
+class DepthStencilAttachment<PF> {
  ~DepthStencilAttachment();
 }
 
@@ -141,46 +141,46 @@ enum AddressMode { Repeat, MirrorRepeat, ClampToEdge };
 
 enum FilterMode { Nearest, Linear };
 
-native class Sampler {
+class Sampler {
   Sampler(device : &Device, addressModeU = AddressMode.ClampToEdge, addressModeV = AddressMode.ClampToEdge, addressModeW = AddressMode.ClampToEdge, magFilter = FilterMode.Linear, minFilter = FilterMode.Linear, mipmapFilter = FilterMode.Linear);
  ~Sampler();
 }
 
-native class SampleableTexture1D<ST> {
+class SampleableTexture1D<ST> {
  ~SampleableTexture1D();
   deviceonly Sample(sampler : &Sampler, coord : float) : ST<4>;
   deviceonly Load(coord : uint, level : uint) : ST<4>;
   deviceonly GetSize() : uint;
 }
 
-native class SampleableTexture2D<ST> {
+class SampleableTexture2D<ST> {
  ~SampleableTexture2D();
   deviceonly Sample(sampler : &Sampler, coords : float<2>) : ST<4>;
   deviceonly Load(coord : uint<2>, level : uint) : ST<4>;
   deviceonly GetSize() : uint<2>;
 }
 
-native class SampleableTexture2DArray<ST> {
+class SampleableTexture2DArray<ST> {
  ~SampleableTexture2DArray();
   deviceonly Sample(sampler : &Sampler, coords : float<2>, layer : uint) : ST<4>;
   deviceonly Load(coord : uint<2>, layer : uint, level : uint) : ST<4>;
   deviceonly GetSize() : uint<2>;
 }
 
-native class SampleableTexture3D<ST> {
+class SampleableTexture3D<ST> {
  ~SampleableTexture3D();
   deviceonly Sample(sampler : &Sampler, coords : float<3>) : ST<4>;
   deviceonly Load(coord : uint<3>, level : uint) : ST<4>;
   deviceonly GetSize() : uint<3>;
 }
 
-native class SampleableTextureCube<ST> {
+class SampleableTextureCube<ST> {
  ~SampleableTextureCube();
   deviceonly Sample(sampler : &Sampler, coords : float<3>) : ST<4>;
   deviceonly GetSize() : uint<2>;
 }
 
-native class Texture1D<PF> {
+class Texture1D<PF> {
   Texture1D(device : &Device, width : uint);
  ~Texture1D();
   CreateSampleableView() sampleable : *SampleableTexture1D<PF:DeviceType>;
@@ -188,7 +188,7 @@ native class Texture1D<PF> {
   CopyFromBuffer(encoder : &CommandEncoder, source : &Buffer<[]PF:HostType>, width : uint, origin : uint = 0);
 }
 
-native class Texture2D<PF> {
+class Texture2D<PF> {
   Texture2D(device : &Device, size : uint<2>);
  ~Texture2D();
   CreateSampleableView() sampleable : *SampleableTexture2D<PF:DeviceType>;
@@ -200,7 +200,7 @@ native class Texture2D<PF> {
   CopyFromBuffer(encoder : &CommandEncoder, source : &Buffer<[]PF:HostType>, size : uint<2>, origin : uint<2> = uint<2>(0, 0));
 }
 
-native class Texture2DArray<PF> {
+class Texture2DArray<PF> {
   Texture2DArray(device : &Device, size : uint<3>);
  ~Texture2D();
   CreateSampleableView() sampleable : *SampleableTexture2DArray<PF:DeviceType>;
@@ -210,7 +210,7 @@ native class Texture2DArray<PF> {
   CopyFromBuffer(encoder : &CommandEncoder, source : &Buffer<[]PF:HostType>, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
-native class Texture3D<PF> {
+class Texture3D<PF> {
   Texture3D(device : &Device, size : uint<3>);
  ~Texture3D();
   CreateSampleableView() sampleable : *SampleableTexture3D<PF:DeviceType>;
@@ -220,7 +220,7 @@ native class Texture3D<PF> {
   CopyFromBuffer(encoder : &CommandEncoder, source : &Buffer<[]PF:HostType>, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
-native class TextureCube<PF> {
+class TextureCube<PF> {
   TextureCube(device : &Device, size : uint<2>);
  ~TextureCube();
   CreateSampleableView() sampleable : *SampleableTextureCube<PF:DeviceType>;
@@ -230,13 +230,13 @@ native class TextureCube<PF> {
   CopyFromBuffer(encoder : &CommandEncoder, source : &Buffer<[]PF:HostType>, size : uint<3>, origin = uint<3>(0, 0, 0));
 }
 
-native class CommandEncoder {
+class CommandEncoder {
   CommandEncoder(device : &Device);
  ~CommandEncoder();
   Finish() : *CommandBuffer;
 }
 
-native class RenderPass<T> {
+class RenderPass<T> {
   RenderPass(encoder : &CommandEncoder, data : &T);
   RenderPass(base : &RenderPass<T:BaseClass>);
  ~RenderPass();
@@ -247,7 +247,7 @@ native class RenderPass<T> {
   End();
 }
 
-native class ComputePass<T> {
+class ComputePass<T> {
   ComputePass(encoder : &CommandEncoder, data : &T);
   ComputePass(base : &ComputePass<T:BaseClass>);
  ~ComputePass();
@@ -257,13 +257,13 @@ native class ComputePass<T> {
   End();
 }
 
-native class Window {
+class Window {
   Window(size : uint<2>, position = int<2>(0, 0));
   GetSize() : uint<2>;
  ~Window();
 }
 
-native class SwapChain<T> {
+class SwapChain<T> {
   SwapChain(device : &Device, window : &Window);
  ~SwapChain();
   Resize(size : uint<2>);
@@ -271,7 +271,7 @@ native class SwapChain<T> {
   Present();
 }
 
-native class Math {
+class Math {
  ~Math();
   static all(v : bool<2>)   : bool;
   static all(v : bool<3>)   : bool;
@@ -336,7 +336,7 @@ native class Math {
   static transpose(m : float<4,4>) : float<4,4>;
 }
 
-native class Image<PF> {
+class Image<PF> {
   Image(encodedImage : *[]ubyte);
  ~Image();
   GetSize() : uint<2>;
@@ -347,7 +347,7 @@ enum EventType { MouseMove, MouseDown, MouseUp, TouchStart, TouchMove, TouchEnd,
 
 enum EventModifiers { Shift = 0x01, Control = 0x02, Alt = 0x04 }
 
-native class Event {
+class Event {
  ~Event();
   var type : EventType;
   var position : int<2>;
@@ -357,7 +357,7 @@ native class Event {
   var numTouches : int;
 }
 
-native class System {
+class System {
  ~System();
   static IsRunning() : bool;
   static HasPendingEvents() : bool;
