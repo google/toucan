@@ -304,6 +304,7 @@ test/override.t
 test/post-increment-with-side-effects.t
 test/raw-ptr.t
 test/really-simple.t
+test/recursive-template-instantiation.t
 test/recursive-type.t
 test/removable-qualifiers.t
 test/scope-test.t

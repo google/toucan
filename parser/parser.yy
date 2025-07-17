@@ -45,7 +45,7 @@ static std::vector<std::string> includePaths_;
 static Stmts** rootStmts_;
 static std::unordered_set<std::string> includedFiles_;
 static std::stack<FileLocation> fileStack_;
-static std::vector<ClassType*> instanceQueue_;
+static std::queue<ClassType*> instanceQueue_;
 
 extern int yylex();
 extern int yylex_destroy();
@@ -907,8 +907,8 @@ static ClassType* GetClassTemplateInstance(Type* type, const TypeList& templateA
 
 static ClassType* PopInstanceQueue() {
   if (instanceQueue_.empty()) { return nullptr; }
-  ClassType* instance = instanceQueue_.back();
-  instanceQueue_.pop_back();
+  ClassType* instance = instanceQueue_.front();
+  instanceQueue_.pop();
   return instance;
 }
 

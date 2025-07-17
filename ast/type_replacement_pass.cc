@@ -27,7 +27,7 @@ TypeReplacementPass::TypeReplacementPass(NodeVector*     nodes,
                                          TypeTable*      types,
                                          const TypeList& srcTypes,
                                          const TypeList& dstTypes,
-                                         std::vector<ClassType*>* instanceQueue)
+                                         std::queue<ClassType*>* instanceQueue)
     : CopyVisitor(nodes),
       symbols_(symbols),
       types_(types),

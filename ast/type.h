@@ -20,6 +20,7 @@
 
 #include <array>
 #include <memory>
+#include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -577,7 +578,7 @@ class TypeTable {
   RawPtrType*        GetRawPtrType(Type* type);
   ArrayType*         GetArrayType(Type* elementType, int size, MemoryLayout layout);
   FormalTemplateArg* GetFormalTemplateArg(std::string name);
-  ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs, std::vector<ClassType*>* instanceQueue);
+  ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs, std::queue<ClassType*>* instanceQueue);
   Type*       GetQualifiedType(Type* type, int qualifiers);
   Type*       GetUnresolvedScopedType(FormalTemplateArg* baseType, std::string id);
   TypeList*   AppendTypeList(TypeList* type);

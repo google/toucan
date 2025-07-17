@@ -15,6 +15,8 @@
 #ifndef _AST_TYPE_REPLACEMENT_PASS_H_
 #define _AST_TYPE_REPLACEMENT_PASS_H_
 
+#include <queue>
+
 #include "copy_visitor.h"
 
 namespace Toucan {
@@ -28,7 +30,7 @@ class TypeReplacementPass : public CopyVisitor {
                       TypeTable*      types,
                       const TypeList& srcTypes,
                       const TypeList& dstTypes,
-                      std::vector<ClassType*>* instanceQueue);
+                      std::queue<ClassType*>* instanceQueue);
   Result    Error(const char* fmt, ...);
   Type*     ResolveType(Type* type) override;
   TypeList* ResolveTypes(TypeList* typeList);
@@ -44,7 +46,7 @@ class TypeReplacementPass : public CopyVisitor {
   TypeTable*   types_;
   TypeList     srcTypes_;
   TypeList     dstTypes_;
-  std::vector<ClassType*>* instanceQueue_;
+  std::queue<ClassType*>* instanceQueue_;
   int          numErrors_ = 0;
 };
 
