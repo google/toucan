@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
   rootStmts->SetScope(topScope);
   types.SetMemoryLayout();
   SemanticPass semanticPass(&nodes, &symbols, &types);
-  Stmts*       stmts = semanticPass.Resolve(rootStmts);
+  rootStmts = semanticPass.Run(rootStmts);
   if (semanticPass.GetNumErrors() > 0) { exit(2); }
   types.ComputeFieldOffsets();
   if (dumpSymbolTable) {
@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
     CodeGenLLVM codeGenLLVM(&context, &types, module.get(), &builder, &fpm);
     codeGenLLVM.SetDebugOutput(dump);
     std::string errStr;
-    codeGenLLVM.Run(stmts);
+    codeGenLLVM.Run(rootStmts);
     if (verifyFunction(*main)) { printf("LLVM main function is broken; aborting\n"); }
     fpm.run(*main);
     if (dump) {

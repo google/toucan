@@ -67,6 +67,46 @@ bool HasDuplicates(const std::vector<int>& indices) {
 SemanticPass::SemanticPass(NodeVector* nodes, SymbolTable* symbols, TypeTable* types)
     : CopyVisitor(nodes), symbols_(symbols), types_(types), numErrors_(0) {}
 
+Stmts* SemanticPass::Run(Stmts* stmts) {
+  stmts = Resolve(stmts);
+  std::vector<ClassType*> classes;
+  for (auto type : types_->GetTypes()) {
+    if (type->IsClass() && !type->IsClassTemplate()) {
+      classes.push_back(static_cast<ClassType*>(type));
+    }
+  }
+
+  for (auto classType : classes) {
+    for (const auto& method : classType->GetMethods()) {
+      if (!method->stmts) continue;
+
+      Scope* scope = method->stmts->GetScope();
+      method->stmts = Resolve(method->stmts);
+      if (method->IsConstructor()) {
+        symbols_->PushScope(scope);
+        Expr* initializer = method->initializer ? Resolve(method->initializer)
+                            : ResolveListExpr(Make<ArgList>(), method->classType);
+        symbols_->PopScope();
+        auto This = Make<LoadExpr>(Make<VarExpr>(method->formalArgList[0].get()));
+        method->stmts->Prepend(Make<StoreStmt>(This, Widen(initializer, method->classType)));
+        method->stmts->Append(Make<ReturnStatement>(This));
+      }
+      // If last statement is not a return statement,
+      if (!method->stmts->ContainsReturn()) {
+        if (method->returnType != types_->GetVoid()) {
+          ScopedFileLocation scopedFile(&fileLocation_, method->stmts->GetFileLocation());
+          Error("implicit void return, in method returning %s.",
+            method->returnType->ToString().c_str());
+        } else {
+          method->stmts->Append(Make<ReturnStatement>(nullptr));
+        }
+      }
+    }
+  }
+
+  return stmts;
+}
+
 Result SemanticPass::Visit(SmartToRawPtr* node) {
   Expr* expr = Resolve(node->GetExpr());
   if (!expr) return nullptr;
@@ -890,29 +930,7 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
     }
   }
 
-  for (const auto& mit : classType->GetMethods()) {
-    auto method = mit.get();
-    if (method->stmts) {
-      Scope* scope = method->stmts->GetScope();
-      method->stmts = Resolve(method->stmts);
-      if (method->IsConstructor()) {
-        symbols_->PushScope(scope);
-        Expr* initializer = method->initializer ? Resolve(method->initializer)
-                            : ResolveListExpr(Make<ArgList>(), method->classType);
-        symbols_->PopScope();
-        auto This = Make<LoadExpr>(Make<VarExpr>(method->formalArgList[0].get()));
-        method->stmts->Prepend(Make<StoreStmt>(This, Widen(initializer, method->classType)));
-        method->stmts->Append(Make<ReturnStatement>(This));
-      }
-      // If last statement is not a return statement,
-      if (!method->stmts->ContainsReturn()) {
-        if (method->returnType != types_->GetVoid()) {
-          return Error("implicit void return, in method returning %s.", method->returnType->ToString().c_str());
-        } else {
-          method->stmts->Append(Make<ReturnStatement>(nullptr));
-        }
-      }
-    }
+  for (const auto& method : classType->GetMethods()) {
     if (method->returnType->ContainsRawPtr() && !method->IsConstructor()) {
       return Error("cannot return a raw pointer");
     }
@@ -956,8 +974,8 @@ Result SemanticPass::Visit(ReturnStatement* stmt) {
     while (scope && !scope->method) { scope = scope->parent; }
     auto returnType = scope ? scope->method->returnType : types_->GetVoid();
     if (!type->CanWidenTo(returnType)) {
-      return Error("cannot return a value of type %s from a function of type %s", type->ToString().c_str(),
-        returnType->ToString().c_str());
+      Error("cannot return a value of type %s from a function of type %s", type->ToString().c_str(),
+      returnType->ToString().c_str());
     }
   }
   auto stmts = Make<Stmts>();

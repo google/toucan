@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
   rootStmts->SetScope(topScope);
   types.SetMemoryLayout();
   SemanticPass semanticPass(&nodes, &symbols, &types);
-  Stmts*       stmts = semanticPass.Resolve(rootStmts);
+  rootStmts = semanticPass.Run(rootStmts);
   if (semanticPass.GetNumErrors() > 0) { exit(2); }
   types.ComputeFieldOffsets();
   double start, end;
@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
 #ifdef WIN32
   engine->DisableLazyCompilation();
 #endif
-  codeGenLLVM.Run(stmts);
+  codeGenLLVM.Run(rootStmts);
   auto typeList = codeGenLLVM.GetReferencedTypes().data();
   engine->addGlobalMapping(codeGenLLVM.GetTypeList(), &typeList);
   if (verifyFunction(*main)) { printf("LLVM main function is broken; aborting\n"); }
