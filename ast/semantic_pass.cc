@@ -147,6 +147,8 @@ Result SemanticPass::Visit(ArgList* node) {
       }
     }
     auto value = Resolve(arg);
+    if (!value) return nullptr;
+
     if (value->IsUnfold()) {
       auto type = value->GetExpr()->GetType(types_);
       if (!type->IsVector()) {
@@ -166,6 +168,8 @@ Result SemanticPass::Visit(ArgList* node) {
 Result SemanticPass::Visit(UnresolvedInitializer* node) {
   Type*              type = node->GetType();
   ArgList*           argList = Resolve(node->GetArgList());
+  if (!argList) return nullptr;
+
   auto               args = argList->GetArgs();
   std::vector<Expr*> exprs;
   if (type->ContainsRawPtr()) { return Error("cannot allocate a type containing a raw pointer"); }
