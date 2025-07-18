@@ -243,6 +243,7 @@ error-wrong-named-param.t:7:  Bar.Foo(int, float) : float
 test/fabs.t
 test/field-access.t
 test/field-default-value.t
+test/field-shadows-global.t
 test/field-store.t
 test/file-location-default-arg.t
 test/file-location-default-arg.t:12

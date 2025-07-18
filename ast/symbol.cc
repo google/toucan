@@ -49,9 +49,10 @@ Var* SymbolTable::FindVar(const std::string& identifier) const {
         Var* var = it.get();
         if (var->name == identifier) { return var; }
       }
+      return nullptr;
     }
   }
-  return 0;
+  return nullptr;
 }
 
 Field* SymbolTable::FindField(const std::string& identifier) const {
@@ -67,7 +68,7 @@ Var* SymbolTable::FindVarInScope(const std::string& identifier) const {
   if (!currentScope_) return nullptr;
   VarMap::const_iterator j = currentScope_->varMap.find(identifier);
   if (j != currentScope_->varMap.end()) { return j->second; }
-  return 0;
+  return nullptr;
 }
 
 Var* SymbolTable::DefineVar(std::string identifier, Type* type) {
@@ -90,7 +91,7 @@ Type* SymbolTable::FindType(const std::string& identifier) const {
     TypeMap::const_iterator j = scope->types.find(identifier);
     if (j != scope->types.end()) { return j->second; }
   }
-  return 0;
+  return nullptr;
 }
 
 void SymbolTable::Dump() {
