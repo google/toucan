@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
   if (syntaxErrors > 0) { exit(1); }
   rootStmts->SetScope(symbols.PopScope());
   SemanticPass semanticPass(&nodes, &symbols, &types);
-  Stmts*       semanticStmts = semanticPass.Resolve(rootStmts);
+  Stmts*       semanticStmts = semanticPass.Run(rootStmts);
   if (semanticPass.GetNumErrors() > 0) { exit(2); }
 
   GenBindings genBindings(outfile, headerfile, true);

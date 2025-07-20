@@ -31,6 +31,26 @@ namespace Toucan {
 
 namespace {
 
+class UnresolvedClassVisitor : public Visitor {
+ public:
+  UnresolvedClassVisitor(SemanticPass* semanticPass) : semanticPass_(semanticPass) {}
+
+ private:
+  Result Visit(UnresolvedClassDefinition* node) override {
+    semanticPass_->PreVisit(node);
+    return {};
+  }
+
+  Result Visit(Stmts* stmts) override {
+    for (auto stmt : stmts->GetStmts()) stmt->Accept(this);
+    return {};
+  }
+
+  Result Default(ASTNode* node) override { return {}; }
+
+  SemanticPass* semanticPass_;
+};
+
 // Returns in the index corresponding to a given swizzle char, or -1 if invalid.
 int ParseSwizzleChar(char c) {
   if (c == 'x' || c == 'r' || c == 's') return 0;
@@ -68,43 +88,10 @@ SemanticPass::SemanticPass(NodeVector* nodes, SymbolTable* symbols, TypeTable* t
     : CopyVisitor(nodes), symbols_(symbols), types_(types), numErrors_(0) {}
 
 Stmts* SemanticPass::Run(Stmts* stmts) {
-  stmts = Resolve(stmts);
-  std::vector<ClassType*> classes;
-  for (auto type : types_->GetTypes()) {
-    if (type->IsClass() && !type->IsClassTemplate()) {
-      classes.push_back(static_cast<ClassType*>(type));
-    }
-  }
+  UnresolvedClassVisitor ucv(this);
+  stmts->Accept(&ucv);
 
-  for (auto classType : classes) {
-    for (const auto& method : classType->GetMethods()) {
-      if (!method->stmts) continue;
-
-      Scope* scope = method->stmts->GetScope();
-      method->stmts = Resolve(method->stmts);
-      if (method->IsConstructor()) {
-        symbols_->PushScope(scope);
-        Expr* initializer = method->initializer ? Resolve(method->initializer)
-                            : ResolveListExpr(Make<ArgList>(), method->classType);
-        symbols_->PopScope();
-        auto This = Make<LoadExpr>(Make<VarExpr>(method->formalArgList[0].get()));
-        method->stmts->Prepend(Make<StoreStmt>(This, Widen(initializer, method->classType)));
-        method->stmts->Append(Make<ReturnStatement>(This));
-      }
-      // If last statement is not a return statement,
-      if (!method->stmts->ContainsReturn()) {
-        if (method->returnType != types_->GetVoid()) {
-          ScopedFileLocation scopedFile(&fileLocation_, method->stmts->GetFileLocation());
-          Error("implicit void return, in method returning %s.",
-            method->returnType->ToString().c_str());
-        } else {
-          method->stmts->Append(Make<ReturnStatement>(nullptr));
-        }
-      }
-    }
-  }
-
-  return stmts;
+  return Resolve(stmts);
 }
 
 Result SemanticPass::Visit(SmartToRawPtr* node) {
@@ -258,7 +245,7 @@ Stmts* SemanticPass::InitializeClass(Expr* dest, ClassType* classType) {
   if (classType->GetParent()) { stmts->Append(InitializeClass(dest, classType->GetParent())); }
   for (const auto& field : classType->GetFields()) {
     Expr* fieldExpr = Make<FieldAccess>(dest, field.get());
-    stmts->Append(Initialize(fieldExpr, Resolve(field->defaultValue)));
+    stmts->Append(Initialize(fieldExpr, field->defaultValue));
   }
   return stmts;
 }
@@ -901,14 +888,36 @@ Result SemanticPass::Visit(ForStatement* node) {
   return Make<ForStatement>(initStmt, cond, loopStmt, body);
 }
 
+void SemanticPass::PreVisit(UnresolvedClassDefinition* defn) {
+  Scope*     scope = defn->GetScope();
+  ClassType* classType = scope->classType;
+
+  // Non-native template classes don't need inferred type resolution
+  if (!classType->IsNative() && classType->IsClassTemplate()) return;
+
+  for (const auto& method : classType->GetMethods()) {
+    for (int i = 0; i < method->defaultArgs.size(); ++i) {
+      method->defaultArgs[i] = Resolve(method->defaultArgs[i]);
+      if (method->formalArgList[i]->type->IsAuto()) {
+        method->formalArgList[i]->type = method->defaultArgs[i]->GetType(types_);
+      }
+    }
+  }
+
+  for (const auto& field : classType->GetFields()) {
+    field->defaultValue = Resolve(field->defaultValue);
+    if (field->type->IsAuto()) {
+      field->type = field->defaultValue->GetType(types_);
+    }
+  }
+}
+
 Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   Scope*     scope = defn->GetScope();
   ClassType* classType = scope->classType;
-  // Non-native template classes don't need semantic analysis, since
-  // their code won't be directly generated.
-  if (!classType->IsNative() && classType->IsClassTemplate()) {
-    return nullptr;
-  }
+
+  // Template classes don't need semantic analysis, since their code won't be directly generated.
+  if (classType->IsClassTemplate()) return nullptr;
 
   symbols_->PushScope(scope);
 
@@ -931,26 +940,40 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   }
 
   for (const auto& method : classType->GetMethods()) {
-    if (method->returnType->ContainsRawPtr() && !method->IsConstructor()) {
-      return Error("cannot return a raw pointer");
+    if (!method->stmts) continue;
+
+    Scope* scope = method->stmts->GetScope();
+    method->stmts = Resolve(method->stmts);
+    if (method->IsConstructor()) {
+      symbols_->PushScope(scope);
+      Expr* initializer = method->initializer ? Resolve(method->initializer)
+                          : ResolveListExpr(Make<ArgList>(), method->classType);
+      symbols_->PopScope();
+      auto This = Make<LoadExpr>(Make<VarExpr>(method->formalArgList[0].get()));
+      method->stmts->Prepend(Make<StoreStmt>(This, Widen(initializer, method->classType)));
+      method->stmts->Append(Make<ReturnStatement>(This));
     }
-    for (int i = 0; i < method->defaultArgs.size(); ++i) {
-      method->defaultArgs[i] = Resolve(method->defaultArgs[i]);
-      if (method->formalArgList[i]->type->IsAuto()) {
-        method->formalArgList[i]->type = method->defaultArgs[i]->GetType(types_);
+
+    if (method->returnType->ContainsRawPtr() && !method->IsConstructor()) {
+      Error("cannot return a raw pointer");
+    }
+
+    // If last statement is not a return statement,
+    if (!method->stmts->ContainsReturn()) {
+      if (method->returnType != types_->GetVoid()) {
+        ScopedFileLocation scopedFile(&fileLocation_, method->stmts->GetFileLocation());
+        Error("implicit void return, in method returning %s.",
+          method->returnType->ToString().c_str());
+      } else {
+        method->stmts->Append(Make<ReturnStatement>(nullptr));
       }
     }
   }
 
   const auto& fields = classType->GetFields();
   for (const auto& field : fields) {
-    if (field->type->IsAuto()) {
-      field->defaultValue = Resolve(field->defaultValue);
-      field->type = field->defaultValue->GetType(types_);
-    } else if (field->type->IsUnsizedArray()) {
-      if (field != fields.back()) {
-        return Error("Unsized arrays are only allwed as the last field of a class");
-      }
+    if (field->type->IsUnsizedArray() && field != fields.back()) {
+      Error("unsized arrays are only allwed as the last field of a class");
     }
   }
   symbols_->PopScope();

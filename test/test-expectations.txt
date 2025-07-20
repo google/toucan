@@ -190,9 +190,9 @@ error-return-int-from-main.t:1:  cannot return a value of type int from a functi
 test/error-return-raw-ptr.t
 error-return-raw-ptr.t:6:  cannot return a raw pointer
 error-return-raw-ptr.t:10:  cannot return a raw pointer
+error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
+error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
 error-return-raw-ptr.t:14:  cannot return a raw pointer
-error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
-error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
 test/error-stack-allocate-raw-ptr-aggregate.t
 error-stack-allocate-raw-ptr-aggregate.t:11:  cannot allocate a type containing a raw pointer
 error-stack-allocate-raw-ptr-aggregate.t:12:  cannot allocate a type containing a raw pointer
@@ -226,7 +226,7 @@ error-unknown-param-type.t:2: syntax error
 test/error-unknown-return-type.t
 error-unknown-return-type.t:2: syntax error
 test/error-unsized-array-not-last-in-class.t
-error-unsized-array-not-last-in-class.t:4:  Unsized arrays are only allwed as the last field of a class
+error-unsized-array-not-last-in-class.t:4:  unsized arrays are only allwed as the last field of a class
 test/error-widen-null-to-raw-ptr.t
 error-widen-null-to-raw-ptr.t:1:  cannot store a value of type "null" to a location of type "&int"
 test/error-widen-weak-ptr-short-to-weak-ptr-int.t
@@ -332,6 +332,8 @@ test/string-conversions.t
 test/swizzle-store.t
 test/templated-class-initializer.t
 test/templated-class-on-primitive-type.t
+test/templated-class-with-auto-field.t
+test/templated-class-with-auto-formal-arg.t
 test/templated-class.t
 test/templated-matrix.t
 test/templated-on-class-and-primitive-type.t

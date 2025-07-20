@@ -187,7 +187,6 @@ int main(int argc, char** argv) {
     auto targetMachine = target->createTargetMachine(targetTriple, cpu, features, opt, rm);
 
     module->setDataLayout(targetMachine->createDataLayout());
-    symbols.PushScope(topScope);
     llvm::FunctionCallee c =
         module->getOrInsertFunction("toucan_main", llvm::Type::getVoidTy(context));
     llvm::Function* main = llvm::cast<llvm::Function>(c.getCallee());

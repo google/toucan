@@ -29,7 +29,10 @@ Scope* SymbolTable::PushNewScope() {
   return scope;
 }
 
-void SymbolTable::PushScope(Scope* scope) { currentScope_ = scope; }
+void SymbolTable::PushScope(Scope* scope) {
+  assert(scope && currentScope_ == scope->parent);
+  currentScope_ = scope;
+}
 
 Scope* SymbolTable::PopScope() {
   Scope* back = currentScope_;

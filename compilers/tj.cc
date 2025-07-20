@@ -157,7 +157,6 @@ int main(int argc, char** argv) {
   LLVMInitializeNativeAsmPrinter();
   llvm::LLVMContext             context;
   std::unique_ptr<llvm::Module> module(new llvm::Module("test", context));
-  symbols.PushScope(topScope);
   llvm::FunctionCallee c = module->getOrInsertFunction("tjmain", llvm::Type::getVoidTy(context));
   llvm::Function*      main = llvm::cast<llvm::Function>(c.getCallee());
   main->setCallingConv(llvm::CallingConv::C);

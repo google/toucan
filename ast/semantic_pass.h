@@ -54,6 +54,7 @@ class SemanticPass : public CopyVisitor {
   Result Error(const char* fmt, ...);
   Result Default(ASTNode* node) override;
   int    GetNumErrors() const { return numErrors_; }
+  void   PreVisit(UnresolvedClassDefinition* node);
 
  private:
   void    UnwindStack(Scope* scope, Stmts* stmts);

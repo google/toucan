@@ -914,14 +914,11 @@ static ClassType* PopInstanceQueue() {
 
 static void InstantiateClassTemplates() {
   while (ClassType* instance = PopInstanceQueue()) {
-    Scope* scope = symbols_->PushNewScope();
     ClassTemplate* classTemplate = instance->GetTemplate();
-    scope->classType = instance;
     TypeReplacementPass pass(nodes_, symbols_, types_, classTemplate->GetFormalTemplateArgs(), instance->GetTemplateArgs(), &instanceQueue_);
     pass.ResolveClassInstance(classTemplate, instance);
     numSyntaxErrors += pass.NumErrors();
-    (*rootStmts_)->Append(Make<UnresolvedClassDefinition>(scope));
-    symbols_->PopScope();
+    (*rootStmts_)->Append(Make<UnresolvedClassDefinition>(instance->GetScope()));
   }
 }
 
