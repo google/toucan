@@ -33,7 +33,7 @@ class Spring {
   var kd : float;
   var r : float;
 
-  computeForce(b1 : Body, b2 : Body) : Vector {
+  computeForce(b1 : &Body, b2 : &Body) : Vector {
     var dp = b1.position - b2.position;
     var dv = b1.velocity - b2.velocity;
     var dplen = Math.length(dp);
@@ -67,7 +67,7 @@ class ParticleSystem {
     for (var i = 0; i < springs.length; ++i) {
       var b1 = springs[i].body1;
       var b2 = springs[i].body2;
-      var fk = springs[i].computeForce(bodies[b1], bodies[b2]);
+      var fk = springs[i].computeForce(&bodies[b1], &bodies[b2]);
       bodies[b1].force += fk;
       bodies[b2].force -= fk;
     }

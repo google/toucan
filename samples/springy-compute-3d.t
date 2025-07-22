@@ -36,7 +36,7 @@ class Spring {
   var r : float;
   var force : Vector;
 
-  computeForce(b1 : Body, b2 : Body) : Vector {
+  computeForce(b1 : &Body, b2 : &Body) : Vector {
     var dp = b1.position - b2.position;
     var dv = b1.velocity - b2.velocity;
     var dplen = Math.length(dp);
@@ -85,7 +85,7 @@ class ComputeForces : ComputeBase {
     var spring = springs[i];
     var body1 = bodies[spring.body1];
     var body2 = bodies[spring.body2];
-    springs[i].force = spring.computeForce(body1, body2);
+    springs[i].force = spring.computeForce(&body1, &body2);
   }
 }
 
