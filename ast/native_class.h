@@ -14,7 +14,6 @@
 
 #ifndef NATIVE_CLASS_H_
 #define NATIVE_CLASS_H_
-#endif
 
 // TODO: autogenerate this from api.t.
 
@@ -57,3 +56,4 @@ class NativeClass {
 };
 
 };  // namespace Toucan
+#endif

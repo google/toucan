@@ -24,8 +24,8 @@
 #include <unordered_map>
 #include <ranges>
 
+#include "api_validator.h"
 #include "symbol.h"
-#include "type_replacement_pass.h"
 
 namespace Toucan {
 
@@ -91,7 +91,10 @@ Stmts* SemanticPass::Run(Stmts* stmts) {
   UnresolvedClassVisitor ucv(this);
   stmts->Accept(&ucv);
 
-  return Resolve(stmts);
+  stmts = Resolve(stmts);
+
+  numErrors_ += apiValidator_.GetNumErrors();
+  return stmts;
 }
 
 Result SemanticPass::Visit(SmartToRawPtr* node) {
@@ -200,6 +203,7 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
   auto               args = argList->GetArgs();
   std::vector<Expr*> exprs;
   if (type->ContainsRawPtr()) { return Error("cannot allocate a type containing a raw pointer"); }
+  apiValidator_.ValidateType(type, node->GetFileLocation());
   if (type->IsClass() && node->IsConstructor()) {
     ClassType*         classType = static_cast<ClassType*>(type);
     TypeList           types;
@@ -209,7 +213,7 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
       return Error("constructor for class \"%s\" with those arguments not found",
                    classType->GetName().c_str());
     }
-    constructorArgs[0] = Make<TempVarExpr>(node->GetType());
+    constructorArgs[0] = Make<TempVarExpr>(type);
     WidenArgList(constructorArgs, constructor->formalArgList);
     auto* exprList = Make<ExprList>(std::move(constructorArgs));
     Expr* result = Make<MethodCall>(constructor, exprList);
@@ -292,6 +296,7 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
     assert(initExpr);
     type = initExpr->GetType(types_);
   }
+  apiValidator_.ValidateType(type, decl->GetFileLocation());
   if (type->IsVoid() || (type->IsArray() && static_cast<ArrayType*>(type)->GetNumElements() == 0)) {
     std::string errorMsg = std::string("cannot create storage of type ") + type->ToString();
     return Error(errorMsg.c_str());
@@ -791,6 +796,7 @@ void SemanticPass::WidenArgList(std::vector<Expr*>& argList, const VarVector& fo
 Result SemanticPass::Visit(UnresolvedNewExpr* node) {
   Type* type = node->GetType();
   if (!type) return nullptr;
+  apiValidator_.ValidateType(type, node->GetFileLocation());
   if (type->IsUnsizedArray()) { return Error("cannot allocate unsized array"); }
   if (type->ContainsRawPtr()) { return Error("cannot allocate a type containing raw pointer"); }
 
@@ -975,7 +981,7 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   const auto& fields = classType->GetFields();
   for (const auto& field : fields) {
     if (field->type->IsUnsizedArray() && field != fields.back()) {
-      Error("unsized arrays are only allwed as the last field of a class");
+      Error("unsized arrays are only allowed as the last field of a class");
     }
   }
   symbols_->PopScope();

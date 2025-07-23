@@ -24,10 +24,11 @@
 
 namespace Toucan {
 
-ShaderValidationPass::ShaderValidationPass(SymbolTable* symbols,
-                                           TypeTable*   types,
-                                           Type*        thisPtrType)
-    : symbols_(symbols), types_(types), thisPtrType_(thisPtrType), returnValue_(0), numErrors_(0) {}
+ShaderValidationPass::ShaderValidationPass() {}
+
+void ShaderValidationPass::Run(Method* method) {
+  if (method->stmts) Visit(method->stmts);
+}
 
 Result ShaderValidationPass::Visit(ArrayAccess* node) {
   Resolve(node->GetExpr());
@@ -40,6 +41,29 @@ Result ShaderValidationPass::Visit(CastExpr* node) {
   return {};
 }
 
+Result ShaderValidationPass::Visit(DestroyStmt* node) {
+  Resolve(node->GetExpr());
+  return {};
+}
+
+Result ShaderValidationPass::Visit(ExprWithStmt* node) {
+  Resolve(node->GetExpr());
+  Resolve(node->GetStmt());
+  return {};
+}
+
+Result ShaderValidationPass::Visit(ExprList* node) {
+  for (auto expr : node->Get()) {
+    Resolve(expr);
+  }
+  return {};
+}
+
+Result ShaderValidationPass::Visit(ExtractElementExpr* node) {
+  Resolve(node->GetExpr());
+  return {};
+}
+
 Result ShaderValidationPass::Visit(IntConstant* node) { return {}; }
 
 Result ShaderValidationPass::Visit(UIntConstant* node) { return {}; }
@@ -47,8 +71,18 @@ Result ShaderValidationPass::Visit(UIntConstant* node) { return {}; }
 Result ShaderValidationPass::Visit(EnumConstant* node) { return {}; }
 
 Result ShaderValidationPass::Visit(DoubleConstant* node) { return {}; }
-
+ 
 Result ShaderValidationPass::Visit(FloatConstant* node) { return {}; }
+
+Result ShaderValidationPass::Visit(HeapAllocation* node) {
+  Error(node, "\"new\" operator is prohibited in shader methods");
+  return {};
+}
+
+Result ShaderValidationPass::Visit(Initializer* node) {
+  Resolve(node->GetArgList());
+  return {};
+}
 
 Result ShaderValidationPass::Visit(BoolConstant* node) { return {}; }
 
@@ -73,21 +107,24 @@ Result ShaderValidationPass::Visit(ExprStmt* stmt) {
   return {};
 }
 
-Result ShaderValidationPass::Visit(UnresolvedInitializer* node) {
-  Resolve(node->GetArgList());
+Result ShaderValidationPass::Visit(LoadExpr* node) {
+  Resolve(node->GetExpr());
   return {};
 }
 
-Result ShaderValidationPass::Visit(VarDeclaration* decl) { return {}; }
-
-Result ShaderValidationPass::Visit(LoadExpr* node) {
-  Resolve(node->GetExpr());
+Result ShaderValidationPass::Visit(MethodCall* node) {
+  Resolve(node->GetArgList());
   return {};
 }
 
 Result ShaderValidationPass::Visit(StoreStmt* node) {
   Resolve(node->GetLHS());
   Resolve(node->GetRHS());
+  return {};
+}
+
+Result ShaderValidationPass::Visit(RawToSmartPtr* node) {
+  Resolve(node->GetExpr());
   return {};
 }
 
@@ -139,12 +176,48 @@ Result ShaderValidationPass::Visit(FieldAccess* fieldAccess) {
   return {};
 }
 
-Result ShaderValidationPass::Default(ASTNode* node) {
-  Error(node, "Internal compiler error");
+Result ShaderValidationPass::Visit(InsertElementExpr* node) {
+  Resolve(node->GetExpr());
+  Resolve(node->newElement());
   return {};
 }
 
-Result ShaderValidationPass::Resolve(ASTNode* node) { return node->Accept(this); }
+Result ShaderValidationPass::Visit(SmartToRawPtr* node) {
+  Resolve(node->GetExpr());
+  return {};
+}
+
+Result ShaderValidationPass::Visit(SwizzleExpr* node) {
+  Resolve(node->GetExpr());
+  return {};
+}
+
+Result ShaderValidationPass::Visit(TempVarExpr* node) {
+  Resolve(node->GetInitExpr());
+  return {};
+}
+
+Result ShaderValidationPass::Visit(ToRawArray* node) {
+  Resolve(node->GetData());
+  Resolve(node->GetLength());
+  return {};
+}
+
+Result ShaderValidationPass::Visit(VarExpr* node) {
+  return {};
+}
+
+Result ShaderValidationPass::Visit(ZeroInitStmt* node) {
+  Resolve(node->GetLHS());
+  return {};
+}
+
+Result ShaderValidationPass::Default(ASTNode* node) {
+  assert(!"unhandled node");
+  return {};
+}
+
+Result ShaderValidationPass::Resolve(ASTNode* node) { return node ? node->Accept(this) : nullptr; }
 
 void ShaderValidationPass::Error(ASTNode* node, const char* fmt, ...) {
   const FileLocation& location = node->GetFileLocation();

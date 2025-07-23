@@ -16,6 +16,7 @@
 #define _AST_AST_SEMANTIC_PASS_H_
 
 #include "copy_visitor.h"
+#include "api_validator.h"
 
 namespace Toucan {
 
@@ -85,7 +86,8 @@ class SemanticPass : public CopyVisitor {
   Method* FindOverriddenMethod(ClassType* classType, Method* method);
   SymbolTable* symbols_;
   TypeTable*   types_;
-  int          numErrors_;
+  APIValidator apiValidator_;
+  int          numErrors_ = 0;
 };
 
 };  // namespace Toucan

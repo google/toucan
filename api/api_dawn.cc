@@ -478,10 +478,7 @@ static wgpu::BindGroupLayoutEntry CreateBindGroupLayoutEntry(uint32_t binding,
                                                              Type*    type,
                                                              int      qualifiers) {
   assert(!type->IsPtr());
-  if (!type->IsClass()) {
-    assert(!"invalid field type in bind group (not class)");
-    return {};
-  }
+  assert(type->IsClass());
   ClassType*                 classType = static_cast<ClassType*>(type);
   wgpu::BindGroupLayoutEntry entry;
   // FIXME: get visibilty from qualifiers

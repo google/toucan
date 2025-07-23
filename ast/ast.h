@@ -20,6 +20,7 @@
 #include <variant>
 #include <vector>
 
+#include "file_location.h"
 #include "type.h"
 
 namespace Toucan {
@@ -30,27 +31,6 @@ struct Scope;
 class Visitor;
 
 using Result = std::variant<void*, uint32_t>;
-
-struct FileLocation {
-  FileLocation();
-  FileLocation(const FileLocation& other);
-  FileLocation(std::shared_ptr<std::string> f, int n);
-  std::shared_ptr<std::string> filename;
-  int                          lineNum = -1;
-};
-
-class ScopedFileLocation {
- public:
-  ScopedFileLocation(FileLocation* p, const FileLocation& newLocation)
-      : location_(p), previous_(*p) {
-    *location_ = newLocation;
-  }
-  ~ScopedFileLocation() { *location_ = previous_; }
-
- private:
-  FileLocation* location_;
-  FileLocation  previous_;
-};
 
 class ASTNode {
  public:

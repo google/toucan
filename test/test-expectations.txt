@@ -161,12 +161,12 @@ test/error-new-with-missing-constructor.t
 error-new-with-missing-constructor.t:5:  matching constructor not found
 test/error-non-addable-qualifiers.t
 error-non-addable-qualifiers.t:3:  cannot store a value of type "*Buffer<float>" to a location of type "*uniform Buffer<float>"
-error-non-addable-qualifiers.t:4:  cannot store a value of type "*Buffer<float>" to a location of type "*storage Buffer<float>"
-error-non-addable-qualifiers.t:5:  cannot store a value of type "*Buffer<float>" to a location of type "*vertex Buffer<float>"
-error-non-addable-qualifiers.t:6:  cannot store a value of type "*Buffer<float>" to a location of type "*index Buffer<float>"
+error-non-addable-qualifiers.t:4:  cannot store a value of type "*Buffer<[]uint>" to a location of type "*storage Buffer<[]uint>"
+error-non-addable-qualifiers.t:5:  cannot store a value of type "*Buffer<[]uint>" to a location of type "*vertex Buffer<[]uint>"
+error-non-addable-qualifiers.t:6:  cannot store a value of type "*Buffer<[]uint>" to a location of type "*index Buffer<[]uint>"
 error-non-addable-qualifiers.t:7:  cannot store a value of type "*Buffer<float>" to a location of type "*uniform storage Buffer<float>"
-error-non-addable-qualifiers.t:8:  cannot store a value of type "*Buffer<float>" to a location of type "*hostreadable Buffer<float>"
-error-non-addable-qualifiers.t:9:  cannot store a value of type "*Buffer<float>" to a location of type "*hostwriteable Buffer<float>"
+error-non-addable-qualifiers.t:8:  cannot store a value of type "*Buffer<[]uint>" to a location of type "*hostreadable Buffer<[]uint>"
+error-non-addable-qualifiers.t:9:  cannot store a value of type "*Buffer<[]uint>" to a location of type "*hostwriteable Buffer<[]uint>"
 error-non-addable-qualifiers.t:12:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*sampleable Texture2D<RGBA8unorm>"
 error-non-addable-qualifiers.t:13:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*renderable Texture2D<RGBA8unorm>"
 error-non-addable-qualifiers.t:14:  cannot store a value of type "*Texture2D<RGBA8unorm>" to a location of type "*sampleable renderable Texture2D<RGBA8unorm>"
@@ -194,6 +194,9 @@ error-return-raw-ptr.t:10:  cannot return a raw pointer
 error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
 error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
 error-return-raw-ptr.t:14:  cannot return a raw pointer
+test/error-shader-validation.t
+error-shader-validation.t:2:  "new" operator is prohibited in shader methods
+error-shader-validation.t:2:  "new" operator is prohibited in shader methods
 test/error-stack-allocate-raw-ptr-aggregate.t
 error-stack-allocate-raw-ptr-aggregate.t:11:  cannot allocate a type containing a raw pointer
 error-stack-allocate-raw-ptr-aggregate.t:12:  cannot allocate a type containing a raw pointer
@@ -227,7 +230,83 @@ error-unknown-param-type.t:2: syntax error
 test/error-unknown-return-type.t
 error-unknown-return-type.t:2: syntax error
 test/error-unsized-array-not-last-in-class.t
-error-unsized-array-not-last-in-class.t:4:  unsized arrays are only allwed as the last field of a class
+error-unsized-array-not-last-in-class.t:4:  unsized arrays are only allowed as the last field of a class
+test/error-validate-bind-group.t
+error-validate-bind-group.t:16:  while instantiating BindGroup<float>: bind group template argument must be of class type
+error-validate-bind-group.t:16:  matching constructor not found
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type int
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type *int
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type ^int
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type [3]float
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type int<3>
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type *storage Sampler
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type Texture2D<RGBA8unorm>
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type *vertex Buffer<float<4>>
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type *index Buffer<float<4>>
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type *hostreadable Buffer<float<4>>
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type *hostwriteable Buffer<float<4>>
+error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type []byte
+test/error-validate-buffer.t
+error-validate-buffer.t:2:  while instantiating Buffer<int>: int is not a runtime-sized array
+error-validate-buffer.t:4:  while instantiating Buffer<[]byte>: byte is not a valid vertex attribute type
+error-validate-buffer.t:5:  while instantiating Buffer<[]ubyte>: ubyte is not a valid vertex attribute type
+error-validate-buffer.t:6:  while instantiating Buffer<[]short>: short is not a valid vertex attribute type
+error-validate-buffer.t:7:  while instantiating Buffer<[]short<2>>: short<2> is not a valid vertex attribute type
+error-validate-buffer.t:8:  while instantiating Buffer<[]ushort>: ushort is not a valid vertex attribute type
+error-validate-buffer.t:9:  while instantiating Buffer<[]ushort<2>>: ushort<2> is not a valid vertex attribute type
+error-validate-buffer.t:10:  while instantiating Buffer<[]double>: double is not a valid vertex attribute type
+error-validate-buffer.t:11:  while instantiating Buffer<[]double<2>>: double<2> is not a valid vertex attribute type
+error-validate-buffer.t:21:  while instantiating Buffer<[]C>: byte is not a valid vertex attribute type
+error-validate-buffer.t:21:  while instantiating Buffer<[]C>: ubyte is not a valid vertex attribute type
+error-validate-buffer.t:21:  while instantiating Buffer<[]C>: short is not a valid vertex attribute type
+error-validate-buffer.t:21:  while instantiating Buffer<[]C>: ushort is not a valid vertex attribute type
+error-validate-buffer.t:21:  while instantiating Buffer<[]C>: double is not a valid vertex attribute type
+error-validate-buffer.t:23:  while instantiating Buffer<[]float>: float is not a valid index buffer type; must be uint or ushort
+error-validate-buffer.t:24:  while instantiating Buffer<uint>: uint is not a runtime-sized array
+error-validate-buffer.t:25:  while instantiating Buffer<[3]float>: [3]float is not a runtime-sized array
+error-validate-buffer.t:27:  while instantiating Buffer<byte>: byte is not a valid uniform buffer type
+error-validate-buffer.t:28:  while instantiating Buffer<ushort<4>>: ushort is not a valid uniform buffer type
+error-validate-buffer.t:29:  while instantiating Buffer<[3]double>: double is not a valid uniform buffer type
+error-validate-buffer.t:30:  while instantiating Buffer<[]float>: []float: runtime-sized arrays are prohibited in uniform buffers
+error-validate-buffer.t:31:  while instantiating Buffer<*float>: *float is not a valid uniform buffer type
+error-validate-buffer.t:32:  while instantiating Buffer<^float>: ^float is not a valid uniform buffer type
+error-validate-buffer.t:33:  while instantiating Buffer<&float>: &float is not a valid uniform buffer type
+error-validate-buffer.t:34:  while instantiating Buffer<C>: byte is not a valid uniform buffer type
+error-validate-buffer.t:34:  while instantiating Buffer<C>: ubyte is not a valid uniform buffer type
+error-validate-buffer.t:34:  while instantiating Buffer<C>: short is not a valid uniform buffer type
+error-validate-buffer.t:34:  while instantiating Buffer<C>: ushort is not a valid uniform buffer type
+error-validate-buffer.t:34:  while instantiating Buffer<C>: double is not a valid uniform buffer type
+error-validate-buffer.t:36:  while instantiating Buffer<byte>: byte is not a valid storage buffer type
+error-validate-buffer.t:37:  while instantiating Buffer<ushort<4>>: ushort is not a valid storage buffer type
+error-validate-buffer.t:38:  while instantiating Buffer<[3]double>: double is not a valid storage buffer type
+error-validate-buffer.t:39:  while instantiating Buffer<*float>: *float is not a valid storage buffer type
+error-validate-buffer.t:40:  while instantiating Buffer<^float>: ^float is not a valid storage buffer type
+error-validate-buffer.t:41:  while instantiating Buffer<&float>: &float is not a valid storage buffer type
+error-validate-buffer.t:42:  while instantiating Buffer<C>: byte is not a valid storage buffer type
+error-validate-buffer.t:42:  while instantiating Buffer<C>: ubyte is not a valid storage buffer type
+error-validate-buffer.t:42:  while instantiating Buffer<C>: short is not a valid storage buffer type
+error-validate-buffer.t:42:  while instantiating Buffer<C>: ushort is not a valid storage buffer type
+error-validate-buffer.t:42:  while instantiating Buffer<C>: double is not a valid storage buffer type
+error-validate-buffer.t:44:  while instantiating Buffer<[]uint>: buffer can not have both host and device qualifiers
+error-validate-buffer.t:45:  while instantiating Buffer<[]uint>: buffer can not have both host and device qualifiers
+error-validate-buffer.t:46:  while instantiating Buffer<float>: buffer can not have both host and device qualifiers
+error-validate-buffer.t:47:  while instantiating Buffer<float>: buffer can not have both host and device qualifiers
+error-validate-buffer.t:49:  while instantiating Buffer<[]uint>: buffer can not have both host and device qualifiers
+error-validate-buffer.t:50:  while instantiating Buffer<[]uint>: buffer can not have both host and device qualifiers
+error-validate-buffer.t:51:  while instantiating Buffer<float>: buffer can not have both host and device qualifiers
+error-validate-buffer.t:52:  while instantiating Buffer<float>: buffer can not have both host and device qualifiers
+error-validate-buffer.t:54:  while instantiating Buffer<float>: invalid buffer qualifier: sampleable
+error-validate-buffer.t:54:  while instantiating Buffer<float>: invalid buffer qualifier: renderable
+error-validate-buffer.t:54:  while instantiating Buffer<float>: invalid buffer qualifier: unfilterable
+test/error-validate.t
+error-validate.t:32:  while instantiating RenderPipeline<BadPipelineField>: int is not a valid render pipeline field type
+error-validate.t:33:  while instantiating RenderPass<BadPipelineField>: int is not a valid render pipeline field type
+error-validate.t:34:  while instantiating RenderPipeline<NoVertexShader>: no vertex shader found
+error-validate.t:35:  while instantiating RenderPipeline<NoFragmentShader>: no fragment shader found
+error-validate.t:36:  while instantiating RenderPipeline<NoShaders>: no vertex shader found
+error-validate.t:36:  while instantiating RenderPipeline<NoShaders>: no fragment shader found
+error-validate.t:37:  while instantiating RenderPipeline<NoShaders2>: no vertex shader found
+error-validate.t:37:  while instantiating RenderPipeline<NoShaders2>: no fragment shader found
 test/error-widen-null-to-raw-ptr.t
 error-widen-null-to-raw-ptr.t:1:  cannot store a value of type "null" to a location of type "&int"
 test/error-widen-weak-ptr-short-to-weak-ptr-int.t
