@@ -2,7 +2,7 @@ class GreenPipeline {
     vertex main(vb : &VertexBuiltins) { vb.position = {@position.Get(), 0.0, 1.0}; }
     fragment main(fb : &FragmentBuiltins) { renderTex.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
     var position : *VertexInput<float<2>>;
-    var renderTex : *ColorAttachment<RGBA8unorm>;
+    var renderTex : *ColorOutput<RGBA8unorm>;
 }
 
 class QuadVertex {
@@ -27,13 +27,13 @@ class TexPipeline {
     }
     var vertices : *VertexInput<QuadVertex>;
     var indices : *index Buffer<[]uint>;
-    var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+    var fragColor : *ColorOutput<PreferredPixelFormat>;
     var bindings : *BindGroup<Bindings>;
 };
 
 var device = new Device();
 var window = new Window({640, 480});
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 var triVerts : [3]float<2> = { { 0.0, 1.0 }, {-1.0, -1.0 }, { 1.0, -1.0 }};
 var triVB = new vertex Buffer<[]float<2>>(device, &triVerts);
 
@@ -54,7 +54,7 @@ var triPipeline = new RenderPipeline<GreenPipeline>(device);
 var encoder = new CommandEncoder(device);
 var gp : GreenPipeline;
 gp.position = new VertexInput<float<2>>(triVB);
-gp.renderTex = tex.CreateColorAttachment(LoadOp.Clear);
+gp.renderTex = tex.CreateColorOutput(LoadOp.Clear);
 var renderPass = new RenderPass<GreenPipeline>(encoder, &gp);
 renderPass.SetPipeline(triPipeline);
 renderPass.Draw(3, 1, 0, 0);
@@ -62,7 +62,7 @@ renderPass.End();
 
 var quadPipeline = new RenderPipeline<TexPipeline>(device);
 var texView = tex.CreateSampleableView();
-var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
+var fb = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear);
 var quadBG = new BindGroup<Bindings>(device, { sampler = sampler, textureView = texView} );
 var drawPass = new RenderPass<TexPipeline>(encoder,
   { fragColor = fb, vertices = quadVI, indices = quadIB, bindings = quadBG }

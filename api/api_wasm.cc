@@ -176,7 +176,7 @@ double System_GetCurrentTime() {
   return EM_ASM_DOUBLE({ return Date.now() / 1000.0; });
 }
 
-wgpu::TextureFormat GetPreferredSwapChainFormat() {
+wgpu::TextureFormat GetPreferredPixelFormat() {
   int format = EM_ASM_INT({
     return WebGPU.Int_PreferredFormat[navigator.gpu.getPreferredCanvasFormat()];
   });

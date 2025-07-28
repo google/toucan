@@ -11,12 +11,12 @@ class Pipeline {
     fragColor.Set(bindings.Get().uniforms.MapRead().color);
   }
   var vertices : *VertexInput<Vertex>;
-  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var fragColor : *ColorOutput<PreferredPixelFormat>;
   var bindings : *BindGroup<Bindings>;
 }
 var device = new Device();
 var window = new Window({640, 480});
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 var verts : [3]Vertex = { { 0.0, 1.0 }, {-1.0, -1.0 }, { 1.0, -1.0 } };
 var vb = new vertex Buffer<[]Vertex>(device, &verts);
 var uniformBuffer = new uniform Buffer<Uniforms>(device);
@@ -29,7 +29,7 @@ for (var i = 0; i < 300 && System.IsRunning(); ++i) {
   stagingBuffer.MapWrite().color = float<4>(1.0 - f, f, 0.0, 1.0);
   uniformBuffer.CopyFromBuffer(encoder, stagingBuffer);
   var vi = new VertexInput<Vertex>(vb);
-  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
+  var fb = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear);
   var renderPass = new RenderPass<Pipeline>(encoder, { vertices = vi, fragColor = fb, bindings = bg });
   renderPass.SetPipeline(pipeline);
   renderPass.Draw(3, 1, 0, 0);

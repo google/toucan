@@ -218,8 +218,8 @@ wgpu::TextureFormat ToDawnTextureFormat(Type* format) {
     return wgpu::TextureFormat::RGBA8Snorm;
   } else if (classType->GetName() == "Depth24Plus") {
     return wgpu::TextureFormat::Depth24Plus;
-  } else if (classType->GetName() == "PreferredSwapChainFormat") {
-    return GetPreferredSwapChainFormat();
+  } else if (classType->GetName() == "PreferredPixelFormat") {
+    return GetPreferredPixelFormat();
   } else if (classType->GetName() == "RGBA16float") {
     return wgpu::TextureFormat::RGBA16Float;
   } else if (classType->GetName() == "RG16float") {
@@ -599,13 +599,13 @@ struct VertexInput {
   wgpu::Buffer buffer;
 };
 
-struct ColorAttachment {
-  ColorAttachment(const wgpu::RenderPassColorAttachment& a) : attachment(a) {}
+struct ColorOutput {
+  ColorOutput(const wgpu::RenderPassColorAttachment& a) : attachment(a) {}
   wgpu::RenderPassColorAttachment attachment;
 };
 
-struct DepthStencilAttachment {
-  DepthStencilAttachment(const wgpu::RenderPassDepthStencilAttachment& a) : attachment(a) {}
+struct DepthStencilOutput {
+  DepthStencilOutput(const wgpu::RenderPassDepthStencilAttachment& a) : attachment(a) {}
   wgpu::RenderPassDepthStencilAttachment attachment;
 };
 
@@ -694,14 +694,14 @@ static void ExtractPipelineLayout(ClassType* classType, Device* device, wgpu::Bl
       Type* elementType = templateArgs[0];
       auto layout = toDawnVertexBufferLayout(elementType, &out->vertexAttributes);
       out->vertexBufferLayouts.push_back(layout);
-    } else if (classType->GetTemplate() == NativeClass::ColorAttachment) {
+    } else if (classType->GetTemplate() == NativeClass::ColorOutput) {
       wgpu::ColorTargetState colorTargetState;
       const auto&            templateArgs = classType->GetTemplateArgs();
       assert(templateArgs.size() == 1);
       colorTargetState.format = ToDawnTextureFormat(templateArgs[0]);
       colorTargetState.blend = blendState;
       out->colorTargets.push_back(colorTargetState);
-    } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment) {
+    } else if (classType->GetTemplate() == NativeClass::DepthStencilOutput) {
       const auto& templateArgs = classType->GetTemplateArgs();
       assert(templateArgs.size() == 1);
       out->depthStencilTarget.format = ToDawnTextureFormat(templateArgs[0]);
@@ -765,10 +765,10 @@ static void ExtractPipelineData(Type* type, void* data, PipelineData* out) {
     auto classType = static_cast<ClassType*>(fieldType);
     if (classType->GetTemplate() == NativeClass::VertexInput && ptr) {
       out->vertexBuffers.push_back(static_cast<VertexInput*>(ptr)->buffer);
-    } else if (classType->GetTemplate() == NativeClass::ColorAttachment && ptr) {
-      out->colorAttachments.push_back(static_cast<ColorAttachment*>(ptr)->attachment);
-    } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment && ptr) {
-      out->depthStencilAttachment = static_cast<DepthStencilAttachment*>(ptr)->attachment;
+    } else if (classType->GetTemplate() == NativeClass::ColorOutput && ptr) {
+      out->colorAttachments.push_back(static_cast<ColorOutput*>(ptr)->attachment);
+    } else if (classType->GetTemplate() == NativeClass::DepthStencilOutput && ptr) {
+      out->depthStencilAttachment = static_cast<DepthStencilOutput*>(ptr)->attachment;
     } else if (classType->GetTemplate() == NativeClass::Buffer &&
                qualifiers == Type::Qualifier::Index) {
       if (auto buffer = static_cast<Buffer*>(ptr)) {
@@ -954,19 +954,19 @@ Texture2D* Texture2D_CreateStorageView(Texture2D* This, uint32_t mipLevel) {
   return new Texture2D(This, wgpu::TextureViewDimension::e2D, 0, mipLevel);
 }
 
-ColorAttachment* Texture2D_CreateColorAttachment(Texture2D*   This,
-                                                 LoadOp       loadOp,
-                                                 StoreOp      storeOp,
-                                                 const float* clearValue) {
+ColorOutput* Texture2D_CreateColorOutput(Texture2D*   This,
+                                         LoadOp       loadOp,
+                                         StoreOp      storeOp,
+                                         const float* clearValue) {
   wgpu::RenderPassColorAttachment attachment;
   attachment.clearValue = {clearValue[0], clearValue[1], clearValue[2], clearValue[3]};
   attachment.loadOp = ToDawnLoadOp(loadOp);
   attachment.storeOp = ToDawnStoreOp(storeOp);
   attachment.view = This->view;
-  return new ColorAttachment(attachment);
+  return new ColorOutput(attachment);
 }
 
-DepthStencilAttachment* Texture2D_CreateDepthStencilAttachment(Texture2D* This,
+DepthStencilOutput* Texture2D_CreateDepthStencilOutput(Texture2D* This,
                                                                LoadOp     depthLoadOp,
                                                                StoreOp    depthStoreOp,
                                                                float      depthClearValue,
@@ -981,7 +981,7 @@ DepthStencilAttachment* Texture2D_CreateDepthStencilAttachment(Texture2D* This,
   attachment.stencilLoadOp = ToDawnLoadOp(stencilLoadOp);
   attachment.stencilStoreOp = ToDawnStoreOp(stencilStoreOp);
   attachment.stencilClearValue = stencilClearValue;
-  return new DepthStencilAttachment(attachment);
+  return new DepthStencilOutput(attachment);
 }
 
 uint32_t Texture2D_MinBufferWidth(Texture2D* This) { return This->MinBufferWidth(); }
@@ -1223,9 +1223,9 @@ VertexInput* VertexInput_VertexInput(int     qualifiers,
 
 void VertexInput_Destroy(VertexInput* This) { delete This; }
 
-void ColorAttachment_Destroy(ColorAttachment* This) { delete This; }
+void ColorOutput_Destroy(ColorOutput* This) { delete This; }
 
-void DepthStencilAttachment_Destroy(DepthStencilAttachment* This) { delete This; }
+void DepthStencilOutput_Destroy(DepthStencilOutput* This) { delete This; }
 
 RenderPass* RenderPass_RenderPass_CommandEncoder_T(int             qualifiers,
                                                    Type*           type,

@@ -12,13 +12,13 @@ class Pipeline {
   fragment main(fb : &FragmentBuiltins, v : float<4>) { fragColor.Set(v); }
   var vertices : *VertexInput<Vertex>;
   var indices : *index Buffer<[]ushort>;
-  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var fragColor : *ColorOutput<PreferredPixelFormat>;
 }
 
 var device = new Device();
 var window = new Window({640, 480});
 var queue = device.GetQueue();
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 var verts = [4]Vertex{
  { position = {-1.0, -1.0}, color = {1.0, 1.0, 1.0, 1.0} },
  { position = { 1.0, -1.0}, color = {1.0, 0.0, 0.0, 1.0} },
@@ -31,7 +31,7 @@ var ib = new index Buffer<[]ushort>(device, &indices);
 var pipeline = new RenderPipeline<Pipeline>(device);
 var encoder = new CommandEncoder(device);
 var vi = new VertexInput<Vertex>(vb);
-var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
+var fb = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear);
 var renderPass = new RenderPass<Pipeline>(encoder, { vertices = vi, indices = ib, fragColor = fb });
 renderPass.SetPipeline(pipeline);
 renderPass.DrawIndexed(6, 1, 0, 0, 0);

@@ -34,7 +34,7 @@ struct SwapChain {
   void*               pool;
 };
 
-wgpu::TextureFormat GetPreferredSwapChainFormat();
+wgpu::TextureFormat GetPreferredPixelFormat();
 wgpu::TextureFormat ToDawnTextureFormat(Type* type);
 wgpu::Device CreateDawnDevice(wgpu::BackendType type, const wgpu::DeviceDescriptor* desc);
 

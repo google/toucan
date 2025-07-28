@@ -138,7 +138,7 @@ Window* Window_Window(const uint32_t* size, const int32_t* position) {
 
 void Window_Destroy(Window* This) { delete This; }
 
-wgpu::TextureFormat GetPreferredSwapChainFormat() {
+wgpu::TextureFormat GetPreferredPixelFormat() {
   return wgpu::TextureFormat::BGRA8Unorm;
 }
 

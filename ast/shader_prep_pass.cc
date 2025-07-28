@@ -219,7 +219,7 @@ Type* ShaderPrepPass::ConvertType(Type* type) {
         } else if (qualifiers & Type::Qualifier::Index) {
           return nullptr;
         }
-      } else if (classType->GetTemplate() == NativeClass::ColorAttachment) {
+      } else if (classType->GetTemplate() == NativeClass::ColorOutput) {
         type = classType->GetTemplateArgs()[0];
         type = static_cast<ClassType*>(type)->FindType("DeviceType");
         return types_->GetVector(type, 4);
@@ -242,7 +242,7 @@ void ShaderPrepPass::ExtractPipelineVars(ClassType* classType, std::vector<Var*>
     Type* unqualifiedType = type->GetUnqualifiedType(&qualifiers);
     assert(unqualifiedType->IsClass());
     ClassType* classType = static_cast<ClassType*>(unqualifiedType);
-    if (classType->GetTemplate() == NativeClass::ColorAttachment) {
+    if (classType->GetTemplate() == NativeClass::ColorOutput) {
       if (methodModifiers_ & Method::Modifier::Fragment) {
         auto output = std::make_shared<Var>(field->name, ConvertType(field->type));
         outputs_.push_back(output);
@@ -250,7 +250,7 @@ void ShaderPrepPass::ExtractPipelineVars(ClassType* classType, std::vector<Var*>
       } else {
         globalVars->push_back(nullptr);
       }
-    } else if (classType->GetTemplate() == NativeClass::DepthStencilAttachment) {
+    } else if (classType->GetTemplate() == NativeClass::DepthStencilOutput) {
       // Depth/stencil variables are inaccessible from device code.
       globalVars->push_back(nullptr);
     } else if (classType->GetTemplate() == NativeClass::VertexInput) {
@@ -446,7 +446,7 @@ Result ShaderPrepPass::ResolveNativeMethodCall(MethodCall* node) {
   Method*    method = node->GetMethod();
   auto       args = node->GetArgList()->Get();
   ClassType* classType = method->classType;
-  if (classType->GetTemplate() == NativeClass::ColorAttachment && method->name == "Set") {
+  if (classType->GetTemplate() == NativeClass::ColorOutput && method->name == "Set") {
     auto store = Make<StoreStmt>(Resolve(args[0]), Resolve(args[1]));
     return Make<ExprWithStmt>(nullptr, store);
   } else if (classType->GetTemplate() == NativeClass::VertexInput ||

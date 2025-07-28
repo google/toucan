@@ -96,9 +96,9 @@ class WriteGBuffers {
     albedo.Set({c, c, c, 1.0});
   }
 
-  var normals : *ColorAttachment<RGBA16float>;
-  var albedo : *ColorAttachment<BGRA8unorm>;
-  var depth : *DepthStencilAttachment<Depth24Plus>;
+  var normals : *ColorOutput<RGBA16float>;
+  var albedo : *ColorOutput<BGRA8unorm>;
+  var depth : *DepthStencilOutput<Depth24Plus>;
   var bindings : *BindGroup<WriteGBuffersBindings>;
   var vertexes : *VertexInput<Vertex>;
   var indexes : *index Buffer<[]ushort>;
@@ -112,7 +112,7 @@ class TextureQuadPass {
     vb.position = {@pos[vb.vertexIndex], 0.0, 1.0};
   }
 
-  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var fragColor : *ColorOutput<PreferredPixelFormat>;
 }
 
 class GBufferTextureBindings {
@@ -215,7 +215,7 @@ var lightExtentMax = float<3>{ 50.0, 50.0, 50.0};
 var device = new Device();
 var window = new Window(System.GetScreenSize());
 
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 var windowSize = window.GetSize();
 var aspect = (float) windowSize.x / (float) windowSize.y;
 
@@ -249,15 +249,15 @@ var gBuffersDebugViewPipeline = new RenderPipeline<GBuffersDebugView>(device);
 var deferredRenderPipeline = new RenderPipeline<DeferredRender>(device);
 
 var writeGBufferPassDescriptor = WriteGBuffers{
-  normals = gBufferTexture2DFloat16.CreateColorAttachment(
+  normals = gBufferTexture2DFloat16.CreateColorOutput(
     clearValue = {0.0, 0.0, 0.0, 1.0},
     loadOp = LoadOp.Clear
   ),
-  albedo = gBufferTextureAlbedo.CreateColorAttachment(
+  albedo = gBufferTextureAlbedo.CreateColorOutput(
     clearValue = {0.0, 0.0, 0.0, 1.0},
     loadOp = LoadOp.Clear
   ),
-  depth = depthTexture.CreateDepthStencilAttachment(
+  depth = depthTexture.CreateDepthStencilOutput(
     depthLoadOp = LoadOp.Clear,
     depthClearValue = 1.0
   )
@@ -390,7 +390,7 @@ while (System.IsRunning()) {
     // Right: albedo (use uv to mimic a checkerboard texture)
     var fb = swapChain
       .GetCurrentTexture()
-      .CreateColorAttachment(LoadOp.Clear, StoreOp.Store, {0.0, 0.0, 1.0, 1.0});
+      .CreateColorOutput(LoadOp.Clear, StoreOp.Store, {0.0, 0.0, 1.0, 1.0});
     var debugViewPass = new RenderPass<GBuffersDebugView>(commandEncoder, {
       fragColor = fb
     });
@@ -405,7 +405,7 @@ while (System.IsRunning()) {
     // Deferred rendering.
     var fb = swapChain
       .GetCurrentTexture()
-      .CreateColorAttachment(LoadOp.Clear, StoreOp.Store, {0.0, 0.0, 1.0, 1.0});
+      .CreateColorOutput(LoadOp.Clear, StoreOp.Store, {0.0, 0.0, 1.0, 1.0});
     var deferredRenderingPass = new RenderPass<DeferredRender>(commandEncoder, {
       fragColor = fb
     });

@@ -16,13 +16,13 @@ class BumpCompute {
 class Pipeline {
   vertex main(vb : &VertexBuiltins) { vb.position = {@vert.Get(), 0.0, 1.0}; }
   fragment main(fb : &FragmentBuiltins) { fragColor.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }
-  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var fragColor : *ColorOutput<PreferredPixelFormat>;
   var vert : *VertexInput<Vertex>;
 }
 
 var device = new Device();
 var window = new Window({640, 480});
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 var verts = [3]Vertex{ { 0.0, 1.0 }, {-1.0, -1.0 }, { 1.0, -1.0 } };
 var vb = new vertex storage Buffer<[]Vertex>(device, &verts);
 
@@ -36,7 +36,7 @@ while (System.IsRunning()) {
   computePass.SetPipeline(computePipeline);
   computePass.Dispatch(verts.length, 1, 1);
   computePass.End();
-  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
+  var fb = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear);
   var vi = new VertexInput<Vertex>(vb);
   var renderPass = new RenderPass<Pipeline>(encoder, {vert = vi, fragColor = fb});
   renderPass.SetPipeline(pipeline);

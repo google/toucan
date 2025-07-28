@@ -128,13 +128,13 @@ class VertexInput<T> {
  ~VertexInput();
 }
 
-class ColorAttachment<PF> {
+class ColorOutput<PF> {
   deviceonly Set(value : PF:DeviceType<4>);
- ~ColorAttachment();
+ ~ColorOutput();
 }
 
-class DepthStencilAttachment<PF> {
- ~DepthStencilAttachment();
+class DepthStencilOutput<PF> {
+ ~DepthStencilOutput();
 }
 
 enum AddressMode { Repeat, MirrorRepeat, ClampToEdge };
@@ -194,8 +194,8 @@ class Texture2D<PF> {
   CreateSampleableView() sampleable : *SampleableTexture2D<PF:DeviceType>;
   CreateRenderableView(mipLevel = 0u) : *renderable Texture2D<PF>;
   CreateStorageView(mipLevel = 0u) : *storage Texture2D<PF>;
-  CreateColorAttachment(loadOp = LoadOp.Load, storeOp = StoreOp.Store, clearValue = float<4>(0.0, 0.0, 0.0, 0.0)) renderable : *ColorAttachment<PF>;
-  CreateDepthStencilAttachment(depthLoadOp = LoadOp.Load, depthStoreOp = StoreOp.Store, depthClearValue = 1.0, stencilLoadOp = LoadOp.Undefined, stencilStoreOp = StoreOp.Undefined, stencilClearValue = 0) renderable : *DepthStencilAttachment<PF>;
+  CreateColorOutput(loadOp = LoadOp.Load, storeOp = StoreOp.Store, clearValue = float<4>(0.0, 0.0, 0.0, 0.0)) renderable : *ColorOutput<PF>;
+  CreateDepthStencilOutput(depthLoadOp = LoadOp.Load, depthStoreOp = StoreOp.Store, depthClearValue = 1.0, stencilLoadOp = LoadOp.Undefined, stencilStoreOp = StoreOp.Undefined, stencilClearValue = 0) renderable : *DepthStencilOutput<PF>;
   MinBufferWidth() : uint;
   CopyFromBuffer(encoder : &CommandEncoder, source : &Buffer<[]PF:HostType>, size : uint<2>, origin : uint<2> = uint<2>(0, 0));
 }
@@ -440,4 +440,4 @@ class RG11B10ufloat : PixelFormat<float, uint> {}
 
 class Depth24Plus : PixelFormat<float, uint> {}
 
-class PreferredSwapChainFormat : PixelFormat<float, ubyte<4>> {}
+class PreferredPixelFormat : PixelFormat<float, ubyte<4>> {}

@@ -6,7 +6,7 @@ class CopyBindings {
 }
 
 class DrawPass {
-  var depth : *DepthStencilAttachment<Depth24Plus>;
+  var depth : *DepthStencilOutput<Depth24Plus>;
 }
 
 class CopyPipeline {
@@ -28,7 +28,7 @@ var bindings = new BindGroup<CopyBindings>(device, {
 });
 var encoder = new CommandEncoder(device);
 var renderPass = new RenderPass<DrawPass>(encoder, {
-  depth = depth.CreateDepthStencilAttachment(depthLoadOp = LoadOp.Clear, depthClearValue = 1.0)
+  depth = depth.CreateDepthStencilOutput(depthLoadOp = LoadOp.Clear, depthClearValue = 1.0)
 });
 renderPass.End();
 var copyPass = new ComputePass<CopyPipeline>(encoder, { bindings = bindings });

@@ -20,12 +20,12 @@ namespace Toucan {
 
 ClassType* NativeClass::BindGroup;
 ClassType* NativeClass::Buffer;
-ClassType* NativeClass::ColorAttachment;
+ClassType* NativeClass::ColorOutput;
 ClassType* NativeClass::CommandBuffer;
 ClassType* NativeClass::CommandEncoder;
 ClassType* NativeClass::ComputePass;
 ClassType* NativeClass::ComputePipeline;
-ClassType* NativeClass::DepthStencilAttachment;
+ClassType* NativeClass::DepthStencilOutput;
 ClassType* NativeClass::Device;
 ClassType* NativeClass::Event;
 ClassType* NativeClass::Image;

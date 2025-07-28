@@ -19,7 +19,7 @@ class Pipeline {
     }
     var vertices : *VertexInput<Vertex>;
     var indices : *index Buffer<[]uint>;
-    var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+    var fragColor : *ColorOutput<PreferredPixelFormat>;
     var bindings : *BindGroup<Bindings>;
 };
 
@@ -34,7 +34,7 @@ texture.CopyFromBuffer(copyEncoder, buffer, imageSize);
 device.GetQueue().Submit(copyEncoder.Finish());
 
 var window = new Window(imageSize);
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 var verts = [4]Vertex{
   { position = {-1.0,  1.0}, texCoord = {0.0, 0.0} },
   { position = { 1.0,  1.0}, texCoord = {1.0, 0.0} },
@@ -54,7 +54,7 @@ var encoder = new CommandEncoder(device);
 var p = Pipeline{
   vertices = new VertexInput<Vertex>(vb),
   indices = ib,
-  fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear),
+  fragColor = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear),
   bindings = bindGroup
 };
 var renderPass = new RenderPass<Pipeline>(encoder, &p);

@@ -43,8 +43,8 @@ bool IsValidRenderPipelineField(Type* type) {
   auto templ = classType->GetTemplate();
   if (templ == NativeClass::VertexInput) return true;
   if (templ == NativeClass::Buffer) return qualifiers == Type::Qualifier::Index;
-  if (templ == NativeClass::ColorAttachment) return true;
-  if (templ == NativeClass::DepthStencilAttachment) return true;  // Ibid.
+  if (templ == NativeClass::ColorOutput) return true;
+  if (templ == NativeClass::DepthStencilOutput) return true;  // Ibid.
   if (templ == NativeClass::BindGroup) return true;
   return false;
 }

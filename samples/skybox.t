@@ -20,7 +20,7 @@ CubeLoader.Load(device, inline("third_party/home-cube/front.jpg"), texture, 4);
 CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
 
 var window = new Window(System.GetScreenSize());
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 
 var cubeVB = new vertex Buffer<[]float<3>>(device, &cubeVerts);
 var cubeInput = new VertexInput<float<3>>(cubeVB);
@@ -54,8 +54,8 @@ class SkyboxPipeline {
     }
     var vertices : *VertexInput<float<3>>;
     var indices : *index Buffer<[]uint>;
-    var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
-    var depth : *DepthStencilAttachment<Depth24Plus>;
+    var fragColor : *ColorOutput<PreferredPixelFormat>;
+    var depth : *DepthStencilOutput<Depth24Plus>;
     var bindings : *BindGroup<Bindings>;
 };
 
@@ -84,8 +84,8 @@ while (System.IsRunning()) {
   cubeBindings.uniforms.SetData(&uniforms);
   var encoder = new CommandEncoder(device);
   var p : SkyboxPipeline;
-  var fb = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
-  var db = depthBuffer.CreateDepthStencilAttachment(LoadOp.Clear);
+  var fb = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear);
+  var db = depthBuffer.CreateDepthStencilOutput(LoadOp.Clear);
   var renderPass = new RenderPass<SkyboxPipeline>(encoder,
     { fragColor = fb, depth = db, vertices = cubeInput, indices = cubeIB, bindings = cubeBindGroup }
   );

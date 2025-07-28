@@ -8,5 +8,5 @@ class Pipeline {
   }
   var vertices : *VertexInput<float<4>>;
   var indices : *index Buffer<[]uint>;
-  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var fragColor : *ColorOutput<PreferredPixelFormat>;
 }

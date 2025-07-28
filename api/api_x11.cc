@@ -168,7 +168,7 @@ const uint32_t* System_GetScreenSize() {
   return gScreenSize;
 }
 
-wgpu::TextureFormat GetPreferredSwapChainFormat() { return wgpu::TextureFormat::BGRA8Unorm; }
+wgpu::TextureFormat GetPreferredPixelFormat() { return wgpu::TextureFormat::BGRA8Unorm; }
 
 SwapChain* SwapChain_SwapChain(int qualifiers, Type* format, Device* device, Window* window) {
   wgpu::SurfaceDescriptorFromXlibWindow xlibDesc;

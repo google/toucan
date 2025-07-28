@@ -142,7 +142,7 @@ class DrawPipeline {
     fragColor.Set(bindings.Get().uniforms.MapRead().color);
   }
   var vertices : *VertexInput<Vector>;
-  var fragColor : *ColorAttachment<PreferredSwapChainFormat>;
+  var fragColor : *ColorOutput<PreferredPixelFormat>;
   var bindings : *BindGroup<DrawBindings>;
 }
 
@@ -209,7 +209,7 @@ for (var i = 0; i < bodies.length; ++i) {
 
 var device = new Device();
 var window = new Window({960, 960});
-var swapChain = new SwapChain<PreferredSwapChainFormat>(device, window);
+var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 
 var numBodyVerts = bodies.length * 3;
 var bodyVBO = new vertex storage Buffer<[]Vector>(device, numBodyVerts);
@@ -291,7 +291,7 @@ while(System.IsRunning()) {
 
   computePass.End();
   var p : DrawPipeline;
-  p.fragColor = swapChain.GetCurrentTexture().CreateColorAttachment(LoadOp.Clear);
+  p.fragColor = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear);
   var renderPass = new RenderPass<DrawPipeline>(encoder, &p);
 
   renderPass.SetPipeline(springPipeline);
