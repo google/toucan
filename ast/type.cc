@@ -119,8 +119,6 @@ std::string FloatingPointType::ToString() const {
   return "";
 }
 
-StringType::StringType() {}
-
 VoidType::VoidType() {}
 
 AutoType::AutoType() {}
@@ -410,13 +408,6 @@ bool Method::IsDestructor() const {
 ClassType::ClassType(std::string name) : name_(name) {
 }
 
-bool ClassType::IsPOD() const {
-  for (const auto& it : fields_) {
-    if (!it->type->IsPOD()) { return false; }
-  }
-  return true;
-}
-
 bool ClassType::NeedsDestruction() const {
   if (destructor_) return true;
   if (parent_ && parent_->NeedsDestruction()) { return true; }
@@ -656,7 +647,6 @@ std::string RawPtrType::ToString() const { return "&" + GetBaseType()->ToString(
 
 TypeTable::TypeTable() {
   bool_ = Make<BoolType>();
-  string_ = Make<StringType>();
   void_ = Make<VoidType>();
   auto_ = Make<AutoType>();
 }
@@ -717,8 +707,6 @@ MatrixType* TypeTable::GetMatrix(VectorType* columnType, int numColumns) {
   }
   return type;
 }
-
-StringType* TypeTable::GetString() { return string_; }
 
 VoidType* TypeTable::GetVoid() { return void_; }
 

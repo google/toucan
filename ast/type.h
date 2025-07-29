@@ -75,7 +75,6 @@ class Type {
   virtual bool  IsFormalTemplateArg() const { return false; }
   virtual bool  IsUnresolvedScopedType() const { return false; }
   virtual bool  IsFullySpecified() const { return true; }
-  virtual bool  IsPOD() const = 0;
   virtual bool  IsReadable() const { return true; }
   virtual bool  IsWriteable() const { return true; }
   virtual bool  NeedsDestruction() const { return false; }
@@ -128,7 +127,6 @@ class VectorType : public ArrayLikeType {
   bool         IsUnsigned() const override { return elementType_->IsUnsigned(); }
   bool         IsIntegerVector() const override { return elementType_->IsInteger(); }
   bool         IsFloatVector() const override { return elementType_->IsFloat(); }
-  bool         IsPOD() const override { return true; }
   bool         CanWidenTo(Type* type) const override;
   bool         CanNarrowTo(Type* type) const override;
   bool         CanInitFrom(const ListType* type) const override;
@@ -141,7 +139,6 @@ class MatrixType : public ArrayLikeType {
  public:
   MatrixType(VectorType* columnType, uint32_t numColumns);
   bool IsMatrix() const override { return true; }
-  bool IsPOD() const override { return true; }
   int  GetSizeInBytes() const override { return numElements_ * elementType_->GetSizeInBytes(); }
   std::string  ToString() const override;
   VectorType*  GetColumnType() { return static_cast<VectorType*>(elementType_); }
@@ -153,7 +150,6 @@ class IntegerType : public Type {
  public:
   explicit IntegerType(int bits, bool isSigned);
   bool        IsInteger() const override { return true; }
-  bool        IsPOD() const override { return true; }
   std::string ToString() const override;
   int         GetSizeInBytes() const override { return bits_ / 8; }
   int         GetBits() const { return bits_; }
@@ -179,7 +175,6 @@ class FloatingPointType : public Type {
  public:
   explicit FloatingPointType(int bits);
   bool        IsFloatingPoint() const override { return true; }
-  bool        IsPOD() const override { return true; }
   std::string ToString() const override;
   int         GetSizeInBytes() const override { return bits_ / 8; }
   int         GetBits() const { return bits_; }
@@ -197,7 +192,6 @@ class BoolType : public Type {
  public:
   BoolType();
   bool        IsBool() const override { return true; }
-  bool        IsPOD() const override { return true; }
   std::string ToString() const override { return "bool"; }
   int         GetSizeInBytes() const override { return 1; }
 };
@@ -213,20 +207,10 @@ struct EnumValue {
 
 typedef std::vector<EnumValue> EnumValueVector;
 
-class StringType : public Type {
- public:
-  StringType();
-  bool        IsString() const override { return true; }
-  bool        IsPOD() const override { return false; }
-  std::string ToString() const override { return "string"; }
-  int         GetSizeInBytes() const override { return 0; }  // FIXME
-};
-
 class VoidType : public Type {
  public:
   VoidType();
   bool        IsVoid() const override { return true; }
-  bool        IsPOD() const override { return false; }
   std::string ToString() const override { return "void"; }
   int         GetSizeInBytes() const override { return 0; }
 };
@@ -235,7 +219,6 @@ class AutoType : public Type {
  public:
   AutoType();
   bool        IsAuto() const override { return true; }
-  bool        IsPOD() const override { return false; }
   std::string ToString() const override { return "auto"; }
   int         GetSizeInBytes() const override { return 0; }
 };
@@ -245,7 +228,6 @@ class ArrayType : public ArrayLikeType {
   ArrayType(Type* elementType, uint32_t numElements, MemoryLayout memoryLayout);
   bool         IsArray() const override { return true; }
   bool         IsUnsizedArray() const override { return numElements_ == 0; }
-  bool         IsPOD() const override { return numElements_ > 0 && elementType_->IsPOD(); }
   bool         IsFullySpecified() const override { return elementType_->IsFullySpecified(); }
   std::string  ToString() const override;
   int          GetElementSizeInBytes() const;
@@ -270,7 +252,6 @@ class QualifiedType : public Type {
   bool          IsQualified() const override { return true; }
   bool          IsReadable() const override { return !(qualifiers_ & Type::Qualifier::WriteOnly); }
   bool          IsWriteable() const override { return !(qualifiers_ & Type::Qualifier::ReadOnly); }
-  bool          IsPOD() const override { return baseType_->IsPOD(); }
   virtual Type* GetUnqualifiedType(int* qualifiers) override;
   Type*         GetBaseType() const { return baseType_; }
   int           GetQualifiers() const { return qualifiers_; }
@@ -348,7 +329,6 @@ class EnumType : public Type {
   void                   Append(std::string identifier);
   void                   Append(std::string identifier, int value);
   bool                   IsEnum() const override { return true; }
-  bool                   IsPOD() const override { return true; }
   std::string            ToString() const override;
   int                    GetSizeInBytes() const override;
   const EnumValueVector& GetValues() { return values_; }
@@ -366,10 +346,6 @@ class FormalTemplateArg : public Type {
  public:
   FormalTemplateArg(std::string name);
   std::string ToString() const override;
-  bool        IsPOD() const override {
-    assert(false);
-    return false;
-  }
   bool IsFormalTemplateArg() const override { return true; }
   bool IsFullySpecified() const override { return false; }
   int  GetSizeInBytes() const override {
@@ -386,10 +362,6 @@ class UnresolvedScopedType : public Type {
  public:
   UnresolvedScopedType(FormalTemplateArg* baseType, std::string name);
   std::string ToString() const override;
-  bool        IsPOD() const override {
-    assert(false);
-    return false;
-  }
   bool IsUnresolvedScopedType() const override { return true; }
   bool IsFullySpecified() const override { return false; }
   int  GetSizeInBytes() const override {
@@ -426,7 +398,6 @@ class ClassType : public Type {
   int                 GetSizeInBytes(int dynamicArrayLength) const override;
   int                 GetAlignmentInBytes() const override;
   bool                IsClass() const override { return true; }
-  bool                IsPOD() const override;
   bool                CanWidenTo(Type* type) const override;
   bool                CanInitFrom(const ListType* type) const override;
   bool                IsUnsizedClass() const override;
@@ -486,7 +457,6 @@ class PtrType : public Type {
   bool  IsPtr() const override { return true; }
   Type* GetBaseType() const { return baseType_; }
   bool  IsFullySpecified() const override { return baseType_->IsFullySpecified(); }
-  bool  IsPOD() const override { return false; }
   int   GetSizeInBytes() const override { return 2 * sizeof(void*); }
   bool  NeedsDestruction() const override { return true; }
   bool  ContainsRawPtr() const override { return baseType_->IsRawPtr(); }
@@ -526,7 +496,6 @@ class ListType : public Type {
  public:
   ListType(const VarVector& types);
   bool             IsList() const override { return true; }
-  bool             IsPOD() const override { return false; }  // FIXME: true if all types are POD?
   std::string      ToString() const override;
   bool             CanWidenTo(Type* type) const override { return type->CanInitFrom(this); }
   int              GetSizeInBytes() const override;
@@ -566,7 +535,6 @@ class TypeTable {
   FloatingPointType* GetFloatingPoint(int bits);
   FloatingPointType* GetFloat();
   FloatingPointType* GetDouble();
-  StringType*        GetString();
   VoidType*          GetVoid();
   AutoType*          GetAuto();
   ListType*          GetList(VarVector&& types);
@@ -608,7 +576,6 @@ class TypeTable {
   std::unordered_map<TypeAndId, UnresolvedScopedType*> unresolvedScopedTypes_;
   std::vector<ListType*>                               listTypes_;
   BoolType*                                            bool_;
-  StringType*                                          string_;
   VoidType*                                            void_;
   AutoType*                                            auto_;
 };
