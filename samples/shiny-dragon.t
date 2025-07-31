@@ -4,6 +4,7 @@ include "cubic.t"
 include "dragon.t"
 include "event-handler.t"
 include "mesh.t"
+include "mipmap-generator.t"
 include "quaternion.t"
 include "transform.t"
 
@@ -14,13 +15,14 @@ class Vertex {
 
 var device = new Device();
 
-var texture = new sampleable TextureCube<RGBA8unorm>(device, {2176, 2176});
+var texture = new sampleable renderable TextureCube<RGBA8unorm>(device, {2176, 2176}, 12);
 CubeLoader.Load(device, inline("third_party/home-cube/right.jpg"), texture, 0);
 CubeLoader.Load(device, inline("third_party/home-cube/left.jpg"), texture, 1);
 CubeLoader.Load(device, inline("third_party/home-cube/top.jpg"), texture, 2);
 CubeLoader.Load(device, inline("third_party/home-cube/bottom.jpg"), texture, 3);
 CubeLoader.Load(device, inline("third_party/home-cube/front.jpg"), texture, 4);
 CubeLoader.Load(device, inline("third_party/home-cube/back.jpg"), texture, 5);
+MipmapGenerator.Generate(device, texture);
 
 var window = new Window(System.GetScreenSize());
 var swapChain = new SwapChain<PreferredPixelFormat>(device, window);

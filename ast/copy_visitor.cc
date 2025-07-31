@@ -45,6 +45,10 @@ Result CopyVisitor::Visit(CastExpr* node) {
   return Make<CastExpr>(type, expr);
 }
 
+Result CopyVisitor::Visit(Data* node) {
+  return node;  // it's a unique_ptr, so don't copy it
+}
+
 Result CopyVisitor::Visit(ExprWithStmt* node) {
   RESOLVE_OR_DIE(expr, node->GetExpr());
   Stmt* stmt = Resolve(node->GetStmt());
@@ -281,6 +285,10 @@ Result CopyVisitor::Visit(UnresolvedNewExpr* expr) {
   RESOLVE_OR_DIE(argList, expr->GetArgList());
 
   return Make<UnresolvedNewExpr>(type, length, argList, expr->IsConstructor());
+}
+
+Result CopyVisitor::Visit(UnresolvedStaticDot* node) {
+  return Make<UnresolvedStaticDot>(ResolveType(node->GetType()), node->GetID());
 }
 
 Result CopyVisitor::Visit(UnresolvedStaticMethodCall* node) {

@@ -33,3 +33,7 @@ toucan_executable("simple") {
 toucan_executable("hello") {
   sources = [ "hello.t" ]
 }
+
+toucan_executable("texture-size") {
+  sources = [ "texture-size.t" ]
+}

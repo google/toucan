@@ -157,7 +157,7 @@ test/error-missing-parent-class.t
 error-missing-parent-class.t:1: syntax error
 test/error-missing-sampleable-qualifier.t
 error-missing-sampleable-qualifier.t:3:  class Texture2D<RGBA8unorm> has no method CreateSampleableView()
-error-missing-sampleable-qualifier.t:3:  Texture2D<RGBA8unorm>.CreateSampleableView() sampleable : *SampleableTexture2D<float>
+error-missing-sampleable-qualifier.t:3:  Texture2D<RGBA8unorm>.CreateSampleableView(uint, uint) sampleable : *SampleableTexture2D<float>
 test/error-missing-this-qualifier.t
 error-missing-this-qualifier.t:6:  class Foo has no method bar(i = int)
 error-missing-this-qualifier.t:6:  Foo.bar(int) uniform 
@@ -233,7 +233,7 @@ test/error-syntax-error-in-included-file.t
 syntax-error.t:2: syntax error
 test/error-texture-from-buffer-incorrect-format.t
 error-texture-from-buffer-incorrect-format.t:10:  class Texture1D<RGBA8unorm> has no method CopyFromBuffer(*CommandEncoder, *hostwriteable Buffer<[]float<4>>, int)
-error-texture-from-buffer-incorrect-format.t:10:  Texture1D<RGBA8unorm>.CopyFromBuffer(&CommandEncoder, &Buffer<[]ubyte<4>>, uint, uint) 
+error-texture-from-buffer-incorrect-format.t:10:  Texture1D<RGBA8unorm>.CopyFromBuffer(&CommandEncoder, &Buffer<[]ubyte<4>>, uint, uint, uint) 
 test/error-uint-literal-too-large.t
 test/error-unknown-param-type.t
 error-unknown-param-type.t:2: syntax error
@@ -430,6 +430,7 @@ test/templated-matrix.t
 test/templated-on-class-and-primitive-type.t
 test/templated-vector.t
 test/test.t
+test/texture-size.t
 test/type-inference-in-template.t
 test/ubyte-vector.t
 test/ubyte.t

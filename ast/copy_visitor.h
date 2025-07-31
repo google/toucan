@@ -29,6 +29,7 @@ class CopyVisitor : public Visitor {
   Result        Visit(BinOpNode* node) override;
   Result        Visit(BoolConstant* constant) override;
   Result        Visit(CastExpr* expr) override;
+  Result        Visit(Data* node) override;
   Result        Visit(UnresolvedClassDefinition* defn) override;
   Result        Visit(DoStatement* stmt) override;
   Result        Visit(DoubleConstant* constant) override;
@@ -66,6 +67,7 @@ class CopyVisitor : public Visitor {
   Result        Visit(UnresolvedIdentifier* node) override;
   Result        Visit(UnresolvedListExpr* node) override;
   Result        Visit(UnresolvedMethodCall* node) override;
+  Result        Visit(UnresolvedStaticDot* node) override;
   Result        Visit(UnresolvedStaticMethodCall* node) override;
   Result        Visit(VarDeclaration* decl) override;
   Result        Visit(WhileStatement* stmt) override;

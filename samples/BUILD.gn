@@ -77,6 +77,10 @@ toucan_app("window") {
   sources = [ "window.t" ]
 }
 
+toucan_app("mipped-cube") {
+  sources = [ "mipped-cube.t" ]
+}
+
 source_set("main") {
   sources = [ "main.cc" ]
   include_dirs = [ ".." ]
