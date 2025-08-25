@@ -2,7 +2,7 @@ class EventHandler {
   Rotate(diff : int<2>) {
     rotation += (float<2>) diff / 200.0;
   }
-  Handle(event : *Event) {
+  Handle(event : &Event) {
     if (event.type == EventType.MouseDown) {
       mouseDown = true;
     } else if (event.type == EventType.MouseUp) {
@@ -30,7 +30,7 @@ class EventHandler {
       prevNumTouches = event.numTouches;
     }
   }
-  var mouseDown : bool = false;
+  var mouseDown : bool;
   var prevPosition : int<2>;
   var prevTouches : [10]int<2>;
   var prevNumTouches : int;
