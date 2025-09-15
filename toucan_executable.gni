@@ -51,15 +51,22 @@ template("toucan_executable") {
       ":${make_action}",
       "../api:api",
       "../ast:ast",
-      "//samples:main",
       "//third_party/build/libjpeg-turbo",
       "//third_party/dawn/include/dawn:cpp_headers",
     ]
-    if (!is_wasm) {
+    if (is_ios) {
+      deps += [
+        "//third_party/dawn/src/dawn:proc",
+        "//third_party/dawn/src/dawn/native",
+      ]
+    } else if (!is_wasm) {
       deps += [
         "//third_party/dawn/src/dawn:proc_shared",
         "//third_party/dawn/src/dawn/native:shared",
       ]
+    }
+    if (!is_ios) {
+      deps += [ "//samples:main" ]
     }
 
     include_dirs = [ ".." ]
@@ -81,6 +88,14 @@ template("toucan_executable") {
         "AppKit.framework",
         "Metal.framework",
         "QuartzCore.framework",
+      ]
+    }
+    if (is_ios) {
+      frameworks = [
+        "UIKit.framework",
+        "Metal.framework",
+        "QuartzCore.framework",
+        "Foundation.framework",
       ]
     }
     if (is_win) {
@@ -135,7 +150,7 @@ template("toucan_android_main_lib") {
   }
 }
 
-template("toucan_apk") {
+template("toucan_android_apk") {
   toucan_android_main_lib(target_name) {
     sources = invoker.sources
   }
@@ -157,9 +172,72 @@ template("toucan_apk") {
   }
 }
 
+template("toucan_apple_app") {
+  toucan_executable(target_name) {
+    sources = invoker.sources
+  }
+  make_action = "make_apple_app_" + target_name
+  outer_target = target_name
+  action(make_action) {
+    script = "../tools/make-app.py"
+    outfile = "${root_out_dir}/${outer_target}.app"
+    inputs = [
+      "../emscripten/toucan-logo.svg",
+    ]
+    deps = [
+      ":${outer_target}",
+    ]
+    args = [
+      "--target-name", outer_target,
+      "--target-os", target_os,
+      "--app-icon", rebase_path("//emscripten/toucan-logo.svg"),
+      "--minimum-deployment-target", "15.0",
+    ]
+    if (is_ios) {
+      args += [
+        "--mobile-provision", mobile_provision,
+        "--codesign-identity", codesign_identity,
+        "--team-identifier", team_identifier,
+      ]
+      if (is_debug) {
+        args += [ "--enable-debugging" ]
+      }
+    }
+    outputs = [ outfile ]
+  }
+}
+
+template("toucan_apple_ipa") {
+  outer_target = target_name
+  toucan_apple_app(target_name) {
+    sources = invoker.sources
+  }
+  make_action = "make_apple_ipa_" + target_name
+  outer_target = target_name
+  action(make_action) {
+    script = "../tools/make-ipa.py"
+    outfile = "${root_out_dir}/${outer_target}.ipa"
+    app_file = "${root_out_dir}/${outer_target}.app"
+    deps = [ ":make_apple_app_${outer_target}" ]
+    args = [
+      "--app-file", rebase_path(app_file),
+      "--ipa-file", rebase_path(outfile),
+    ]
+    outputs = [ outfile ]
+  }
+}
+
 template("toucan_app") {
   if (is_android) {
-    toucan_apk(target_name) {
+    toucan_android_apk(target_name) {
+      sources = invoker.sources
+    }
+  } else if (is_ios) {
+    toucan_apple_ipa(target_name) {
+      sources = invoker.sources
+    }
+  } else if (is_mac) {
+    toucan_apple_app(target_name) {
       sources = invoker.sources
     }
   } else {

@@ -1332,7 +1332,7 @@ Texture2D* SwapChain_GetCurrentTexture(SwapChain* swapChain) {
   return new Texture2D(texture, texture.CreateView(), swapChain->extent, swapChain->format);
 }
 
-#if !TARGET_OS_IS_MAC
+#if !TARGET_OS_IS_MAC && !TARGET_OS_IS_IOS
 #if !TARGET_OS_IS_WASM
 void SwapChain_Present(SwapChain* swapChain) { swapChain->surface.Present(); }
 #endif
@@ -1356,6 +1356,7 @@ float Math_rand() { return (float)(rand() % 100) / 100.0f; }
 
 void Math_Destroy(Math* This) {}
 
+#if !TARGET_OS_IS_IOS
 void System_Print(Array* buffer) {
   fwrite(buffer->ptr, 1, buffer->length, stdout);
 }
@@ -1364,6 +1365,7 @@ void System_PrintLine(Array* buffer) {
   fwrite(buffer->ptr, 1, buffer->length, stdout);
   fwrite("\n", 1, 1, stdout);
 }
+#endif
 
 void System_Abort() {
   printf("  Y__Y\n");
@@ -1392,9 +1394,7 @@ wgpu::Device CreateDawnDevice(wgpu::BackendType type, const wgpu::DeviceDescript
 
   wgpu::Adapter adapter;
   wgpu::RequestAdapterOptions adapterOptions;
-#if !TARGET_IS_WASM
   adapterOptions.backendType = type;
-#endif
   auto adapterFuture = gInstance.RequestAdapter(&adapterOptions, wgpu::CallbackMode::WaitAnyOnly,
       [&adapter](wgpu::RequestAdapterStatus status, wgpu::Adapter a, const char *msg) {
     adapter = a;

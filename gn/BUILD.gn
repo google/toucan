@@ -47,6 +47,15 @@ config("default") {
     if (current_os == "android") {
       cflags = [ "-fPIC", "--target=$ndk_target$ndk_api" ]
       ldflags = [ "--target=$ndk_target$ndk_api" ]
+    } else if (current_os == "ios") {
+      if (current_cpu != host_cpu) {
+        _arch_flags = [ "-arch", current_cpu, ]
+      } else {
+        _arch_flags = []
+      }
+      xcode_ios_sysroot = exec_script("../tools/run.py", [ "xcrun", "--sdk", "iphoneos", "--show-sdk-path" ], "trim string")
+      cflags = [ "-isysroot", xcode_ios_sysroot ] + _arch_flags
+      ldflags = [ "-isysroot", xcode_ios_sysroot ] + _arch_flags
     }
   }
   if (!is_debug) {
@@ -67,6 +76,11 @@ config("default") {
     defines += [ "TARGET_OS_IS_MAC=1" ]
   } else {
     defines += [ "TARGET_OS_IS_MAC=0" ]
+  }
+  if (target_os == "ios") {
+    defines += [ "TARGET_OS_IS_IOS=1" ]
+  } else {
+    defines += [ "TARGET_OS_IS_IOS=0" ]
   }
   if (target_os == "win") {
     defines += [ "TARGET_OS_IS_WIN=1" ]

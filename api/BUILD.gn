@@ -72,6 +72,9 @@ source_set("api") {
   if (is_mac) {
     sources += [ "api_mac.mm" ]
   }
+  if (is_ios) {
+    sources += [ "api_ios.mm" ]
+  }
   if (is_wasm) {
     sources += [ "api_wasm.cc" ]
   }

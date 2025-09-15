@@ -9,7 +9,7 @@ applications. It was designed to answer the following question: "Could a
 unified programming environment reduce the friction of developing CPU/GPU
 apps?". Built on WebGPU and featuring unified CPU/GPU SIMD datatypes, syntax
 and API, it aims for native-level performance with a single, concise source.
-It currently runs on Windows, MacOS, Linux, Android, and Web.
+It currently runs on Windows, MacOS, Linux, Android, iOS, and Web.
 
 For further information, see [this presentation](https://docs.google.com/presentation/d/1tUlG9w7AsP8pexBWRwk1uYDrwNMvTJqcxdH482ip4LM/edit?usp=sharing&resourcekey=0-gEpoxkfBbXC3qbbKRQhrwg) and [this document](https://docs.google.com/document/d/1oWNt2IoA1u-j7i2D24pnlFP6JIlQdrKZlNY6qoW2K80/edit?usp=sharing&resourcekey=0-mb8K3ATyRv-ZGl34Y4C-zQ).
 
@@ -136,6 +136,49 @@ or on Windows:
    ninja -C out/Release-android
 ```
 
+## Build instructions (iOS)
+
+1. Run `tools/git-sync-deps` to update `third_party` dependencies
+
+2. Install the appropriate SDK for iOS development.
+
+3. Sign into a developer account at https://developer.apple.com.
+
+7. Set a TEAM_IDENTIFIER environment varaible to your developer account's 10-character team ID.
+
+4. Generate a Development certificate, download it to your Mac, and add it to your Keychain.
+
+5. Set a CODESIGN_IDENTITY environment variable to the 10-character identifier of your certificate.
+
+6. Register your iOS development Device at https://developer.apple.com/account/resources/devices/add.
+
+8. Generate an App ID for the samples, with Bundle ID `org.toucanlang.sample.*`.
+
+9. Register an "iOS App Development" provisioning profile at https://developer.apple.com/account/resources/profiles/add with the App ID you generated in the previous step and your MacOS and iOS development devices. Download it to your Mac and set MOBILE_PROVISION_FILE environment variable to its downloaded file path.
+
+10. Build LLVM (Makefiles):
+```
+   pushd third_party/llvm/llvm
+   mkdir -p out/Release
+   cd out/Release
+   cmake -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_PROJECTS="lld;clang" -DLLVM_TARGETS_TO_BUILD="host;X86;ARM;AArch64;WebAssembly" -DLLVM_INCLUDE_BENCHMARKS=false -DLLVM_INCLUDE_EXAMPLES=false -DLLVM_INCLUDE_TESTS=false ../..
+   make
+   popd
+```
+
+11. Build tc and native samples:
+
+```
+   mkdir -p out/Release-ios
+   echo is_debug=false > out/Release-ios/args.gn
+   echo target_os=\"ios\" >> out/Release-ios/args.gn
+   echo mobile_provision=\"$MOBILE_PROVISION_FILE\" >> out/Release-ios/args.gn
+   echo codesign_identity=\"$CODESIGN_IDENTITY\" >> out/Release-ios/args.gn
+   echo team_identifier=\"$TEAM_IDENTIFIER\" >> out/Release-ios/args.gn
+   gn gen out/Release-ios
+   ninja -C out/Release-ios
+```
+
 ## Build instructions (WebAssembly)
 
 1. Bootstrap emscripten
@@ -201,6 +244,20 @@ e.g.,
 ```
 $ANDROID_SDK_ROOT/platform-tools/adb install -r out/Release-android/springy.apk
 $ANDROID_SDK_ROOT/platform-tools/adb shell am start -a android.intent.action.MAIN -n org.toucanlang.springy/android.app.NativeActivity
+```
+
+## Installing and running iOS samples
+
+```
+xcrun devicectl device install app out/Release-ios/${SAMPLE}.ipa --device ${IOS_DEVICE_ID}
+xcrun devicectl device process launch --device ${IOS_DEVICE_ID} "org.toucanlang.sample.${SAMPLE}"
+```
+
+e.g.,
+
+```
+xcrun devicectl device install app out/Release-ios/springy.ipa --device ${IOS_DEVICE_ID}
+xcrun devicectl device process launch --device ${IOS_DEVICE_ID} "org.toucanlang.sample.springy"
 ```
 
 ## Testing instructions

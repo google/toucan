@@ -13,8 +13,9 @@
 # limitations under the License.
 
 declare_args() {
-  ndk = ""
-
+  is_debug = true
+  is_component_build = false
+  werror = false
   sanitize = ""
 
   ar = "ar"
@@ -22,25 +23,27 @@ declare_args() {
   cxx = "c++"
   cc_wrapper = ""
 
-  win_vc = ""
-  win_toolchain_version = ""
-
-  win_sdk = "C:/Program Files (x86)/Windows Kits/10"
-  win_sdk_version = ""
-
+  # android-specific args
+  ndk = ""
   ndk_api = 26
-
-  emscripten_dir = rebase_path("//third_party/emscripten")
-
   android_ndk_dir = ""
   android_sdk_dir = ""
   android_ndk_bin_dir = ""
 
-  clang_win = ""
+  # wasm-specific args
+  emscripten_dir = rebase_path("//third_party/emscripten")
 
-  werror = false
-  is_debug = true
-  is_component_build = false
+  # win-specific args
+  clang_win = ""
+  win_vc = ""
+  win_toolchain_version = ""
+  win_sdk = "C:/Program Files (x86)/Windows Kits/10"
+  win_sdk_version = ""
+
+  # ios-specific args
+  mobile_provision = ""
+  codesign_identity = ""
+  team_identifier = ""
 }
 
 if (target_os == "") {
