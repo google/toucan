@@ -269,7 +269,7 @@ Result CopyVisitor::Visit(UnresolvedMethodCall* node) {
 
 Result CopyVisitor::Visit(UnresolvedNewExpr* expr) {
   Type*    type = ResolveType(expr->GetType());
-  RESOLVE_OR_DIE(length, expr->GetLength());
+  Expr*    length = Resolve(expr->GetLength());
   RESOLVE_OR_DIE(argList, expr->GetArgList());
 
   return Make<UnresolvedNewExpr>(type, length, argList, expr->IsConstructor());

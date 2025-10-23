@@ -419,6 +419,7 @@ test/templated-matrix.t
 test/templated-on-class-and-primitive-type.t
 test/templated-vector.t
 test/test.t
+test/type-inference-in-template.t
 test/ubyte-vector.t
 test/ubyte.t
 test/uint.t
