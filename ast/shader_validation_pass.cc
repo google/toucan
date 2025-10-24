@@ -79,6 +79,11 @@ Result ShaderValidationPass::Visit(HeapAllocation* node) {
   return {};
 }
 
+Result ShaderValidationPass::Visit(SliceExpr* node) {
+  Error(node, "slice operator is prohibited in shader methods");
+  return {};
+}
+
 Result ShaderValidationPass::Visit(Initializer* node) {
   Resolve(node->GetArgList());
   return {};

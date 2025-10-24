@@ -160,7 +160,7 @@ Type* FindType(const char* str) {
 %left T_LT T_LE T_GE T_GT
 %left '+' '-'
 %left '*' '/' '%'
-%right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS ':' '@'
+%right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS T_DOTDOT ':' '@'
 %left '.' '[' ']' '(' ')' '{' '}'
 %expect 1   /* we expect 1 shift/reduce: dangling-else */
 %%
@@ -518,6 +518,8 @@ assignable:
     T_IDENTIFIER                            { $$ = Identifier($1); }
   | T_THIS                                  { $$ = Make<UnresolvedIdentifier>("this"); }
   | assignable '[' expr ']'                 { $$ = MakeArrayAccess($1, $3); }
+  | assignable '[' opt_expr T_DOTDOT opt_expr ']'
+                                            { $$ = Make<SliceExpr>($1, $3, $5); }
   | assignable '.' T_IDENTIFIER             { $$ = Make<UnresolvedDot>($1, $3); }
   | simple_type '.' T_IDENTIFIER            { $$ = Make<UnresolvedStaticDot>($1, $3); }
   | assignable '.' T_IDENTIFIER '(' arguments ')'

@@ -621,6 +621,21 @@ class IncDecExpr : public Expr {
   bool  returnOrigValue_;
 };
 
+class SliceExpr : public Expr {
+ public:
+  SliceExpr(Expr* expr, Expr* start, Expr* end);
+  Type*  GetType(TypeTable* types) override;
+  Result Accept(Visitor* visitor) override;
+  Expr*  GetExpr() { return expr_; }
+  Expr*  GetStart() { return start_; }
+  Expr*  GetEnd() { return end_; }
+
+ private:
+  Expr* expr_;
+  Expr* start_;
+  Expr* end_;
+};
+
 class ZeroInitStmt : public Stmt {
  public:
   ZeroInitStmt(Expr* lhs);
@@ -815,6 +830,7 @@ class Visitor {
   virtual Result Visit(VarDeclaration* node) { return Default(node); }
   virtual Result Visit(VarExpr* node) { return Default(node); }
   virtual Result Visit(LoadExpr* node) { return Default(node); }
+  virtual Result Visit(SliceExpr* node) { return Default(node); }
   virtual Result Visit(StoreStmt* node) { return Default(node); }
   virtual Result Visit(SwizzleExpr* node) { return Default(node); }
   virtual Result Visit(ZeroInitStmt* node) { return Default(node); }

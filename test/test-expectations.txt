@@ -2,6 +2,15 @@ test/abort-on-assert-failure.t
 test/abort-on-assert-failure.t:4: assertion failed
   Y__Y
 --\__(x)==     (pining for the fjords)
+test/abort-on-slice-fail1.t
+  Y__Y
+--\__(x)==     (pining for the fjords)
+test/abort-on-slice-fail2.t
+  Y__Y
+--\__(x)==     (pining for the fjords)
+test/abort-on-slice-fail3.t
+  Y__Y
+--\__(x)==     (pining for the fjords)
 test/abort-on-strong-null-deref.t
   Y__Y
 --\__(x)==     (pining for the fjords)
@@ -195,8 +204,9 @@ error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
 error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
 error-return-raw-ptr.t:14:  cannot return a raw pointer
 test/error-shader-validation.t
-error-shader-validation.t:2:  "new" operator is prohibited in shader methods
-error-shader-validation.t:2:  "new" operator is prohibited in shader methods
+error-shader-validation.t:3:  "new" operator is prohibited in shader methods
+error-shader-validation.t:3:  "new" operator is prohibited in shader methods
+error-shader-validation.t:5:  slice operator is prohibited in shader methods
 test/error-stack-allocate-raw-ptr-aggregate.t
 error-stack-allocate-raw-ptr-aggregate.t:11:  cannot allocate a type containing a raw pointer
 error-stack-allocate-raw-ptr-aggregate.t:12:  cannot allocate a type containing a raw pointer
@@ -394,6 +404,7 @@ test/short-vector.t
 test/short.t
 test/simple.t
 6
+test/slice.t
 test/spirv-call-graph.t
 test/spirv-if-stmt.t
 test/spirv-insert-element.t

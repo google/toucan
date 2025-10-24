@@ -153,6 +153,14 @@ Result CopyVisitor::Visit(RawToSmartPtr* node) {
   return Make<RawToSmartPtr>(expr);
 }
 
+Result CopyVisitor::Visit(SliceExpr* node) {
+  RESOLVE_OR_DIE(expr, node->GetExpr());
+  auto start = Resolve(node->GetStart());
+  auto end = Resolve(node->GetEnd());
+
+  return Make<SliceExpr>(expr, start, end);
+}
+
 Result CopyVisitor::Visit(SmartToRawPtr* node) {
   RESOLVE_OR_DIE(expr, node->GetExpr());
 
