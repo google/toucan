@@ -9,7 +9,7 @@ var device = new Device();
 var image = new Image<RGBA8unorm>(inline("third_party/libjpeg-turbo/testimages/testorig.jpg"));
 var imageSize = image.GetSize();
 
-var mipCount = 30 - Math.clz(imageSize.x); // FIXME: needs Math.max(uint, uint)
+var mipCount = 30 - Math.clz(Math.max(imageSize.x, imageSize.y));
 var texture = new renderable sampleable Texture2D<RGBA8unorm>(device, imageSize, mipCount);
 var buffer = new hostwriteable Buffer<[]ubyte<4>>(device, texture.MinBufferWidth() * imageSize.y);
 image.Decode(buffer.MapWrite(), texture.MinBufferWidth());

@@ -52,7 +52,8 @@ class MipmapGeneratorCubePipeline<PF> : MipmapGeneratorPipeline {
 class MipmapGenerator<PF> {
   static Generate(device : *Device, texture : *renderable sampleable Texture2D<PF>) {
     var resamplingPipeline = new RenderPipeline<MipmapGenerator2DPipeline<PF>>(device);
-    var mipCount = 30 - Math.clz(texture.GetSize().x); // FIXME: needs Math.max()
+    var textureSize = texture.GetSize();
+    var mipCount = 30 - Math.clz(Math.max(textureSize.x, textureSize.y));
 
     var bindings : MipmapGenerator2DBindings;
     bindings.sampler = new Sampler(device);

@@ -15,6 +15,7 @@
 #include "codegen_llvm.h"
 
 #include <iostream>
+#include <span>
 
 #include <llvm/IR/CallingConv.h>
 #include <llvm/IR/Constants.h>
@@ -38,6 +39,41 @@ namespace Toucan {
 namespace {
 
 constexpr int kMinAutoConstantSize = 1024;
+
+struct Intrinsic {
+    const char*         methodName;
+    llvm::Intrinsic::ID id;
+};
+
+constexpr Intrinsic floatIntrinsics[] = {
+  "sqrt",  llvm::Intrinsic::sqrt,
+  "sin",   llvm::Intrinsic::sin,
+  "cos",   llvm::Intrinsic::cos,
+  "tan",   llvm::Intrinsic::tan,
+  "fabs",  llvm::Intrinsic::fabs,
+  "floor", llvm::Intrinsic::floor,
+  "ceil",  llvm::Intrinsic::ceil,
+  "min",   llvm::Intrinsic::minimum,
+  "max",   llvm::Intrinsic::maximum,
+  "pow",   llvm::Intrinsic::pow,
+};
+
+constexpr Intrinsic boolIntrinsics[] = {
+  "any", llvm::Intrinsic::vector_reduce_or,
+  "all", llvm::Intrinsic::vector_reduce_and,
+};
+
+constexpr Intrinsic uintIntrinsics[] = {
+  "clz", llvm::Intrinsic::ctlz,
+  "min", llvm::Intrinsic::umin,
+  "max", llvm::Intrinsic::umax,
+};
+
+constexpr Intrinsic intIntrinsics[] = {
+  "clz", llvm::Intrinsic::ctlz,
+  "min", llvm::Intrinsic::smin,
+  "max", llvm::Intrinsic::smax,
+};
 
 llvm::Value* GenerateBinOpInt(LLVMBuilder*   builder,
                               BinOpNode::Op  op,
@@ -482,24 +518,28 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
 }
 
 llvm::Intrinsic::ID CodeGenLLVM::FindIntrinsic(Method* method) {
-  constexpr struct {
-    const char*         className;
-    const char*         methodName;
-    llvm::Intrinsic::ID id;
-  } intrinsics[] = {
-      "Math", "sqrt", llvm::Intrinsic::sqrt,    "Math", "sin",   llvm::Intrinsic::sin,
-      "Math", "cos",  llvm::Intrinsic::cos,     "Math", "fabs",  llvm::Intrinsic::fabs,
-      "Math", "clz",  llvm::Intrinsic::ctlz,    "Math", "floor", llvm::Intrinsic::floor,
-      "Math", "ceil", llvm::Intrinsic::ceil,    "Math", "tan",   llvm::Intrinsic::tan,
-      "Math", "min",  llvm::Intrinsic::minimum, "Math", "max",   llvm::Intrinsic::maximum,
-      "Math", "pow",  llvm::Intrinsic::pow,     "Math", "any",   llvm::Intrinsic::vector_reduce_or,
-      "Math", "all",  llvm::Intrinsic::vector_reduce_and,
+  if (method->formalArgList.empty()) return llvm::Intrinsic::not_intrinsic;
+
+  // All intrisics are Math functions, currently.
+  if (method->classType->GetName() != "Math") return llvm::Intrinsic::not_intrinsic;
+  Type* argType = method->formalArgList[0]->type;
+
+  auto findIntrinsic = [](Method* method, std::span<const Intrinsic> intrinsics) -> llvm::Intrinsic::ID {
+    for (auto intrinsic : intrinsics) {
+      if (method->name == intrinsic.methodName) return intrinsic.id;
+    }
+    return llvm::Intrinsic::not_intrinsic;
   };
 
-  for (auto intrinsic : intrinsics) {
-    if (method->name == intrinsic.methodName &&
-        method->classType->GetName() == intrinsic.className) {
-      return intrinsic.id;
+  if (argType->IsFloat() || argType->IsFloatVector()) {
+    if (auto id = findIntrinsic(method, floatIntrinsics)) return id;
+  } else if (argType->IsBool() || argType->IsBoolVector()) {
+    if (auto id = findIntrinsic(method, boolIntrinsics)) return id;
+  } else if (argType->IsInteger() || argType->IsIntegerVector()) {
+    if (argType->IsUnsigned()) {
+      if (auto id = findIntrinsic(method, uintIntrinsics)) return id;
+    } else {
+      if (auto id = findIntrinsic(method, intIntrinsics)) return id;
     }
   }
   return llvm::Intrinsic::not_intrinsic;
