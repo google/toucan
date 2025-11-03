@@ -93,7 +93,11 @@ Stmts* SemanticPass::Run(Stmts* stmts) {
 
   stmts = Resolve(stmts);
 
-  numErrors_ += apiValidator_.GetNumErrors();
+  APIValidator apiValidator;
+  for (auto pair : typesToValidate_) {
+    apiValidator.ValidateType(pair.type, pair.location);
+  }
+  numErrors_ += apiValidator.GetNumErrors();
   return stmts;
 }
 
@@ -217,7 +221,7 @@ Result SemanticPass::Visit(UnresolvedInitializer* node) {
   auto               args = argList->GetArgs();
   std::vector<Expr*> exprs;
   if (type->ContainsRawPtr()) { return Error("cannot allocate a type containing a raw pointer"); }
-  apiValidator_.ValidateType(type, node->GetFileLocation());
+  typesToValidate_.push_back({type, node->GetFileLocation()});
   if (type->IsClass() && node->IsConstructor()) {
     ClassType*         classType = static_cast<ClassType*>(type);
     TypeList           types;
@@ -310,7 +314,7 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
     assert(initExpr);
     type = initExpr->GetType(types_);
   }
-  apiValidator_.ValidateType(type, decl->GetFileLocation());
+  typesToValidate_.push_back({type, decl->GetFileLocation()});
   if (type->IsVoid() || (type->IsArray() && static_cast<ArrayType*>(type)->GetNumElements() == 0)) {
     std::string errorMsg = std::string("cannot create storage of type ") + type->ToString();
     return Error(errorMsg.c_str());
@@ -810,7 +814,7 @@ void SemanticPass::WidenArgList(std::vector<Expr*>& argList, const VarVector& fo
 Result SemanticPass::Visit(UnresolvedNewExpr* node) {
   Type* type = node->GetType();
   if (!type) return nullptr;
-  apiValidator_.ValidateType(type, node->GetFileLocation());
+  typesToValidate_.push_back({type, node->GetFileLocation()});
   if (type->IsUnsizedArray()) { return Error("cannot allocate unsized array"); }
   if (type->ContainsRawPtr()) { return Error("cannot allocate a type containing raw pointer"); }
 

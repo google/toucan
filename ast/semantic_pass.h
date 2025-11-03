@@ -16,11 +16,17 @@
 #define _AST_AST_SEMANTIC_PASS_H_
 
 #include "copy_visitor.h"
-#include "api_validator.h"
 
 namespace Toucan {
 
 class SymbolTable;
+
+struct TypeLocationPair {
+  Type*        type;
+  FileLocation location;
+};
+
+using TypeLocationList = std::vector<TypeLocationPair>;
 
 class SemanticPass : public CopyVisitor {
  public:
@@ -85,10 +91,10 @@ class SemanticPass : public CopyVisitor {
                      ArgList*            args,
                      std::vector<Expr*>* newArgList);
   Method* FindOverriddenMethod(ClassType* classType, Method* method);
-  SymbolTable* symbols_;
-  TypeTable*   types_;
-  APIValidator apiValidator_;
-  int          numErrors_ = 0;
+  SymbolTable*     symbols_;
+  TypeTable*       types_;
+  TypeLocationList typesToValidate_;
+  int              numErrors_ = 0;
 };
 
 };  // namespace Toucan

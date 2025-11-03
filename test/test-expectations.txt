@@ -242,8 +242,8 @@ error-unknown-return-type.t:2: syntax error
 test/error-unsized-array-not-last-in-class.t
 error-unsized-array-not-last-in-class.t:4:  unsized arrays are only allowed as the last field of a class
 test/error-validate-bind-group.t
-error-validate-bind-group.t:16:  while instantiating BindGroup<float>: bind group template argument must be of class type
 error-validate-bind-group.t:16:  matching constructor not found
+error-validate-bind-group.t:16:  while instantiating BindGroup<float>: bind group template argument must be of class type
 error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type int
 error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type *int
 error-validate-bind-group.t:17:  while instantiating BindGroup<C>: invalid bind group field type ^int
@@ -426,6 +426,7 @@ test/templated-class-on-primitive-type.t
 test/templated-class-with-auto-field.t
 test/templated-class-with-auto-formal-arg.t
 test/templated-class.t
+test/templated-derived-class-with-shader.t
 test/templated-derived-class.t
 test/templated-matrix.t
 test/templated-on-class-and-primitive-type.t
