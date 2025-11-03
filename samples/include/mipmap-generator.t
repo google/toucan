@@ -15,12 +15,12 @@ class MipmapGenerator2DBindings {
   var texture : *SampleableTexture2D<float>;
 }
 
-class MipmapGenerator2DPipeline : MipmapGeneratorPipeline {
+class MipmapGenerator2DPipeline<PF> : MipmapGeneratorPipeline {
   fragment main(fb : &FragmentBuiltins, texCoord : float<2>) {
     var b = bindings.Get();
     fragColor.Set(b.texture.Sample(b.sampler, texCoord));
   }
-  var fragColor : *ColorOutput<RGBA8unorm>;
+  var fragColor : *ColorOutput<PF>;
   var bindings : *BindGroup<MipmapGenerator2DBindings>;
 };
 
@@ -30,7 +30,7 @@ class MipmapGeneratorCubeBindings {
   var uniforms : *uniform Buffer<uint>;
 }
 
-class MipmapGeneratorCubePipeline : MipmapGeneratorPipeline {
+class MipmapGeneratorCubePipeline<PF> : MipmapGeneratorPipeline {
   fragment main(fb : &FragmentBuiltins, texCoord : float<2>) {
     var faceMatrices = [6]float<3,3>{
       { { 0.0, 0.0, -2.0 }, { 0.0, -2.0,  0.0 }, {  1.0,  1.0,  1.0 } },
@@ -45,13 +45,13 @@ class MipmapGeneratorCubePipeline : MipmapGeneratorPipeline {
     var coord = faceMatrices[face] * float<3>{@texCoord, 1.0};
     fragColor.Set(b.texture.Sample(b.sampler, coord));
   }
-  var fragColor : *ColorOutput<RGBA8unorm>;
+  var fragColor : *ColorOutput<PF>;
   var bindings : *BindGroup<MipmapGeneratorCubeBindings>;
 };
 
-class MipmapGenerator {
-  static Generate(device : *Device, texture : *renderable sampleable Texture2D<RGBA8unorm>) {
-    var resamplingPipeline = new RenderPipeline<MipmapGenerator2DPipeline>(device);
+class MipmapGenerator<PF> {
+  static Generate(device : *Device, texture : *renderable sampleable Texture2D<PF>) {
+    var resamplingPipeline = new RenderPipeline<MipmapGenerator2DPipeline<PF>>(device);
     var mipCount = 30 - Math.clz(texture.GetSize().x); // FIXME: needs Math.max()
 
     var bindings : MipmapGenerator2DBindings;
@@ -61,7 +61,7 @@ class MipmapGenerator {
       bindings.texture = texture.CreateSampleableView(mipLevel - 1, 1u);
       var fb = texture.CreateRenderableView(mipLevel);
       var encoder = new CommandEncoder(device);
-      var renderPass = new RenderPass<MipmapGenerator2DPipeline>(encoder, {
+      var renderPass = new RenderPass<MipmapGenerator2DPipeline<PF>>(encoder, {
         fragColor = fb.CreateColorOutput(LoadOp.Clear),
         bindings = new BindGroup<MipmapGenerator2DBindings>(device, &bindings)
       });
@@ -71,8 +71,8 @@ class MipmapGenerator {
       device.GetQueue().Submit(encoder.Finish());
     }
   }
-  static Generate(device : *Device, texture : *renderable sampleable TextureCube<RGBA8unorm>) {
-    var resamplingPipeline = new RenderPipeline<MipmapGeneratorCubePipeline>(device);
+  static Generate(device : *Device, texture : *renderable sampleable TextureCube<PF>) {
+    var resamplingPipeline = new RenderPipeline<MipmapGeneratorCubePipeline<PF>>(device);
     var mipCount = 30 - Math.clz(texture.GetSize().x);
 
     var bindings : MipmapGeneratorCubeBindings;
@@ -85,7 +85,7 @@ class MipmapGenerator {
         bindings.uniforms.SetData(&face);
         var fb = texture.CreateRenderableView(face, mipLevel);
         var encoder = new CommandEncoder(device);
-        var renderPass = new RenderPass<MipmapGeneratorCubePipeline>(encoder, {
+        var renderPass = new RenderPass<MipmapGeneratorCubePipeline<PF>>(encoder, {
           fragColor = fb.CreateColorOutput(LoadOp.Clear),
           bindings = new BindGroup<MipmapGeneratorCubeBindings>(device, &bindings)
         });

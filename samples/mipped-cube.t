@@ -17,7 +17,7 @@ var copyEncoder = new CommandEncoder(device);
 texture.CopyFromBuffer(copyEncoder, buffer, imageSize);
 device.GetQueue().Submit(copyEncoder.Finish());
 
-MipmapGenerator.Generate(device, texture);
+MipmapGenerator<RGBA8unorm>.Generate(device, texture);
 var window = new Window(System.GetScreenSize());
 var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 
