@@ -21,7 +21,7 @@ Test.Expect(Math.all(textureCube.GetSize() == uint<2>{2, 4}));
 Test.Expect(Math.all(textureCube.GetSize(0) == uint<2>{2, 4}));
 Test.Expect(Math.all(textureCube.GetSize(1) == uint<2>{1, 2}));
 
-var texture2DArray = new sampleable Texture2DArray<RGBA8unorm>(device, {4, 8, 3}, 2);
+var texture2DArray = new sampleable Texture2DArray<RGBA8unorm>(device, {4, 8}, 3, 2);
 Test.Expect(Math.all(texture2DArray.GetSize() == uint<2>{4, 8}));
 Test.Expect(Math.all(texture2DArray.GetSize(0) == uint<2>{4, 8}));
 Test.Expect(Math.all(texture2DArray.GetSize(1) == uint<2>{2, 4}));

@@ -49,7 +49,7 @@ var buffer = new hostwriteable Buffer<[]ubyte<4>>(device, 64 * 2 * 2);
   data[193]  = ubyte<4>(255ub, 255ub, 255ub, 255ub);
 }
 var copyEncoder = new CommandEncoder(device);
-tex.CopyFromBuffer(copyEncoder, buffer, {2, 2, 2});
+tex.CopyFromBuffer(copyEncoder, buffer, uint<2>{2, 2}, 0, 2);
 device.GetQueue().Submit(copyEncoder.Finish());
 var bindGroup = new BindGroup<Bindings>(device, {
   sampler = new Sampler(device),

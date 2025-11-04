@@ -1040,9 +1040,10 @@ Texture2DArray* Texture2DArray_Texture2DArray(int             qualifiers,
                                               Type*           format,
                                               Device*         device,
                                               const uint32_t* size,
+                                              uint32_t        numLayers,
                                               uint32_t        mipLevelCount) {
   return new Texture2DArray(qualifiers, format, device->device, wgpu::TextureDimension::e2D,
-                            {size[0], size[1], size[2]}, mipLevelCount);
+                            {size[0], size[1], numLayers}, mipLevelCount);
 }
 
 void Texture2DArray_Destroy(Texture2DArray* This) { delete This; }
@@ -1080,10 +1081,12 @@ void Texture2DArray_CopyFromBuffer(Texture2DArray* dest,
                                    CommandEncoder* encoder,
                                    Buffer*         source,
                                    const uint32_t* size,
+                                   uint32_t        layer,
+                                   uint32_t        numLayers,
                                    const uint32_t* origin,
                                    uint32_t        mipLevel) {
-  dest->CopyFromBuffer(encoder->encoder, source->buffer, {size[0], size[1], size[2]},
-                       {origin[0], origin[1], origin[2]}, mipLevel);
+  dest->CopyFromBuffer(encoder->encoder, source->buffer, {size[0], size[1], numLayers},
+                       {origin[0], origin[1], layer}, mipLevel);
 }
 
 Texture3D* Texture3D_Texture3D(int qualifiers, Type* format, Device* device, const uint32_t* size, uint32_t mipLevelCount) {
@@ -1158,10 +1161,12 @@ void TextureCube_CopyFromBuffer(TextureCube*    dest,
                                 CommandEncoder* encoder,
                                 Buffer*         source,
                                 const uint32_t* size,
+                                uint32_t        face,
+                                uint32_t        numFaces,
                                 const uint32_t* origin,
                                 uint32_t        mipLevel) {
-  dest->CopyFromBuffer(encoder->encoder, source->buffer, {size[0], size[1], size[2]},
-                       {origin[0], origin[1], origin[2]}, mipLevel);
+  dest->CopyFromBuffer(encoder->encoder, source->buffer, {size[0], size[1], numFaces},
+                       {origin[0], origin[1], face}, mipLevel);
 }
 
 Sampler* Sampler_Sampler(Device*     device,
