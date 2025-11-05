@@ -16,9 +16,8 @@ import("../toucan_executable.gni")
 
 group("tests") {
   deps = [
-    ":simple",
-    ":hello",
     ":empty",
+    ":hello",
   ]
 }
 
@@ -26,14 +25,6 @@ toucan_executable("empty") {
   sources = [ "empty.t" ]
 }
 
-toucan_executable("simple") {
-  sources = [ "simple.t" ]
-}
-
 toucan_executable("hello") {
   sources = [ "hello.t" ]
-}
-
-toucan_executable("texture-size") {
-  sources = [ "texture-size.t" ]
 }

@@ -101,7 +101,7 @@ const uint32_t* Window_GetSize(Window* This) {
 }
 
 void Window_Destroy(Window* This) {
-  XDestroyWindow(gDisplay, This->window);
+  if (This->window) ::XDestroyWindow(gDisplay, This->window);
   delete This;
 }
 
@@ -153,6 +153,7 @@ Event* System_GetNextEvent() {
     case ClientMessage:
       if (static_cast<Atom>(event.xclient.data.l[0]) == gWM_DELETE_WINDOW) {
         ::XDestroyWindow(gDisplay, event.xclient.window);
+        if (Window* window = gWindows[event.xclient.window]) window->window = 0;
       }
       break;
     default: break;
