@@ -150,7 +150,7 @@ template("msvc_toolchain") {
       pdbname = "$exename.pdb"
       rspfile = "$exename.rsp"
 
-      command = "$env_setup $link /nologo /OUT:$exename /PDB:$pdbname @$rspfile"
+      command = "$env_setup $link /nologo /OUT:$exename /PDB:$pdbname /STACK:" + stack_size + " @$rspfile"
       default_output_extension = ".exe"
       default_output_dir = "{{root_out_dir}}"
       outputs = [ exename ]

@@ -237,11 +237,13 @@ int main(int argc, char** argv) {
   types.ComputeFieldOffsets();
   pthread_attr_t attr;
   pthread_attr_init(&attr);
+  std::vector<char> stack(STACK_SIZE);
+  pthread_attr_setstack(&attr, stack.data(), STACK_SIZE);
   pthread_t toucan_thread;
   IOSApp app;
   gApp = &app;
   auto toucan_main_wrapper = [](void*) -> void* { toucan_main(); return nullptr; };
-  pthread_create(&toucan_thread, nullptr, toucan_main_wrapper, nullptr);
+  pthread_create(&toucan_thread, &attr, toucan_main_wrapper, nullptr);
   @autoreleasepool {
     return UIApplicationMain(argc, argv, nil, NSStringFromClass(ToucanAppDelegate.class));
   }

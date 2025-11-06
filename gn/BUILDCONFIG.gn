@@ -22,6 +22,7 @@ declare_args() {
   cc = "cc"
   cxx = "c++"
   cc_wrapper = ""
+  stack_size = "4194304"
 
   # android-specific args
   ndk = ""

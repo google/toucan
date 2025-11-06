@@ -258,6 +258,8 @@ static struct android_app* android_app_create(ANativeActivity* activity,
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    android_app->stack = malloc(STACK_SIZE);
+    pthread_attr_setstack(&attr, android_app->stack, STACK_SIZE);
     pthread_create(&android_app->thread, &attr, android_app_entry, android_app);
 
     // Wait for thread to start.
@@ -322,6 +324,7 @@ static void android_app_free(struct android_app* android_app) {
     close(android_app->msgwrite);
     pthread_cond_destroy(&android_app->cond);
     pthread_mutex_destroy(&android_app->mutex);
+    free(android_app->stack);
     free(android_app);
 }
 
