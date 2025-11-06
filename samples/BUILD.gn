@@ -88,7 +88,8 @@ source_set("main") {
 
 if (is_android) {
   source_set("android_main") {
-    sources = [ "android_main.cc", "$android_ndk_dir/sources/android/native_app_glue/android_native_app_glue.c" ]
-    include_dirs = [ "..", "$android_ndk_dir/sources/android/native_app_glue" ]
+    sources = [ "android_main.cc" ]
+    deps = [ "//third_party/android_native_app_glue" ]
+    include_dirs = [ "..", "//third_party/android_native_app_glue" ]
   }
 }
