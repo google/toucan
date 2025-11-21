@@ -163,19 +163,16 @@ CodeGenLLVM::CodeGenLLVM(llvm::LLVMContext*                 context,
   byteType_ = llvm::Type::getInt8Ty(*context_);
   shortType_ = llvm::Type::getInt16Ty(*context_);
   llvm::Type* voidType = llvm::Type::getVoidTy(*context_);
-  funcPtrType_ = llvm::PointerType::get(llvm::FunctionType::get(voidType, false), 0);
-  voidPtrType_ = llvm::PointerType::get(byteType_, 0);
-  deleterType_ = llvm::FunctionType::get(voidType, { voidPtrType_ }, false);
+  ptrType_ = llvm::PointerType::get(*context_, 0);
+  deleterType_ = llvm::FunctionType::get(voidType, { ptrType_ }, false);
 #if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
   freeFunc_ = module_->getOrInsertFunction("_aligned_free", deleterType_);
 #else
   freeFunc_ = module_->getOrInsertFunction("free", deleterType_);
 #endif
   controlBlockType_ = ControlBlockType();
-  controlBlockPtrType_ = llvm::PointerType::get(controlBlockType_, 0);
-  typeListType_ = llvm::PointerType::get(llvm::PointerType::get(voidPtrType_, 0), 0);
   typeList_ = new llvm::GlobalVariable(
-      *module_, typeListType_, true, llvm::GlobalVariable::ExternalLinkage, nullptr, "_type_list");
+      *module_, ptrType_, true, llvm::GlobalVariable::ExternalLinkage, nullptr, "_type_list");
 }
 
 void CodeGenLLVM::Run(Stmts* stmts) {
@@ -219,8 +216,8 @@ llvm::Type* CodeGenLLVM::ControlBlockType() {
   types.push_back(intType_);      // strong refcount
   types.push_back(intType_);      // weak refcount
   types.push_back(intType_);      // array length
-  types.push_back(voidPtrType_);  // ClassType
-  types.push_back(voidPtrType_);  // deleter
+  types.push_back(ptrType_);      // ClassType
+  types.push_back(ptrType_);      // deleter
   return llvm::StructType::get(*context_, types);
 }
 
@@ -229,24 +226,19 @@ llvm::Type* CodeGenLLVM::ConvertType(Type* type) {
     std::vector<llvm::Type*> types;
     Type*                    baseType = static_cast<PtrType*>(type)->GetBaseType();
     baseType = baseType->GetUnqualifiedType();
-    if (baseType->IsVoid() || baseType->IsFormalTemplateArg()) {
-      types.push_back(voidPtrType_);
-    } else {
-      types.push_back(llvm::PointerType::get(ConvertType(baseType), 0));
-    }
-    types.push_back(llvm::PointerType::get(controlBlockType_, 0));
+    types.push_back(ptrType_); // Ptr
+    types.push_back(ptrType_); // Control block
     return llvm::StructType::get(*context_, types);
   } else if (type->IsRawPtr()) {
     Type* baseType = static_cast<RawPtrType*>(type)->GetBaseType();
     baseType = baseType->GetUnqualifiedType();
     if (baseType->IsUnsizedArray() || baseType->IsUnsizedClass()) {
       std::vector<llvm::Type*> types;
-      baseType = baseType->GetUnqualifiedType();
-      types.push_back(llvm::PointerType::get(ConvertType(baseType), 0));
-      types.push_back(intType_);
+      types.push_back(ptrType_); // Ptr
+      types.push_back(intType_); // Length
       return llvm::StructType::get(*context_, types);
     } else {
-      return llvm::PointerType::get(ConvertType(baseType), 0);
+      return ptrType_;
     }
   } else if (type->IsArray()) {
     ArrayType* atype = static_cast<ArrayType*>(type);
@@ -298,7 +290,7 @@ llvm::Type* CodeGenLLVM::ConvertArrayElementType(ArrayType* arrayType) {
 
 llvm::Type* CodeGenLLVM::ConvertTypeToNative(Type* type) {
   if (type->IsPtr() || type->IsVector()) {
-    return voidPtrType_;
+    return ptrType_;
   }
   return ConvertType(type);
 }
@@ -306,15 +298,15 @@ llvm::Type* CodeGenLLVM::ConvertTypeToNative(Type* type) {
 llvm::Constant* CodeGenLLVM::Int(int value) { return llvm::ConstantInt::get(intType_, value); }
 
 llvm::Value* CodeGenLLVM::CreateTypePtr(Type* type) {
-  llvm::Value* ptr = builder_->CreateLoad(typeListType_, typeList_);
+  llvm::Value* ptr = builder_->CreateLoad(ptrType_, typeList_);
   llvm::Value* typeID = typeMap_[type];
   if (!typeID) {
     typeID = Int(referencedTypes_.size());
     typeMap_[type] = typeID;
     referencedTypes_.push_back(type);
   }
-  ptr = builder_->CreateGEP(typeListType_, ptr, {typeID});
-  return builder_->CreateLoad(voidPtrType_, ptr);
+  ptr = builder_->CreateGEP(ptrType_, ptr, {typeID});
+  return builder_->CreateLoad(ptrType_, ptr);
 }
 
 llvm::Value* CodeGenLLVM::CreateControlBlock(Type* type) {
@@ -361,7 +353,7 @@ llvm::Value* CodeGenLLVM::GetDeleterAddress(llvm::Value* controlBlock) {
 }
 
 llvm::BasicBlock* CodeGenLLVM::NullControlBlockCheck(llvm::Value* controlBlock, BinOpNode::Op op) {
-  llvm::Value*      nullControlBlock = llvm::ConstantPointerNull::get(controlBlockPtrType_);
+  llvm::Value*      nullControlBlock = llvm::ConstantPointerNull::get(ptrType_);
   llvm::Value*      condition = GenerateBinOpInt(builder_, op, controlBlock, nullControlBlock);
   llvm::BasicBlock* trueBlock = CreateBasicBlock("trueBlock");
   llvm::BasicBlock* afterBlock = CreateBasicBlock("after");
@@ -402,7 +394,7 @@ void CodeGenLLVM::UnrefStrongPtr(llvm::Value* ptr, StrongPtrType* type) {
   builder_->SetInsertPoint(trueBlock);
   Type* baseType = type->GetBaseType()->GetUnqualifiedType();
   llvm::Value* arg = builder_->CreateExtractValue(ptr, {0});
-  llvm::Value* deleter = builder_->CreateLoad(funcPtrType_, GetDeleterAddress(controlBlock));
+  llvm::Value* deleter = builder_->CreateLoad(ptrType_, GetDeleterAddress(controlBlock));
   builder_->CreateCall(deleterType_, deleter, {arg});
   builder_->CreateBr(afterBlock);
   builder_->SetInsertPoint(afterBlock);
@@ -483,7 +475,7 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
         params.push_back(intType_);
         ClassTemplate* classTemplate = static_cast<ClassTemplate*>(method->classType);
         for (Type* const& type : classTemplate->GetFormalTemplateArgs()) {
-          params.push_back(voidPtrType_);
+          params.push_back(ptrType_);
         }
       }
     }
@@ -501,7 +493,7 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
   }
   llvm::Function* function;
   if (intrinsic) {
-    function = llvm::Intrinsic::getDeclaration(module_, intrinsic, params);
+    function = llvm::Intrinsic::getOrInsertDeclaration(module_, intrinsic, params);
     if (intrinsic == llvm::Intrinsic::ctlz) {
       // is_zero_poison
       params.push_back(boolType_);
@@ -627,16 +619,15 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
 }
 
 llvm::Value* CodeGenLLVM::CreateMalloc(llvm::Type* type, llvm::Value* arraySize) {
-  llvm::PointerType* ptrType = llvm::PointerType::get(type, 0);
   // TODO(senorblanco):  initialize this once, not every time
   std::vector<llvm::Type*> args;
   args.push_back(intType_);
 #if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
   args.push_back(intType_);
 #endif
-  llvm::FunctionType* ft = llvm::FunctionType::get(voidPtrType_, args, false);
+  llvm::FunctionType* ft = llvm::FunctionType::get(ptrType_, args, false);
   llvm::Value*        indices[] = {arraySize ? arraySize : llvm::ConstantInt::get(intType_, 1)};
-  llvm::Value*        nullPtr = llvm::ConstantPointerNull::get(ptrType);
+  llvm::Value*        nullPtr = llvm::ConstantPointerNull::get(ptrType_);
   llvm::Value*        size = builder_->CreateGEP(type, nullPtr, indices);
   llvm::Value*        sizeInt = builder_->CreatePtrToInt(size, intType_);
 #if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
@@ -647,7 +638,7 @@ llvm::Value* CodeGenLLVM::CreateMalloc(llvm::Type* type, llvm::Value* arraySize)
   llvm::FunctionCallee malloc = module_->getOrInsertFunction("malloc", ft);
   llvm::Value*         ptr = builder_->CreateCall(malloc, sizeInt);
 #endif
-  return builder_->CreateBitCast(ptr, ptrType);
+  return builder_->CreateBitCast(ptr, ptrType_);
 }
 
 llvm::Value* CodeGenLLVM::GenerateLLVM(Expr* expr) {
@@ -743,7 +734,7 @@ llvm::Value* CodeGenLLVM::GenerateVectorLength(llvm::Value* value) {
   auto dotProduct = GenerateDotProduct(value, value);
   std::vector<llvm::Type*> params;
   auto type = value->getType()->getContainedType(0);
-  auto function = llvm::Intrinsic::getDeclaration(module_, llvm::Intrinsic::sqrt, {type});
+  auto function = llvm::Intrinsic::getOrInsertDeclaration(module_, llvm::Intrinsic::sqrt, {type});
   return builder_->CreateCall(function, {dotProduct});
 }
 
@@ -917,9 +908,7 @@ llvm::Value* CodeGenLLVM::CreateCast(Type*        srcType,
     Type*        dstBase = static_cast<PtrType*>(dstType)->GetBaseType();
     llvm::Value* ptr = builder_->CreateExtractValue(value, {0});
     llvm::Value* controlBlock = builder_->CreateExtractValue(value, {1});
-    llvm::Type*  newPtrType =
-        dstBase->IsVoid() ? voidPtrType_ : llvm::PointerType::get(ConvertType(dstBase), 0);
-    llvm::Value* newPtr = builder_->CreateBitCast(ptr, newPtrType);
+    llvm::Value* newPtr = builder_->CreateBitCast(ptr, ptrType_);
     return CreatePointer(newPtr, controlBlock);
   }
   assert(!"unimplemented cast");
@@ -1494,8 +1483,8 @@ Result CodeGenLLVM::Visit(MethodCall* node) {
 
 Result CodeGenLLVM::Visit(NullConstant* node) {
   std::vector<llvm::Type*> types;
-  types.push_back(voidPtrType_);
-  types.push_back(controlBlockPtrType_);
+  types.push_back(ptrType_); // Ptr
+  types.push_back(ptrType_); // Control block
   llvm::Type* type = llvm::StructType::get(*context_, types);
   return llvm::ConstantAggregateZero::get(type);
 }

@@ -186,12 +186,10 @@ class CodeGenLLVM : public Visitor {
   llvm::Type*                                           boolType_;
   llvm::Type*                                           byteType_;
   llvm::Type*                                           shortType_;
-  llvm::Type*                                           funcPtrType_;
-  llvm::PointerType*                                    voidPtrType_;
+  llvm::PointerType*                                    ptrType_;
   llvm::FunctionType*                                   deleterType_;
   llvm::FunctionCallee                                  freeFunc_;
   llvm::Type*                                           controlBlockType_;
-  llvm::PointerType*                                    controlBlockPtrType_;
   bool                                                  debugOutput_;
   DerefList                                             temporaries_;
   RefPtrTemporaries                                     scopedTemporaries_;
