@@ -170,18 +170,15 @@ int main(int argc, char** argv) {
 #else
     std::string targetTripleStr = llvm::sys::getDefaultTargetTriple();
 #endif
-
-    llvm::Triple targetTriple(targetTripleStr);
-
     std::string error;
-    auto        target = llvm::TargetRegistry::lookupTarget(targetTriple, error);
-    if (targetTriple.empty()) {
-      std::cerr << error;
+    auto        target = llvm::TargetRegistry::lookupTarget(targetTripleStr, error);
+    if (!target) {
+      std::cerr << error << std::endl;
       return 1;
     }
     llvm::LLVMContext             context;
     std::unique_ptr<llvm::Module> module(new llvm::Module("tc", context));
-    module->setTargetTriple(targetTriple);
+    module->setTargetTriple(targetTripleStr);
 
     auto cpu = "generic";
 #if TARGET_OS_IS_WASM
@@ -192,7 +189,7 @@ int main(int argc, char** argv) {
 
     llvm::TargetOptions opt;
     auto                rm = std::optional<llvm::Reloc::Model>(llvm::Reloc::Model::PIC_);
-    auto targetMachine = target->createTargetMachine(targetTriple, cpu, features, opt, rm);
+    auto targetMachine = target->createTargetMachine(targetTripleStr, cpu, features, opt, rm);
 
     module->setDataLayout(targetMachine->createDataLayout());
     llvm::FunctionCallee c =

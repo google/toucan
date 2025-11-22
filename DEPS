@@ -20,7 +20,7 @@ deps = {
   "buildtools"                            : "https://chromium.googlesource.com/chromium/src/buildtools@9cac81256beb5d4d36c8801afeae38fea34b8486",
   "third_party/abseil-cpp"             : "https://chromium.googlesource.com/chromium/src/third_party/abseil-cpp@04dc59d2c83238cb1fcb49083e5e416643a899ce",
   "third_party/getopt"                 : "https://github.com/skeeto/getopt@4e618ef782dc80b2cf0307ea74b68e6a62b025de",
-  "third_party/llvm" : "https://github.com/llvm/llvm-project@a4320ba67bf753395b57b5133b83017ef6531d62",
+  "third_party/llvm" : "https://github.com/llvm/llvm-project@6146a88f60492b520a36f8f8f3231e15f3cc6082",
   "third_party/dawn" : "https://dawn.googlesource.com/dawn.git@9b84810b13a112425d59661546424d5295cfdd5d",
   "third_party/jinja2" : "https://chromium.googlesource.com/chromium/src/third_party/jinja2@e2d024354e11cc6b041b0cff032d73f0c7e43a07",
   "third_party/libjpeg-turbo" : "https://github.com/libjpeg-turbo/libjpeg-turbo@3b19db4e6e7493a748369974819b4c5fa84c7614",
