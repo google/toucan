@@ -194,7 +194,7 @@ popd
 pushd third_party/binaryen
 git submodule init
 git submodule update
-cmake . && make
+cmake . && cmake --build . --parallel
 popd
 ```
 
