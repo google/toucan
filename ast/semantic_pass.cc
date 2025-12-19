@@ -25,7 +25,6 @@
 #include <ranges>
 
 #include "api_validator.h"
-#include "symbol.h"
 
 namespace Toucan {
 
@@ -84,8 +83,8 @@ bool HasDuplicates(const std::vector<int>& indices) {
 
 }
 
-SemanticPass::SemanticPass(NodeVector* nodes, SymbolTable* symbols, TypeTable* types)
-    : CopyVisitor(nodes), symbols_(symbols), types_(types), numErrors_(0) {}
+SemanticPass::SemanticPass(NodeVector* nodes, TypeTable* types)
+    : CopyVisitor(nodes), types_(types), numErrors_(0) {}
 
 Stmts* SemanticPass::Run(Stmts* stmts) {
   UnresolvedClassVisitor ucv(this);
@@ -157,26 +156,26 @@ Result SemanticPass::Visit(CastExpr* node) {
 
 Result SemanticPass::Visit(Data* node) { return node; }
 
+Result SemanticPass::Visit(Decls* node) {
+  Stmts* stmts = Make<Stmts>();
+  for (auto decl : node->Get()) {
+    if ((decl = Resolve(decl))) stmts->Append(decl);
+  }
+  return stmts;
+}
+
 Result SemanticPass::Visit(Stmts* stmts) {
   Stmts* newStmts = Make<Stmts>();
-  Scope* scope = stmts->GetScope();
-  if (scope) { symbols_->PushScope(scope); }
-  for (Stmt* const& it : stmts->GetStmts()) {
-    Stmt* stmt = Resolve(it);
-    if (stmt) newStmts->Append(stmt);
+  symbols_.PushScope(stmts);
+  for (auto stmt : stmts->GetStmts()) {
+    if ((stmt = Resolve(stmt))) newStmts->Append(stmt);
   }
-  if (scope) {
-    bool containsReturn = stmts->ContainsReturn();
-    // Append vars to new stmts for any vars in this scope.  Also
-    // append destructor calls for any vars that need it.
-    symbols_->PopScope();
-    for (auto var : scope->vars) {
-      newStmts->AppendVar(var);
-    }
-    for (auto var : std::views::reverse(scope->vars)) {
-      if (var->type->NeedsDestruction() && !containsReturn) {
-        newStmts->Append(Make<DestroyStmt>(Make<VarExpr>(var.get())));
-      }
+  symbols_.PopScope();
+  for (auto var : stmts->GetVars()) newStmts->AppendVar(var);
+  // Append destructor calls for any vars that need it.
+  for (auto var : std::views::reverse(stmts->GetVars())) {
+    if (var->type->NeedsDestruction() && !stmts->ContainsReturn()) {
+      newStmts->Append(Make<DestroyStmt>(Make<VarExpr>(var.get())));
     }
   }
   return newStmts;
@@ -301,7 +300,7 @@ Stmts* SemanticPass::InitializeArray(Expr* dest, Type* elementType, Expr* length
 Result SemanticPass::Visit(VarDeclaration* decl) {
   std::string id = decl->GetID();
   Type*       type = decl->GetType();
-  if (symbols_->FindVarInScope(id)) {
+  if (symbols_.PeekScope()->FindID(id)) {
     return Error("variable \"%s\" already defined in this scope", id.c_str());
   }
   if (!type) return nullptr;
@@ -325,8 +324,10 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
   if (!type->IsRawPtr() && type->ContainsRawPtr()) {
     return Error("cannot allocate a type containing a raw pointer");
   }
-  Var*  var = symbols_->DefineVar(id, type);
-  Expr* varExpr = Make<VarExpr>(var);
+  auto var = std::make_shared<Var>(id, type);
+  symbols_.PeekScope()->AppendVar(var);
+  Expr* varExpr = Make<VarExpr>(var.get());
+  symbols_.DefineID(id, var->type->IsRawPtr() ? Make<LoadExpr>(varExpr) : varExpr);
   return Initialize(varExpr, initExpr);
 }
 
@@ -541,21 +542,11 @@ Result SemanticPass::Visit(LoadExpr* node) {
 
 Result SemanticPass::Visit(UnresolvedIdentifier* node) {
   std::string id = node->GetID();
-  if (Var* var = symbols_->FindVar(id)) {
-    if (var->type->IsRawPtr()) {
-      return Make<LoadExpr>(Make<VarExpr>(var));
-    } else {
-      return Make<VarExpr>(var);
-    }
-  } else if (Field* field = symbols_->FindField(id)) {
-    Var* thisPtr = symbols_->FindVar("this");
-    if (!thisPtr) {
-      // TODO:  Implement static field access
-      return Error("attempt to access non-static field in static method");
-    } else {
-      Expr* base = Make<LoadExpr>(Make<VarExpr>(thisPtr));
-      return Make<FieldAccess>(base, field);
-    }
+  if (Expr* expr = symbols_.FindID(id)) {
+    copyFileLocation_ = false;
+    expr = Resolve(expr);
+    copyFileLocation_ = true;
+    return expr;
   } else {
     return Error("unknown symbol \"%s\"", id.c_str());
   }
@@ -913,8 +904,7 @@ Result SemanticPass::Visit(ForStatement* node) {
 }
 
 void SemanticPass::PreVisit(UnresolvedClassDefinition* defn) {
-  Scope*     scope = defn->GetScope();
-  ClassType* classType = scope->classType;
+  ClassType* classType = defn->GetClass();
 
   // Non-native template classes don't need inferred type resolution
   if (!classType->HasNativeMethods() && classType->IsClassTemplate()) return;
@@ -937,13 +927,19 @@ void SemanticPass::PreVisit(UnresolvedClassDefinition* defn) {
 }
 
 Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
-  Scope*     scope = defn->GetScope();
-  ClassType* classType = scope->classType;
+  ClassType* classType = defn->GetClass();
 
   // Template classes don't need semantic analysis, since their code won't be directly generated.
   if (classType->IsClassTemplate()) return nullptr;
 
-  symbols_->PushScope(scope);
+  symbols_.PushScope(Make<Stmts>());
+
+  for (auto c = classType; c != nullptr; c = c->GetParent()) {
+    for (const auto& field : c->GetFields()) {
+      Expr* thisPtr = Make<UnresolvedIdentifier>("this");
+      symbols_.DefineID(field->name, Make<FieldAccess>(thisPtr, field.get()));
+    }
+  }
 
   if (classType->NeedsDestruction()) {
     auto destructor = classType->GetDestructor();
@@ -968,17 +964,25 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
   for (const auto& method : classType->GetMethods()) {
     if (!method->stmts) continue;
 
-    Scope* scope = method->stmts->GetScope();
+    symbols_.PushScope(Make<Stmts>());
+    for (const auto& var : method->formalArgList) {
+      Expr* expr = Make<VarExpr>(var.get());
+      if (var->type->IsRawPtr()) expr = Make<LoadExpr>(expr);
+      symbols_.DefineID(var->name, expr);
+    }
+
+    currentMethod_ = method.get();
     method->stmts = Resolve(method->stmts);
+    currentMethod_ = nullptr;
+
     if (method->IsConstructor()) {
-      symbols_->PushScope(scope);
       Expr* initializer = method->initializer ? Resolve(method->initializer)
                           : ResolveListExpr(Make<ArgList>(), method->classType);
-      symbols_->PopScope();
       auto This = Make<LoadExpr>(Make<VarExpr>(method->formalArgList[0].get()));
       method->stmts->Prepend(Make<StoreStmt>(This, Widen(initializer, method->classType)));
       method->stmts->Append(Make<ReturnStatement>(This));
     }
+    symbols_.PopScope();
 
     if (method->returnType->ContainsRawPtr() && !method->IsConstructor()) {
       Error("cannot return a raw pointer");
@@ -1002,13 +1006,15 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
       Error("unsized arrays are only allowed as the last field of a class");
     }
   }
-  symbols_->PopScope();
+  symbols_.PopScope();
   return nullptr;
 }
 
-void SemanticPass::UnwindStack(Scope* scope, Stmts* stmts) {
-  for(; scope && !scope->method && !scope->classType; scope = scope->parent) {
-    for (auto var : scope->vars) {
+void SemanticPass::UnwindStack(Stmts* stmts) {
+  Stmts* topScope = currentMethod_ ? currentMethod_->stmts : nullptr;
+  auto stack = symbols_.Get();
+  for (auto it = stack.rbegin(); it != stack.rend() && *it != topScope; ++it) {
+    for (auto var : (*it)->GetVars()) {
       if (var->type->NeedsDestruction()) {
         stmts->Append(Make<DestroyStmt>(Make<VarExpr>(var.get())));
       }
@@ -1019,16 +1025,14 @@ void SemanticPass::UnwindStack(Scope* scope, Stmts* stmts) {
 Result SemanticPass::Visit(ReturnStatement* stmt) {
   if (auto returnValue = Resolve(stmt->GetExpr())) {
     auto type = returnValue->GetType(types_);
-    auto scope = symbols_->PeekScope();
-    while (scope && !scope->method) { scope = scope->parent; }
-    auto returnType = scope ? scope->method->returnType : types_->GetVoid();
+    auto returnType = currentMethod_ ? currentMethod_->returnType : types_->GetVoid();
     if (!type->CanWidenTo(returnType)) {
       Error("cannot return a value of type %s from a function of type %s", type->ToString().c_str(),
       returnType->ToString().c_str());
     }
   }
   auto stmts = Make<Stmts>();
-  UnwindStack(symbols_->PeekScope(), stmts);
+  UnwindStack(stmts);
   stmts->Append(Make<ReturnStatement>(Resolve(stmt->GetExpr())));
   return stmts;
 }

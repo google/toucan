@@ -16,7 +16,6 @@
 
 #include <api/init_types.h>
 #include <ast/ast.h>
-#include <ast/symbol.h>
 
 using namespace Toucan;
 

@@ -17,8 +17,6 @@
 
 #include <stdarg.h>
 
-#include "ast/symbol.h"
-
 namespace Toucan {
 
 DumpAsSourcePass::DumpAsSourcePass(std::ostream& file, GenBindings* genBindings)

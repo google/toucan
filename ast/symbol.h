@@ -19,44 +19,27 @@
 #include <unordered_map>
 #include <vector>
 
+#include "ast.h"
 #ifndef _AST_TYPE_H
 #include "type.h"
 #endif
 
 namespace Toucan {
 
-typedef std::unordered_map<std::string, Var*>  VarMap;
-typedef std::unordered_map<std::string, Type*> TypeMap;
-
-struct Scope {
-  Scope(Scope* p) : parent(p) {}
-  Scope*     parent;
-  ClassType* classType = nullptr;
-  EnumType*  enumType = nullptr;
-  Method*    method = nullptr;
-  VarVector  vars;
-  VarMap     varMap;
-  TypeMap    types;
-};
-
 class SymbolTable {
  public:
   SymbolTable();
-  Var*             FindVar(const std::string& identifier) const;
+  Expr*            FindID(const std::string& identifier) const;
   Type*            FindType(const std::string& identifier) const;
-  Field*           FindField(const std::string& identifier) const;
-  Var*             FindVarInScope(const std::string& identifier) const;
-  Var*             DefineVar(std::string identifier, Type* type);
-  bool             DefineType(std::string identifier, Type* type);
-  Scope*           PushNewScope();
-  void             PushScope(Scope* scope);
-  Scope*           PopScope();
-  Scope*           PeekScope();
-  void             Dump();
+  void             DefineID(std::string identifier, Expr* expr);
+  void             DefineType(std::string identifier, Type* type);
+  void             PushScope(Stmts* scope);
+  Stmts*           PopScope();
+  Stmts*           PeekScope();
+  const std::vector<Stmts*>& Get() { return stack_; }
 
  private:
-  Scope*                              currentScope_;
-  std::vector<std::unique_ptr<Scope>> scopes_;
+  std::vector<Stmts*>  stack_;
 };
 
 };  // namespace Toucan

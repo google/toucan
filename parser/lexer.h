@@ -23,6 +23,7 @@ extern void        PopFile();
 namespace Toucan {
 class Arg;
 class ArgList;
+class Decls;
 class Expr;
 class Stmt;
 class UnresolvedInitializer;

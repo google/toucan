@@ -19,7 +19,6 @@
 #include <api/init_types.h>
 #include <api/api_android.h>
 #include <ast/ast.h>
-#include <ast/symbol.h>
 
 using namespace Toucan;
 

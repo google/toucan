@@ -33,7 +33,6 @@ class Expr;
 class TypeTable;
 class ClassType;
 class ListType;
-struct Scope;
 
 enum class MemoryLayout { Default = 0, Storage = 1, Uniform = 2 };
 
@@ -109,6 +108,7 @@ class Type {
 };
 
 using TypeList = std::vector<Type*>;
+using TypeMap = std::unordered_map<std::string, Type*>;
 
 class ArrayLikeType : public Type {
  public:
@@ -404,8 +404,6 @@ class ClassType : public Type {
   bool                CanInitFrom(const ListType* type) const override;
   bool                IsUnsizedClass() const override;
   void                SetParent(ClassType* parent);
-  void                SetScope(Scope* scope) { scope_ = scope; }
-  Scope*              GetScope() const { return scope_; }
   void                SetTemplate(ClassTemplate* t) { template_ = t; }
   void        SetTemplateArgs(const TypeList& templateArgs) { templateArgs_ = templateArgs; }
   std::string GetName() const { return name_; }
@@ -415,6 +413,7 @@ class ClassType : public Type {
   ClassType*  GetParent() const { return parent_; }
   Method*                     GetDestructor() { return destructor_; }
   Type*                       FindType(const std::string& id);
+  void                        DefineType(std::string id, Type* type) { types_[id] = type; }
   void                        SetMemoryLayout(MemoryLayout memoryLayout, TypeTable* types);
   void                        SetMemoryLayout(MemoryLayout memoryLayout) { memoryLayout_ = memoryLayout; }
   MemoryLayout                GetMemoryLayout() const { return memoryLayout_; }
@@ -422,13 +421,14 @@ class ClassType : public Type {
   bool                        IsFullySpecified() const override;
   bool                        NeedsDestruction() const override;
   bool                        ContainsRawPtr() const override;
+  const TypeMap&              GetTypes() { return types_; }
 
  private:
   std::string          name_;
-  Scope*               scope_ = nullptr;
   ClassType*           parent_ = nullptr;
   FieldVector          fields_;
   MethodVector         methods_;
+  TypeMap              types_;
   EnumVector           enums_;
   ClassTemplate*       template_ = nullptr;
   TypeList             templateArgs_;

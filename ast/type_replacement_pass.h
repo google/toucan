@@ -26,7 +26,6 @@ class SymbolTable;
 class TypeReplacementPass : public CopyVisitor {
  public:
   TypeReplacementPass(NodeVector*     nodes,
-                      SymbolTable*    symbols,
                       TypeTable*      types,
                       const TypeList& srcTypes,
                       const TypeList& dstTypes,
@@ -42,7 +41,6 @@ class TypeReplacementPass : public CopyVisitor {
 
  private:
   Type*        PushQualifiers(Type* type, int qualifiers);
-  SymbolTable* symbols_;
   TypeTable*   types_;
   TypeList     srcTypes_;
   TypeList     dstTypes_;

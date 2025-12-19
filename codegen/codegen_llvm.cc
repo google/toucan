@@ -31,7 +31,6 @@
 #endif
 
 #include <ast/constant_folder.h>
-#include <ast/symbol.h>
 #include "codegen_spirv.h"
 
 namespace Toucan {

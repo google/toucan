@@ -26,11 +26,11 @@
 namespace Toucan {
 
 struct Var;
-struct Scope;
 
 class Visitor;
 
 using Result = std::variant<void*, uint32_t>;
+using ExprMap = std::unordered_map<std::string, Expr*>;
 
 class ASTNode {
  public:
@@ -546,17 +546,22 @@ class Stmts : public Stmt {
   Stmts();
   Result                    Accept(Visitor* visitor) override;
   void                      Append(Stmt* stmt) { stmts_.push_back(stmt); }
+  void                      Append(const std::vector<Stmt*>& stmts);
   void                      Prepend(Stmt* stmt) { stmts_.insert(stmts_.begin(), stmt); }
-  Scope*                    GetScope() { return scope_; }
-  void                      SetScope(Scope* scope) { scope_ = scope; }
   const std::vector<Stmt*>& GetStmts() { return stmts_; }
+  void                      DefineID(std::string id, Expr* expr) { ids_[id] = expr; }
+  Expr*                     FindID(const std::string& id);
+  void                      DefineType(std::string id, Type* type) { types_[id] = type; }
+  Type*                     FindType(const std::string& id);
+  const TypeMap&            GetTypes() const { return types_; }
   void                      AppendVar(std::shared_ptr<Var> v);
   const VarVector&          GetVars() const { return vars_; }
   bool                      ContainsReturn() const override;
 
  private:
   std::vector<Stmt*> stmts_;
-  Scope*             scope_;
+  ExprMap            ids_;
+  TypeMap            types_;
   VarVector          vars_;
 };
 
@@ -646,6 +651,25 @@ class ZeroInitStmt : public Stmt {
   Expr* lhs_;
 };
 
+class MethodDecl : public Stmt {
+ public:
+              MethodDecl(int modifiers, std::array<uint32_t, 3> workgroupSize, std::string id,
+                         Stmts* formalArguments, int thisQualifiers, Type* returnType,
+                         Expr* initializer, Stmts* body);
+  Result      Accept(Visitor* visitor) override;
+  Method*     CreateMethod(ClassType* classType, TypeTable* types);
+
+ private:
+  int                     modifiers_;
+  std::string             id_;
+  std::array<uint32_t, 3> workgroupSize_;
+  Stmts*                  formalArguments_;
+  int                     thisQualifiers_;
+  Type*                   returnType_;
+  Stmts*                  body_;
+  Expr*                   initializer_;
+};
+
 class VarDeclaration : public Stmt {
  public:
   VarDeclaration(std::string id, Type* type, Expr* initExpr);
@@ -659,6 +683,17 @@ class VarDeclaration : public Stmt {
   Type*       type_;
   std::string id_;
   Expr*       initExpr_;
+};
+
+class Decls : public Stmt {
+ public:
+  Decls();
+  void                      Append(Stmt* stmt) { decls_.push_back(stmt); }
+  Result                    Accept(Visitor* visitor) override;
+  const std::vector<Stmt*>& Get() const { return decls_; }
+
+ private:
+  std::vector<Stmt*> decls_;
 };
 
 class IfStatement : public Stmt {
@@ -745,12 +780,12 @@ class UnresolvedNewExpr : public Expr {
 
 class UnresolvedClassDefinition : public Stmt {
  public:
-  UnresolvedClassDefinition(Scope* scope);
+  UnresolvedClassDefinition(ClassType* classType);
   Result Accept(Visitor* visitor) override;
-  Scope* GetScope() { return scope_; }
+  ClassType* GetClass() const { return class_; }
 
  private:
-  Scope* scope_;
+  ClassType* class_;
 };
 
 class UnaryOp : public Expr {
@@ -794,6 +829,7 @@ class Visitor {
   virtual Result Visit(EnumConstant* node) { return Default(node); }
   virtual Result Visit(SmartToRawPtr* node) { return Default(node); }
   virtual Result Visit(RawToSmartPtr* node) { return Default(node); }
+  virtual Result Visit(Decls* node) { return Default(node); }
   virtual Result Visit(DoStatement* node) { return Default(node); }
   virtual Result Visit(DoubleConstant* node) { return Default(node); }
   virtual Result Visit(ExprList* node) { return Default(node); }
@@ -810,6 +846,7 @@ class Visitor {
   virtual Result Visit(IntConstant* node) { return Default(node); }
   virtual Result Visit(UIntConstant* node) { return Default(node); }
   virtual Result Visit(LengthExpr* node) { return Default(node); }
+  virtual Result Visit(MethodDecl* node) { return Default(node); }
   virtual Result Visit(NullConstant* node) { return Default(node); }
   virtual Result Visit(ReturnStatement* node) { return Default(node); }
   virtual Result Visit(MethodCall* node) { return Default(node); }

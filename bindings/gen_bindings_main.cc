@@ -22,7 +22,6 @@
 #include <fstream>
 
 #include <ast/semantic_pass.h>
-#include <ast/symbol.h>
 #include <parser/parser.h>
 #include "gen_bindings.h"
 
@@ -59,15 +58,12 @@ int main(int argc, char** argv) {
     yyin = stdin;
   }
 
-  SymbolTable symbols;
   TypeTable   types;
-  symbols.PushNewScope();
   NodeVector nodes;
-  Stmts*     rootStmts;
-  int        syntaxErrors = ParseProgram(filename, &symbols, &types, &nodes, {}, &rootStmts);
+  Stmts*     rootStmts = nodes.Make<Stmts>();
+  int        syntaxErrors = ParseProgram(filename, &nodes, &types, {}, rootStmts);
   if (syntaxErrors > 0) { exit(1); }
-  rootStmts->SetScope(symbols.PopScope());
-  SemanticPass semanticPass(&nodes, &symbols, &types);
+  SemanticPass semanticPass(&nodes, &types);
   Stmts*       semanticStmts = semanticPass.Run(rootStmts);
   if (semanticPass.GetNumErrors() > 0) { exit(2); }
 

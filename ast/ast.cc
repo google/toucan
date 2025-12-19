@@ -158,8 +158,39 @@ Type* UnresolvedListExpr::GetType(TypeTable* types) {
   return types->GetList(std::move(vars));
 }
 
+MethodDecl::MethodDecl(int modifiers, std::array<uint32_t, 3> workgroupSize, std::string id, Stmts* formalArguments, int thisQualifiers, Type* returnType, Expr* initializer, Stmts* body)
+    : modifiers_(modifiers),
+      id_(id),
+      workgroupSize_(workgroupSize),
+      formalArguments_(formalArguments),
+      thisQualifiers_(thisQualifiers),
+      returnType_(returnType),
+      initializer_(initializer),
+      body_(body) {}
+
+Method* MethodDecl::CreateMethod(ClassType* classType, TypeTable* types) {
+  Method* method = new Method(modifiers_, returnType_, id_, classType);
+  method->stmts = body_;
+  method->initializer = initializer_;
+  method->workgroupSize = workgroupSize_;
+  if (!(modifiers_ & Method::Modifier::Static)) {
+    Type* thisType = types->GetQualifiedType(classType, thisQualifiers_);
+    thisType = types->GetRawPtrType(thisType);
+    method->AddFormalArg("this", thisType, nullptr);
+  }
+  if (formalArguments_) {
+    for (auto& it : formalArguments_->GetStmts()) {
+      VarDeclaration* v = static_cast<VarDeclaration*>(it);
+      method->AddFormalArg(v->GetID(), v->GetType(), v->GetInitExpr());
+    }
+  }
+  return method;
+}
+
 VarDeclaration::VarDeclaration(std::string id, Type* type, Expr* initExpr)
     : id_(id), type_(type), initExpr_(initExpr) {}
+
+Decls::Decls() {}
 
 ArrayAccess::ArrayAccess(Expr* expr, Expr* index) : expr_(expr), index_(index) {}
 
@@ -286,7 +317,23 @@ NullConstant::NullConstant() {}
 
 Type* NullConstant::GetType(TypeTable* types) { return types->GetStrongPtrType(types->GetVoid()); }
 
-Stmts::Stmts() : scope_(nullptr) {}
+Stmts::Stmts() {}
+
+void Stmts::Append(const std::vector<Stmt*>& stmts) {
+  stmts_.insert(stmts_.end(), stmts.begin(), stmts.end());
+}
+
+Expr* Stmts::FindID(const std::string& identifier) {
+  auto i = ids_.find(identifier);
+  if (i != ids_.end()) { return i->second; }
+  return nullptr;
+}
+
+Type* Stmts::FindType(const std::string& identifier) {
+  auto i = types_.find(identifier);
+  if (i != types_.end()) { return i->second; }
+  return nullptr;
+}
 
 void Stmts::AppendVar(std::shared_ptr<Var> var) { vars_.push_back(var); }
 
@@ -327,7 +374,7 @@ UnresolvedNewExpr::UnresolvedNewExpr(Type* type, Expr* length, ArgList* arglist,
 
 Type* UnresolvedNewExpr::GetType(TypeTable* types) { return types->GetStrongPtrType(type_); }
 
-UnresolvedClassDefinition::UnresolvedClassDefinition(Scope* scope) : scope_(scope) {}
+UnresolvedClassDefinition::UnresolvedClassDefinition(ClassType* classType) : class_(classType) {}
 
 NodeVector::NodeVector() {}
 
@@ -357,6 +404,7 @@ Result Initializer::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result InsertElementExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result IntConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result LengthExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result MethodDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result NullConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ReturnStatement::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result MethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }
@@ -376,6 +424,7 @@ Result UnresolvedNewExpr::Accept(Visitor* visitor) { return visitor->Visit(this)
 Result UnresolvedStaticDot::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedStaticMethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result VarDeclaration::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result Decls::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result VarExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result LoadExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result IncDecExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }

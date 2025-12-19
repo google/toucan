@@ -30,9 +30,5 @@
   - or maybe just a vector of std::string?
 - finish destructors
 - implement narrowing class casts
-- use shared_ptr in scope->method?  (just in case the parser blows up before
-  the method parse completes)
-- clean up scope stuff:
-  - make scopes optional, and remove all strings from AST?
 - Var's outside of VarVectors and stmts probably leaking (e.g., classes, methods)
 - better error message for failed method match

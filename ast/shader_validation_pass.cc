@@ -20,8 +20,6 @@
 
 #include <filesystem>
 
-#include "symbol.h"
-
 namespace Toucan {
 
 ShaderValidationPass::ShaderValidationPass() {}

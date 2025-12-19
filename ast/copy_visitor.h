@@ -31,6 +31,7 @@ class CopyVisitor : public Visitor {
   Result        Visit(CastExpr* expr) override;
   Result        Visit(Data* node) override;
   Result        Visit(UnresolvedClassDefinition* defn) override;
+  Result        Visit(Decls* decls) override;
   Result        Visit(DoStatement* stmt) override;
   Result        Visit(DoubleConstant* constant) override;
   Result        Visit(EnumConstant* node) override;

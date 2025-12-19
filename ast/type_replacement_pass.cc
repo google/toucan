@@ -18,18 +18,14 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "symbol.h"
-
 namespace Toucan {
 
 TypeReplacementPass::TypeReplacementPass(NodeVector*     nodes,
-                                         SymbolTable*    symbols,
                                          TypeTable*      types,
                                          const TypeList& srcTypes,
                                          const TypeList& dstTypes,
                                          std::queue<ClassType*>* instanceQueue)
     : CopyVisitor(nodes),
-      symbols_(symbols),
       types_(types),
       srcTypes_(srcTypes),
       dstTypes_(dstTypes),
@@ -45,7 +41,6 @@ Method* TypeReplacementPass::ResolveMethod(Method* m) {
   }
   if (m->stmts) {
     result->stmts = Resolve(m->stmts);
-    if (result->stmts->GetScope()) { result->stmts->GetScope()->method = result; }
   }
   if (m->initializer) result->initializer = Resolve(m->initializer);
   return result;
@@ -54,13 +49,11 @@ Method* TypeReplacementPass::ResolveMethod(Method* m) {
 void TypeReplacementPass::ResolveClassInstance(ClassTemplate* classTemplate, ClassType* instance) {
   srcTypes_.push_back(classTemplate);
   dstTypes_.push_back(instance);
-  instance->SetScope(symbols_->PushNewScope());
-  instance->GetScope()->classType = instance;
   if (auto parent = classTemplate->GetParent()) {
     instance->SetParent(static_cast<ClassType*>(ResolveType(parent)));
   }
-  for (const auto& i : classTemplate->GetScope()->types) {
-    instance->GetScope()->types[i.first] = ResolveType(i.second);
+  for (const auto& i : classTemplate->GetTypes()) {
+    instance->DefineType(i.first, ResolveType(i.second));
   }
   for (const auto& i : classTemplate->GetMethods()) {
     Method* method = i.get();
@@ -70,7 +63,6 @@ void TypeReplacementPass::ResolveClassInstance(ClassTemplate* classTemplate, Cla
     Field* field = i.get();
     instance->AddField(field->name, ResolveType(field->type), Resolve(field->defaultValue));
   }
-  symbols_->PopScope();
 }
 
 Type* TypeReplacementPass::PushQualifiers(Type* type, int qualifiers) {
@@ -135,8 +127,7 @@ Type* TypeReplacementPass::ResolveType(Type* type) {
       } else {
         newType = static_cast<ClassType*>(newType)->FindType(ust->GetID());
         if (!newType) {
-          Error("Type \"%s\" not found in \"%s\"", ust->GetID().c_str(),
-                newType->ToString().c_str());
+          Error("Type \"%s\" not found", ust->GetID().c_str());
         }
       }
     } else {
@@ -159,13 +150,11 @@ TypeList* TypeReplacementPass::ResolveTypes(TypeList* typeList) {
 Result TypeReplacementPass::Visit(Stmts* stmts) {
   Stmts* newStmts = Make<Stmts>();
   newStmts->SetFileLocation(stmts->GetFileLocation());
-  if (stmts->GetScope()) { newStmts->SetScope(symbols_->PushNewScope()); }
 
   for (Stmt* const& it : stmts->GetStmts()) {
     Stmt* stmt = Resolve(it);
     if (stmt) newStmts->Append(stmt);
   }
-  if (stmts->GetScope()) { symbols_->PopScope(); }
   return newStmts;
 }
 

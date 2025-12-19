@@ -117,8 +117,8 @@ error-duplicate-enum.t:4: type is already declared as non-enum
 test/error-expectation-failed.t
 test/error-expectation-failed.t:4: expectation failed
 test/error-field-access-from-static-method.t
-error-field-access-from-static-method.t:3:  attempt to access non-static field in static method
-error-field-access-from-static-method.t:3:  attempt to access non-static field in static method
+error-field-access-from-static-method.t:3:  unknown symbol "this"
+error-field-access-from-static-method.t:3:  unknown symbol "this"
 test/error-forward-var.t
 error-forward-var.t:1:  unknown symbol "a"
 test/error-hex-literal-too-large.t
@@ -348,6 +348,7 @@ test/hello-split.t
 Hello, world.
 test/hello.t
 Hello, world.
+test/if-stmt-var-decl.t
 test/if-stmt.t
 test/image.t
 test/implicit-return.t

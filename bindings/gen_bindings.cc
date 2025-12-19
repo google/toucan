@@ -17,8 +17,6 @@
 #include <cassert>
 #include <iostream>
 
-#include <ast/symbol.h>
-
 namespace Toucan {
 
 namespace {
@@ -182,7 +180,7 @@ int GenBindings::EmitType(Type* type) {
       file_ << "  type" << id << "->Append(\"" << v.id << "\", " << v.value << ");\n";
     }
     if (emitSymbolsAndStatements_) {
-      file_ << "  symbols->DefineType(\"" << enumType->GetName() << "\", type" << id << ");\n";
+      file_ << "  rootStmts->DefineType(\"" << enumType->GetName() << "\", type" << id << ");\n";
     }
   } else if (type->IsPtr()) {
     PtrType* ptrType = static_cast<PtrType*>(type);
@@ -234,12 +232,11 @@ void GenBindings::Run(const TypeVector& referencedTypes) {
   file_ << "#include <cstdint>\n";
   file_ << "#include <ast/ast.h>\n";
   file_ << "#include <ast/native_class.h>\n";
-  file_ << "#include <ast/symbol.h>\n";
   file_ << "#include <ast/type.h>\n";
   file_ << "\n";
   file_ << "namespace Toucan {\n\n";
   if (emitSymbolsAndStatements_) {
-    file_ << "void InitAPI(SymbolTable* symbols, TypeTable* types, NodeVector* nodes) {\n";
+    file_ << "void InitAPI(NodeVector* nodes, TypeTable* types, Stmts* rootStmts) {\n";
   } else {
     file_ << "Type** InitTypes(TypeTable* types) {\n";
   }
@@ -249,7 +246,6 @@ void GenBindings::Run(const TypeVector& referencedTypes) {
     return;
   }
   file_ << "  ClassType* c;\n";
-  file_ << "  Scope* scope;\n";
   file_ << "  Method *m;\n";
   file_ << "\n";
   if (header_) {
@@ -444,12 +440,6 @@ void GenBindings::EmitClass(ClassType* classType) {
   }
   file_ << "  c->SetMemoryLayout(MemoryLayout::" <<
     MemoryLayoutToString(classType->GetMemoryLayout()) << ");\n";
-    if (emitSymbolsAndStatements_) {
-      file_ << "  scope = symbols->PushNewScope();\n"
-            << "  symbols->PopScope();\n"
-            << "  scope->classType = c;\n"
-            << "  c->SetScope(scope);\n";
-    }
   if (ClassType* parent = classType->GetParent()) {
     int parentID = EmitType(classType->GetParent());
     file_ << "  c->SetParent(type" << parentID << ");\n";
@@ -471,22 +461,20 @@ void GenBindings::EmitClass(ClassType* classType) {
   for (const auto& method : classType->GetMethods()) {
     EmitMethod(method.get());
   }
-  if (classType->GetScope()) {
-    for (const auto& pair : classType->GetScope()->types) {
+  if (emitSymbolsAndStatements_) {
+    for (const auto& pair : classType->GetTypes()) {
       int typeID = EmitType(pair.second);
-      if (emitSymbolsAndStatements_) {
-        file_ << "  scope->types[\"" << pair.first << "\"] = ";
-        if (typeID >= 0) {
-          file_ << "type" << typeID;
-        } else {
-          file_ << "nullptr";
-        }
-        file_ << ";\n";
+      file_ << "  c->DefineType(\"" << pair.first << "\", ";
+      if (typeID >= 0) {
+        file_ << "type" << typeID;
+      } else {
+        file_ << "nullptr";
       }
+      file_ << ");\n";
     }
   }
   if (emitSymbolsAndStatements_ && !classType->GetTemplate()) {
-    file_ << "  symbols->DefineType(\"" << classType->GetName() << "\", c);\n";
+    file_ << "  rootStmts->DefineType(\"" << classType->GetName() << "\", c);\n";
   }
 }
 

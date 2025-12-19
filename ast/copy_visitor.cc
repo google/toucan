@@ -89,9 +89,8 @@ Result CopyVisitor::Visit(NullConstant* node) { return Make<NullConstant>(); }
 
 Result CopyVisitor::Visit(Stmts* stmts) {
   auto* newStmts = Make<Stmts>();
-  for (Stmt* const& it : stmts->GetStmts()) {
-    Stmt* stmt = Resolve(it);
-    if (stmt) newStmts->Append(Resolve(stmt));
+  for (auto stmt : stmts->GetStmts()) {
+    if ((stmt = Resolve(stmt))) newStmts->Append(stmt);
   }
   for (auto var : stmts->GetVars()) {
     newStmts->AppendVar(var);
@@ -143,6 +142,14 @@ Result CopyVisitor::Visit(VarDeclaration* decl) {
   Expr* initExpr = Resolve(decl->GetInitExpr());
 
   return Make<VarDeclaration>(decl->GetID(), type, initExpr);
+}
+
+Result CopyVisitor::Visit(Decls* decls) {
+  auto* newDecls = Make<Decls>();
+  for (auto decl : decls->Get()) {
+    if ((decl = Resolve(decl))) newDecls->Append(decl);
+  }
+  return newDecls;
 }
 
 Result CopyVisitor::Visit(LoadExpr* node) {
@@ -257,7 +264,7 @@ Result CopyVisitor::Visit(MethodCall* node) {
 }
 
 Result CopyVisitor::Visit(UnresolvedClassDefinition* defn) {
-  return Make<UnresolvedClassDefinition>(defn->GetScope());
+  return Make<UnresolvedClassDefinition>(defn->GetClass());
 }
 
 Result CopyVisitor::Visit(UnresolvedDot* node) {
