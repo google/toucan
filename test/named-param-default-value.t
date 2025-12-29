@@ -2,7 +2,7 @@ include "include/test.t"
 
 class Bar {
   static Foo(i : int = -5, f : float) : float {
-    return f - (float) i;
+    return f - i as float;
   }
 }
 

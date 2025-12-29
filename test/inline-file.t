@@ -1,4 +1,4 @@
 include "include/test.t"
 
 var t : ^[]ubyte = inline("test/foo.txt");
-Test.Expect((int) t[0] == 97);
+Test.Expect(t[0] as int == 97);

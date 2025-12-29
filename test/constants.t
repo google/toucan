@@ -10,16 +10,16 @@ const c3 = 84.0d;
 Test.Assert(c3 == 84.0d);
 
 const c4 = 42b;
-Test.Assert((int) c4 == 42);
+Test.Assert(c4 as int == 42);
 
 const c5 = 42ub;
-Test.Assert((uint) c5 == 42u);
+Test.Assert(c5 as uint == 42u);
 
 const c6 = 42s;
-Test.Assert((int) c6 == 42);
+Test.Assert(c6 as int == 42);
 
 const c7 = 42us;
-Test.Assert((uint) c7 == 42u);
+Test.Assert(c7 as uint == 42u);
 
 const c8 = false;
 Test.Assert(c8 == false);

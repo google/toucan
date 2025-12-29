@@ -162,8 +162,8 @@ for (var i = 0; i < bodies.length; ++i) {
   var x = i % width;
   var y = i % (width * height) / width;
   var z = i / (width * height);
-  var pos = float<2>((float) (x - width / 2) + 0.5,
-                     (float) (y - height / 2) + 0.5);
+  var pos = float<2>((x - width / 2) as float + 0.5,
+                     (y - height / 2) as float + 0.5);
   bodies[i].position = pos;
   bodies[i].mass = Math.rand() * 2.5 + 1.25;
   bodies[i].velocity = Vector(0.0);
@@ -245,7 +245,7 @@ var springUBO = new uniform Buffer<DrawUniforms>(device);
 var springBindings : DrawBindings;
 springBindings.uniforms = springUBO;
 var springBG = new BindGroup<DrawBindings>(device, &springBindings);
-var handler = EventHandler{ distance = 0.5 * (float) width };
+var handler = EventHandler{ distance = 0.5 * width as float};
 var computeUniforms : ComputeUniforms;
 var projection = Transform.projection(1.0, 100.0, -1.0, 1.0, -1.0, 1.0);
 computeUniforms.deltaT = 8.0 / frequency;
@@ -268,7 +268,7 @@ while(System.IsRunning()) {
   var encoder = new CommandEncoder(device);
   var computePass = new ComputePass<ComputeBase>(encoder, {bindings = computeBindGroup});
 
-  var totalSteps = (int) ((System.GetCurrentTime() - startTime) * frequency);
+  var totalSteps = ((System.GetCurrentTime() - startTime) * frequency) as int;
   for (var i = 0; stepsDone < totalSteps && i < maxStepsPerFrame; i++) {
     var computeForcesPass = new ComputePass<ComputeForces>(computePass);
     computeForcesPass.SetPipeline(computeForces);

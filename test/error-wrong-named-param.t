@@ -1,6 +1,6 @@
 class Bar {
   static Foo(i : int, f : float) : float {
-    return f - (float) i;
+    return f - i as float;
   }
 }
 

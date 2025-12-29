@@ -1,6 +1,6 @@
 include "include/test.t"
 
 var a = ushort<2>(5us, 65535us);
-Test.Expect((uint) a.x == 5);
-Test.Expect((uint) a.y == 65535);
-Test.Expect((int) a.y == -1);
+Test.Expect(a.x as uint == 5);
+Test.Expect(a.y as uint == 65535);
+Test.Expect(a.y as int == -1);

@@ -35,7 +35,8 @@ class LightUpdate {
       return;
     }
 
-    lights[i].position.y = lights[i].position.y - 0.5 - 0.003 * ((float)(i) - 64.0 * Math.floor((float)(i) / 64.0));
+    var f = i as float;
+    lights[i].position.y = lights[i].position.y - 0.5 - 0.003 * (f - 64.0 * Math.floor(f / 64.0));
 
     if (lights[i].position.y < lightExtent.min.y) {
       lights[i].position.y = lightExtent.max.y;
@@ -132,19 +133,19 @@ class GBuffersDebugView : TextureQuadPass {
     var gBufferAlbedo = textureBindings.Get().gBufferAlbedo;
     var result : float<4>;
     var windowSize = windowSizeBindings.Get().size.MapRead():;
-    var c = fb.fragCoord.xy / (float<2>) windowSize;
+    var c = fb.fragCoord.xy / windowSize as float<2>;
     if (c.x < 0.33333) {
-      var rawDepth = gBufferDepth.Load((uint<2>) Math.floor(fb.fragCoord.xy), 0).x;
+      var rawDepth = gBufferDepth.Load(Math.floor(fb.fragCoord.xy) as uint<2>, 0).x;
       // Remap depth into something a bit more visible.
       var depth = (1.0 - rawDepth) * 50.0;
       result = float<4>(depth);
     } else if (c.x < 0.66667) {
-      result = gBufferNormal.Load((uint<2>) Math.floor(fb.fragCoord.xy), 0);
+      result = gBufferNormal.Load(Math.floor(fb.fragCoord.xy) as uint<2>, 0);
       result.x = (result.x + 1.0) * 0.5;
       result.y = (result.y + 1.0) * 0.5;
       result.z = (result.z + 1.0) * 0.5;
     } else {
-      result = gBufferAlbedo.Load((uint<2>) Math.floor(fb.fragCoord.xy), 0);
+      result = gBufferAlbedo.Load(Math.floor(fb.fragCoord.xy) as uint<2>, 0);
     }
     fragColor.Set(result);
   }
@@ -176,7 +177,7 @@ class DeferredRender : TextureQuadPass {
     var textures = textureBindings.Get();
     var result : float<3>;
 
-    var depth = textures.gBufferDepth.Load((uint<2>) Math.floor(fb.fragCoord.xy), 0).x;
+    var depth = textures.gBufferDepth.Load(Math.floor(fb.fragCoord.xy) as uint<2>, 0).x;
 
     // Don't light the sky.
     if (depth >= 1.0) {
@@ -184,10 +185,10 @@ class DeferredRender : TextureQuadPass {
     }
 
     var bufferSize = textures.gBufferDepth.GetSize();
-    var coordUV = fb.fragCoord.xy / (float<2>) bufferSize;
+    var coordUV = fb.fragCoord.xy / bufferSize as float<2>;
     var position = this.worldFromScreenCoord(camera, coordUV, depth);
-    var normal = textures.gBufferNormal.Load((uint<2>) Math.floor(fb.fragCoord.xy), 0).xyz;
-    var albedo = textures.gBufferAlbedo.Load((uint<2>) Math.floor(fb.fragCoord.xy), 0).xyz;
+    var normal = textures.gBufferNormal.Load(Math.floor(fb.fragCoord.xy) as uint<2>, 0).xyz;
+    var albedo = textures.gBufferAlbedo.Load(Math.floor(fb.fragCoord.xy) as uint<2>, 0).xyz;
 
     for (var i = 0; i < config.numLights; i++) {
       var L = lights[i].position.xyz - position;
@@ -217,7 +218,7 @@ var window = new Window(System.GetScreenSize());
 
 var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 var windowSize = window.GetSize();
-var aspect = (float) windowSize.x / (float) windowSize.y;
+var aspect = windowSize.x as float / windowSize.y as float;
 
 var mesh = new Mesh<Vertex, ushort>(&dragonVertices, &dragonTriangles, Math.pi);
 TexCoordUtils<Vertex>.ComputeProjectedPlaneUVs(mesh.vertices, ProjectedPlane.XY);
@@ -346,7 +347,7 @@ modelUniformBuffer.SetData({modelMatrix, invertTransposeModelMatrix});
 var startTime = System.GetCurrentTime();
 while (System.IsRunning()) {
   // Rotate the camera around the origin based on time.
-  var rad = Math.pi * (float) ((System.GetCurrentTime() - startTime) / 5.0d);
+  var rad = Math.pi * ((System.GetCurrentTime() - startTime) / 5.0d) as float;
   var rotation = Transform.translation(origin) * Transform.rotation({0.0, 1.0, 0.0}, rad);
   var rp4 = rotation * float<4>{@eyePosition, 1.0};
   rp4 /= rp4.w;

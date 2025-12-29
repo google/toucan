@@ -145,7 +145,7 @@ Type* FindType(const char* str) {
 %token <f> T_FLOAT_LITERAL
 %token <d> T_DOUBLE_LITERAL
 %token T_TRUE T_FALSE T_NULL T_IF T_ELSE T_FOR T_WHILE T_DO T_RETURN T_NEW
-%token T_CLASS T_ENUM T_VAR T_CONST
+%token T_CLASS T_ENUM T_VAR T_CONST T_AS
 %token T_READONLY T_WRITEONLY T_COHERENT T_DEVICEONLY T_HOSTREADABLE T_HOSTWRITEABLE
 %token T_INT T_UINT T_FLOAT T_DOUBLE T_BOOL T_BYTE T_UBYTE T_SHORT T_USHORT
 %token T_HALF
@@ -162,9 +162,10 @@ Type* FindType(const char* str) {
 %left T_LT T_LE T_GE T_GT
 %left '+' '-'
 %left '*' '/' '%'
+%left T_AS
 %right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS T_DOTDOT ':' '@'
 %left '.' '[' ']' '(' ')' '{' '}'
-%expect 2   /* we expect 2 shift/reduce: dangling-else, new A<B */
+%expect 2   /* we expect 2 shift/reduce: dangling-else, A<B */
 %%
 program:
     statements                              { rootStmts_->Append($1->GetStmts()); }
@@ -487,7 +488,7 @@ expr:
   | assignable T_PLUSPLUS                   { $$ = IncDec(IncDecExpr::Op::Inc, false, $1); }
   | assignable T_MINUSMINUS                 { $$ = IncDec(IncDecExpr::Op::Dec, false, $1); }
   | '(' expr ')'                            { $$ = $2; }
-  | '(' type ')' expr %prec UNARYMINUS      { $$ = Make<CastExpr>($2, $4); }
+  | expr T_AS type                          { $$ = Make<CastExpr>($3, $1); }
   | T_INT_LITERAL                           { $$ = Make<IntConstant>($1, 32); }
   | T_UINT_LITERAL                          { $$ = Make<UIntConstant>($1, 32); }
   | T_BYTE_LITERAL                          { $$ = Make<IntConstant>($1, 8); }

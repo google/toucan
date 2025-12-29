@@ -55,7 +55,7 @@ class Mesh<VertexType, IndexType> {
         v.position = positions[triangles[i][j]];
         v.normal = Math.normalize(normals[i][j]);
         vertices[dstIndex] = v;
-        indices[dstIndex] = (IndexType) dstIndex;
+        indices[dstIndex] = dstIndex as IndexType;
         dstIndex++;
       }
     }

@@ -15,7 +15,7 @@ class Pipeline {
     }
     fragment main(fb : &FragmentBuiltins, texCoord : float<2>) {
       var b = bindings.Get();
-      var coord = int<2>((int) (texCoord.x * 2.0), (int) (texCoord.y * 2.0));
+      var coord = (texCoord * 2.0) as int<2>;
       fragColor.Set(b.textureView.Load(coord, 1, 0));
     }
     var vertices : *VertexInput<Vertex>;

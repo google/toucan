@@ -1,3 +1,3 @@
 var sp = new int();
-var wp = (^int) sp;
-var newSP = (*int) wp;
+var wp = sp as ^int;
+var newSP = wp as *int;

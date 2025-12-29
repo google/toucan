@@ -2,7 +2,7 @@ include "include/test.t"
 
 class Base<T> {
   Foo() : T {
-    return (T) 42;
+    return 42 as T;
   }
 }
 

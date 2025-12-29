@@ -65,7 +65,7 @@ class BicubicTessellator {
   }
   Tessellate(controlPoints : &[]float<3>, controlIndices : &[]uint) {
     var vi = 0, ii = 0;
-    var scale = 1.0 / (float) level;
+    var scale = 1.0 / level as float;
     for (var k = 0; k < controlIndices.length; k += 16) {
       var patch : BicubicPatch;
       for (var i = 0; i < 4; ++i) {
@@ -79,9 +79,9 @@ class BicubicTessellator {
         patch.vCubics[i].FromBezier(pv);
       }
       for (var i = 0; i <= level; ++i) {
-        var v = (float) i * scale;
+        var v = i as float * scale;
         for (var j = 0; j <= level; ++j) {
-          var u = (float) j * scale;
+          var u = j as float * scale;
           vertices[vi++] = patch.Evaluate(u, v);
         }
       }
@@ -225,7 +225,7 @@ var keyTimes : [4]float = { 0.0, 0.5, 1.5, 1.7 };
 var duration = 2.0;
 var animTeapotControlPoints = [teapotControlPoints.length] new float<3>;
 while (System.IsRunning()) {
-  var animTime = (float) ((System.GetCurrentTime() - startTime) % duration);
+  var animTime = ((System.GetCurrentTime() - startTime) % duration) as float;
   var key = keyTimes.length - 1;
   var keyEnd = duration;
   for (var i = 0; i < keyTimes.length - 1; ++i) {
@@ -255,7 +255,7 @@ while (System.IsRunning()) {
   if (Math.any(newSize != prevWindowSize)) {
     swapChain.Resize(newSize);
     depthBuffer = new renderable Texture2D<Depth24Plus>(device, newSize);
-    var aspectRatio = (float) newSize.x / (float) newSize.y;
+    var aspectRatio = newSize.x as float / newSize.y as float;
     uniforms.projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
     prevWindowSize = newSize;
   }

@@ -118,8 +118,8 @@ class BicubicComputePipeline {
     var controlIndices = bindings.Get().controlIndices.Map();
     var vertices = bindings.Get().vertices.Map();
     var uniforms = bindings.Get().uniforms.MapRead();
-    var u = (float) cb.globalInvocationId.x * uniforms.scale;
-    var v = (float) cb.globalInvocationId.y * uniforms.scale;
+    var u = cb.globalInvocationId.x as float * uniforms.scale;
+    var v = cb.globalInvocationId.y as float * uniforms.scale;
     if (u > 1.0 || v > 1.0) {
       return;
     }
@@ -214,7 +214,7 @@ var computeBindings = new BindGroup<ComputeBindings>(device, {
   controlPoints = teapotControlPointsBuffer,
   controlIndices = new storage Buffer<[]uint>(device, &teapotControlIndices),
   vertices = teapotVB,
-  uniforms = new uniform Buffer<ComputeUniforms>(device, { patchWidth = patchWidth, scale = 1.0 / (float) level } )
+  uniforms = new uniform Buffer<ComputeUniforms>(device, { patchWidth = patchWidth, scale = 1.0 / level as float } )
 });
 
 var teapotData = ReflectionPipeline{
@@ -240,7 +240,7 @@ var keyTimes : [4]float = { 0.0, 0.5, 1.5, 1.7 };
 var duration = 2.0;
 var animTeapotControlPoints = [teapotControlPoints.length] new float<3>;
 while (System.IsRunning()) {
-  var animTime = (float) ((System.GetCurrentTime() - startTime) % duration);
+  var animTime = ((System.GetCurrentTime() - startTime) % duration) as float;
   var key = keyTimes.length - 1;
   var keyEnd = duration;
   for (var i = 0; i < keyTimes.length - 1; ++i) {
@@ -271,7 +271,7 @@ while (System.IsRunning()) {
   if (Math.any(newSize != prevWindowSize)) {
     swapChain.Resize(newSize);
     depthBuffer = new renderable Texture2D<Depth24Plus>(device, newSize);
-    var aspectRatio = (float) newSize.x / (float) newSize.y;
+    var aspectRatio = newSize.x as float / newSize.y as float;
     uniforms.projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
     prevWindowSize = newSize;
   }

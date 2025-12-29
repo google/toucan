@@ -1,7 +1,7 @@
 include "include/test.t"
 class C<T> {
   static Foo(a = 3) : T {
-    return (T) a;
+    return a as T;
   }
 }
 

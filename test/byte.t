@@ -1,4 +1,4 @@
 include "include/test.t"
 
 var a : byte = -3b;
-Test.Expect((int) a == -3);
+Test.Expect(a as int == -3);

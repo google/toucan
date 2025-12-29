@@ -73,7 +73,7 @@ var cubeBindGroup = new BindGroup<Bindings>(device, &cubeBindings);
 
 var handler = EventHandler{ distance = 10.0 };
 var windowSize = window.GetSize();
-var aspectRatio = (float) windowSize.x / (float) windowSize.y;
+var aspectRatio = windowSize.x as float / windowSize.y as float;
 var projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
 var depthBuffer = new renderable Texture2D<Depth24Plus>(device, window.GetSize());
 while (System.IsRunning()) {

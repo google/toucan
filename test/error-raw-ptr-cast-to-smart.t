@@ -1,3 +1,3 @@
 var r = 42;
-var wp = (^int) &r;
-var sp = (*int) &r;
+var wp = &r as ^int;
+var sp = &r as *int;

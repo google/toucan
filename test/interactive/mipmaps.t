@@ -97,7 +97,7 @@ var bindings : Bindings;
 var vb = new vertex Buffer<[]Vertex>(device, &verts);
 
 var viewMatrix = Transform3.Translation({-1.0, -1.0});
-viewMatrix *= Transform3.Scale(2.0 / (float<2>)window.GetSize());
+viewMatrix *= Transform3.Scale(2.0 / window.GetSize() as float<2>);
 
 var indexBuffer = new index Buffer<[]uint>(device, &indices);
 bindings.sampler = new Sampler(device);
@@ -110,8 +110,8 @@ while (System.IsRunning()) {
   var size = texSize;
   for (var mipLevel = 0; mipLevel < mipCount; ++mipLevel) {
     bindings.texture = texture.CreateSampleableView(baseMipLevel = mipLevel, mipLevelCount = 1);
-    var modelMatrix = Transform3.Translation((float<2>) position);
-    modelMatrix *= Transform3.Scale((float<2>) size);
+    var modelMatrix = Transform3.Translation(position as float<2>);
+    modelMatrix *= Transform3.Scale(size as float<2>);
     bindings.uniforms = new uniform Buffer<Uniforms>(device, { matrix = viewMatrix * modelMatrix });
 
     var renderPass = new RenderPass<Pipeline>(encoder, {

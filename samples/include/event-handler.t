@@ -1,6 +1,6 @@
 class EventHandler {
   Rotate(diff : int<2>) {
-    rotation += (float<2>) diff / 200.0;
+    rotation += diff as float<2> / 200.0;
   }
   Handle(event : &Event) {
     if (event.type == EventType.MouseDown) {
@@ -12,7 +12,7 @@ class EventHandler {
       if (mouseDown || (event.modifiers & EventModifiers.Control) != 0) {
         this.Rotate(diff);
       } else if ((event.modifiers & EventModifiers.Shift) != 0) {
-        distance += (float) diff.y / 100.0;
+        distance += diff.y as float / 100.0;
       }
       prevPosition = event.position;
     } else if (event.type == EventType.TouchStart) {
@@ -22,8 +22,8 @@ class EventHandler {
       } else if (event.numTouches == 1) {
         this.Rotate(event.touches[0] - prevTouches[0]);
       } else if (event.numTouches == 2) {
-        var prevDistance = Math.length((float<2>) (prevTouches[1] - prevTouches[0]));
-        var curDistance = Math.length((float<2>) (event.touches[1] - event.touches[0]));
+        var prevDistance = Math.length((prevTouches[1] - prevTouches[0]) as float<2>);
+        var curDistance = Math.length((event.touches[1] - event.touches[0]) as float<2>);
         distance *= prevDistance / curDistance;
       }
       prevTouches = event.touches;

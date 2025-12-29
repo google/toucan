@@ -8,7 +8,7 @@ class Compute {
   compute(1, 1, 1) main(cb : &ComputeBuiltins) {
     var buffer = bindings.Get().buffer.MapWrite();
     var f = float<2>(42.0, 21.0);
-    buffer[0] = (uint<2>)f;
+    buffer[0] = f as uint<2>;
   }
   var bindings : *BindGroup<ComputeBindings>;
 }

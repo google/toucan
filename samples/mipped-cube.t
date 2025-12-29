@@ -86,7 +86,7 @@ while (System.IsRunning()) {
   if (Math.any(newSize != prevWindowSize)) {
     swapChain.Resize(newSize);
     depthBuffer = new renderable Texture2D<Depth24Plus>(device, newSize);
-    var aspectRatio = (float) newSize.x / (float) newSize.y;
+    var aspectRatio = newSize.x as float / newSize.y as float;
     uniforms.projection = Transform.projection(0.5, 200.0, -aspectRatio, aspectRatio, -1.0, 1.0);
     prevWindowSize = newSize;
   }

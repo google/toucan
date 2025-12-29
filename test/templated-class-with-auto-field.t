@@ -1,8 +1,8 @@
 include "include/test.t"
 
 class C<T> {
-  var s1 = (T) 3;
-  var s2 : T = (T) 3;
+  var s1 = 3 as T;
+  var s2 : T = 3 as T;
   var v1 = T<2>{};
   var v2 : T<2> = T<2>{};
 }

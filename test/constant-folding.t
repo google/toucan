@@ -7,22 +7,22 @@ Test.Expect(int4Array[64].y == 21);
 Test.Expect(int4Array[127].x == 42);
 
 var shortArray : [512]short = { -42s };
-Test.Expect((int) shortArray[0] == -42);
-Test.Expect((int) shortArray[31] == -42);
-Test.Expect((int) shortArray[64] == -42);
-Test.Expect((int) shortArray[127] == -42);
+Test.Expect(shortArray[0] as int == -42);
+Test.Expect(shortArray[31] as int == -42);
+Test.Expect(shortArray[64] as int == -42);
+Test.Expect(shortArray[127] as int == -42);
 
 var ubyteArray : [1024]ubyte = { -42ub };
-Test.Expect((int) ubyteArray[0] == -42);
-Test.Expect((int) ubyteArray[511] == -42);
-Test.Expect((int) ubyteArray[768] == -42);
-Test.Expect((int) ubyteArray[1023] == -42);
+Test.Expect(ubyteArray[0] as int == -42);
+Test.Expect(ubyteArray[511] as int == -42);
+Test.Expect(ubyteArray[768] as int == -42);
+Test.Expect(ubyteArray[1023] as int == -42);
 
 var byteArray : [1024]ubyte = { -42b };
-Test.Expect((int) byteArray[0] == -42);
-Test.Expect((int) byteArray[511] == -42);
-Test.Expect((int) byteArray[768] == -42);
-Test.Expect((int) byteArray[1023] == -42);
+Test.Expect(byteArray[0] as int == -42);
+Test.Expect(byteArray[511] as int == -42);
+Test.Expect(byteArray[768] as int == -42);
+Test.Expect(byteArray[1023] as int == -42);
 
 var boolArray : [1024]bool = { true };
 Test.Expect(boolArray[0] == true);

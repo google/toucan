@@ -25,7 +25,7 @@ var stagingBuffer = new hostwriteable Buffer<Uniforms>(device);
 var pipeline = new RenderPipeline<Pipeline>(device);
 for (var i = 0; i < 300 && System.IsRunning(); ++i) {
   var encoder = new CommandEncoder(device);
-  var f = (float) i / 300.0;
+  var f = i as float / 300.0;
   stagingBuffer.MapWrite().color = float<4>(1.0 - f, f, 0.0, 1.0);
   uniformBuffer.CopyFromBuffer(encoder, stagingBuffer);
   var vi = new VertexInput<Vertex>(vb);
