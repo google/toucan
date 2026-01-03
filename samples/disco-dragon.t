@@ -219,7 +219,7 @@ var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 var windowSize = window.GetSize();
 var aspect = (float) windowSize.x / (float) windowSize.y;
 
-var mesh = new Mesh<Vertex, ushort>(&dragonVertices, &dragonTriangles, 3.1415926535);
+var mesh = new Mesh<Vertex, ushort>(&dragonVertices, &dragonTriangles, Math.pi);
 TexCoordUtils<Vertex>.ComputeProjectedPlaneUVs(mesh.vertices, ProjectedPlane.XY);
 
 var groundPlaneVertices : [4]Vertex = {
@@ -331,8 +331,7 @@ var eyePosition = float<3>(0.0, 50.0, -100.0);
 var upVector = float<3>(0.0, 1.0, 0.0);
 var origin = float<3>(0.0, 0.0, 0.0);
 
-var pi = 3.141592653589;
-var projectionMatrix = Transform.perspective((2.0 * pi) / 5.0, aspect, 1.0, 2000.0);
+var projectionMatrix = Transform.perspective((2.0 * Math.pi) / 5.0, aspect, 1.0, 2000.0);
 
 // Move the model so it's centered.
 var modelMatrix = Transform.translation({0.0, -45.0, 0.0});
@@ -347,7 +346,7 @@ modelUniformBuffer.SetData({modelMatrix, invertTransposeModelMatrix});
 var startTime = System.GetCurrentTime();
 while (System.IsRunning()) {
   // Rotate the camera around the origin based on time.
-  var rad = pi * (float) ((System.GetCurrentTime() - startTime) / 5.0d);
+  var rad = Math.pi * (float) ((System.GetCurrentTime() - startTime) / 5.0d);
   var rotation = Transform.translation(origin) * Transform.rotation({0.0, 1.0, 0.0}, rad);
   var rp4 = rotation * float<4>{@eyePosition, 1.0};
   rp4 /= rp4.w;

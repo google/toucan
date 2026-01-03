@@ -109,6 +109,7 @@ class Type {
 
 using TypeList = std::vector<Type*>;
 using TypeMap = std::unordered_map<std::string, Type*>;
+using ExprMap = std::unordered_map<std::string, Expr*>;
 
 class ArrayLikeType : public Type {
  public:
@@ -387,11 +388,14 @@ class ClassType : public Type {
   ClassType(std::string name);
   Field*              AddField(std::string name, Type* type, Expr* defaultValue);
   Field*              FindField(std::string name) const;
+  void                AddConstant(std::string name, Expr* value);
+  Expr*               FindConstant(const std::string& name);
   void                AddMethod(Method* method);
   size_t              ComputeFieldOffsets();
   void                AddEnum(std::string id, EnumType* enumType);
   const FieldVector&  GetFields() const { return fields_; }          // local fields only
   int                 GetTotalFields() const { return numFields_; }  // includes inherited fields
+  const ExprMap&      GetConstants() const { return constants_; }
   const MethodVector& GetMethods() { return methods_; }
   ClassTemplate*      GetTemplate() const { return template_; }
   const TypeList&     GetTemplateArgs() const { return templateArgs_; }
@@ -429,6 +433,7 @@ class ClassType : public Type {
   FieldVector          fields_;
   MethodVector         methods_;
   TypeMap              types_;
+  ExprMap              constants_;
   EnumVector           enums_;
   ClassTemplate*       template_ = nullptr;
   TypeList             templateArgs_;

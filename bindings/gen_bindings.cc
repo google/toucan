@@ -458,6 +458,12 @@ void GenBindings::EmitClass(ClassType* classType) {
     }
     file_ << ");\n";
   }
+  if (emitSymbolsAndStatements_) {
+    for (const auto& constant : classType->GetConstants()) {
+      int valueId = sourcePass_.Resolve(constant.second);
+      file_ << "  c->AddConstant(\"" << constant.first << "\", " << "node" << valueId << ");\n";
+    }
+  }
   for (const auto& method : classType->GetMethods()) {
     EmitMethod(method.get());
   }

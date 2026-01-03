@@ -279,6 +279,7 @@ class SwapChain<T> {
 
 class Math {
  ~Math();
+  const pi = 3.14159265;
   static all(v : bool<2>)   : bool;
   static all(v : bool<3>)   : bool;
   static all(v : bool<4>)   : bool;

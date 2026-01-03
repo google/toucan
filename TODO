@@ -6,7 +6,6 @@
 - implement parsing of a method call without .
 - finish storage textures
 - refactor tc & tj
-- implement "constant" keyword
 - validate return values in semantic pass
 - implement "using" of a class (for static methods)
 - constify all Visitor arguments and Accept() functions?

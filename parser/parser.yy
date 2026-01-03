@@ -783,6 +783,11 @@ class ClassPopulator : public Visitor {
     return {};
   }
 
+  Result Visit(ConstDecl* decl) override {
+    classType_->AddConstant(decl->GetID(), decl->GetExpr());
+    return {};
+  }
+
   Result Visit(MethodDecl* decl) override {
     classType_->AddMethod(decl->CreateMethod(classType_, types_));
     return {};

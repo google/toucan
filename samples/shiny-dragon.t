@@ -29,7 +29,7 @@ MipmapGenerator<RGBA8unorm>.Generate(device, texture);
 var window = new Window(System.GetScreenSize());
 var swapChain = new SwapChain<PreferredPixelFormat>(device, window);
 
-var dragon = new Mesh<Vertex, uint>(&dragonVertices, &dragonTriangles, 0.5 * 3.1415926);
+var dragon = new Mesh<Vertex, uint>(&dragonVertices, &dragonTriangles, 0.5 * Math.pi);
 
 class Uniforms {
   var model       : float<4,4>;
@@ -123,7 +123,7 @@ var reflectionData = ReflectionPipeline{
 };
 
 var handler = EventHandler{ distance = 10.0 };
-var dragonQuat = Quaternion(float<3>(1.0, 0.0, 0.0), -3.1415926 / 2.0);
+var dragonQuat = Quaternion(float<3>(1.0, 0.0, 0.0), -Math.pi / 2.0);
 dragonQuat.normalize();
 var depthBuffer = new renderable Texture2D<Depth24Plus>(device, window.GetSize());
 var uniforms : Uniforms;

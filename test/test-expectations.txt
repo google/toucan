@@ -59,6 +59,7 @@ test/cast-uint-to-float.t
 test/cast-uint-vector-to-float-vector.t
 test/chained-array-access.t
 test/chained-method-call.t
+test/class-constants.t
 test/class-constructor-calls-constructor.t
 test/class-constructor.t
 test/class-initializer.t

@@ -453,6 +453,10 @@ Field* ClassType::AddField(std::string name, Type* type, Expr* defaultValue) {
   return fields_.back().get();
 }
 
+void ClassType::AddConstant(const std::string id, Expr* expr) {
+  constants_[id] = expr;
+}
+
 void ClassType::SetMemoryLayout(MemoryLayout memoryLayout, TypeTable* types) {
   if (memoryLayout_ >= memoryLayout) { return; }
   memoryLayout_ = memoryLayout;
@@ -498,6 +502,11 @@ void ClassType::AddEnum(std::string name, EnumType* enumType) {
 Type* ClassType::FindType(const std::string& id) {
   if (Type* type = types_[id]) { return type; }
   return parent_ ? parent_->FindType(id) : nullptr;
+}
+
+Expr* ClassType::FindConstant(const std::string& id) {
+  if (Expr* expr = constants_[id]) { return expr; }
+  return parent_ ? parent_->FindConstant(id) : nullptr;
 }
 
 Field* ClassType::FindField(std::string name) const {

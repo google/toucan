@@ -650,9 +650,10 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
   } else if (type->IsClass()) {
     ClassType* classType;
     classType = static_cast<ClassType*>(type);
-    Field* field = classType->FindField(id);
-    if (field) {
+    if (auto field = classType->FindField(id)) {
       return Make<FieldAccess>(expr, field);
+    } else if (auto constant = classType->FindConstant(id)) {
+      return MakeReadOnlyTempVar(constant);
     } else {
       return Error("field \"%s\" not found on class \"%s\"", id.c_str(),
                    classType->ToString().c_str());
@@ -677,8 +678,15 @@ Result SemanticPass::Visit(UnresolvedStaticDot* node) {
       return Error("value \"%s\" not found on enum \"%s\"", id.c_str(),
                    enumType->ToString().c_str());
     }
+  } else if (type->IsClass()) {
+    if (auto constant = static_cast<ClassType*>(type)->FindConstant(id)) {
+      return MakeReadOnlyTempVar(constant);
+    } else {
+      return Error("identifier \"%s\" not found on class \"%s\"", id.c_str(),
+                   type->ToString().c_str());
+    }
   } else {
-    return Error("expression is not of enum type");
+    return Error("expression is not of class or enum type");
   }
 }
 
@@ -959,6 +967,9 @@ Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
     for (const auto& field : c->GetFields()) {
       Expr* thisPtr = Make<UnresolvedIdentifier>("this");
       symbols_.DefineID(field->name, Make<FieldAccess>(thisPtr, field.get()));
+    }
+    for (const auto& constant : c->GetConstants()) {
+      symbols_.DefineID(constant.first, MakeReadOnlyTempVar(constant.second));
     }
   }
 
