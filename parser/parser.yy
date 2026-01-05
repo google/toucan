@@ -121,7 +121,7 @@ Type* FindType(const char* str) {
 
 %type <type> scalar_type type class_header template_class_header enum_header
 %type <type> simple_type opt_return_type
-%type <expr> expr opt_expr assignable arith_expr expr_or_list opt_initializer opt_length list_initializer
+%type <expr> expr opt_expr assignable expr_or_list opt_initializer opt_length list_initializer
 %type <initializer> initializer initializer_or_type
 %type <arg> argument
 %type <stmt> statement expr_statement var_decl_statement const_decl_statement for_loop_stmt
@@ -164,7 +164,7 @@ Type* FindType(const char* str) {
 %left '*' '/' '%'
 %right UNARYMINUS '!' T_PLUSPLUS T_MINUSMINUS T_DOTDOT ':' '@'
 %left '.' '[' ']' '(' ')' '{' '}'
-%expect 1   /* we expect 1 shift/reduce: dangling-else */
+%expect 2   /* we expect 2 shift/reduce: dangling-else, new A<B */
 %%
 program:
     statements                              { rootStmts_->Append($1->GetStmts()); }
@@ -224,6 +224,7 @@ for_statement:
         $$ = stmts;
       }
   ;
+
 opt_expr:
     expr
   | /* nothing */                           { $$ = 0; }
@@ -264,7 +265,7 @@ type:
   | '*' type                                { $$ = types_->GetStrongPtrType($2); }
   | '^' type                                { $$ = types_->GetWeakPtrType($2); }
   | '&' type                                { $$ = types_->GetRawPtrType($2); }
-  | '[' arith_expr ']' type                 { $$ = GetArrayType($4, AsIntConstant($2)); }
+  | '[' expr ']' type                       { $$ = GetArrayType($4, AsIntConstant($2)); }
   | '[' ']' type                            { $$ = GetArrayType($3, 0); }
   ;
 
@@ -462,31 +463,31 @@ initializer_or_type:
   | type                                    { $$ = Make<UnresolvedInitializer>($1, Make<ArgList>(), false); }
   ;
 
-arith_expr:
-    arith_expr '+' arith_expr               { $$ = BinOp(BinOpNode::ADD, $1, $3); }
-  | arith_expr '-' arith_expr               { $$ = BinOp(BinOpNode::SUB, $1, $3); }
-  | arith_expr '*' arith_expr               { $$ = BinOp(BinOpNode::MUL, $1, $3); }
-  | arith_expr '/' arith_expr               { $$ = BinOp(BinOpNode::DIV, $1, $3); }
-  | arith_expr '%' arith_expr               { $$ = BinOp(BinOpNode::MOD, $1, $3); }
-  | '-' arith_expr %prec UNARYMINUS         { $$ = UnOp(UnaryOp::Op::Minus, $2); }
-  | arith_expr T_LT arith_expr              { $$ = BinOp(BinOpNode::LT, $1, $3); }
-  | arith_expr T_LE arith_expr              { $$ = BinOp(BinOpNode::LE, $1, $3); }
-  | arith_expr T_EQ arith_expr              { $$ = BinOp(BinOpNode::EQ, $1, $3); }
-  | arith_expr T_GT arith_expr              { $$ = BinOp(BinOpNode::GT, $1, $3); }
-  | arith_expr T_GE arith_expr              { $$ = BinOp(BinOpNode::GE, $1, $3); }
-  | arith_expr T_NE arith_expr              { $$ = BinOp(BinOpNode::NE, $1, $3); }
-  | arith_expr T_LOGICAL_AND arith_expr     { $$ = BinOp(BinOpNode::LOGICAL_AND, $1, $3); }
-  | arith_expr T_LOGICAL_OR arith_expr      { $$ = BinOp(BinOpNode::LOGICAL_OR, $1, $3); }
-  | arith_expr '&' arith_expr               { $$ = BinOp(BinOpNode::BITWISE_AND, $1, $3); }
-  | arith_expr '^' arith_expr               { $$ = BinOp(BinOpNode::BITWISE_XOR, $1, $3); }
-  | arith_expr '|' arith_expr               { $$ = BinOp(BinOpNode::BITWISE_OR, $1, $3); }
-  | '!' arith_expr                          { $$ = UnOp(UnaryOp::Op::Negate, $2); }
+expr:
+    expr '+' expr                           { $$ = BinOp(BinOpNode::ADD, $1, $3); }
+  | expr '-' expr                           { $$ = BinOp(BinOpNode::SUB, $1, $3); }
+  | expr '*' expr                           { $$ = BinOp(BinOpNode::MUL, $1, $3); }
+  | expr '/' expr                           { $$ = BinOp(BinOpNode::DIV, $1, $3); }
+  | expr '%' expr                           { $$ = BinOp(BinOpNode::MOD, $1, $3); }
+  | '-' expr %prec UNARYMINUS               { $$ = UnOp(UnaryOp::Op::Minus, $2); }
+  | expr T_LT expr                          { $$ = BinOp(BinOpNode::LT, $1, $3); }
+  | expr T_LE expr                          { $$ = BinOp(BinOpNode::LE, $1, $3); }
+  | expr T_EQ expr                          { $$ = BinOp(BinOpNode::EQ, $1, $3); }
+  | expr T_GT expr                          { $$ = BinOp(BinOpNode::GT, $1, $3); }
+  | expr T_GE expr                          { $$ = BinOp(BinOpNode::GE, $1, $3); }
+  | expr T_NE expr                          { $$ = BinOp(BinOpNode::NE, $1, $3); }
+  | expr T_LOGICAL_AND expr                 { $$ = BinOp(BinOpNode::LOGICAL_AND, $1, $3); }
+  | expr T_LOGICAL_OR expr                  { $$ = BinOp(BinOpNode::LOGICAL_OR, $1, $3); }
+  | expr '&' expr                           { $$ = BinOp(BinOpNode::BITWISE_AND, $1, $3); }
+  | expr '^' expr                           { $$ = BinOp(BinOpNode::BITWISE_XOR, $1, $3); }
+  | expr '|' expr                           { $$ = BinOp(BinOpNode::BITWISE_OR, $1, $3); }
+  | '!' expr                                { $$ = UnOp(UnaryOp::Op::Negate, $2); }
   | T_PLUSPLUS assignable                   { $$ = IncDec(IncDecExpr::Op::Inc, true, $2); }
   | T_MINUSMINUS assignable                 { $$ = IncDec(IncDecExpr::Op::Dec, true, $2); }
   | assignable T_PLUSPLUS                   { $$ = IncDec(IncDecExpr::Op::Inc, false, $1); }
   | assignable T_MINUSMINUS                 { $$ = IncDec(IncDecExpr::Op::Dec, false, $1); }
-  | '(' arith_expr ')'                      { $$ = $2; }
-  | '(' type ')' arith_expr %prec UNARYMINUS      { $$ = Make<CastExpr>($2, $4); }
+  | '(' expr ')'                            { $$ = $2; }
+  | '(' type ')' expr %prec UNARYMINUS      { $$ = Make<CastExpr>($2, $4); }
   | T_INT_LITERAL                           { $$ = Make<IntConstant>($1, 32); }
   | T_UINT_LITERAL                          { $$ = Make<UIntConstant>($1, 32); }
   | T_BYTE_LITERAL                          { $$ = Make<IntConstant>($1, 8); }
@@ -500,18 +501,14 @@ arith_expr:
   | T_NULL                                  { $$ = Make<NullConstant>(); }
   | assignable                              { $$ = Load($1); }
   | '&' assignable %prec UNARYMINUS         { $$ = $2; }
-  ;
-
-opt_length:
-    '[' arith_expr ']'                      { $$ = $2; }
-  | /* nothing */                           { $$ = nullptr; }
-  ;
-
-expr:
-    arith_expr
   | opt_length T_NEW initializer_or_type    { $$ = MakeNewExpr($3, $1); }
   | T_INLINE '(' T_STRING_LITERAL ')'       { $$ = InlineFile($3); }
   | T_STRING_LITERAL                        { $$ = StringLiteral($1); }
+  ;
+
+opt_length:
+    '[' expr ']'                            { $$ = $2; }
+  | /* nothing */                           { $$ = nullptr; }
   ;
 
 list_initializer:
