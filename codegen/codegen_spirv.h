@@ -23,7 +23,6 @@
 
 namespace Toucan {
 
-class SymbolTable;
 using Code = std::vector<uint32_t>;
 
 struct HashCode {

@@ -22,7 +22,6 @@
 namespace Toucan {
 
 class GenBindings;
-class SymbolTable;
 
 class DumpAsSourcePass : public Visitor {
  public:

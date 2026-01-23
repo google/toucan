@@ -27,7 +27,6 @@
 #include <unordered_set>
 
 #include "ast/ast.h"
-#include "ast/symbol.h"
 #include "ast/type.h"
 #include "ast/type_replacement_pass.h"
 
@@ -39,7 +38,7 @@ using namespace Toucan;
 static void PushFile(const char* filename);
 
 static NodeVector* nodes_;
-static SymbolTable* symbols_;
+static ScopeStack scopeStack_;
 static TypeTable* types_;
 static std::vector<std::string> includePaths_;
 static Stmts* rootStmts_;
@@ -61,7 +60,7 @@ static EnumType* DeclareEnum(const char* id);
 static void DeclareUsing(const char* id, Type* type);
 static void BeginClass(Type* type, ClassType* parent);
 static ClassType*  BeginClassTemplate(TypeList* templateArgs, const char* id);
-static Stmt* EndClass(ClassType* classType, Stmts* body);
+static Stmt* EndClass(Stmts* body);
 static void BeginEnum(Type* e);
 static void AppendEnum(const char* id);
 static void AppendEnum(const char* id, int value);
@@ -73,7 +72,7 @@ static MethodDecl* MakeConstructor(int modifiers, Type* type, Stmts* formalArgum
                                    Expr* initializer, Stmts* body);
 static MethodDecl* MakeDestructor(int modifiers, Type* type, Stmts* body);
 static void BeginBlock();
-static void EndBlock(Stmts* stmts);
+static void EndBlock();
 static Expr* Load(Expr* expr);
 static Stmt* Store(Expr* expr, Expr* value);
 static Expr* Identifier(const char* id);
@@ -99,7 +98,14 @@ inline TypeList* Append(TypeList* typeList) {
   types_->AppendTypeList(typeList); return typeList;
 }
 Type* FindType(const char* str) {
-  return symbols_->FindType(str);
+  for (auto scope : scopeStack_) {
+    if (auto type = scope->FindType(str)) return type;
+  }
+  return nullptr;
+}
+
+static void DefineType(std::string id, Type* type) {
+  scopeStack_.Top()->DefineType(id, type);
 }
 %}
 
@@ -176,7 +182,7 @@ statements:
   ;
 
 block_statement:
-    '{' { BeginBlock(); } statements '}'    { EndBlock($3); $$ = $3; }
+    '{' { BeginBlock(); } statements '}'    { EndBlock(); $$ = $3; }
   ;
 statement:
     ';'                                     { $$ = 0; }
@@ -221,7 +227,7 @@ for_statement:
       {
         Stmts* stmts = Make<Stmts>();
         stmts->Append(Make<ForStatement>($4, $6, $8, $10));
-        EndBlock(stmts);
+        EndBlock();
         $$ = stmts;
       }
   ;
@@ -295,10 +301,10 @@ class_forward_decl:
   ;
 
 class_decl:
-    class_header opt_parent_class '{'       { BeginClass($1, AsClassType($2)); }
-    class_body '}'                          { $$ = EndClass(AsClassType($1), $5); }
+    class_header opt_parent_class '{'           { BeginClass($1, AsClassType($2)); }
+    class_body '}'                              { $$ = EndClass($5); }
   | template_class_header opt_parent_class  '{' { AsClassType($1)->SetParent(AsClassType($2)); }
-    class_body '}'                              { $$ = EndClass(AsClassType($1), $5); }
+    class_body '}'                              { $$ = EndClass($5); }
   ;
   ;
 
@@ -720,22 +726,22 @@ static Expr* MakeStaticMethodCall(Type* type, const char* id, ArgList* arguments
 }
 
 static ClassType* DeclareClass(const char *id) {
-  assert(!symbols_->FindType(id));
+  assert(!FindType(id));
   ClassType* c = types_->Make<ClassType>(id);
-  symbols_->DefineType(id, c);
+  DefineType(id, c);
   return c;
 }
 
 static EnumType* DeclareEnum(const char *id) {
-  assert(!symbols_->FindType(id));
+  assert(!FindType(id));
   EnumType* e = types_->Make<EnumType>(id);
-  symbols_->DefineType(id, e);
+  DefineType(id, e);
   return e;
 }
 
 static void DeclareUsing(const char *id, Type* type) {
-  assert(!symbols_->FindType(id));
-  symbols_->DefineType(id, type);
+  assert(!FindType(id));
+  DefineType(id, type);
 }
 
 static void BeginClass(Type* t, ClassType* parent) {
@@ -746,17 +752,17 @@ static void BeginClass(Type* t, ClassType* parent) {
   }
   c->SetParent(parent);
   c->SetDefined(true);
-  BeginBlock();
+  scopeStack_.Push(Make<UnresolvedClassDefinition>(c));
 }
 
 static ClassType* BeginClassTemplate(TypeList* templateArgs, const char* id) {
   ClassTemplate* t = types_->Make<ClassTemplate>(id, *templateArgs);
-  symbols_->DefineType(id, t);
+  DefineType(id, t);
   t->SetDefined(true);
-  BeginBlock();
+  scopeStack_.Push(Make<UnresolvedClassDefinition>(t));
   for (Type* const& i : *templateArgs) {
     auto type = static_cast<FormalTemplateArg*>(i);
-    symbols_->DefineType(type->GetName(), type);
+    DefineType(type->GetName(), type);
   }
   return t;
 }
@@ -796,14 +802,12 @@ class ClassPopulator : public Visitor {
   ClassType*    classType_;
 };
 
-static Stmt* EndClass(ClassType* classType, Stmts* body) {
-  auto scope = symbols_->PopScope();
+static Stmt* EndClass(Stmts* body) {
+  auto defn = static_cast<UnresolvedClassDefinition*>(scopeStack_.Pop());
+  auto classType = defn->GetClass();
   ClassPopulator populator(classType);
   body->Accept(&populator);
-  for (auto type : scope->GetTypes()) {
-    classType->DefineType(type.first, type.second);
-  }
-  return Make<UnresolvedClassDefinition>(classType);
+  return defn;
 }
 
 static void BeginEnum(Type* t) {
@@ -823,12 +827,11 @@ static void AppendEnum(const char *id, int value) {
 }
 
 static void BeginBlock() {
-  symbols_->PushScope(Make<Stmts>());
+  scopeStack_.Push(Make<Stmts>());
 }
 
-static void EndBlock(Stmts* stmts) {
-  auto scope = symbols_->PopScope();
-  for (auto type : scope->GetTypes()) stmts->DefineType(type.first, type.second);
+static void EndBlock() {
+  scopeStack_.Pop();
 }
 
 MethodDecl* MakeMethodDecl(int modifiers, ArgList* optWorkgroupSize, std::string id, Stmts* formalArguments,
@@ -905,8 +908,11 @@ static TypeList* AddIDToTypeList(const char* id, TypeList* list) {
   return list;
 }
 
+void OnNewClass(ClassType* classType) {
+  instanceQueue_.push(classType);
+}
 static ClassType* GetClassTemplateInstance(Type* type, const TypeList& templateArgs) {
-  return types_->GetClassTemplateInstance(AsClassTemplate(type), templateArgs, &instanceQueue_);
+  return types_->GetClassTemplateInstance(AsClassTemplate(type), templateArgs, &OnNewClass);
 }
 
 static ClassType* PopInstanceQueue() {
@@ -919,7 +925,7 @@ static ClassType* PopInstanceQueue() {
 static void InstantiateClassTemplates() {
   while (ClassType* instance = PopInstanceQueue()) {
     ClassTemplate* classTemplate = instance->GetTemplate();
-    TypeReplacementPass pass(nodes_, types_, classTemplate->GetFormalTemplateArgs(), instance->GetTemplateArgs(), &instanceQueue_);
+    TypeReplacementPass pass(nodes_, types_, classTemplate->GetFormalTemplateArgs(), instance->GetTemplateArgs(), &OnNewClass);
     pass.ResolveClassInstance(classTemplate, instance);
     numSyntaxErrors += pass.NumErrors();
     rootStmts_->Append(Make<UnresolvedClassDefinition>(instance));
@@ -933,15 +939,13 @@ int ParseProgram(const char* filename,
                  Stmts* rootStmts) {
   numSyntaxErrors = 0;
   nodes_ = nodes;
-  SymbolTable symbols;
-  symbols_ = &symbols;
   types_ = types;
   includePaths_ = includePaths;
   rootStmts_ = rootStmts;
   PushFile(filename);
-  symbols.PushScope(rootStmts);
+  scopeStack_.Push(rootStmts);
   yyparse();
-  symbols.PopScope();
+  scopeStack_.Pop();
   if (numSyntaxErrors == 0) {
     if (!rootStmts_->ContainsReturn()) {
       rootStmts_->Append(Make<ReturnStatement>(nullptr));
@@ -950,7 +954,6 @@ int ParseProgram(const char* filename,
   }
   PopFile();
   nodes_ = nullptr;
-  symbols_ = nullptr;
   types_ = nullptr;
   rootStmts_ = nullptr;
 #ifndef _WIN32

@@ -40,7 +40,6 @@ class GenBindings {
   void EmitMethod(Method* method);
 
  private:
-  SymbolTable*                   symbols_;
   TypeTable*                     types_;
   TypeVector                     referencedTypes_;
   std::list<ClassType*>          classes_;

@@ -19,8 +19,6 @@
 
 namespace Toucan {
 
-class SymbolTable;
-
 class ShaderValidationPass : public Visitor {
  public:
   ShaderValidationPass();

@@ -42,3 +42,13 @@ const scoped = 42;
   Test.Assert(scoped == 21);
 }
 Test.Assert(scoped == 42);
+
+class C {
+  C() {
+    i = c1;
+  }
+  var i : int;
+}
+
+var c = C();
+Test.Assert(c.i == 42);

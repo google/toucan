@@ -19,8 +19,6 @@
 
 namespace Toucan {
 
-class SymbolTable;
-
 class ConstantFolder : public Visitor {
  public:
   ConstantFolder(TypeTable* types, void* data);

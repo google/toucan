@@ -540,7 +540,16 @@ class Stmt : public ASTNode {
   virtual bool ContainsReturn() const { return false; }
 };
 
-class Stmts : public Stmt {
+class Scope : public Stmt {
+ public:
+  Scope();
+  virtual void              DefineType(std::string id, Type* type) = 0;
+  virtual Type*             FindType(const std::string& id) const = 0;
+  virtual bool              IsStmts() const { return false; }
+  virtual bool              IsUnresolvedClassDefinition() const { return false; }
+};
+
+class Stmts : public Scope {
  public:
   Stmts();
   Result                    Accept(Visitor* visitor) override;
@@ -548,20 +557,21 @@ class Stmts : public Stmt {
   void                      Append(const std::vector<Stmt*>& stmts);
   void                      Prepend(Stmt* stmt) { stmts_.insert(stmts_.begin(), stmt); }
   const std::vector<Stmt*>& GetStmts() { return stmts_; }
-  void                      DefineID(std::string id, Expr* expr) { ids_[id] = expr; }
-  Expr*                     FindID(const std::string& id);
-  void                      DefineType(std::string id, Type* type) { types_[id] = type; }
-  Type*                     FindType(const std::string& id);
-  const TypeMap&            GetTypes() const { return types_; }
+  void                      AppendConstant(std::string name, Expr* value);
+  Expr*                     FindConstant(const std::string& id) const;
+  void                      DefineType(std::string id, Type* type) override { types_[id] = type; }
+  Type*                     FindType(const std::string& id) const override;
+  Var*                      FindVar(const std::string& id) const;
   void                      AppendVar(std::shared_ptr<Var> v);
   const VarVector&          GetVars() const { return vars_; }
   bool                      ContainsReturn() const override;
+  bool                      IsStmts() const override { return true; }
 
  private:
   std::vector<Stmt*> stmts_;
-  ExprMap            ids_;
   TypeMap            types_;
   VarVector          vars_;
+  ExprMap            constants_;
 };
 
 class ExprStmt : public Stmt {
@@ -789,12 +799,14 @@ class UnresolvedNewExpr : public Expr {
   bool     constructor_;
 };
 
-class UnresolvedClassDefinition : public Stmt {
+class UnresolvedClassDefinition : public Scope {
  public:
-  UnresolvedClassDefinition(ClassType* classType);
-  Result Accept(Visitor* visitor) override;
-  ClassType* GetClass() const { return class_; }
-
+                    UnresolvedClassDefinition(ClassType* classType);
+  Result            Accept(Visitor* visitor) override;
+  ClassType*        GetClass() const { return class_; }
+  void              DefineType(std::string id, Type* type) override { class_->DefineType(id, type); }
+  Type*             FindType(const std::string& id) const override { return class_->FindType(id); }
+  bool              IsUnresolvedClassDefinition() const override { return true; }
  private:
   ClassType* class_;
 };
@@ -826,6 +838,14 @@ class NodeVector {
 
  private:
   std::vector<std::unique_ptr<ASTNode>> nodes_;
+};
+
+class ScopeStack : public std::deque<Scope*> {
+ public:
+  ScopeStack();
+  void Push(Scope* scope) { push_front(scope); }
+  Scope* Pop()            { auto result = front(); pop_front(); return result; }
+  Scope* Top()            { return front(); }
 };
 
 class Visitor {

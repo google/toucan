@@ -207,10 +207,10 @@ error-raw-ptr-must-be-initialized.t:1:  reference must be initialized
 test/error-return-int-from-main.t
 error-return-int-from-main.t:1:  cannot return a value of type int from a function of type void
 test/error-return-raw-ptr.t
-error-return-raw-ptr.t:6:  cannot return a raw pointer
-error-return-raw-ptr.t:10:  cannot return a raw pointer
+error-return-raw-ptr.t:4:  cannot return a raw pointer
+error-return-raw-ptr.t:8:  cannot return a raw pointer
 error-return-raw-ptr.t:13:  cannot allocate a type containing a raw pointer
-error-return-raw-ptr.t:14:  cannot return a raw pointer
+error-return-raw-ptr.t:12:  cannot return a raw pointer
 test/error-shader-validation.t
 error-shader-validation.t:3:  "new" operator is prohibited in shader methods
 error-shader-validation.t:3:  "new" operator is prohibited in shader methods
@@ -250,7 +250,7 @@ error-unknown-param-type.t:2: syntax error
 test/error-unknown-return-type.t
 error-unknown-return-type.t:2: syntax error
 test/error-unsized-array-not-last-in-class.t
-error-unsized-array-not-last-in-class.t:4:  unsized arrays are only allowed as the last field of a class
+error-unsized-array-not-last-in-class.t:1:  unsized arrays are only allowed as the last field of a class
 test/error-validate-bind-group.t
 error-validate-bind-group.t:16:  matching constructor not found
 error-validate-bind-group.t:16:  while instantiating BindGroup<float>: bind group template argument must be of class type
@@ -327,6 +327,8 @@ error-validate.t:36:  while instantiating RenderPipeline<NoShaders>: no vertex s
 error-validate.t:36:  while instantiating RenderPipeline<NoShaders>: no fragment shader found
 error-validate.t:37:  while instantiating RenderPipeline<NoShaders2>: no vertex shader found
 error-validate.t:37:  while instantiating RenderPipeline<NoShaders2>: no fragment shader found
+test/error-var-out-of-scope.t
+error-var-out-of-scope.t:5:  unknown symbol "i"
 test/error-widen-null-to-raw-ptr.t
 error-widen-null-to-raw-ptr.t:1:  cannot store a value of type "null" to a location of type "&int"
 test/error-widen-weak-ptr-short-to-weak-ptr-int.t

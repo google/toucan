@@ -322,25 +322,36 @@ NullConstant::NullConstant() {}
 
 Type* NullConstant::GetType(TypeTable* types) { return types->GetStrongPtrType(types->GetVoid()); }
 
+Scope::Scope() {}
+
 Stmts::Stmts() {}
 
 void Stmts::Append(const std::vector<Stmt*>& stmts) {
   stmts_.insert(stmts_.end(), stmts.begin(), stmts.end());
 }
 
-Expr* Stmts::FindID(const std::string& identifier) {
-  auto i = ids_.find(identifier);
-  if (i != ids_.end()) { return i->second; }
-  return nullptr;
-}
-
-Type* Stmts::FindType(const std::string& identifier) {
+Type* Stmts::FindType(const std::string& identifier) const {
   auto i = types_.find(identifier);
   if (i != types_.end()) { return i->second; }
   return nullptr;
 }
 
 void Stmts::AppendVar(std::shared_ptr<Var> var) { vars_.push_back(var); }
+
+Var* Stmts::FindVar(const std::string& identifier) const {
+  for (auto var : vars_) {
+    if (var->name == identifier) return var.get();
+  }
+  return nullptr;
+}
+
+void Stmts::AppendConstant(std::string name, Expr* value) { constants_[name] = value; }
+
+Expr* Stmts::FindConstant(const std::string& identifier) const {
+  auto i = constants_.find(identifier);
+  if (i != constants_.end()) { return i->second; }
+  return nullptr;
+}
 
 bool Stmts::ContainsReturn() const {
   for (auto stmt : stmts_) {
@@ -382,6 +393,8 @@ Type* UnresolvedNewExpr::GetType(TypeTable* types) { return types->GetStrongPtrT
 UnresolvedClassDefinition::UnresolvedClassDefinition(ClassType* classType) : class_(classType) {}
 
 NodeVector::NodeVector() {}
+
+ScopeStack::ScopeStack() {}
 
 Result Arg::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ArgList::Accept(Visitor* visitor) { return visitor->Visit(this); }

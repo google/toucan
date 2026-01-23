@@ -20,8 +20,6 @@
 
 namespace Toucan {
 
-class SymbolTable;
-
 class APIValidator {
  public:
   APIValidator();

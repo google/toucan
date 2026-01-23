@@ -23,7 +23,6 @@ source_set("ast") {
     "semantic_pass.cc",
     "shader_prep_pass.cc",
     "shader_validation_pass.cc",
-    "symbol.cc",
     "type.cc",
     "type_replacement_pass.cc"
   ]

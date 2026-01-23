@@ -14,7 +14,6 @@
 
 #ifndef _PARSER_PARSER_H
 namespace Toucan {
-class SymbolTable;
 class TypeTable;
 class NodeVector;
 class Stmts;

@@ -520,6 +520,7 @@ typedef std::vector<std::unique_ptr<TypeList>> TypeListVector;
 using TypeAndInt = std::pair<Type*, int>;
 using TypeAndId = std::pair<Type*, std::string>;
 using ArrayTypeKey = std::pair<TypeAndInt, MemoryLayout>;
+typedef void (*NewClassCallback)(ClassType* classType);
 
 class TypeTable {
  public:
@@ -552,7 +553,7 @@ class TypeTable {
   RawPtrType*        GetRawPtrType(Type* type);
   ArrayType*         GetArrayType(Type* elementType, int size, MemoryLayout layout);
   FormalTemplateArg* GetFormalTemplateArg(std::string name);
-  ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs, std::queue<ClassType*>* instanceQueue);
+  ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs, NewClassCallback cb);
   Type*       GetQualifiedType(Type* type, int qualifiers);
   Type*       GetUnresolvedScopedType(FormalTemplateArg* baseType, std::string id);
   TypeList*   AppendTypeList(TypeList* type);
