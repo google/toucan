@@ -168,22 +168,22 @@ while(System.IsRunning()) {
   drawUniforms.matrix *= Transform.translation({0.0, 0.0, -handler.distance});
   drawUniforms.matrix *= orientation.toMatrix();
   drawUniforms.color = float<4>(1.0, 1.0, 1.0, 1.0);
-  springBindings.uniforms.SetData(&drawUniforms);
+  springBindings.uniforms.Set(&drawUniforms);
   drawUniforms.color = float<4>(0.0, 1.0, 0.0, 1.0);
-  bodyBindings.uniforms.SetData(&drawUniforms);
+  bodyBindings.uniforms.Set(&drawUniforms);
   for (var i = 0; i < bodies.length; ++i) {
     var p = bodies[i].position;
     bodyVerts[i*3  ] = p + Vector( 0.1,  0.0);
     bodyVerts[i*3+1] = p + Vector(-0.1,  0.0);
     bodyVerts[i*3+2] = p + Vector( 0.0, -0.2);
   }
-  bodyVBO.SetData(bodyVerts);
+  bodyVBO.Set(bodyVerts);
 
   for (var i = 0; i < springs.length; ++i) {
     springVerts[i*2] = bodies[springs[i].body1].position;
     springVerts[i*2+1] = bodies[springs[i].body2].position;
   }
-  springVBO.SetData(springVerts);
+  springVBO.Set(springVerts);
 
   var totalSteps = ((System.GetCurrentTime() - startTime) * frequency) as int;
 

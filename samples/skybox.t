@@ -85,7 +85,7 @@ while (System.IsRunning()) {
   uniforms.view = Transform.translation({0.0, 0.0, -handler.distance});
   uniforms.view *= orientation.toMatrix();
   uniforms.model = Transform.scale({100.0, 100.0, 100.0});
-  cubeBindings.uniforms.SetData(&uniforms);
+  cubeBindings.uniforms.Set(&uniforms);
   var encoder = new CommandEncoder(device);
   var p : SkyboxPipeline;
   var fb = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear);

@@ -144,9 +144,9 @@ while (System.IsRunning()) {
   uniforms.view *= orientation.toMatrix();
   uniforms.model = Transform.scale({100.0, 100.0, 100.0});
   uniforms.viewInverse = Transform.invert(uniforms.view);
-  cubeBindings.uniforms.SetData(&uniforms);
+  cubeBindings.uniforms.Set(&uniforms);
   uniforms.model = Transform.scale({0.15, 0.15, 0.15}) * Transform.translation({0.0, -50.0, 0.0});
-  dragonBindings.uniforms.SetData(&uniforms);
+  dragonBindings.uniforms.Set(&uniforms);
   var encoder = new CommandEncoder(device);
   var fb = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear);
   var db = depthBuffer.CreateDepthStencilOutput(LoadOp.Clear);

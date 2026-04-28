@@ -312,7 +312,7 @@ for (var j = 0; j < kMaxNumLights; j++) {
   };
   light.radius = 20.0;
 }
-lightsBuffer.SetData(lightData);
+lightsBuffer.Set(lightData);
 
 var lightExtentBuffer = new uniform Buffer<LightExtent>(device, {lightExtentMin, lightExtentMax});
 var lightUpdateComputePipeline = new ComputePipeline<LightUpdate>(device);
@@ -342,7 +342,7 @@ var invertTransposeModelMatrix = Transform.invert(modelMatrix);
 invertTransposeModelMatrix = Math.transpose(invertTransposeModelMatrix);
 
 // Set the matrix uniform data.
-modelUniformBuffer.SetData({modelMatrix, invertTransposeModelMatrix});
+modelUniformBuffer.Set({modelMatrix, invertTransposeModelMatrix});
 
 var startTime = System.GetCurrentTime();
 while (System.IsRunning()) {
@@ -359,7 +359,7 @@ while (System.IsRunning()) {
   var camera : Camera;
   camera.viewProjectionMatrix = projectionMatrix * viewMatrix;
   camera.invViewProjectionMatrix = Transform.invert(camera.viewProjectionMatrix);
-  cameraUniformBuffer.SetData(&camera);
+  cameraUniformBuffer.Set(&camera);
 
   var commandEncoder = new CommandEncoder(device);
   {

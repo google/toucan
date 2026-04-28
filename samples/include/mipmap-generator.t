@@ -83,7 +83,7 @@ class MipmapGenerator<PF> {
     for (var face = 0u; face < 6u; ++face) {
       for (var mipLevel = 1u; mipLevel < mipCount; ++mipLevel) {
         bindings.texture = texture.CreateSampleableView(mipLevel - 1, 1u);
-        bindings.uniforms.SetData(&face);
+        bindings.uniforms.Set(&face);
         var fb = texture.CreateRenderableView(face, mipLevel);
         var encoder = new CommandEncoder(device);
         var renderPass = new RenderPass<MipmapGeneratorCubePipeline<PF>>(encoder, {

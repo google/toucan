@@ -93,7 +93,7 @@ while (System.IsRunning()) {
   uniforms.view = Transform.translation({0.0, 0.0, -handler.distance});
   uniforms.view *= orientation.toMatrix();
   uniforms.model = Transform.scale({1.0, 1.0, 1.0});
-  bindings.uniforms.SetData(&uniforms);
+  bindings.uniforms.Set(&uniforms);
   uniforms.model = teapotRotation * Transform.scale({2.0, 2.0, 2.0});
   var encoder = new CommandEncoder(device);
   var fb = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear);

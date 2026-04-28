@@ -259,11 +259,11 @@ while(System.IsRunning()) {
   matrix *= Transform.translation({0.0, 0.0, -handler.distance});
   matrix *= orientation.toMatrix();
 
-  springUBO.SetData({matrix = matrix, color = {1.0, 1.0, 1.0, 1.0}});
-  bodyUBO.SetData({matrix = matrix, color = {0.0, 1.0, 0.0, 1.0}});
+  springUBO.Set({matrix = matrix, color = {1.0, 1.0, 1.0, 1.0}});
+  bodyUBO.Set({matrix = matrix, color = {0.0, 1.0, 0.0, 1.0}});
 
   computeUniforms.wind = Vector(Math.rand() * 0.01, 0.0);
-  computeUBO.SetData(&computeUniforms);
+  computeUBO.Set(&computeUniforms);
 
   var encoder = new CommandEncoder(device);
   var computePass = new ComputePass<ComputeBase>(encoder, {bindings = computeBindGroup});

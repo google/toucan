@@ -263,7 +263,7 @@ while (System.IsRunning()) {
     animTeapotControlPoints[teapotControlIndices[i + 10]] *= t;
   }
 
-  teapotControlPointsBuffer.SetData(animTeapotControlPoints);
+  teapotControlPointsBuffer.Set(animTeapotControlPoints);
   var orientation = Quaternion(float<3>(0.0, 1.0, 0.0), handler.rotation.x);
   orientation = orientation.mul(Quaternion(float<3>(1.0, 0.0, 0.0), handler.rotation.y));
   orientation.normalize();
@@ -279,9 +279,9 @@ while (System.IsRunning()) {
   uniforms.view *= orientation.toMatrix();
   uniforms.model = Transform.scale({100.0, 100.0, 100.0});
   uniforms.viewInverse = Transform.invert(uniforms.view);
-  cubeBindings.uniforms.SetData(&uniforms);
+  cubeBindings.uniforms.Set(&uniforms);
   uniforms.model = teapotRotation * Transform.scale({2.0, 2.0, 2.0});
-  teapotBindings.uniforms.SetData(&uniforms);
+  teapotBindings.uniforms.Set(&uniforms);
   var encoder = new CommandEncoder(device);
 
   var tessPass = new ComputePass<BicubicComputePipeline>(encoder, { bindings = computeBindings });

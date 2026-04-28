@@ -1250,7 +1250,7 @@ Buffer* Buffer_Buffer_Device_T(int qualifiers, Type* type, Device* device, void*
   uint32_t length = 1;
   if (type->IsUnsizedArray()) { length = static_cast<Array*>(data)->length; }
   Buffer* result = Buffer_Buffer_Device_uint(qualifiers, type, device, length);
-  Buffer_SetData(result, data);
+  Buffer_Set(result, data);
   return result;
 }
 
@@ -1258,7 +1258,7 @@ Object* Buffer_MapRead_hostreadable_Buffer(Buffer* buffer) { return MapSync(wgpu
 
 Object* Buffer_MapWrite_hostwriteable_Buffer(Buffer* buffer) { return MapSync(wgpu::MapMode::Write, buffer); }
 
-void Buffer_SetData(Buffer* buffer, void* data) {
+void Buffer_Set(Buffer* buffer, void* data) {
   Type* type = buffer->type;
   assert(!type->IsPtr());
   uint32_t    length = 1;

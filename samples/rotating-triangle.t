@@ -50,7 +50,7 @@ var bg = new BindGroup<Bindings>(device, { uniformBuffer } );
 var pipeline = new RenderPipeline<Pipeline>(device);
 var theta = 0.0;
 while (System.IsRunning()) {
-  uniformBuffer.SetData(&uniformData);
+  uniformBuffer.Set(&uniformData);
   var encoder = new CommandEncoder(device);
   var fb = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear);
   var vi = new VertexInput<Vertex>(vb);

@@ -218,9 +218,9 @@ while (System.IsRunning()) {
   uniforms.view *= orientation.toMatrix();
   uniforms.model = Transform.scale({100.0, 100.0, 100.0});
   uniforms.viewInverse = Transform.invert(uniforms.view);
-  cubeBindings.uniforms.SetData(&uniforms);
+  cubeBindings.uniforms.Set(&uniforms);
   uniforms.model = teapotRotation * Transform.scale({2.0, 2.0, 2.0});
-  teapotBindings.uniforms.SetData(&uniforms);
+  teapotBindings.uniforms.Set(&uniforms);
   var encoder = new CommandEncoder(device);
   var fb = swapChain.GetCurrentTexture().CreateColorOutput(LoadOp.Clear);
   var db = depthBuffer.CreateDepthStencilOutput(LoadOp.Clear);

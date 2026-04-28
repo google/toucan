@@ -41,7 +41,7 @@ class Buffer<T> {
   Buffer(device : &Device, size : uint = 1u);
   Buffer(device : &Device, t : &T);
  ~Buffer();
-  SetData(data : &T);
+  Set(data : &T);
   CopyFromBuffer(encoder : &CommandEncoder, source : &Buffer<T>);
   deviceonly MapRead() uniform : *readonly uniform T;
   deviceonly MapWrite() writeonly storage : *writeonly storage T;
