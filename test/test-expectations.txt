@@ -65,6 +65,7 @@ test/class-constructor.t
 test/class-initializer.t
 test/complex-method.t
 test/compute-builtins.t
+test/compute-chained-vars.t
 test/compute-empty-class.t
 test/compute-pass-ptr-to-element.t
 test/compute-simple.t

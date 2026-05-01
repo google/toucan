@@ -57,9 +57,7 @@ bool NeedsUnfolding(Type* type) {
       return true;
     }
     for (const auto& field : classType->GetFields()) {
-      if (!IsValidLocalVar(field->type)) {
-        return true;
-      } else if (NeedsUnfolding(field->type)) {
+      if (NeedsUnfolding(field->type) || !IsValidLocalVar(field->type)) {
         return true;
       }
     }
@@ -77,7 +75,14 @@ Expr* ShaderPrepPass::ResolveVar(Var* var) {
   if (auto alias = varAliases_[var]) {
     return alias;
   }
-  return Make<VarExpr>(var);
+  Expr* expr = Make<VarExpr>(var);
+  if (IsWrapper(var->type)) {
+    Type* type = var->type->GetUnqualifiedType();
+    assert(type->IsClass());
+    ClassType* classType = static_cast<ClassType*>(type);
+    expr = Make<FieldAccess>(expr, classType->GetFields()[0].get());
+  }
+  return expr;
 }
 
 Result ShaderPrepPass::Visit(CastExpr* node) {
@@ -95,9 +100,6 @@ Result ShaderPrepPass::Visit(FieldAccess* node) {
     }
     assert(base->IsVarExpr());
     Var* baseVar = static_cast<VarExpr*>(base)->GetVar();
-    if (baseVar->type->IsRawPtr()) {
-      baseVar = unfoldedPtrs_[baseVar].get();
-    }
     int index = node->GetField()->index;
     return ResolveVar(unfoldedVars_[baseVar][index].get());
   }
@@ -106,55 +108,10 @@ Result ShaderPrepPass::Visit(FieldAccess* node) {
 
 Result ShaderPrepPass::Visit(LoadExpr* node) {
   Type* type = node->GetType(types_);
-  if (NeedsUnfolding(type)) {
-    auto expr = Resolve(node->GetExpr());
-    assert(expr->IsVarExpr());
-    auto var = static_cast<VarExpr*>(expr)->GetVar();
-    var = unfoldedPtrs_[var].get();
-    return Make<VarExpr>(var);
-  }
   if (type->IsPtr()) {
     return Resolve(node->GetExpr());
   }
   return CopyVisitor::Visit(node);
-}
-
-void ShaderPrepPass::UnfoldClass(ClassType* classType, VarVector* vars, VarVector* localVars, VarVector* globalVars) {
-  if (classType->GetTemplate() == NativeClass::BindGroup) {
-    auto arg = classType->GetTemplateArgs()[0];
-    assert(arg->IsClass());
-    classType = static_cast<ClassType*>(arg);
-  }
-  if (classType->GetParent()) {
-    UnfoldClass(classType->GetParent(), vars, localVars, globalVars);
-  }
-  for (const auto& field : classType->GetFields()) {
-    auto var = std::make_shared<Var>(field->name, field->type);
-    vars->push_back(var);
-    UnfoldVar(var, localVars, globalVars);
-  }
-}
-
-void ShaderPrepPass::UnfoldVar(std::shared_ptr<Var> var, VarVector* localVars, VarVector* globalVars) {
-  if (NeedsUnfolding(var->type)) {
-    Type* type = var->type;
-    if (type->IsPtr()) {
-      auto baseType = static_cast<PtrType*>(type)->GetBaseType();
-      auto baseVar = std::make_shared<Var>(var->name, baseType);
-      UnfoldVar(baseVar, localVars, globalVars);
-      unfoldedPtrs_[var.get()] = baseVar;
-    } else if (type->IsClass()) {
-      VarVector vars;
-      UnfoldClass(static_cast<ClassType*>(type), &vars, localVars, globalVars);
-      unfoldedVars_[var.get()] = vars;
-    } else {
-      assert(false);
-    }
-  } else if (IsValidLocalVar(var->type)) {
-    localVars->push_back(var);
-  } else  {
-    globalVars->push_back(var);
-  }
 }
 
 Result ShaderPrepPass::Visit(Stmts* stmts) {
@@ -163,12 +120,10 @@ Result ShaderPrepPass::Visit(Stmts* stmts) {
   if (!rootStmts_) { rootStmts_ = newStmts; }
 
   for (auto var : stmts->GetVars()) {
-    VarVector localVars, globalVars;
-    UnfoldVar(var, &localVars, &globalVars);
-    // FIXME: allow Stmts to return a modifiable VarVector?
-    for (auto subVar : localVars) {
-      assert(!subVar->type->IsPtr());
-      rootStmts_->AppendVar(subVar);
+    if (NeedsUnfolding(var->type) || !IsValidLocalVar(var->type)) {
+      // Ignore var declaration; it will be aliases to a global in StoreStmt.
+    } else {
+      rootStmts_->AppendVar(var);
     }
   }
 
@@ -231,8 +186,8 @@ Type* ShaderPrepPass::ConvertType(Type* type) {
   return type;
 }
 
-void ShaderPrepPass::ExtractPipelineVars(ClassType* classType, std::vector<Var*>* globalVars) {
-  if (classType->GetParent()) { ExtractPipelineVars(classType->GetParent(), globalVars); }
+void ShaderPrepPass::ExtractPipelineVars(ClassType* classType, VarVector* pipelineVars) {
+  if (classType->GetParent()) { ExtractPipelineVars(classType->GetParent(), pipelineVars); }
   for (const auto& field : classType->GetFields()) {
     Type* type = field->type;
 
@@ -246,41 +201,38 @@ void ShaderPrepPass::ExtractPipelineVars(ClassType* classType, std::vector<Var*>
       if (methodModifiers_ & Method::Modifier::Fragment) {
         auto output = std::make_shared<Var>(field->name, ConvertType(field->type));
         outputs_.push_back(output);
-        globalVars->push_back(output.get());
+        pipelineVars->push_back(output);
       } else {
-        globalVars->push_back(nullptr);
+        pipelineVars->push_back(nullptr);
       }
     } else if (classType->GetTemplate() == NativeClass::DepthStencilOutput) {
       // Depth/stencil variables are inaccessible from device code.
-      globalVars->push_back(nullptr);
+      pipelineVars->push_back(nullptr);
     } else if (classType->GetTemplate() == NativeClass::VertexInput) {
       if (methodModifiers_ & Method::Modifier::Vertex) {
         auto input = std::make_shared<Var>(field->name, ConvertType(field->type));
         inputs_.push_back(input);
-        globalVars->push_back(input.get());
+        pipelineVars->push_back(input);
       } else {
-        globalVars->push_back(nullptr);
+        pipelineVars->push_back(nullptr);
       }
     } else if (classType->GetTemplate() == NativeClass::Buffer &&
                qualifiers & Type::Qualifier::Index) {
       // Index buffers are inaccessible from device code.
-      globalVars->push_back(nullptr);
+      pipelineVars->push_back(nullptr);
     } else if (classType->GetTemplate() == NativeClass::BindGroup) {
       Type*     argType = classType->GetTemplateArgs()[0];
-      VarVector bindGroup;
-      if (argType->IsClass()) {
-        auto* bindGroupClass = static_cast<ClassType*>(argType);
-        for (auto& subField : bindGroupClass->GetFields()) {
-          auto  var = std::make_shared<Var>(subField->name, ConvertType(subField->type));
-          bindGroup.push_back(var);
-          globalVars->push_back(var.get());
-        }
-      } else {
-        auto  var = std::make_shared<Var>(field->name, ConvertType(argType));
-        bindGroup.push_back(var);
-        globalVars->push_back(var.get());
+      VarVector bindGroupVars;
+      assert(argType->IsClass());
+      auto* bindGroupClass = static_cast<ClassType*>(argType);
+      for (auto& subField : bindGroupClass->GetFields()) {
+        auto  var = std::make_shared<Var>(subField->name, ConvertType(subField->type));
+        bindGroupVars.push_back(var);
       }
-      bindGroups_.push_back(bindGroup);
+      bindGroups_.push_back(bindGroupVars);
+      auto bindGroup = std::make_shared<Var>("bindgroup", bindGroupClass);
+      unfoldedVars_[bindGroup.get()] = bindGroupVars;
+      pipelineVars->push_back(bindGroup);
     } else {
       assert(false);
     }
@@ -368,10 +320,15 @@ Method* ShaderPrepPass::Run(Method* entryPoint) {
   int argIndex = entryPoint->modifiers & Method::Modifier::Static ? 0 : 1;
   auto builtins = formalArgList[argIndex];
   auto inputs = formalArgList.size() > 2 ? formalArgList[argIndex + 1] : nullptr;
+  std::shared_ptr<Var> thisVar;
 
-  std::vector<Var*> globalVars;
+  std::vector<Expr*> globalArgs;
   if (!(entryPoint->modifiers & Method::Modifier::Static)) {
-    ExtractPipelineVars(entryPoint->classType, &globalVars);
+    thisVar = std::make_shared<Var>("this", types_->GetRawPtrType(entryPoint->classType));
+    VarVector pipelineVars;
+    ExtractPipelineVars(entryPoint->classType, &pipelineVars);
+    unfoldedVars_[thisVar.get()] = pipelineVars;
+    globalArgs.push_back(Make<VarExpr>(thisVar.get()));
   }
 
   auto stmts = Make<Stmts>();
@@ -379,7 +336,7 @@ Method* ShaderPrepPass::Run(Method* entryPoint) {
   auto newArgs = Make<ExprList>();
   newArgs->Append(ExtractBuiltInVars(builtins->type, stmts, postStmts));
 
-  entryPoint = PrepMethod(entryPoint, globalVars);
+  entryPoint = PrepMethod(entryPoint, globalArgs);
 
   entryPointWrapper_ = std::make_unique<Method>(entryPoint->modifiers, types_->GetVoid(), "main",
                                                 entryPoint->classType);
@@ -397,34 +354,28 @@ Method* ShaderPrepPass::Run(Method* entryPoint) {
   return entryPointWrapper_.get();
 }
 
-Method* ShaderPrepPass::PrepMethod(Method* method, std::vector<Var*> globalVars) {
+Method* ShaderPrepPass::PrepMethod(Method* method, std::vector<Expr*> globalArgs) {
   if (method->IsNative()) { return method; }
 
-  MethodKey key{method, globalVars};
+  MethodKey key{method, globalArgs};
   if (methodMap_[key]) { return methodMap_[key].get(); }
 
   auto    newMethod = std::make_unique<Method>(*method);
 
   newMethod->formalArgList.clear();
-  VarVector aliasVars;
+  std::vector<Var*> aliasVars;
   for (auto formalArg : method->formalArgList) {
-    UnfoldVar(formalArg, &newMethod->formalArgList, &aliasVars);
+    if (NeedsUnfolding(formalArg->type) || !IsValidLocalVar(formalArg->type)) {
+      aliasVars.push_back(formalArg.get());
+    } else {
+      newMethod->formalArgList.push_back(formalArg);
+    }
   }
 
-  assert(aliasVars.size() == globalVars.size());
+  assert(aliasVars.size() == globalArgs.size());
   auto aliasVar = aliasVars.begin();
-  for (auto globalVar : globalVars) {
-    Expr* globalExpr = nullptr;
-    if (globalVar) {
-      globalExpr = Make<VarExpr>(globalVar);
-      if (IsWrapper(globalVar->type)) {
-        Type* type = globalVar->type->GetUnqualifiedType();
-        assert(type->IsClass());
-        ClassType* classType = static_cast<ClassType*>(type);
-        globalExpr = Make<FieldAccess>(globalExpr, classType->GetFields()[0].get());
-      }
-    }
-    varAliases_[aliasVar->get()] = globalExpr;
+  for (auto globalArg : globalArgs) {
+    varAliases_[*aliasVar] = globalArg;
     aliasVar++;
   }
 
@@ -465,7 +416,7 @@ Result ShaderPrepPass::Visit(MethodCall* node) {
   const std::vector<Expr*>& args = node->GetArgList()->Get();
   auto*                     newArgs = Make<ExprList>();
   Stmts*                    writeStmts = nullptr;
-  std::vector<Var*>         globalVars;
+  std::vector<Expr*>        globalArgs;
   auto                      formalArg = node->GetMethod()->formalArgList.begin();
   for (auto& i : args) {
     Expr* arg = Resolve(i);
@@ -489,16 +440,14 @@ Result ShaderPrepPass::Visit(MethodCall* node) {
         arg = varExpr;
       }
     }
-    if (IsValidLocalVar((*formalArg)->type)) {
-      newArgs->Append(arg);
+    if (NeedsUnfolding((*formalArg)->type) || !IsValidLocalVar((*formalArg)->type)) {
+      globalArgs.push_back(arg);
     } else {
-      assert(arg->IsVarExpr());
-      Var* var = static_cast<VarExpr*>(arg)->GetVar();
-      globalVars.push_back(var);
+      newArgs->Append(arg);
     }
     formalArg++;
   }
-  Method*                   method = PrepMethod(node->GetMethod(), globalVars);
+  Method*                   method = PrepMethod(node->GetMethod(), globalArgs);
   Expr* result = Make<MethodCall>(method, newArgs);
   if (writeStmts) result = Make<ExprWithStmt>(result, writeStmts);
   return result;

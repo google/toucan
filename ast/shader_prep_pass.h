@@ -28,8 +28,8 @@ using WrapperMap = std::unordered_map<Type*, Type*>;
 using WrapperSet = std::unordered_set<Type*>;
 
 struct MethodKey {
-  Method*           method;
-  std::vector<Var*> globalArgs;
+  Method*            method;
+  std::vector<Expr*> globalArgs;
   bool operator==(const MethodKey& other) const {
     return method == other.method && globalArgs == other.globalArgs;
   }
@@ -74,11 +74,9 @@ class ShaderPrepPass : public CopyVisitor {
   bool    TypeIsValidForShaderType(Type*) const;
   Type*   ConvertType(Type* type);
   Result  ResolveNativeMethodCall(MethodCall* node);
-  Method* PrepMethod(Method* method, std::vector<Var*> globalArgs);
-  void    UnfoldClass(ClassType* classType, VarVector* vars, VarVector* localVars, VarVector* globalVars);
-  void    UnfoldVar(std::shared_ptr<Var> var, VarVector* localVars, VarVector* globalVars);
+  Method* PrepMethod(Method* method, std::vector<Expr*> globalArgs);
   Type*   GetAndQualifyUnderlyingType(Type* type);
-  void    ExtractPipelineVars(ClassType* classType, std::vector<Var*>* globalVars);
+  void    ExtractPipelineVars(ClassType* classType, VarVector* pipelineVars);
   Expr*   ExtractBuiltInVars(Type* type, Stmts* stmts, Stmts* postStmts);
   Expr*   CreateAndLoadInputVar(Type* type, std::string name);
   Expr*   CreateAndLoadInputVars(Type* type);
@@ -92,7 +90,6 @@ class ShaderPrepPass : public CopyVisitor {
   MethodMap               methodMap_;
   VarAliasMap             varAliases_;
   UnfoldedVarMap          unfoldedVars_;
-  UnfoldedPtrMap          unfoldedPtrs_;
   std::unique_ptr<Method> entryPointWrapper_;
   int                     methodModifiers_;
   VarVector               inputs_;
