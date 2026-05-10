@@ -16,6 +16,7 @@
 #define _AST_AST_H_
 
 #include <assert.h>
+#include <list>
 #include <string>
 #include <variant>
 #include <vector>
@@ -552,26 +553,26 @@ class Scope : public Stmt {
 class Stmts : public Scope {
  public:
   Stmts();
-  Result                    Accept(Visitor* visitor) override;
-  void                      Append(Stmt* stmt) { stmts_.push_back(stmt); }
-  void                      Append(const std::vector<Stmt*>& stmts);
-  void                      Prepend(Stmt* stmt) { stmts_.insert(stmts_.begin(), stmt); }
-  const std::vector<Stmt*>& GetStmts() { return stmts_; }
-  void                      AppendConstant(std::string name, Expr* value);
-  Expr*                     FindConstant(const std::string& id) const;
-  void                      DefineType(std::string id, Type* type) override { types_[id] = type; }
-  Type*                     FindType(const std::string& id) const override;
-  Var*                      FindVar(const std::string& id) const;
-  void                      AppendVar(std::shared_ptr<Var> v);
-  const VarVector&          GetVars() const { return vars_; }
-  bool                      ContainsReturn() const override;
-  bool                      IsStmts() const override { return true; }
+  Result                  Accept(Visitor* visitor) override;
+  void                    Append(Stmt* stmt) { stmts_.push_back(stmt); }
+  void                    Splice(Stmts* stmts);
+  void                    Prepend(Stmt* stmt) { stmts_.insert(stmts_.begin(), stmt); }
+  const std::list<Stmt*>& GetStmts() { return stmts_; }
+  void                    AppendConstant(std::string name, Expr* value);
+  Expr*                   FindConstant(const std::string& id) const;
+  void                    DefineType(std::string id, Type* type) override { types_[id] = type; }
+  Type*                   FindType(const std::string& id) const override;
+  Var*                    FindVar(const std::string& id) const;
+  void                    AppendVar(std::shared_ptr<Var> v);
+  const VarVector&        GetVars() const { return vars_; }
+  bool                    ContainsReturn() const override;
+  bool                    IsStmts() const override { return true; }
 
  private:
-  std::vector<Stmt*> stmts_;
-  TypeMap            types_;
-  VarVector          vars_;
-  ExprMap            constants_;
+  std::list<Stmt*> stmts_;
+  TypeMap          types_;
+  VarVector        vars_;
+  ExprMap          constants_;
 };
 
 class ExprStmt : public Stmt {

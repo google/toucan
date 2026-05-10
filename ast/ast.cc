@@ -326,8 +326,8 @@ Scope::Scope() {}
 
 Stmts::Stmts() {}
 
-void Stmts::Append(const std::vector<Stmt*>& stmts) {
-  stmts_.insert(stmts_.end(), stmts.begin(), stmts.end());
+void Stmts::Splice(Stmts* stmts) {
+  stmts_.splice(stmts_.end(), std::move(stmts->stmts_));
 }
 
 Type* Stmts::FindType(const std::string& identifier) const {

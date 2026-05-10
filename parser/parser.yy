@@ -173,7 +173,7 @@ static void DefineType(std::string id, Type* type) {
 %expect 2   /* we expect 2 shift/reduce: dangling-else, A<B */
 %%
 program:
-    statements                              { rootStmts_->Append($1->GetStmts()); }
+    statements                              { rootStmts_->Splice($1); }
 
 statements:
     statements statement                    { if ($2) $1->Append($2); $$ = $1; }
