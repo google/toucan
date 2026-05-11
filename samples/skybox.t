@@ -1,3 +1,4 @@
+#include "api.t"
 #include "cube.t"
 #include "cube-loader.t"
 #include "event-handler.t"

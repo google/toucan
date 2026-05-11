@@ -1,3 +1,5 @@
+#include "api.t"
+
 var device = new Device();
 var window = new Window({640, 480});
 var tex = new sampleable Texture1D<RGBA8unorm>(device, 1);

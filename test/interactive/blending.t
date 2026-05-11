@@ -1,3 +1,5 @@
+#include "api.t"
+
 using Vertex = float<2>;
 class Bindings {
   var color : *uniform Buffer<float<4>>;

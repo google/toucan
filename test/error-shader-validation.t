@@ -1,3 +1,5 @@
+#include "api.t"
+
 class NoNewInShaders {
   compute(1) main(cb : &ComputeBuiltins) {
     var i = new int;

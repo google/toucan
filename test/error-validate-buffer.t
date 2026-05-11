@@ -1,3 +1,5 @@
+#include "api.t"
+
 var device = new Device();
 new vertex Buffer<int>(device);
 new vertex Buffer<[]int>(device); // should succeed

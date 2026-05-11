@@ -14,6 +14,7 @@
 
 #include "native_class.h"
 
+#include "ast.h"
 #include "type.h"
 
 namespace Toucan {
@@ -48,5 +49,41 @@ ClassType* NativeClass::Texture3D;
 ClassType* NativeClass::TextureCube;
 ClassType* NativeClass::VertexInput;
 ClassType* NativeClass::Window;
+
+void InitNativeClasses(Scope* scope) {
+  auto findClassType = [scope](const char* id) -> ClassType* {
+    return static_cast<ClassType*>(scope->FindType(id));
+  };
+  NativeClass::BindGroup = findClassType("BindGroup");
+  NativeClass::Buffer = findClassType("Buffer");
+  NativeClass::ColorOutput = findClassType("ColorOutput");
+  NativeClass::CommandBuffer = findClassType("CommandBuffer");
+  NativeClass::CommandEncoder = findClassType("CommandEncoder");
+  NativeClass::ComputePass = findClassType("ComputePass");
+  NativeClass::ComputePipeline = findClassType("ComputePipeline");
+  NativeClass::DepthStencilOutput = findClassType("DepthStencilOutput");
+  NativeClass::Device = findClassType("Device");
+  NativeClass::Event = findClassType("Event");
+  NativeClass::Image = findClassType("Image");
+  NativeClass::Math = findClassType("Math");
+  NativeClass::Queue = findClassType("Queue");
+  NativeClass::RenderPass = findClassType("RenderPass");
+  NativeClass::RenderPipeline = findClassType("RenderPipeline");
+  NativeClass::SampleableTexture1D = findClassType("SampleableTexture1D");
+  NativeClass::SampleableTexture2D = findClassType("SampleableTexture2D");
+  NativeClass::SampleableTexture2DArray = findClassType("SampleableTexture2DArray");
+  NativeClass::SampleableTexture3D = findClassType("SampleableTexture3D");
+  NativeClass::SampleableTextureCube = findClassType("SampleableTextureCube");
+  NativeClass::Sampler = findClassType("Sampler");
+  NativeClass::SwapChain = findClassType("SwapChain");
+  NativeClass::System = findClassType("System");
+  NativeClass::Texture1D = findClassType("Texture1D");
+  NativeClass::Texture2D = findClassType("Texture2D");
+  NativeClass::Texture2DArray = findClassType("Texture2DArray");
+  NativeClass::Texture3D = findClassType("Texture3D");
+  NativeClass::TextureCube = findClassType("TextureCube");
+  NativeClass::VertexInput = findClassType("VertexInput");
+  NativeClass::Window = findClassType("Window");
+}
 
 }  // namespace Toucan

@@ -1,3 +1,5 @@
+#include "api.t"
+
 var device = new Device();
 var window = new Window({640, 480});
 var swapChain = new SwapChain<PreferredPixelFormat>(device, window);

@@ -1,3 +1,5 @@
+#include "api.t"
+
 class Base {
   vertex main(vb : &VertexBuiltins) {
     vb.position = {1.0, 0.0, 0.0, 1.0};

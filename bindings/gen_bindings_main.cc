@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
   Stmts*       semanticStmts = semanticPass.Run(rootStmts);
   if (semanticPass.GetNumErrors() > 0) { exit(2); }
 
-  GenBindings genBindings(outfile, headerfile, true);
+  GenBindings genBindings(outfile, headerfile);
   genBindings.Run(types.GetTypes());
   return 0;
 }

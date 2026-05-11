@@ -1,3 +1,5 @@
+#include "api.t"
+
 using Vertex = float<4>;
 
 class ComputeBindings {

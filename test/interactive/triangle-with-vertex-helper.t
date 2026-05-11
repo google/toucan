@@ -1,3 +1,5 @@
+#include "api.t"
+
 using Vertex = float<2>;
 class Pipeline {
   static deviceonly helper(v : *VertexInput<Vertex>) : Vertex { return v.Get(); }

@@ -1,3 +1,5 @@
+#include "api.t"
+
 class GreenPipeline {
     vertex main(vb : &VertexBuiltins) { vb.position = {@position.Get(), 0.0, 1.0}; }
     fragment main(fb : &FragmentBuiltins) { renderTex.Set(float<4>(0.0, 1.0, 0.0, 1.0)); }

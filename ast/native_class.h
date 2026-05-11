@@ -20,6 +20,7 @@
 namespace Toucan {
 
 class ClassType;
+class Scope;
 
 class NativeClass {
  public:
@@ -54,6 +55,8 @@ class NativeClass {
   static ClassType* VertexInput;
   static ClassType* Window;
 };
+
+void InitNativeClasses(Scope* scope);
 
 };  // namespace Toucan
 #endif

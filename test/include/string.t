@@ -1,3 +1,5 @@
+#include "api.t"
+
 class String {
   String(b : *[]ubyte) { buffer = b; }
   static IntLog2(value : int) : int { return 31 - Math.clz(value | 1); }

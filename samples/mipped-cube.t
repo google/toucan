@@ -1,3 +1,4 @@
+#include "api.t"
 #include "cube.t"
 #include "event-handler.t"
 #include "quaternion.t"

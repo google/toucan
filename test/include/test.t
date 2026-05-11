@@ -1,4 +1,5 @@
 #include "string.t"
+
 class Test {
   static Expect(expr : bool, file : ^[]ubyte = System.GetSourceFile(), line : uint = System.GetSourceLine()) {
     if (!expr) {

@@ -1,3 +1,4 @@
+#include "api.t"
 #include "cube.t"
 #include "cube-loader.t"
 #include "cubic.t"

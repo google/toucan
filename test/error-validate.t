@@ -1,3 +1,5 @@
+#include "api.t"
+
 class BadPipelineField {
   vertex main(vb : &VertexBuiltins) {}
   fragment main(fb : &FragmentBuiltins) {}

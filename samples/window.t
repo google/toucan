@@ -1,3 +1,5 @@
+#include "api.t"
+
 var device = new Device();
 var window = new Window(System.GetScreenSize());
 var swapChain = new SwapChain<PreferredPixelFormat>(device, window);

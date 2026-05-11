@@ -1,3 +1,5 @@
+#include "api.t"
+
 using Vertex = float<2>;
 class Padding {
   var pad1 : float;

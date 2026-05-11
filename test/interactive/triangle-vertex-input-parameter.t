@@ -1,3 +1,5 @@
+#include "api.t"
+
 using Vertex = float<4>;
 var device = new Device();
 var window = new Window({640, 480});

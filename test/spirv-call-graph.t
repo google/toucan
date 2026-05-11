@@ -1,3 +1,5 @@
+#include "api.t"
+
 var device = new Device();
 
 class Pipeline {

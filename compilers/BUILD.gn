@@ -92,6 +92,7 @@ executable("tj") {
            "//third_party/dawn/src/dawn/native:shared",
            "//third_party/build/libjpeg-turbo",
          ]
+  defines = [ "API_PATH=\"" + rebase_path("../api", "") + "\"" ]
 
   if (is_win) {
     include_dirs += [ "../third_party/getopt" ]
@@ -135,6 +136,7 @@ executable("tc") {
     "//codegen:codegen",
     "//parser:parser",
   ]
+  defines = [ "API_PATH=\"" + rebase_path("../api", "") + "\"" ]
   if (is_win) {
     include_dirs += [ "../third_party/getopt" ]
   }

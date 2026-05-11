@@ -1,3 +1,4 @@
+#include "api.t"
 class Vertex {
   var position : float<2>;
   var color : float<3>;

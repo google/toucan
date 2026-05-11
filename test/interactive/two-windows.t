@@ -1,3 +1,5 @@
+#include "api.t"
+
 class Pipeline {
   var fragColor : *ColorOutput<PreferredPixelFormat>;
 }

@@ -71,12 +71,9 @@ std::string ConvertType(Type* type, const std::string& str) {
 }  // namespace
 
 GenBindings::GenBindings(std::ostream& file,
-                         std::ostream& header,
-                         bool          emitSymbolsAndStatements)
+                         std::ostream& header)
     : file_(file),
-      header_(header),
-      emitSymbolsAndStatements_(emitSymbolsAndStatements),
-      sourcePass_(file_, this) {}
+      header_(header) {}
 
 int GenBindings::EmitType(Type* type) {
   if (!type) return -1;
@@ -179,9 +176,6 @@ int GenBindings::EmitType(Type* type) {
     for (const EnumValue& v : enumType->GetValues()) {
       file_ << "  type" << id << "->Append(\"" << v.id << "\", " << v.value << ");\n";
     }
-    if (emitSymbolsAndStatements_) {
-      file_ << "  rootStmts->DefineType(\"" << enumType->GetName() << "\", type" << id << ");\n";
-    }
   } else if (type->IsPtr()) {
     PtrType* ptrType = static_cast<PtrType*>(type);
     std::string baseType = "type" + std::to_string(EmitType(ptrType->GetBaseType()));
@@ -235,11 +229,7 @@ void GenBindings::Run(const TypeVector& referencedTypes) {
   file_ << "#include <ast/type.h>\n";
   file_ << "\n";
   file_ << "namespace Toucan {\n\n";
-  if (emitSymbolsAndStatements_) {
-    file_ << "void InitAPI(NodeVector* nodes, TypeTable* types, Stmts* rootStmts) {\n";
-  } else {
-    file_ << "Type** InitTypes(TypeTable* types) {\n";
-  }
+  file_ << "Type** InitTypes(TypeTable* types) {\n";
   if (referencedTypes.empty()) {
     file_ << "  return nullptr;\n"
           << "}\n}\n";
@@ -279,14 +269,12 @@ void GenBindings::Run(const TypeVector& referencedTypes) {
     classes_.pop_front();
     EmitClass(classType);
   }
-  if (!emitSymbolsAndStatements_) {
-    file_ << "  static Type* typeList[" << referencedTypes.size() << "];\n\n";
-    int i = 0;
-    for (auto type : referencedTypes) {
-      file_ << "  typeList[" << i++ << "] = type" << typeMap_[type] << ";\n";
-    }
-    file_ << "  return typeList;\n";
+  file_ << "  static Type* typeList[" << referencedTypes.size() << "];\n\n";
+  int i = 0;
+  for (auto type : referencedTypes) {
+    file_ << "  typeList[" << i++ << "] = type" << typeMap_[type] << ";\n";
   }
+  file_ << "  return typeList;\n";
   file_ << "}\n\n";
   file_ << "};\n";
   if (header_) {
@@ -372,9 +360,6 @@ void GenBindings::EmitMethod(Method* method) {
   for (int i = 0; i < argList.size(); ++i) {
     Var* var = argList[i].get();
     int defaultValueId = -1;
-    if (emitSymbolsAndStatements_ && method->defaultArgs[i]) {
-      defaultValueId = sourcePass_.Resolve(method->defaultArgs[i]);
-    }
     int varTypeID = EmitType(var->type);
     file_ << "  m->AddFormalArg(\"" << var->name << "\", type" << varTypeID << ", ";
     if (defaultValueId >= 0) {
@@ -420,7 +405,6 @@ void GenBindings::EmitMethod(Method* method) {
       header_ << ");\n";
     }
   }
-  if (emitSymbolsAndStatements_) assert(!method->stmts);
   if (!method->spirv.empty()) {
     file_ << "  m->spirv = {\n";
     for (uint32_t op : method->spirv) {
@@ -447,9 +431,6 @@ void GenBindings::EmitClass(ClassType* classType) {
   for (const auto& field : classType->GetFields()) {
     int typeID = EmitType(field->type);
     int defaultValueId = -1;
-    if (emitSymbolsAndStatements_ && field->defaultValue) {
-      defaultValueId = sourcePass_.Resolve(field->defaultValue);
-    }
     file_ << "  c->AddField(\"" << field->name << "\", type" << EmitType(field->type) << ", ";
     if (defaultValueId >= 0) {
       file_ << "node" << defaultValueId;
@@ -458,29 +439,8 @@ void GenBindings::EmitClass(ClassType* classType) {
     }
     file_ << ");\n";
   }
-  if (emitSymbolsAndStatements_) {
-    for (const auto& constant : classType->GetConstants()) {
-      int valueId = sourcePass_.Resolve(constant.second);
-      file_ << "  c->AddConstant(\"" << constant.first << "\", " << "node" << valueId << ");\n";
-    }
-  }
   for (const auto& method : classType->GetMethods()) {
     EmitMethod(method.get());
-  }
-  if (emitSymbolsAndStatements_) {
-    for (const auto& pair : classType->GetTypes()) {
-      int typeID = EmitType(pair.second);
-      file_ << "  c->DefineType(\"" << pair.first << "\", ";
-      if (typeID >= 0) {
-        file_ << "type" << typeID;
-      } else {
-        file_ << "nullptr";
-      }
-      file_ << ");\n";
-    }
-  }
-  if (emitSymbolsAndStatements_ && !classType->GetTemplate()) {
-    file_ << "  rootStmts->DefineType(\"" << classType->GetName() << "\", c);\n";
   }
 }
 

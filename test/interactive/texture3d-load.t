@@ -1,3 +1,5 @@
+#include "api.t"
+
 class Vertex {
   var position : float<2>;
   var texCoord : float<3>;

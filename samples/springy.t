@@ -1,3 +1,4 @@
+#include "api.t"
 #include "event-handler.t"
 #include "quaternion.t"
 #include "transform.t"

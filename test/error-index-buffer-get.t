@@ -1,3 +1,5 @@
+#include "api.t"
+
 class Pipeline {
   vertex main(vb : &VertexBuiltins) {
     vb.position = vertices.Get();
