@@ -18,6 +18,38 @@ namespace Toucan {
 
 ASTNode::ASTNode() {}
 
+ASTIntegerType::ASTIntegerType(uint32_t bits, bool isSigned) : bits_(bits), isSigned_(isSigned) {}
+
+ASTFloatingPointType::ASTFloatingPointType(uint32_t bits) : bits_(bits) {}
+
+ASTBoolType::ASTBoolType() {}
+
+ASTVectorType::ASTVectorType(ASTType* baseType, uint32_t numComponents) : baseType_(baseType), numComponents_(numComponents) {}
+
+ASTMatrixType::ASTMatrixType(ASTVectorType* columnType, uint32_t numColumns) : columnType_(columnType), numColumns_(numColumns) {}
+
+ASTArrayType::ASTArrayType(ASTType* elementType, Expr* numElements) : elementType_(elementType), numElements_(numElements) {}
+
+ASTFormalTemplateArg::ASTFormalTemplateArg(std::string name) : name_(name) {}
+
+ASTScopedType::ASTScopedType(ASTType* scope, std::string name) : scope_(scope), name_(name) {}
+
+ASTQualifiedType::ASTQualifiedType(ASTType* baseType, uint32_t qualifiers) : baseType_(baseType), qualifiers_(qualifiers) {}
+
+ASTPtrType::ASTPtrType(ASTType* baseType) : baseType_(baseType) {}
+
+ASTStrongPtrType::ASTStrongPtrType(ASTType* baseType) : ASTPtrType(baseType) {}
+
+ASTWeakPtrType::ASTWeakPtrType(ASTType* baseType) : ASTPtrType(baseType) {}
+
+ASTRawPtrType::ASTRawPtrType(ASTType* baseType) : ASTPtrType(baseType) {}
+
+ASTEnumType::ASTEnumType(EnumDecl* decl) : decl_(decl) {}
+
+ASTClassTemplateInstance::ASTClassTemplateInstance(ASTType* classTemplate, ASTTypeList* templateArgs) : classTemplate_(classTemplate), templateArgs_(templateArgs) {}
+
+ASTClassType::ASTClassType(ClassDecl* decl) : decl_(decl) {}
+
 Expr::Expr() {}
 
 HeapAllocation::HeapAllocation(Type* type, Expr* length) : type_(type), length_(length) {}
@@ -145,7 +177,7 @@ bool UnaryOp::IsConstant(TypeTable* types) const {
   return type->IsFloatingPoint() || type->IsInteger();
 }
 
-UnresolvedInitializer::UnresolvedInitializer(Type* type, ArgList* arglist, bool constructor)
+UnresolvedInitializer::UnresolvedInitializer(ASTType* type, ArgList* arglist, bool constructor)
     : type_(type), arglist_(arglist), constructor_(constructor) {}
 
 Initializer::Initializer(Type* type, ExprList* arglist) : type_(type), arglist_(arglist) {}
@@ -160,7 +192,7 @@ Type* UnresolvedListExpr::GetType(TypeTable* types) {
   return types->GetList(std::move(vars));
 }
 
-MethodDecl::MethodDecl(int modifiers, std::array<uint32_t, 3> workgroupSize, std::string id, Stmts* formalArguments, int thisQualifiers, Type* returnType, Expr* initializer, Stmts* body)
+MethodDecl::MethodDecl(int modifiers, std::array<uint32_t, 3> workgroupSize, std::string id, Stmts* formalArguments, int thisQualifiers, ASTType* returnType, Expr* initializer, Stmts* body)
     : modifiers_(modifiers),
       id_(id),
       workgroupSize_(workgroupSize),
@@ -170,29 +202,10 @@ MethodDecl::MethodDecl(int modifiers, std::array<uint32_t, 3> workgroupSize, std
       initializer_(initializer),
       body_(body) {}
 
-Method* MethodDecl::CreateMethod(ClassType* classType, TypeTable* types) {
-  Method* method = new Method(modifiers_, returnType_, id_, classType);
-  method->stmts = body_;
-  method->initializer = initializer_;
-  method->workgroupSize = workgroupSize_;
-  if (!(modifiers_ & Method::Modifier::Static)) {
-    Type* thisType = types->GetQualifiedType(classType, thisQualifiers_);
-    thisType = types->GetRawPtrType(thisType);
-    method->AddFormalArg("this", thisType, nullptr);
-  }
-  if (formalArguments_) {
-    for (auto& it : formalArguments_->GetStmts()) {
-      VarDeclaration* v = static_cast<VarDeclaration*>(it);
-      method->AddFormalArg(v->GetID(), v->GetType(), v->GetInitExpr());
-    }
-  }
-  return method;
-}
-
 ConstDecl::ConstDecl(std::string id, Expr* expr)
     : id_(id), expr_(expr) {}
 
-VarDeclaration::VarDeclaration(std::string id, Type* type, Expr* initExpr)
+VarDeclaration::VarDeclaration(std::string id, ASTType* type, Expr* initExpr)
     : id_(id), type_(type), initExpr_(initExpr) {}
 
 Decls::Decls() {}
@@ -202,10 +215,10 @@ ArrayAccess::ArrayAccess(Expr* expr, Expr* index) : expr_(expr), index_(index) {
 UnresolvedMethodCall::UnresolvedMethodCall(Expr* expr, std::string id, ArgList* arglist)
     : expr_(expr), id_(id), arglist_(arglist) {}
 
-UnresolvedStaticMethodCall::UnresolvedStaticMethodCall(ClassType*  classType,
+UnresolvedStaticMethodCall::UnresolvedStaticMethodCall(ASTType*    baseType,
                                                        std::string id,
                                                        ArgList*    arglist)
-    : classType_(classType), id_(id), arglist_(arglist) {}
+    : baseType_(baseType), id_(id), arglist_(arglist) {}
 
 MethodCall::MethodCall(Method* method, ExprList* arglist) : method_(method), arglist_(arglist) {}
 
@@ -232,7 +245,7 @@ ZeroInitStmt::ZeroInitStmt(Expr* lhs) : lhs_(lhs) {}
 
 UnresolvedDot::UnresolvedDot(Expr* expr, std::string id) : expr_(expr), id_(id) {}
 
-UnresolvedStaticDot::UnresolvedStaticDot(Type* type, std::string id) : type_(type), id_(id) {}
+UnresolvedStaticDot::UnresolvedStaticDot(ASTType* type, std::string id) : type_(type), id_(id) {}
 
 SmartToRawPtr::SmartToRawPtr(Expr* expr) : expr_(expr) {}
 
@@ -295,10 +308,13 @@ BoolConstant::BoolConstant(bool value) : value_(value) {}
 
 Type* BoolConstant::GetType(TypeTable* types) { return types->GetBool(); }
 
-Data::Data(Type* type, std::unique_ptr<uint8_t[]> data, size_t size)
-    : type_(type), data_(std::move(data)), size_(size) {}
+Data::Data(std::unique_ptr<uint8_t[]> data, size_t size)
+    : data_(std::move(data)), size_(size) {}
 
-Type* Data::GetType(TypeTable* types) { return types->GetStrongPtrType(type_); }
+Type* Data::GetType(TypeTable* types) {
+  auto type = types->GetArrayType(types->GetUByte(), 0, MemoryLayout::Default);
+  return types->GetStrongPtrType(type);
+}
 
 CastExpr::CastExpr(Type* type, Expr* expr) : type_(type), expr_(expr) {}
 
@@ -314,6 +330,8 @@ bool CastExpr::IsTransparent(TypeTable* types) const {
 
 Type* CastExpr::GetType(TypeTable* types) { return type_; }
 
+UnresolvedCastExpr::UnresolvedCastExpr(ASTType* type, Expr* expr) : type_(type), expr_(expr) {}
+
 EnumConstant::EnumConstant(const EnumValue* value) : value_(value) {}
 
 Type* EnumConstant::GetType(TypeTable* types) { return value_->type; }
@@ -324,16 +342,16 @@ Type* NullConstant::GetType(TypeTable* types) { return types->GetStrongPtrType(t
 
 Scope::Scope() {}
 
+ASTType* Scope::FindType(const std::string& identifier) const {
+  auto i = types_.find(identifier);
+  if (i != types_.end()) { return i->second; }
+  return nullptr;
+}
+
 Stmts::Stmts() {}
 
 void Stmts::Splice(Stmts* stmts) {
   stmts_.splice(stmts_.end(), std::move(stmts->stmts_));
-}
-
-Type* Stmts::FindType(const std::string& identifier) const {
-  auto i = types_.find(identifier);
-  if (i != types_.end()) { return i->second; }
-  return nullptr;
 }
 
 void Stmts::AppendVar(std::shared_ptr<Var> var) { vars_.push_back(var); }
@@ -385,17 +403,39 @@ ForStatement::ForStatement(Stmt* initStmt, Expr* cond, Stmt* loopStmt, Stmt* bod
 
 ReturnStatement::ReturnStatement(Expr* expr) : expr_(expr) {}
 
-UnresolvedNewExpr::UnresolvedNewExpr(Type* type, Expr* length, ArgList* arglist, bool constructor)
+UnresolvedNewExpr::UnresolvedNewExpr(ASTType* type, Expr* length, ArgList* arglist, bool constructor)
     : type_(type), length_(length), arglist_(arglist), constructor_(constructor) {}
 
-Type* UnresolvedNewExpr::GetType(TypeTable* types) { return types->GetStrongPtrType(type_); }
+Type* UnresolvedNewExpr::GetType(TypeTable* types) { assert(false); return nullptr; }
 
-ClassDecl::ClassDecl(ClassType* classType) : class_(classType) {}
+ClassDecl::ClassDecl(std::string name, ASTFormalTemplateArgList* formalTemplateArgs)
+    : name_(name), formalTemplateArgs_(formalTemplateArgs) {}
+
+EnumDecl::EnumDecl(std::string name) : name_(name) {}
 
 NodeVector::NodeVector() {}
 
 ScopeStack::ScopeStack() {}
 
+Result ASTAutoType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTArrayType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTBoolType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTClassTemplateInstance::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTClassType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTEnumValue::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTEnumValues::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTEnumType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTFloatingPointType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTFormalTemplateArg::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTIntegerType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTMatrixType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTQualifiedType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTRawPtrType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTScopedType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTStrongPtrType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTVectorType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTVoidType::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ASTWeakPtrType::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Arg::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ArgList::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ArrayAccess::Accept(Visitor* visitor) { return visitor->Visit(this); }
@@ -406,6 +446,7 @@ Result ClassDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ConstDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Data::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result EnumConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result EnumDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprList::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprWithStmt::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result SmartToRawPtr::Accept(Visitor* visitor) { return visitor->Visit(this); }
@@ -434,6 +475,7 @@ Result TempVarExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UIntConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnaryOp::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result DestroyStmt::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result UnresolvedCastExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedDot::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedIdentifier::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedListExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }

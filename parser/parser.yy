@@ -23,12 +23,9 @@
 #include <filesystem>
 #include <optional>
 #include <stack>
-#include <unordered_map>
 #include <unordered_set>
 
 #include "ast/ast.h"
-#include "ast/type.h"
-#include "ast/type_replacement_pass.h"
 
 #include "parser/lexer.h"
 #include "parser/parser.h"
@@ -39,71 +36,51 @@ static void PushFile(const char* filename);
 
 static NodeVector* nodes_;
 static ScopeStack scopeStack_;
-static TypeTable* types_;
 static std::vector<std::string> includePaths_;
 static Stmts* rootStmts_;
 static std::unordered_set<std::string> includedFiles_;
 static std::stack<FileLocation> fileStack_;
-static std::queue<ClassType*> instanceQueue_;
-static EnumType* currentEnumType_;
-
+static std::unordered_set<ClassDecl*> definedClasses_;
 #define yylex lex
 
 static Expr* BinOp(BinOpNode::Op op, Expr* arg1, Expr* arg2);
 static Expr* UnOp(UnaryOp::Op op, Expr* expr);
 static Expr* IncDec(IncDecExpr::Op op, bool pre, Expr* expr);
-static Stmt* MakeReturnStatement(Expr* expr);
-static Expr* MakeStaticMethodCall(Type* type, const char *id, ArgList* arguments);
-static ClassType* DeclareClass(const char* id);
-static EnumType* DeclareEnum(const char* id);
-static void DeclareUsing(const char* id, Type* type);
-static void BeginClass(Type* type, ClassType* parent);
-static ClassType*  BeginClassTemplate(TypeList* templateArgs, const char* id);
-static Stmt* EndClass(Stmts* body);
-static void BeginEnum(Type* e);
-static void AppendEnum(const char* id);
-static void AppendEnum(const char* id, int value);
-static void EndEnum();
+static ASTClassType* DeclareClass(const char* id);
+static ASTEnumType* DeclareEnum(const char* id);
+static void DeclareUsing(const char* id, ASTType* type);
+static void BeginClass(ASTType* type, ASTType* parent);
+static ASTClassType* BeginClassTemplate(ASTFormalTemplateArgList* templateArgs, const char* id);
+static ClassDecl* EndClass(Decls* body);
+static EnumDecl* BeginEnum(ASTType* t, ASTEnumValues* values);
 static MethodDecl* MakeMethodDecl(int modifiers, ArgList* optWorkgroupSize, std::string id,
-                                  Stmts* formalArguments, int thisQualifiers, Type* returnType, 
+                                  Stmts* formalArguments, int thisQualifiers, ASTType* returnType, 
                                   Expr* initializer, Stmts* body);
-static MethodDecl* MakeConstructor(int modifiers, Type* type, Stmts* formalArguments,
+static MethodDecl* MakeConstructor(int modifiers, ASTType* type, Stmts* formalArguments,
                                    Expr* initializer, Stmts* body);
-static MethodDecl* MakeDestructor(int modifiers, Type* type, Stmts* body);
+static MethodDecl* MakeDestructor(int modifiers, ASTType* type, Stmts* body);
 static void BeginBlock();
 static void EndBlock();
 static Expr* Load(Expr* expr);
 static Stmt* Store(Expr* expr, Expr* value);
-static Expr* Identifier(const char* id);
-static Expr* MakeArrayAccess(Expr* lhs, Expr* expr);
 static Expr* MakeNewExpr(UnresolvedInitializer* initializer, Expr* length = nullptr);
 static Expr* InlineFile(const char* filename);
 static Expr* StringLiteral(const char* str);
-static Type* GetArrayType(Type* elementType, int numElements);
-static Type* GetScopedType(Type* type, const char* id);
-static TypeList* AddIDToTypeList(const char* id, TypeList* list);
-static ClassType* GetClassTemplateInstance(Type* type, const TypeList& templateArgs);
-static ClassType* AsClassType(Type* type);
-static EnumType* AsEnumType(Type* type);
-static ClassTemplate* AsClassTemplate(Type* type);
-static int AsIntConstant(Expr* expr);
 
 template <typename T, typename... ARGS> T* Make(ARGS&&... args) {
   T* node = nodes_->Make<T>(std::forward<ARGS>(args)...);
   node->SetFileLocation(fileStack_.top());
   return node;
 }
-inline TypeList* Append(TypeList* typeList) {
-  types_->AppendTypeList(typeList); return typeList;
-}
-Type* FindType(const char* str) {
+
+ASTType* FindType(const char* str) {
   for (auto scope : scopeStack_) {
     if (auto type = scope->FindType(str)) return type;
   }
   return nullptr;
 }
 
-static void DefineType(std::string id, Type* type) {
+static void DefineType(std::string id, ASTType* type) {
   scopeStack_.Top()->DefineType(id, type);
 }
 %}
@@ -120,29 +97,34 @@ static void DefineType(std::string id, Type* type) {
     Toucan::Arg*         arg;
     Toucan::ArgList*     argList;
     Toucan::UnresolvedInitializer* initializer;
-    Toucan::Type*        type;
-    Toucan::TypeList*    typeList;
+    Toucan::ASTType*     type;
+    Toucan::ASTClassType* classType;
+    Toucan::ASTFormalTemplateArgList* formalTemplateArgList;
+    Toucan::ASTTypeList* typeList;
+    Toucan::ASTEnumValue* enumValue;
+    Toucan::ASTEnumValues* enumValues;
 };
 
-%type <type> scalar_type type class_header template_class_header enum_header
-%type <type> simple_type opt_return_type
+%type <type> scalar_type type simple_type opt_parent_class class_header enum_header opt_return_type
+%type <enumValue> enum_value
+%type <classType> template_class_header
 %type <expr> expr opt_expr assignable expr_or_list opt_initializer opt_length list_initializer
 %type <initializer> initializer initializer_or_type
 %type <arg> argument
 %type <stmt> statement expr_statement var_decl_statement const_decl_statement for_loop_stmt
 %type <stmt> assignment
 %type <stmt> if_statement for_statement while_statement do_statement
-%type <stmt> opt_else class_decl class_body_decl var_decl const_decl
+%type <stmt> opt_else class_decl class_body_decl var_decl const_decl enum_decl
 %type <stmt> class_forward_decl
 %type <stmts> statements formal_arguments non_empty_formal_arguments method_body
-%type <decls> var_decl_list const_decl_list
-%type <stmts> class_body block_statement
+%type <decls> var_decl_list const_decl_list class_body
+%type <enumValues> enum_list
+%type <stmts> block_statement
 %type <argList> arguments non_empty_arguments opt_workgroup_size
 %type <typeList> types
-%type <typeList> template_formal_arguments
+%type <formalTemplateArgList> template_formal_arguments
 %type <i> type_qualifier type_qualifiers opt_type_qualifiers
 %type <i> method_modifier method_modifiers
-%type <type> opt_parent_class
 %token <identifier> T_IDENTIFIER T_STRING_LITERAL
 %token <type> T_TYPENAME
 %token <i> T_BYTE_LITERAL T_UBYTE_LITERAL T_SHORT_LITERAL T_USHORT_LITERAL
@@ -191,12 +173,12 @@ statement:
   | for_statement
   | while_statement 
   | do_statement
-  | T_RETURN opt_expr ';'                   { $$ = MakeReturnStatement($2); }
+  | T_RETURN opt_expr ';'                   { $$ = Make<ReturnStatement>($2); }
   | var_decl_statement ';'                  { $$ = $1; }
   | const_decl_statement ';'                { $$ = $1; }
   | class_decl
   | class_forward_decl
-  | enum_decl                               { $$ = 0; }
+  | enum_decl
   | using_decl                              { $$ = 0; }
   | assignment ';'
   ;
@@ -258,21 +240,22 @@ const_decl_statement:
 simple_type:
     T_TYPENAME
   | scalar_type
-  | simple_type T_LT types T_GT             { $$ = GetClassTemplateInstance($1, *$3); }
-  | simple_type T_LT T_INT_LITERAL T_GT     { $$ = types_->GetVector($1, $3); }
-  | simple_type T_LT T_INT_LITERAL ',' T_INT_LITERAL T_GT 
-    { $$ = types_->GetMatrix(types_->GetVector($1, $3), $5); }
-  | simple_type ':' T_IDENTIFIER  { $$ = GetScopedType($1, $3); }
+  | simple_type T_LT types T_GT             { $$ = Make<ASTClassTemplateInstance>($1, $3); }
+  | simple_type T_LT T_INT_LITERAL T_GT     { $$ = Make<ASTVectorType>($1, $3); }
+  | simple_type T_LT T_INT_LITERAL ',' T_INT_LITERAL T_GT
+                                            { auto columnType = Make<ASTVectorType>($1, $3);
+                                              $$ = Make<ASTMatrixType>(columnType, $5); }
+  | simple_type ':' T_IDENTIFIER            { $$ = Make<ASTScopedType>($1, $3); }
   ;
 
 type:
     simple_type
-  | type_qualifier type                     { $$ = types_->GetQualifiedType($2, $1); }
-  | '*' type                                { $$ = types_->GetStrongPtrType($2); }
-  | '^' type                                { $$ = types_->GetWeakPtrType($2); }
-  | '&' type                                { $$ = types_->GetRawPtrType($2); }
-  | '[' expr ']' type                       { $$ = GetArrayType($4, AsIntConstant($2)); }
-  | '[' ']' type                            { $$ = GetArrayType($3, 0); }
+  | type_qualifier type                     { $$ = Make<ASTQualifiedType>($2, $1); }
+  | '*' type                                { $$ = Make<ASTStrongPtrType>($2); }
+  | '^' type                                { $$ = Make<ASTWeakPtrType>($2); }
+  | '&' type                                { $$ = Make<ASTRawPtrType>($2); }
+  | '[' expr ']' type                       { $$ = Make<ASTArrayType>($4, $2); }
+  | '[' ']' type                            { $$ = Make<ASTArrayType>($3, nullptr); }
   ;
 
 var_decl_list:
@@ -287,7 +270,7 @@ const_decl_list:
 
 class_header:
     T_CLASS T_IDENTIFIER                    { $$ = DeclareClass($2); }
-  | T_CLASS T_TYPENAME                      { $$ = AsClassType($2); }
+  | T_CLASS T_TYPENAME                      { $$ = $2; }
   ;
 
 template_class_header:
@@ -300,11 +283,10 @@ class_forward_decl:
   ;
 
 class_decl:
-    class_header opt_parent_class '{'           { BeginClass($1, AsClassType($2)); }
+    class_header opt_parent_class '{'           { BeginClass($1, $2); }
     class_body '}'                              { $$ = EndClass($5); }
-  | template_class_header opt_parent_class  '{' { AsClassType($1)->SetParent(AsClassType($2)); }
+  | template_class_header opt_parent_class  '{' { if ($2) $1->GetDecl()->SetParent($2); }
     class_body '}'                              { $$ = EndClass($5); }
-  ;
   ;
 
 opt_parent_class:
@@ -314,24 +296,27 @@ opt_parent_class:
 
 class_body:
     class_body class_body_decl              { if ($2) $1->Append($2); $$ = $1; }
-  | /* nothing */                           { $$ = Make<Stmts>(); }
+  | /* nothing */                           { $$ = Make<Decls>(); }
   ;
 
 enum_header:
     T_ENUM T_IDENTIFIER                     { $$ = DeclareEnum($2); }
-  | T_ENUM T_TYPENAME                       { $$ = AsEnumType($2); }
+  | T_ENUM T_TYPENAME                       { $$ = $2; }
   ;
 
 enum_decl:
-    enum_header '{'                         { BeginEnum($1); }
-    enum_list '}'                           { EndEnum(); }
+    enum_header '{' enum_list '}'           { $$ = BeginEnum($1, $3); }
   ;
+
+enum_value:
+    T_IDENTIFIER                            { $$ = Make<ASTEnumValue>($1); }
+  | T_IDENTIFIER '=' T_INT_LITERAL          { $$ = Make<ASTEnumValue>($1, $3); }
+  ;
+
 enum_list:
-    enum_list ',' T_IDENTIFIER                     { AppendEnum($3); }
-  | enum_list ',' T_IDENTIFIER '=' T_INT_LITERAL   { AppendEnum($3, $5); }
-  | T_IDENTIFIER                                   { AppendEnum($1); }
-  | T_IDENTIFIER '=' T_INT_LITERAL                 { AppendEnum($1, $3); }
-  | /* nothing */
+    enum_list ',' enum_value                { $$ = $1; $$->Append($3); }
+  | enum_value                              { $$ = Make<ASTEnumValues>(); $$->Append($1); }
+  | /* nothing */                           { $$ = Make<ASTEnumValues>(); }
   ;
 
 using_decl:
@@ -340,7 +325,7 @@ using_decl:
 
 opt_return_type:
     ':' type                                { $$ = $2; }
-  | /* NOTHING */                           { $$ = types_->GetVoid(); }
+  | /* NOTHING */                           { $$ = Make<ASTVoidType>(); }
   ;
 
 class_body_decl:
@@ -363,10 +348,10 @@ method_body:
   ;
 
 template_formal_arguments:
-    T_IDENTIFIER
-                                            { $$ = AddIDToTypeList($1, nullptr); }
+    T_IDENTIFIER                            { $$ = Make<ASTFormalTemplateArgList>();
+                                              $$->Append(Make<ASTFormalTemplateArg>($1)); }
   | template_formal_arguments ',' T_IDENTIFIER
-                                            { $$ = AddIDToTypeList($3, $1); }
+                                            { $$ = $1; $$->Append(Make<ASTFormalTemplateArg>($3)); }
   ;
 
 method_modifier:
@@ -413,7 +398,7 @@ method_modifiers:
 
 formal_arguments:
     non_empty_formal_arguments
-  | /* nothing */                           { $$ = nullptr; }
+  | /* nothing */                           { $$ = Make<Stmts>(); }
   ;
 
 non_empty_formal_arguments:
@@ -423,7 +408,7 @@ non_empty_formal_arguments:
 
 var_decl:
     T_IDENTIFIER ':' type                   { $$ = Make<VarDeclaration>($1, $3, nullptr); }
-  | T_IDENTIFIER '=' expr_or_list           { $$ = Make<VarDeclaration>($1, types_->GetAuto(), $3); }
+  | T_IDENTIFIER '=' expr_or_list           { $$ = Make<VarDeclaration>($1, Make<ASTAutoType>(), $3); }
   | T_IDENTIFIER ':' type '=' expr_or_list  { $$ = Make<VarDeclaration>($1, $3, $5); }
   ;
 
@@ -432,15 +417,15 @@ const_decl:
   ;
 
 scalar_type:
-    T_INT           { $$ = types_->GetInt(); }
-  | T_UINT          { $$ = types_->GetUInt(); }
-  | T_SHORT         { $$ = types_->GetShort(); }
-  | T_USHORT        { $$ = types_->GetUShort(); }
-  | T_BYTE          { $$ = types_->GetByte(); }
-  | T_UBYTE         { $$ = types_->GetUByte(); }
-  | T_FLOAT         { $$ = types_->GetFloat(); }
-  | T_DOUBLE        { $$ = types_->GetDouble(); }
-  | T_BOOL          { $$ = types_->GetBool(); }
+    T_INT           { $$ = Make<ASTIntegerType>(32, true); }
+  | T_UINT          { $$ = Make<ASTIntegerType>(32, false); }
+  | T_SHORT         { $$ = Make<ASTIntegerType>(16, true); }
+  | T_USHORT        { $$ = Make<ASTIntegerType>(16, false); }
+  | T_BYTE          { $$ = Make<ASTIntegerType>(8, true); }
+  | T_UBYTE         { $$ = Make<ASTIntegerType>(8, false); }
+  | T_FLOAT         { $$ = Make<ASTFloatingPointType>(32); }
+  | T_DOUBLE        { $$ = Make<ASTFloatingPointType>(64); }
+  | T_BOOL          { $$ = Make<ASTBoolType>(); }
   ;
 
 arguments:
@@ -493,7 +478,7 @@ expr:
   | assignable T_PLUSPLUS                   { $$ = IncDec(IncDecExpr::Op::Inc, false, $1); }
   | assignable T_MINUSMINUS                 { $$ = IncDec(IncDecExpr::Op::Dec, false, $1); }
   | '(' expr ')'                            { $$ = $2; }
-  | expr T_AS type                          { $$ = Make<CastExpr>($3, $1); }
+  | expr T_AS type                          { $$ = Make<UnresolvedCastExpr>($3, $1); }
   | T_INT_LITERAL                           { $$ = Make<IntConstant>($1, 32); }
   | T_UINT_LITERAL                          { $$ = Make<UIntConstant>($1, 32); }
   | T_BYTE_LITERAL                          { $$ = Make<IntConstant>($1, 8); }
@@ -533,14 +518,14 @@ opt_initializer:
   ;
 
 types:
-    type                                    { $$ = Append(new TypeList()); $$->push_back($1);  }
-  | types ',' type                          { $1->push_back($3); $$ = $1; }
+    type                                    { $$ = Make<ASTTypeList>(); $$->Append($1);  }
+  | types ',' type                          { $1->Append($3); $$ = $1; }
   ;
 
 assignable:
-    T_IDENTIFIER                            { $$ = Identifier($1); }
+    T_IDENTIFIER                            { $$ = Make<UnresolvedIdentifier>($1); }
   | T_THIS                                  { $$ = Make<UnresolvedIdentifier>("this"); }
-  | assignable '[' expr ']'                 { $$ = MakeArrayAccess($1, $3); }
+  | assignable '[' expr ']'                 { $$ = Make<ArrayAccess>($1, $3); }
   | assignable '[' opt_expr T_DOTDOT opt_expr ']'
                                             { $$ = Make<SliceExpr>($1, $3, $5); }
   | assignable '.' T_IDENTIFIER             { $$ = Make<UnresolvedDot>($1, $3); }
@@ -548,7 +533,7 @@ assignable:
   | assignable '.' T_IDENTIFIER '(' arguments ')'
                                             { $$ = Make<UnresolvedMethodCall>($1, $3, $5); }
   | simple_type '.' T_IDENTIFIER '(' arguments ')'
-                                            { $$ = MakeStaticMethodCall($1, $3, $5); }
+                                            { $$ = Make<UnresolvedStaticMethodCall>($1, $3, $5); }
   | assignable ':'                          { $$ = Make<SmartToRawPtr>(Make<LoadExpr>($1)); }
   | initializer                             { $$ = Make<TempVarExpr>(nullptr, $1); }
   ;
@@ -592,16 +577,6 @@ static Expr* IncDec(IncDecExpr::Op op, bool pre, Expr* expr) {
   return Make<IncDecExpr>(op, expr, !pre);
 }
 
-static Expr* Identifier(const char* id) {
-  if (!id) return nullptr;
-  return Make<UnresolvedIdentifier>(id);
-}
-
-static Expr* MakeArrayAccess(Expr* lhs, Expr* expr) {
-  if (!lhs) return nullptr;
-  return Make<ArrayAccess>(lhs, expr);
-}
-
 static Expr* Load(Expr* expr) {
   if (!expr) return nullptr;
   return Make<LoadExpr>(expr);
@@ -626,8 +601,7 @@ static Expr* TryInlineFile(std::string dir, const char* filename) {
   off_t size = statbuf.st_size;
   auto buffer = std::make_unique<uint8_t[]>(size);
   fread(buffer.get(), size, 1, f);
-  Type* type = types_->GetArrayType(types_->GetUByte(), 0, MemoryLayout::Default);
-  return Make<Data>(type, std::move(buffer), size);
+  return Make<Data>(std::move(buffer), size);
 }
 
 static Expr* InlineFile(const char* filename) {
@@ -647,8 +621,7 @@ static Expr* StringLiteral(const char* str) {
   size_t length = strlen(str);
   auto buffer = std::make_unique<uint8_t[]>(length);
   memcpy(buffer.get(), str, length);
-  Type* type = types_->GetArrayType(types_->GetUByte(), 0, MemoryLayout::Default);
-  return Make<Data>(type, std::move(buffer), length);
+  return Make<Data>(std::move(buffer), length);
 }
 
 static void PushFile(const char* filename) {
@@ -712,117 +685,68 @@ static Stmt* Store(Expr* lhs, Expr* rhs) {
   return Make<StoreStmt>(lhs, rhs);
 }
 
-static Stmt* MakeReturnStatement(Expr* expr) {
-  return Make<ReturnStatement>(expr);
-}
-
-static Expr* MakeStaticMethodCall(Type* type, const char* id, ArgList* arguments) {
-  if (!type->IsClass()) {
-    yyerrorf("attempt to call method on non-class\n");
-    return nullptr;
-  }
-  return Make<UnresolvedStaticMethodCall>(static_cast<ClassType*>(type), id, arguments);
-}
-
-static ClassType* DeclareClass(const char *id) {
+static ASTClassType* DeclareClass(const char *id) {
   assert(!FindType(id));
-  ClassType* c = types_->Make<ClassType>(id);
-  DefineType(id, c);
-  return c;
+  auto classDecl = Make<ClassDecl>(id);
+  auto result = Make<ASTClassType>(classDecl);
+  DefineType(id, Make<ASTClassType>(classDecl));
+  return result;
 }
 
-static EnumType* DeclareEnum(const char *id) {
+static ASTEnumType* DeclareEnum(const char *id) {
   assert(!FindType(id));
-  EnumType* e = types_->Make<EnumType>(id);
-  DefineType(id, e);
-  return e;
+  auto decl = Make<EnumDecl>(id);
+  auto enumType = Make<ASTEnumType>(decl);
+  DefineType(id, enumType);
+  return enumType;
 }
 
-static void DeclareUsing(const char *id, Type* type) {
+static void DeclareUsing(const char *id, ASTType* type) {
   assert(!FindType(id));
   DefineType(id, type);
 }
 
-static void BeginClass(Type* t, ClassType* parent) {
-  ClassType* c = static_cast<ClassType*>(t);
-  if (c->IsDefined()) {
-    yyerrorf("class \"%s\" already has a definition", c->GetName().c_str());
+static void BeginClass(ASTType* t, ASTType* parent) {
+  if (!t->IsClass()) {
+    yyerrorf("type is already declared as non-class");
     return;
   }
-  c->SetParent(parent);
-  c->SetDefined(true);
-  scopeStack_.Push(Make<ClassDecl>(c));
+  auto decl = static_cast<ASTClassType*>(t)->GetDecl();
+  scopeStack_.Push(decl);
+  if (definedClasses_.contains(decl)) {
+    yyerrorf("class \"%s\" already has a definition", decl->GetName().c_str());
+    return;
+  }
+  definedClasses_.insert(decl);
+  if (parent) decl->SetParent(parent);
 }
 
-static ClassType* BeginClassTemplate(TypeList* templateArgs, const char* id) {
-  ClassTemplate* t = types_->Make<ClassTemplate>(id, *templateArgs);
-  DefineType(id, t);
-  t->SetDefined(true);
-  scopeStack_.Push(Make<ClassDecl>(t));
-  for (Type* const& i : *templateArgs) {
-    auto type = static_cast<FormalTemplateArg*>(i);
-    DefineType(type->GetName(), type);
+static ASTClassType* BeginClassTemplate(ASTFormalTemplateArgList* templateArgs, const char* id) {
+  auto decl = Make<ClassDecl>(id, templateArgs);
+  auto result = Make<ASTClassType>(decl);
+  DefineType(id, result);
+  scopeStack_.Push(decl);
+  for (auto arg : templateArgs->Get()) {
+    DefineType(arg->GetName(), arg);
   }
-  return t;
+  return result;
 }
 
-class ClassPopulator : public Visitor {
- public:
-  ClassPopulator(ClassType* classType) : classType_(classType) {}
-
- private:
-  Result Visit(Stmts* stmts) override {
-    for (auto stmt : stmts->GetStmts()) stmt->Accept(this);
-    return {};
-  }
-
-  Result Visit(Decls* decls) override {
-    for (auto decl : decls->Get()) decl->Accept(this);
-    return {};
-  }
-
-  Result Visit(VarDeclaration* v) override {
-    classType_->AddField(v->GetID(), v->GetType(), v->GetInitExpr());
-    return {};
-  }
-
-  Result Visit(ConstDecl* decl) override {
-    classType_->AddConstant(decl->GetID(), decl->GetExpr());
-    return {};
-  }
-
-  Result Visit(MethodDecl* decl) override {
-    classType_->AddMethod(decl->CreateMethod(classType_, types_));
-    return {};
-  }
-
-  Result Default(ASTNode* node) override { return {}; }
-
-  ClassType*    classType_;
-};
-
-static Stmt* EndClass(Stmts* body) {
+static ClassDecl* EndClass(Decls* body) {
   auto node = static_cast<ClassDecl*>(scopeStack_.Pop());
-  auto classType = node->GetClass();
-  ClassPopulator populator(classType);
-  body->Accept(&populator);
+  node->SetBody(body);
   return node;
 }
 
-static void BeginEnum(Type* t) {
-  currentEnumType_ = static_cast<EnumType*>(t);
-}
-
-static void EndEnum() {
-  currentEnumType_ = nullptr;
-}
-
-static void AppendEnum(const char *id) {
-  if (currentEnumType_) currentEnumType_->Append(id);
-}
-
-static void AppendEnum(const char *id, int value) {
-  if (currentEnumType_) currentEnumType_->Append(id, value);
+static EnumDecl* BeginEnum(ASTType* t, ASTEnumValues* values) {
+  if (!t->IsEnum()) {
+    yyerrorf("type is already declared as non-enum");
+    return nullptr;
+  }
+  ASTEnumType* enumType = static_cast<ASTEnumType*>(t);
+  auto decl = enumType->GetDecl();
+  decl->SetValues(values);
+  return decl;
 }
 
 static void BeginBlock() {
@@ -833,8 +757,9 @@ static void EndBlock() {
   scopeStack_.Pop();
 }
 
-MethodDecl* MakeMethodDecl(int modifiers, ArgList* optWorkgroupSize, std::string id, Stmts* formalArguments,
-                    int thisQualifiers, Type* returnType, Expr* initializer, Stmts* body) {
+static MethodDecl* MakeMethodDecl(int modifiers, ArgList* optWorkgroupSize, std::string id,
+                                  Stmts* formalArguments, int thisQualifiers, ASTType* returnType,
+                                  Expr* initializer, Stmts* body) {
   std::array<uint32_t, 3> workgroupSize;
   if (optWorkgroupSize) {
     auto args = optWorkgroupSize->GetArgs();
@@ -860,85 +785,45 @@ MethodDecl* MakeMethodDecl(int modifiers, ArgList* optWorkgroupSize, std::string
                           returnType, initializer, body);
 }
 
-MethodDecl* MakeConstructor(int modifiers, Type* type, Stmts* formalArguments, Expr* initializer,
-                            Stmts* body) {
+static MethodDecl* MakeConstructor(int modifiers, ASTType* type, Stmts* formalArguments,
+                                   Expr* initializer, Stmts* body) {
   if (!type->IsClass()) {
     yyerror("constructor must be of class type");
     return nullptr;
   }
-  ClassType* classType = static_cast<ClassType*>(type);
-  auto returnType = types_->GetRawPtrType(classType);
-  return MakeMethodDecl(modifiers, nullptr, classType->GetName(), formalArguments, 0, returnType,
+  auto classType = static_cast<ASTClassType*>(type);
+  if (classType->GetDecl()->IsTemplate()) {
+    auto templateArgs = Make<ASTTypeList>();
+    for (auto arg : classType->GetDecl()->GetFormalTemplateArgs()->Get()) {
+      templateArgs->Append(arg);
+    }
+    type = Make<ASTClassTemplateInstance>(classType, templateArgs);
+  }
+  auto returnType = Make<ASTRawPtrType>(type);
+  auto name = classType->GetDecl()->GetName();
+  return MakeMethodDecl(modifiers, nullptr, name, formalArguments, 0, returnType,
                         initializer, body);
 }
 
-MethodDecl* MakeDestructor(int modifiers, Type* type, Stmts* body) {
+static MethodDecl* MakeDestructor(int modifiers, ASTType* type, Stmts* body) {
+  std::string name;
   if (!type->IsClass()) {
     yyerror("destructor must be of class type");
     return nullptr;
   }
-  ClassType* classType = static_cast<ClassType*>(type);
-  std::string name(std::string("~") + classType->GetName());
-  return MakeMethodDecl(modifiers, nullptr, name.c_str(), nullptr, 0, types_->GetVoid(), nullptr,
-                        body);
-}
-
-static Type* GetScopedType(Type* type, const char* id) {
-  if (type->IsFormalTemplateArg()) {
-    return types_->GetUnresolvedScopedType(static_cast<FormalTemplateArg*>(type), id);
-  }
-  if (!type->IsClass()) {
-    yyerrorf("\"%s\" is not a class type", type->ToString().c_str());
-    return nullptr;
-  }
-  Type* scopedType = static_cast<ClassType*>(type)->FindType(id);
-  if (!type) {
-    yyerrorf("class \"%s\" has no type named \"%s\"", type->ToString().c_str(), id);
-    return nullptr;
-  }
-  return scopedType;
-}
-
-static TypeList* AddIDToTypeList(const char* id, TypeList* list) {
-  if (!list) {
-    list = Append(new TypeList());
-  }
-  list->push_back(types_->GetFormalTemplateArg(id));
-  return list;
-}
-
-void OnNewClass(ClassType* classType) {
-  instanceQueue_.push(classType);
-}
-static ClassType* GetClassTemplateInstance(Type* type, const TypeList& templateArgs) {
-  return types_->GetClassTemplateInstance(AsClassTemplate(type), templateArgs, &OnNewClass);
-}
-
-static ClassType* PopInstanceQueue() {
-  if (instanceQueue_.empty()) { return nullptr; }
-  ClassType* instance = instanceQueue_.front();
-  instanceQueue_.pop();
-  return instance;
-}
-
-static void InstantiateClassTemplates() {
-  while (ClassType* instance = PopInstanceQueue()) {
-    ClassTemplate* classTemplate = instance->GetTemplate();
-    TypeReplacementPass pass(nodes_, types_, classTemplate->GetFormalTemplateArgs(), instance->GetTemplateArgs(), &OnNewClass);
-    pass.ResolveClassInstance(classTemplate, instance);
-    numSyntaxErrors += pass.NumErrors();
-    rootStmts_->Append(Make<ClassDecl>(instance));
-  }
+  auto classType = static_cast<ASTClassType*>(type);
+  name = std::string("~") + classType->GetDecl()->GetName();
+  auto formalArguments = Make<Stmts>();
+  return MakeMethodDecl(modifiers, nullptr, name.c_str(), formalArguments, 0, Make<ASTVoidType>(),
+                        nullptr, body);
 }
 
 int ParseProgram(const char* filename,
                  NodeVector* nodes,
-                 TypeTable* types,
                  const std::vector<std::string>& includePaths,
                  Stmts* rootStmts) {
   numSyntaxErrors = 0;
   nodes_ = nodes;
-  types_ = types;
   includePaths_ = includePaths;
   rootStmts_ = rootStmts;
   PushFile(filename);
@@ -949,51 +834,10 @@ int ParseProgram(const char* filename,
     if (!rootStmts_->ContainsReturn()) {
       rootStmts_->Append(Make<ReturnStatement>(nullptr));
     }
-    InstantiateClassTemplates();
   }
   PopFile();
   nodes_ = nullptr;
-  types_ = nullptr;
   rootStmts_ = nullptr;
   lex_destroy();
   return numSyntaxErrors;
-}
-
-static ClassType* AsClassType(Type* type) {
-  if (type && !type->IsClass()) {
-    yyerrorf("type is already declared as non-class");
-    return nullptr;
-  }
-  return static_cast<ClassType*>(type);
-}
-
-static EnumType* AsEnumType(Type* type) {
-  if (type && !type->IsEnum()) {
-    yyerrorf("type is already declared as non-enum");
-    return nullptr;
-  }
-  return static_cast<EnumType*>(type);
-}
-
-static ClassTemplate* AsClassTemplate(Type* type) {
-  if (type && !type->IsClassTemplate()) {
-    yyerrorf("template is already declared as non-template");
-    return nullptr;
-  }
-  return static_cast<ClassTemplate*>(type);
-}
-
-static int AsIntConstant(Expr* expr) {
-  if (expr && !expr->IsIntConstant()) {
-    yyerrorf("array size is not an integer constant");
-  }
-  return static_cast<IntConstant*>(expr)->GetValue();
-}
-
-static Type* GetArrayType(Type* elementType, int numElements) {
-  if (elementType->IsVoid() || elementType->IsAuto()) {
-    yyerrorf("invalid array element type \"%s\"", elementType->ToString().c_str());
-    return nullptr;
-  }
-  return types_->GetArrayType(elementType, numElements, MemoryLayout::Default);
 }

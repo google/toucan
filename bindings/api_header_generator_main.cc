@@ -1,4 +1,4 @@
-// Copyright 2023 The Toucan Authors
+// Copyright 2026 The Toucan Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,15 +23,14 @@
 
 #include <ast/semantic_pass.h>
 #include <parser/parser.h>
-#include "gen_bindings.h"
+#include "api_header_generator.h"
 
 using namespace Toucan;
 
 int main(int argc, char** argv) {
   int   opt;
   std::ofstream outfile;
-  std::ofstream headerfile;
-  char  optstring[] = "o:h:";
+  char  optstring[] = "o:i:";
   while ((opt = getopt(argc, argv, optstring)) > 0) {
     switch (opt) {
       case 'o':
@@ -41,12 +40,6 @@ int main(int argc, char** argv) {
           exit(3);
         }
         break;
-      case 'h':
-        headerfile.open(optarg, std::ofstream::out);
-        if (headerfile.fail()) {
-          std::perror(optarg);
-          exit(4);
-        }
     }
   }
 
@@ -58,16 +51,13 @@ int main(int argc, char** argv) {
     yyin = stdin;
   }
 
-  TypeTable   types;
   NodeVector nodes;
   Stmts*     rootStmts = nodes.Make<Stmts>();
-  int        syntaxErrors = ParseProgram(filename, &nodes, &types, {}, rootStmts);
+  int        syntaxErrors = ParseProgram(filename, &nodes, {}, rootStmts);
   if (syntaxErrors > 0) { exit(1); }
-  SemanticPass semanticPass(&nodes, &types);
-  Stmts*       semanticStmts = semanticPass.Run(rootStmts);
-  if (semanticPass.GetNumErrors() > 0) { exit(2); }
 
-  GenBindings genBindings(outfile, headerfile);
-  genBindings.Run(types.GetTypes());
+  TypeTable  types;
+  APIHeaderGenerator generator(rootStmts, &types, outfile);
+  generator.Run();
   return 0;
 }

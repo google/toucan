@@ -22,7 +22,6 @@ namespace Toucan {
 class CopyVisitor : public Visitor {
  public:
   CopyVisitor(NodeVector* nodes);
-  virtual Type* ResolveType(Type* type);
   Result        Visit(Arg* node) override;
   Result        Visit(ArgList* node) override;
   Result        Visit(ArrayAccess* node) override;

@@ -103,9 +103,9 @@ error-allocate-raw-ptr.t:11:  cannot allocate a type containing raw pointer
 test/error-allocate-unsized-array.t
 error-allocate-unsized-array.t:1:  cannot allocate unsized array
 test/error-array-size-non-integer.t
-error-array-size-non-integer.t:3: array size is not an integer constant
-error-array-size-non-integer.t:4: array size is not an integer constant
-error-array-size-non-integer.t:5: array size is not an integer constant
+error-array-size-non-integer.t:3:  array size is not an integer constant
+error-array-size-non-integer.t:4:  array size is not an integer constant
+error-array-size-non-integer.t:5:  array size is not an integer constant
 test/error-assign-padded-array.t
 test/error-assign-padded-array.t:21: expectation failed
 test/error-assign-padded-array.t:22: expectation failed
@@ -122,6 +122,8 @@ test/error-constructor-not-found.t
 error-constructor-not-found.t:3:  matching constructor not found
 test/error-dereference.t
 error-dereference.t:2:  attempt to dereference a non-pointer
+test/error-doubly-defined-class.t
+error-doubly-defined-class.t:5: class "C" already has a definition
 test/error-duplicate-enum.t
 error-duplicate-enum.t:4: type is already declared as non-enum
 test/error-expectation-failed.t
@@ -149,8 +151,7 @@ error-invalid-class-casts.t:14:  cannot store a value of type "null" to a locati
 error-invalid-class-casts.t:17:  cannot store a value of type "*Base2" to a location of type "*Base"
 error-invalid-class-casts.t:19:  cannot store a value of type "*Derived" to a location of type "*Derived2"
 test/error-invalid-forward-decl.t
-error-invalid-forward-decl.t:5: type is already declared as non-class
-error-invalid-forward-decl.t:8: type is already declared as non-enum
+error-invalid-forward-decl.t:10: type is already declared as non-enum
 test/error-invalid-return-value.t
 error-invalid-return-value.t:4:  cannot return a value of type &int from a function of type ^int
 error-invalid-return-value.t:8:  cannot return a value of type float from a function of type int
@@ -214,8 +215,12 @@ error-non-removable-qualifiers.t:4:  cannot store a value of type "&readonly flo
 error-non-removable-qualifiers.t:5:  cannot store a value of type "&writeonly float" to a location of type "&float"
 test/error-non-static-method-called-statically.t
 error-non-static-method-called-statically.t:5:  attempt to call non-static method "bar" on class "Foo"
+test/error-parent-not-a-class.t
+error-parent-not-a-class.t:1:  parent type "int" is not class type
+error-parent-not-a-class.t:8:  parent "float" is not class type
 test/error-partial-template.t
-error-partial-template.t:10:  cannot store a value of type "*Foo<int, int>" to a location of type "*Foo<int>"
+error-partial-template.t:7:  expected 2 arguments to template Foo, received 1
+error-partial-template.t:10:  unknown symbol "partial"
 error-partial-template.t:11:  cannot store a value of type "*Foo<int, int>" to a location of type "*Foo"
 test/error-raw-ptr-array-cast-to-smart.t
 error-raw-ptr-array-cast-to-smart.t:2:  cannot cast value of type &[3]int to ^[]int
@@ -424,6 +429,7 @@ test/matrix-initializer.t
 test/matrix.t
 test/method-chained.t
 test/method.t
+test/mutual-recursion-between-classes.t
 test/mutual-recursion.t
 test/named-param-default-value.t
 test/named-param.t

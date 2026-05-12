@@ -44,6 +44,8 @@
 
 using namespace Toucan;
 
+namespace {
+
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -68,6 +70,20 @@ typedef void (*PFV)();
 
 void WriteCode(const std::vector<uint32_t>& code) {
   std::cout.write(reinterpret_cast<const char*>(code.data()), code.size() * 4);
+}
+
+ClassType* FindClass(TypeTable* types, std::string name) {
+  for (auto type : types->GetTypes()) {
+    if (type->IsClass()) {
+      auto classType = static_cast<ClassType*>(type);
+      if (classType->GetName() == name) {
+        return classType;
+      }
+    }
+  }
+  return nullptr;
+}
+
 }
 
 int main(int argc, char** argv) {
@@ -101,28 +117,23 @@ int main(int argc, char** argv) {
     yyin = stdin;
   }
 
-  TypeTable   types;
   NodeVector  nodes;
   auto rootStmts = nodes.Make<Stmts>();
-  int syntaxErrors = ParseProgram(filename, &nodes, &types, includePaths, rootStmts);
+  int syntaxErrors = ParseProgram(filename, &nodes, includePaths, rootStmts);
   if (syntaxErrors > 0) { exit(1); }
-  types.SetMemoryLayout();
-  InitNativeClasses(rootStmts);
+  TypeTable   types;
+  InitNativeClasses(rootStmts, &nodes, &types);
   SemanticPass semanticPass(&nodes, &types);
   rootStmts = semanticPass.Run(rootStmts);
   if (semanticPass.GetNumErrors() > 0) { exit(2); }
   types.ComputeFieldOffsets();
   double start, end;
   if (spirv) {
-    Type* t = rootStmts->FindType(classname);
-    if (!t) {
+    ClassType* c = FindClass(&types, classname);
+    if (!c) {
       fprintf(stderr, "Class \"%s\" not found.\n", classname.c_str());
       exit(3);
-    } else if (!t->IsClass()) {
-      fprintf(stderr, "\"%s\" is not a class type.\n", classname.c_str());
-      exit(4);
     }
-    ClassType* c = static_cast<ClassType*>(t);
     Method*    m = nullptr;
     for (auto& method : c->GetMethods()) {
       if (method->name == methodname) { m = method.get(); }

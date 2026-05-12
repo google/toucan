@@ -31,7 +31,7 @@ bool IsValidLocalVar(Type* type) {
       type = static_cast<ArrayType*>(type)->GetElementType();
       type = type->GetUnqualifiedType(&qualifiers);
     }
-    if (type->IsClass() && static_cast<ClassType*>(type)->HasNativeMethods()) {
+    if (type->IsClass() && static_cast<ClassType*>(type)->IsNative()) {
       return false;
     }
     if (qualifiers & (Type::Qualifier::Uniform | Type::Qualifier::Storage)) {
@@ -47,7 +47,7 @@ bool NeedsUnfolding(Type* type) {
   if (type->IsClass()) {
     auto classType = static_cast<ClassType*>(type);
     // If this is a non-native class with no fields, unfold it into nothing.
-    if (classType->GetTotalFields() == 0 && !classType->HasNativeMethods()) {
+    if (classType->GetTotalFields() == 0 && !classType->IsNative()) {
       return true;
     }
     if (classType->GetParent() && NeedsUnfolding(classType->GetParent())) {

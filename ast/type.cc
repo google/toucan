@@ -357,45 +357,6 @@ std::string Method::ToString() const {
   return result;
 }
 
-std::string Method::GetMangledName() const {
-  std::string result = classType->GetName() + "_";
-  if (IsDestructor()) {
-    result += "Destroy";
-  } else {
-    result += name;
-  }
-  for (auto& m : classType->GetMethods()) {
-    if (m.get() != this && m->name == name) {
-      bool skipFirst = m->IsNative() && m->IsConstructor();
-      for (auto arg : formalArgList) {
-        if (skipFirst) { skipFirst = false; continue; }
-        result += "_";
-        if (arg->type->IsPtr()) {
-          auto baseType = static_cast<PtrType*>(arg->type)->GetBaseType();
-          int qualifiers;
-          baseType = baseType->GetUnqualifiedType(&qualifiers);
-          result += QualifiersToString(qualifiers, "_");
-          if (baseType->IsClass()) {
-            result += static_cast<ClassType*>(baseType)->GetName();
-          } else {
-            result += baseType->ToString();
-          }
-        } else if (arg->type->IsClass()) {
-          result += static_cast<ClassType*>(arg->type)->GetName();
-        } else if (arg->type->IsVector()) {
-          auto vectorType = static_cast<VectorType*>(arg->type);
-          result += vectorType->GetElementType()->ToString()
-                  + std::to_string(vectorType->GetNumElements());
-        } else {
-          result += arg->type->ToString();
-        }
-      }
-      break;
-    }
-  }
-  return result;
-}
-
 bool Method::IsConstructor() const {
   return name == classType->GetName();
 }
@@ -569,13 +530,6 @@ bool ClassType::CanInitFrom(const ListType* listType) const {
   return true;
 }
 
-bool ClassType::HasNativeMethods() const {
-  for (const auto& method : methods_) {
-    if (method->IsNative()) return true;
-  }
-  return false;
-}
-
 bool ClassType::IsUnsizedClass() const {
   if (fields_.size() == 0) { return false; }
   return (fields_.back()->type->IsUnsizedArray());
@@ -601,6 +555,13 @@ std::string ClassType::ToString() const {
 
 ClassTemplate::ClassTemplate(std::string name, const TypeList& formalTemplateArgs)
     : ClassType(name), formalTemplateArgs_(formalTemplateArgs) {}
+
+ClassType* ClassTemplate::FindInstance(const TypeList& templateArgs) {
+  for (ClassType* const& i : instances_) {
+    if (i->GetTemplateArgs() == templateArgs) { return i; }
+  }
+  return nullptr;
+}
 
 PtrType::PtrType(Type* baseType) : baseType_(baseType) {}
 
@@ -756,6 +717,7 @@ WeakPtrType* TypeTable::GetWeakPtrType(Type* baseType) {
 }
 
 RawPtrType* TypeTable::GetRawPtrType(Type* baseType) {
+  assert(baseType);
   RawPtrType* type = rawPtrTypes_[baseType];
   if (type == nullptr) {
     type = Make<RawPtrType>(baseType);
@@ -810,8 +772,7 @@ Type* TypeTable::GetUnresolvedScopedType(FormalTemplateArg* baseType, std::strin
 }
 
 ClassType* TypeTable::GetClassTemplateInstance(ClassTemplate*  classTemplate,
-                                               const TypeList& templateArgs,
-                                               NewClassCallback cb) {
+                                               const TypeList& templateArgs) {
   for (ClassType* const& i : classTemplate->GetInstances()) {
     if (i->GetTemplateArgs() == templateArgs) { return i; }
   }
@@ -820,7 +781,6 @@ ClassType* TypeTable::GetClassTemplateInstance(ClassTemplate*  classTemplate,
   instance->SetTemplate(classTemplate);
   instance->SetTemplateArgs(templateArgs);
   classTemplate->AddInstance(instance);
-  if (cb && instance->IsFullySpecified()) cb(instance);
   return instance;
 }
 
@@ -842,25 +802,6 @@ bool TypeTable::MatrixVector(Type* lhs, Type* rhs) {
 }
 
 bool TypeTable::VectorMatrix(Type* lhs, Type* rhs) { return MatrixVector(rhs, lhs); }
-
-void TypeTable::SetMemoryLayout() {
-  std::vector<Type*> classTypes;
-  for (auto type : types_) {
-    if (type->GetUnqualifiedType()->IsClass()) { classTypes.push_back(type); }
-  }
-  for (Type* type : classTypes) {
-    int qualifiers;
-    type = type->GetUnqualifiedType(&qualifiers);
-    if (type->IsClass()) {
-      auto classType = static_cast<ClassType*>(type);
-      if (qualifiers & Type::Qualifier::Uniform) {
-        classType->SetMemoryLayout(MemoryLayout::Uniform, this);
-      } else if (qualifiers & Type::Qualifier::Storage) {
-        classType->SetMemoryLayout(MemoryLayout::Storage, this);
-      }
-    }
-  }
-}
 
 void TypeTable::ComputeFieldOffsets() {
   for (auto type : types_) {

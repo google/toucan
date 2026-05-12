@@ -83,7 +83,6 @@ executable("tj") {
 
   sources = [ "tj.cc", ]
   deps = [ "//api:api",
-           "//api:init_types",
            "//ast:ast",
            "//codegen:codegen",
            "//parser:parser",
@@ -130,7 +129,6 @@ executable("tc") {
   libs += dawn_needs_libs
   sources = [ "tc.cc", ]
   deps = [
-    "//api:init_types",
     "//ast:ast",
     "//bindings:gen_bindings_sources",
     "//codegen:codegen",

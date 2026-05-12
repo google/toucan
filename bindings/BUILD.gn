@@ -22,13 +22,13 @@ source_set("gen_bindings_sources") {
   ]
 }
 
-executable("gen_bindings") {
+executable("api_header_generator") {
   sources = [
-    "gen_bindings_main.cc",
+    "api_header_generator_main.cc",
+    "api_header_generator.cc",
   ]
   include_dirs = [ ".." ]
   deps = [
-    ":gen_bindings_sources",
     "../ast:ast",
     "../parser:parser",
   ]

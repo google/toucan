@@ -23,8 +23,6 @@ namespace Toucan {
 
 CopyVisitor::CopyVisitor(NodeVector* nodes) : nodes_(nodes) {}
 
-Type* CopyVisitor::ResolveType(Type* type) { return type; }
-
 Result CopyVisitor::Visit(Arg* node) {
   RESOLVE_OR_DIE(expr, node->GetExpr());
 
@@ -39,10 +37,9 @@ Result CopyVisitor::Visit(ArrayAccess* node) {
 }
 
 Result CopyVisitor::Visit(CastExpr* node) {
-  Type* type = ResolveType(node->GetType());
   RESOLVE_OR_DIE(expr, node->GetExpr());
 
-  return Make<CastExpr>(type, expr);
+  return Make<CastExpr>(node->GetType(), expr);
 }
 
 Result CopyVisitor::Visit(Data* node) {
@@ -63,10 +60,9 @@ Result CopyVisitor::Visit(ExtractElementExpr* node) {
 }
 
 Result CopyVisitor::Visit(Initializer* node) {
-  Type*     type = ResolveType(node->GetType());
   RESOLVE_OR_DIE(argList, node->GetArgList());
 
-  return Make<Initializer>(type, argList);
+  return Make<Initializer>(node->GetType(), argList);
 }
 
 Result CopyVisitor::Visit(IntConstant* node) {
@@ -131,14 +127,14 @@ Result CopyVisitor::Visit(InsertElementExpr* node) {
 }
 
 Result CopyVisitor::Visit(UnresolvedInitializer* node) {
-  Type*    type = ResolveType(node->GetType());
+  ASTType*    type = node->GetType();
   RESOLVE_OR_DIE(argList, node->GetArgList());
 
   return Make<UnresolvedInitializer>(type, argList, node->IsConstructor());
 }
 
 Result CopyVisitor::Visit(VarDeclaration* decl) {
-  Type* type = ResolveType(decl->GetType());
+  auto type = Resolve(decl->GetType());
   Expr* initExpr = Resolve(decl->GetInitExpr());
 
   return Make<VarDeclaration>(decl->GetID(), type, initExpr);
@@ -192,7 +188,7 @@ Result CopyVisitor::Visit(SwizzleExpr* node) {
 }
 
 Result CopyVisitor::Visit(TempVarExpr* node) {
-  return Make<TempVarExpr>(ResolveType(node->GetType()), Resolve(node->GetInitExpr()));
+  return Make<TempVarExpr>(node->GetType(), Resolve(node->GetInitExpr()));
 }
 
 Result CopyVisitor::Visit(BinOpNode* node) {
@@ -264,7 +260,13 @@ Result CopyVisitor::Visit(MethodCall* node) {
 }
 
 Result CopyVisitor::Visit(ClassDecl* node) {
-  return Make<ClassDecl>(node->GetClass());
+  RESOLVE_OR_DIE(body, node->GetBody());
+
+  auto result = Make<ClassDecl>(node->GetName());
+  result->SetBody(body);
+  result->SetClass(node->GetClass());
+  result->SetParent(Resolve(node->GetParent()));
+  return result;
 }
 
 Result CopyVisitor::Visit(UnresolvedDot* node) {
@@ -287,7 +289,7 @@ Result CopyVisitor::Visit(UnresolvedMethodCall* node) {
 }
 
 Result CopyVisitor::Visit(UnresolvedNewExpr* expr) {
-  Type*    type = ResolveType(expr->GetType());
+  ASTType* type = expr->GetType();
   Expr*    length = Resolve(expr->GetLength());
   RESOLVE_OR_DIE(argList, expr->GetArgList());
 
@@ -295,13 +297,13 @@ Result CopyVisitor::Visit(UnresolvedNewExpr* expr) {
 }
 
 Result CopyVisitor::Visit(UnresolvedStaticDot* node) {
-  return Make<UnresolvedStaticDot>(ResolveType(node->GetType()), node->GetID());
+  return Make<UnresolvedStaticDot>(Resolve(node->GetType()), node->GetID());
 }
 
 Result CopyVisitor::Visit(UnresolvedStaticMethodCall* node) {
   RESOLVE_OR_DIE(argList, node->GetArgList());
 
-  return Make<UnresolvedStaticMethodCall>(node->classType(), node->GetID(), argList);
+  return Make<UnresolvedStaticMethodCall>(node->GetBaseType(), node->GetID(), argList);
 }
 
 Result CopyVisitor::Visit(UnresolvedIdentifier* node) {

@@ -12,34 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-action("generate_bindings") {
+action("generate_api_header") {
   if (current_toolchain != host_toolchain) {
-    gen_bindings = "//bindings:gen_bindings($host_toolchain)"
+    api_header_generator = "//bindings:api_header_generator($host_toolchain)"
   } else {
-    gen_bindings = "//bindings:gen_bindings"
+    api_header_generator = "//bindings:api_header_generator"
   }
-  deps = [ gen_bindings ]
+  deps = [ api_header_generator ]
   script = "../tools/run.py"
   sources = [ "api.t" ]
   outputs = [ 
-    "$target_gen_dir/init_types.cc",
     "$target_gen_dir/api.h",
   ]
 
-  gen_bindings_executable =
-    get_label_info(gen_bindings, "root_out_dir") + "/" +
-    get_label_info(gen_bindings, "name")
+  api_header_generator_executable =
+    get_label_info(api_header_generator, "root_out_dir") + "/" +
+    get_label_info(api_header_generator, "name")
 
   args = [
-    "./" + rebase_path(gen_bindings_executable, root_build_dir),
-    "-o", rebase_path(target_gen_dir, root_build_dir) + "/init_types.cc",
-    "-h", rebase_path(target_gen_dir, root_build_dir) + "/api.h",
+    "./" + rebase_path(api_header_generator_executable, root_build_dir),
+    "-o", rebase_path(target_gen_dir, root_build_dir) + "/api.h",
   ] + rebase_path(sources, root_build_dir)
 }
 
 source_set("api") {
   deps = [
-    ":generate_bindings",
+    ":generate_api_header",
   ]
   if (!is_wasm) {
     deps += [
@@ -82,10 +80,4 @@ source_set("api") {
     sources += [ "api_android.cc" ]
     include_dirs += [ "//third_party/android_native_app_glue" ]
   }
-}
-
-source_set("init_types") {
-  deps = [ ":generate_bindings" ]
-  include_dirs = [ ".." ]
-  sources = [ "$target_gen_dir/init_types.cc" ]
 }

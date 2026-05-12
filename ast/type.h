@@ -297,7 +297,6 @@ class Stmts;
 struct Method {
   Method(int modifiers, Type* returnType, std::string name, ClassType* classType);
   std::string             ToString() const;
-  std::string             GetMangledName() const;
   void                    AddFormalArg(std::string id, Type* type, Expr* defaultValue);
   bool                    IsNative() const { return !stmts; }
   bool                    IsConstructor() const;
@@ -314,6 +313,7 @@ struct Method {
   Expr*                   initializer = nullptr;   // only used for constructors
   std::vector<uint32_t>   spirv;
   std::string             wgsl;
+  std::string             mangledName;
   int                     index = -1;
   enum Modifier {
     Static =     1<<0,
@@ -411,9 +411,8 @@ class ClassType : public Type {
   void                SetTemplate(ClassTemplate* t) { template_ = t; }
   void        SetTemplateArgs(const TypeList& templateArgs) { templateArgs_ = templateArgs; }
   std::string GetName() const { return name_; }
-  bool        IsDefined() const { return isDefined_; }
-  void        SetDefined(bool defined) { isDefined_ = defined; }
-  bool        HasNativeMethods() const;
+  bool        IsNative() const { return isNative_; }
+  void        SetNative(bool native) { isNative_ = native; }
   ClassType*  GetParent() const { return parent_; }
   Method*                     GetDestructor() { return destructor_; }
   Type*                       FindType(const std::string& id);
@@ -439,7 +438,7 @@ class ClassType : public Type {
   TypeList             templateArgs_;
   Method*              destructor_ = nullptr;
   int                  numFields_ = 0;  // includes inherited fields
-  bool                 isDefined_ = false;
+  bool                 isNative_ = false;
   MemoryLayout         memoryLayout_ = MemoryLayout::Default;
   int                  padding_ = 0;
 };
@@ -451,7 +450,8 @@ class ClassTemplate : public ClassType {
   bool                           IsClassTemplate() const override { return true; }
   bool                           IsFullySpecified() const override { return false; }
   const std::vector<ClassType*>& GetInstances() const { return instances_; }
-  void AddInstance(ClassType* instance) { instances_.push_back(instance); }
+  ClassType*                     FindInstance(const TypeList& templateArgs);
+  void                           AddInstance(ClassType* instance) { instances_.push_back(instance); }
 
  private:
   TypeList                formalTemplateArgs_;
@@ -520,7 +520,6 @@ typedef std::vector<std::unique_ptr<TypeList>> TypeListVector;
 using TypeAndInt = std::pair<Type*, int>;
 using TypeAndId = std::pair<Type*, std::string>;
 using ArrayTypeKey = std::pair<TypeAndInt, MemoryLayout>;
-typedef void (*NewClassCallback)(ClassType* classType);
 
 class TypeTable {
  public:
@@ -553,7 +552,7 @@ class TypeTable {
   RawPtrType*        GetRawPtrType(Type* type);
   ArrayType*         GetArrayType(Type* elementType, int size, MemoryLayout layout);
   FormalTemplateArg* GetFormalTemplateArg(std::string name);
-  ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs, NewClassCallback cb);
+  ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs);
   Type*       GetQualifiedType(Type* type, int qualifiers);
   Type*       GetUnresolvedScopedType(FormalTemplateArg* baseType, std::string id);
   TypeList*   AppendTypeList(TypeList* type);
@@ -563,7 +562,6 @@ class TypeTable {
   static bool ScalarMatrix(Type* lhs, Type* rhs);
   static bool MatrixVector(Type* lhs, Type* rhs);
   static bool VectorMatrix(Type* lhs, Type* rhs);
-  void        SetMemoryLayout();
   void        ComputeFieldOffsets();
   const TypeVector& GetTypes() { return types_; }
 

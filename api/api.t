@@ -51,12 +51,12 @@ class Buffer<T> {
 }
 
 class DepthStencilState {
-  var depthWriteEnabled = false;
   var stencilReadMask = 0xFFFFFFFF;
   var stencilWriteMask = 0xFFFFFFFF;
   var depthBias = 0;
   var depthBiasSlopeScale = 0.0;
   var depthBiasClamp = 0.0;
+  var depthWriteEnabled = false;
 }
 
 enum BlendOp {
@@ -372,12 +372,12 @@ enum EventModifiers { Shift = 0x01, Control = 0x02, Alt = 0x04 }
 
 class Event {
  ~Event();
-  var type : EventType;
   var position : int<2>;
   var button : uint;
   var modifiers : uint;
   var touches : [10]int<2>;
   var numTouches : int;
+  var type : EventType;
 }
 
 class System {
@@ -396,9 +396,9 @@ class System {
 }
 
 class VertexBuiltins {
+  var position : writeonly float<4>;
   var vertexIndex : readonly int;
   var instanceIndex : readonly int;
-  var position : writeonly float<4>;
 }
 
 class FragmentBuiltins {
@@ -407,10 +407,10 @@ class FragmentBuiltins {
 }
 
 class ComputeBuiltins {
+  var workgroupId : readonly uint<3>;
+  var globalInvocationId : readonly uint<3>;
   var localInvocationId : readonly uint<3>;
   var localInvocationIndex : readonly uint;
-  var globalInvocationId : readonly uint<3>;
-  var workgroupId : readonly uint<3>;
 }
 
 class PixelFormat<DeviceType, HostType> {}

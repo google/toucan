@@ -198,6 +198,7 @@ class CodeGenLLVM : public Visitor {
   std::unordered_map<Expr*, llvm::Value*>               exprCache_;
   std::unordered_map<Var*, llvm::AllocaInst*>           allocas_;
   std::unordered_map<Method*, llvm::Function*>          functions_;
+  std::unordered_map<std::string, llvm::Function*>      nativeFunctions_;
   std::unordered_map<Type*, llvm::Function*>            deleters_;
   std::unordered_map<ClassType*, llvm::StructType*>     classPlaceholders_;
   std::vector<Type*>                                    referencedTypes_;

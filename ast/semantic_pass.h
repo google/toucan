@@ -17,6 +17,8 @@
 
 #include "copy_visitor.h"
 
+#include <unordered_set>
+
 namespace Toucan {
 
 struct TypeLocationPair {
@@ -30,15 +32,34 @@ class SemanticPass : public CopyVisitor {
  public:
   SemanticPass(NodeVector* nodes, TypeTable* types);
   Stmts* Run(Stmts* stmts);
+  Type*  ResolveType(ASTType* type);
+  Result Visit(ASTArrayType* node) override;
+  Result Visit(ASTAutoType* node) override;
+  Result Visit(ASTBoolType* node) override;
+  Result Visit(ASTClassType* node) override;
+  Result Visit(ASTClassTemplateInstance* node) override;
+  Result Visit(ASTEnumType* node) override;
+  Result Visit(ASTFloatingPointType* node) override;
+  Result Visit(ASTFormalTemplateArg* node) override;
+  Result Visit(ASTIntegerType* node) override;
+  Result Visit(ASTMatrixType* node) override;
+  Result Visit(ASTQualifiedType* node) override;
+  Result Visit(ASTRawPtrType* node) override;
+  Result Visit(ASTScopedType* node) override;
+  Result Visit(ASTStrongPtrType* node) override;
+  Result Visit(ASTVectorType* node) override;
+  Result Visit(ASTVoidType* node) override;
+  Result Visit(ASTWeakPtrType* node) override;
   Result Visit(ArgList* node) override;
   Result Visit(ArrayAccess* node) override;
   Result Visit(BinOpNode* node) override;
-  Result Visit(CastExpr* expr) override;
+  Result Visit(UnresolvedCastExpr* expr) override;
   Result Visit(ConstDecl* decl) override;
   Result Visit(ClassDecl* node) override;
   Result Visit(Data* expr) override;
   Result Visit(Decls* decls) override;
   Result Visit(DoStatement* stmt) override;
+  Result Visit(EnumDecl* decls) override;
   Result Visit(ExprWithStmt* node) override;
   Result Visit(ForStatement* forStmt) override;
   Result Visit(IfStatement* stmt) override;
@@ -57,11 +78,11 @@ class SemanticPass : public CopyVisitor {
   Result Visit(UnresolvedStaticDot* node) override;
   Result Visit(UnresolvedStaticMethodCall* node) override;
   Result Visit(VarDeclaration* decl) override;
+  Result Visit(MethodDecl* decl) override;
   Result Visit(WhileStatement* stmt) override;
   Result Error(const char* fmt, ...);
   Result Default(ASTNode* node) override;
   int    GetNumErrors() const { return numErrors_; }
-  void   PreVisit(ClassDecl* node);
 
  private:
   void    UnwindStack(Stmts* stmts);
@@ -91,11 +112,19 @@ class SemanticPass : public CopyVisitor {
                      ArgList*            args,
                      std::vector<Expr*>* newArgList);
   Method* FindOverriddenMethod(ClassType* classType, Method* method);
+  bool             ResolveTypeList(ASTTypeList* typeList, TypeList* result);
+  ClassType*       GetOrCreateClassType(ClassDecl* decl);
+  Type*            PushQualifiers(Type* type, int qualifiers);
+  void             SetCurrentTemplateArgs(const TypeList& srcTypes, const TypeList& dstTypes);
+
   ScopeStack       scopeStack_;
   TypeTable*       types_;
   TypeLocationList typesToValidate_;
+  Stmts*           rootStmts_ = nullptr;
   int              numErrors_ = 0;
   Method*          currentMethod_ = nullptr;
+  TypeMap          currentTemplateArgs_;
+  std::unordered_set<std::string>  overloadedMethods_;
 };
 
 };  // namespace Toucan

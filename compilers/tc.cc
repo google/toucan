@@ -48,8 +48,24 @@
 
 using namespace Toucan;
 
+namespace {
+
 void WriteCode(const std::vector<uint32_t>& code) {
   std::cout.write(reinterpret_cast<const char*>(code.data()), code.size() * 4);
+}
+
+ClassType* FindClass(TypeTable* types, std::string name) {
+  for (auto type : types->GetTypes()) {
+    if (type->IsClass()) {
+      auto classType = static_cast<ClassType*>(type);
+      if (classType->GetName() == name) {
+        return classType;
+      }
+    }
+  }
+  return nullptr;
+}
+
 }
 
 int main(int argc, char** argv) {
@@ -89,27 +105,22 @@ int main(int argc, char** argv) {
   std::ofstream initTypesFile(initTypesFilename.c_str(), std::ofstream::out);
   if (initTypesFile.fail()) { std::perror(initTypesFilename.c_str()); }
 
-  TypeTable   types;
   NodeVector  nodes;
-  auto              rootStmts = nodes.Make<Stmts>();
-  int syntaxErrors = ParseProgram(filename, &nodes, &types, includePaths, rootStmts);
+  auto        rootStmts = nodes.Make<Stmts>();
+  int syntaxErrors = ParseProgram(filename, &nodes, includePaths, rootStmts);
   if (syntaxErrors > 0) { exit(1); }
-  types.SetMemoryLayout();
-  InitNativeClasses(rootStmts);
+  TypeTable   types;
+  InitNativeClasses(rootStmts, &nodes, &types);
   SemanticPass semanticPass(&nodes, &types);
   rootStmts = semanticPass.Run(rootStmts);
   if (semanticPass.GetNumErrors() > 0) { exit(2); }
   types.ComputeFieldOffsets();
   if (spirv) {
-    Type* t = rootStmts->FindType(classname);
-    if (!t) {
-      fprintf(stderr, "Class \"%s\" not found.\n", classname.c_str());
+    ClassType* c = FindClass(&types, classname);
+    if (!c) {
+      fprintf(stderr, "class \"%s\" not found.\n", classname.c_str());
       exit(3);
-    } else if (!t->IsClass()) {
-      fprintf(stderr, "\"%s\" is not a class type.\n", classname.c_str());
-      exit(4);
     }
-    ClassType* c = static_cast<ClassType*>(t);
     Method*    m = nullptr;
     for (auto& method : c->GetMethods()) {
       if (method->name == methodname) { m = method.get(); }
@@ -227,8 +238,7 @@ int main(int argc, char** argv) {
 
       pass.run(*module);
       dest.flush();
-      std::ofstream headerPlaceholder;
-      GenBindings bindings(initTypesFile, headerPlaceholder);
+      GenBindings bindings(initTypesFile);
       bindings.Run(codeGenLLVM.GetReferencedTypes());
     }
     llvm::llvm_shutdown();

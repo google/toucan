@@ -29,8 +29,7 @@ class Type;
 
 class GenBindings {
  public:
-  GenBindings(std::ostream&  file,
-              std::ostream&  header);
+  GenBindings(std::ostream&  file);
   void Run(const TypeVector& referencedTypes);
   int  EmitType(Type* type);
 
@@ -43,7 +42,6 @@ class GenBindings {
   TypeVector                     referencedTypes_;
   std::list<ClassType*>          classes_;
   std::ostream&                  file_;
-  std::ostream&                  header_;
   std::unordered_map<Type*, int> typeMap_;
   int                            numTypes_ = 0;
 };

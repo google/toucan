@@ -461,21 +461,22 @@ llvm::Value* CodeGenLLVM::GetOrCreateDeleter(Type* type) {
 }
 
 llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
-  if (auto function = functions_[method]) { return function; }
+  if (method->IsNative()) {
+    if (auto function = nativeFunctions_[method->mangledName]) return function;
+  } else {
+    if (auto function = functions_[method]) return function;
+  }
   std::vector<llvm::Type*> params;
   llvm::Intrinsic::ID      intrinsic = llvm::Intrinsic::not_intrinsic;
   bool skipFirst = false;
   if (method->IsNative()) {
-    if (method->templateMethod) { return GetOrCreateMethodStub(method->templateMethod); }
     if (method->IsConstructor()) {
       skipFirst = true;
-      if (method->classType->IsClassTemplate()) {
+      auto& templateArgs = method->classType->GetTemplateArgs();
+      if (!templateArgs.empty()) {
         // First argument is the storage qualifier (as uint)
         params.push_back(intType_);
-        ClassTemplate* classTemplate = static_cast<ClassTemplate*>(method->classType);
-        for (Type* const& type : classTemplate->GetFormalTemplateArgs()) {
-          params.push_back(ptrType_);
-        }
+        for (auto arg : templateArgs) params.push_back(ptrType_);
       }
     }
     intrinsic = FindIntrinsic(method);
@@ -502,10 +503,16 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
         nativeTypes ? ConvertTypeToNative(method->returnType) : ConvertType(method->returnType);
     llvm::FunctionType* functionType = llvm::FunctionType::get(returnType, params, false);
     function = llvm::Function::Create(functionType, llvm::GlobalValue::ExternalLinkage,
-                                      method->GetMangledName(), module_);
+                                      method->mangledName, module_);
   }
 
-  return functions_[method] = function;
+  if (method->IsNative()) {
+    nativeFunctions_[method->mangledName] = function;
+  } else {
+    functions_[method] = function;
+  }
+
+  return function;
 }
 
 llvm::Intrinsic::ID CodeGenLLVM::FindIntrinsic(Method* method) {
@@ -662,7 +669,7 @@ llvm::Value* CodeGenLLVM::ConvertFromNative(Type* type, llvm::Value* value) {
   if (type->IsStrongPtr() || type->IsWeakPtr()) {
     Type* baseType = static_cast<PtrType*>(type)->GetBaseType();
     Type* unqualifiedType = baseType->GetUnqualifiedType();
-    if (unqualifiedType->IsClass() && static_cast<ClassType*>(unqualifiedType)->HasNativeMethods()) {
+    if (unqualifiedType->IsClass() && static_cast<ClassType*>(unqualifiedType)->IsNative()) {
       return CreatePointer(value, CreateControlBlock(baseType));
     } else {
       // Dereference Object*.

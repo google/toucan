@@ -30,50 +30,10 @@ const char* MemoryLayoutToString(MemoryLayout layout) {
   }
 }
 
-std::string ConvertType(Type* type, const std::string& str) {
-  if (type->IsPtr()) {
-    return ConvertType(static_cast<PtrType*>(type)->GetBaseType(), "*" + str);
-  } else if (type->IsArrayLike()) {
-    ArrayLikeType* a = static_cast<VectorType*>(type);
-    return ConvertType(a->GetElementType(), str + "[" + std::to_string(a->GetNumElements()) + "]");
-  } else if (type->IsClass()) {
-    return static_cast<ClassType*>(type)->GetName() + " " + str;
-  } else if (type->IsByte()) {
-    return "int8_t " + str;
-  } else if (type->IsUByte()) {
-    return "uint8_t " + str;
-  } else if (type->IsShort()) {
-    return "int16_t " + str;
-  } else if (type->IsUShort()) {
-    return "uint16_t " + str;
-  } else if (type->IsInt()) {
-    return "int32_t " + str;
-  } else if (type->IsUInt()) {
-    return "uint32_t " + str;
-  } else if (type->IsEnum()) {
-    return static_cast<EnumType*>(type)->GetName() + " " + str;
-  } else if (type->IsFloat()) {
-    return "float " + str;
-  } else if (type->IsDouble()) {
-    return "double " + str;
-  } else if (type->IsBool()) {
-    return "bool " + str;
-  } else if (type->IsVoid()) {
-    return "void " + str;
-  } else if (type->IsQualified()) {
-    return ConvertType(static_cast<QualifiedType*>(type)->GetBaseType(), str);
-  } else {
-    assert(!"ConvertType:  unknown type");
-    return 0;
-  }
-}
-
 }  // namespace
 
-GenBindings::GenBindings(std::ostream& file,
-                         std::ostream& header)
-    : file_(file),
-      header_(header) {}
+GenBindings::GenBindings(std::ostream& file)
+    : file_(file) {}
 
 int GenBindings::EmitType(Type* type) {
   if (!type) return -1;
@@ -123,9 +83,6 @@ int GenBindings::EmitType(Type* type) {
             << static_cast<FormalTemplateArg*>(type)->GetName() << "\")";
       if (&type != &classTemplate->GetFormalTemplateArgs().back()) file_ << ", ";
     }
-    if (header_) {
-      header_ << "struct " << classTemplate->GetName() << ";\n";
-    }
     file_ << "}));\n";
     classes_.push_back(classTemplate);
   } else if (type->IsClass()) {
@@ -141,38 +98,14 @@ int GenBindings::EmitType(Type* type) {
         file_ << "type" << arg;
         if (&arg != &args.back()) { file_ << ", "; }
       }
-      file_ << "}, nullptr);\n";
+      file_ << "});\n";
     } else {
       emitLHS() << "types->Make<ClassType>(\"" << classType->GetName() << "\");\n";
-      if (header_) {
-        int pad = 0;
-        if (classType->GetFields().size() > 0) {
-          classType->ComputeFieldOffsets();
-          header_ << "struct " << classType->GetName() << " {\n";
-          for (const auto& field : classType->GetFields()) {
-            header_ << "  " << ConvertType(field->type, field->name) << ";\n";
-            if (field->padding > 0) {
-              header_ << "  uint8_t pad" << pad++ << "[" << field->padding << "];\n";
-            }
-          }
-          header_ << "};\n";
-        } else {
-          header_ << "struct " << classType->GetName() << ";\n";
-        }
-      }
     }
     classes_.push_back(classType);
   } else if (type->IsEnum()) {
     EnumType* enumType = static_cast<EnumType*>(type);
     emitLHS() << "types->Make<EnumType>(\"" << enumType->GetName() << "\");\n";
-    if (header_) {
-      header_ << "enum class " << enumType->GetName() << " {\n";
-      const EnumValueVector& values = enumType->GetValues();
-      for (EnumValue const& v : values) {
-        header_ << "  " << v.id << " = " << v.value << ",\n";
-      }
-      header_ << "};\n";
-    }
     for (const EnumValue& v : enumType->GetValues()) {
       file_ << "  type" << id << "->Append(\"" << v.id << "\", " << v.value << ");\n";
     }
@@ -238,29 +171,6 @@ void GenBindings::Run(const TypeVector& referencedTypes) {
   file_ << "  ClassType* c;\n";
   file_ << "  Method *m;\n";
   file_ << "\n";
-  if (header_) {
-    header_ << "#include <cstdint>\n";
-    header_ << "extern \"C\" {\n";
-    header_ << "namespace Toucan {\n\n";
-    header_ << "class ClassType;\n";
-    header_ << "class Type;\n";
-    header_ << "using Deleter = void(*)(void*);\n\n";
-    header_ << "struct ControlBlock {\n";
-    header_ << "  uint32_t    strongRefs = 0;\n";
-    header_ << "  uint32_t    weakRefs = 0;\n";
-    header_ << "  uint32_t    arrayLength;\n";
-    header_ << "  Type*       type = nullptr;\n";
-    header_ << "  Deleter     deleter = nullptr;\n";
-    header_ << "};\n\n";
-    header_ << "struct Object {\n";
-    header_ << "  void*          ptr;\n";
-    header_ << "  ControlBlock  *controlBlock;\n";
-    header_ << "};\n\n";
-    header_ << "struct Array {\n";
-    header_ << "  void*          ptr;\n";
-    header_ << "  uint32_t       length;\n";
-    header_ << "};\n\n";
-  }
   for (auto type : referencedTypes) {
     EmitType(type);
   }
@@ -277,72 +187,8 @@ void GenBindings::Run(const TypeVector& referencedTypes) {
   file_ << "  return typeList;\n";
   file_ << "}\n\n";
   file_ << "};\n";
-  if (header_) {
-    header_ << "\n};\n}\n";
-  }
   typeMap_.clear();
   numTypes_ = 0;
-}
-
-void PrintNativeType(std::ostream& result, Type* type) {
-  if (type->IsVoid()) {
-    result << "void";
-  } else if (type->IsInteger()) {
-    IntegerType* integerType = static_cast<IntegerType*>(type);
-    result << (integerType->Signed() ? "int" : "uint") << integerType->GetBits() << "_t";
-  } else if (type->IsBool()) {
-    result << "bool";
-  } else if (type->IsFloat()) {
-    result << "float";
-  } else if (type->IsDouble()) {
-    result << "double";
-  } else if (type->IsClass()) {
-    result << static_cast<ClassType*>(type)->GetName();
-  } else if (type->IsEnum()) {
-    result << static_cast<EnumType*>(type)->GetName();
-  } else if (type->IsRawPtr()) {
-    auto baseType = static_cast<RawPtrType*>(type)->GetBaseType();
-    baseType = baseType->GetUnqualifiedType();
-    if (baseType->IsClass()) {
-      PrintNativeType(result, baseType);
-      result << "*";
-    } else if (baseType->IsUnsizedArray()) {
-      result << "Array*";
-    } else {
-      result << "void*";
-    }
-  } else if (type->IsStrongPtr() || type->IsWeakPtr()) {
-    Type* baseType = static_cast<PtrType*>(type)->GetBaseType()->GetUnqualifiedType();
-    if (baseType->IsClass()) {
-      PrintNativeType(result, baseType);
-      result << "*";
-    } else {
-      result << "Object*";
-    }
-  } else if (type->IsArray()) {
-    ArrayType* arrayType = static_cast<ArrayType*>(type);
-    Type*      elementType = arrayType->GetElementType();
-    if (elementType->IsVector()) {
-      PrintNativeType(result, static_cast<VectorType*>(type)->GetElementType());
-    } else if (elementType->IsMatrix()) {
-      PrintNativeType(result, static_cast<MatrixType*>(type)->GetColumnType()->GetElementType());
-    } else {
-      PrintNativeType(result, elementType);
-    }
-    result << "*";
-  } else if (type->IsVector()) {
-    result << "const ";
-    PrintNativeType(result, static_cast<VectorType*>(type)->GetElementType());
-    result << "*";
-  } else if (type->IsMatrix()) {
-    PrintNativeType(result, static_cast<MatrixType*>(type)->GetColumnType()->GetElementType());
-    result << "*";
-  } else if (type->IsQualified()) {
-    PrintNativeType(result, static_cast<QualifiedType*>(type)->GetBaseType());
-  } else {
-    std::cerr << "PrintNativeType():  unknown type \"" << type->ToString() << "\"\n";
-    exit(-2);
-  }
 }
 
 void GenBindings::EmitMethod(Method* method) {
@@ -371,40 +217,6 @@ void GenBindings::EmitMethod(Method* method) {
   }
   file_ << "  c->AddMethod(m);\n";
   bool skipFirst = false;
-  if (method->IsNative()) {
-    if (header_ && !(method->modifiers & Method::Modifier::DeviceOnly)) {
-#if TARGET_OS_IS_WIN
-      header_ << "__declspec(dllexport) ";
-#endif
-      PrintNativeType(header_, method->returnType);
-      header_ << " " << method->GetMangledName() << "(";
-      if (method->IsConstructor()) {
-        skipFirst = true;
-        if (method->classType->IsClassTemplate()) {
-          header_ << "int qualifiers, ";
-          ClassTemplate* classTemplate = static_cast<ClassTemplate*>(method->classType);
-          for (Type* arg : classTemplate->GetFormalTemplateArgs()) {
-            FormalTemplateArg* formalTemplateArg = static_cast<FormalTemplateArg*>(arg);
-            header_ << "Type* " << formalTemplateArg->GetName();
-            if (arg != classTemplate->GetFormalTemplateArgs().back() || !argList.empty()) {
-              header_ << ", ";
-            }
-          }
-        }
-      }
-      for (const std::shared_ptr<Var>& var : argList) {
-        if (skipFirst) { skipFirst = false; continue; }
-        PrintNativeType(header_, var->type);
-        if (var->name == "this") {
-          header_ << " This";
-        } else {
-          header_ << " " << var->name;
-        }
-        if (&var != &argList.back()) { header_ << ", "; }
-      }
-      header_ << ");\n";
-    }
-  }
   if (!method->spirv.empty()) {
     file_ << "  m->spirv = {\n";
     for (uint32_t op : method->spirv) {
@@ -416,10 +228,10 @@ void GenBindings::EmitMethod(Method* method) {
 }
 
 void GenBindings::EmitClass(ClassType* classType) {
-  if (classType->GetTemplate() && classType->GetTemplate()->HasNativeMethods()) { return; }
+  if (classType->GetTemplate() && classType->GetTemplate()->IsNative()) { return; }
   auto id = EmitType(classType);
   file_ << "\n  c = type" << id << ";\n";
-  if (classType->HasNativeMethods() && !classType->GetTemplate()) {
+  if (classType->IsNative() && !classType->GetTemplate()) {
     file_ << "  NativeClass::" << classType->GetName() << " = c;\n";
   }
   file_ << "  c->SetMemoryLayout(MemoryLayout::" <<

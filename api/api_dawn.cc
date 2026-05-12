@@ -1254,9 +1254,9 @@ Buffer* Buffer_Buffer_Device_T(int qualifiers, Type* type, Device* device, void*
   return result;
 }
 
-Object* Buffer_MapRead_hostreadable_Buffer(Buffer* buffer) { return MapSync(wgpu::MapMode::Read, buffer); }
+Object* Buffer_MapRead(Buffer* buffer) { return MapSync(wgpu::MapMode::Read, buffer); }
 
-Object* Buffer_MapWrite_hostwriteable_Buffer(Buffer* buffer) { return MapSync(wgpu::MapMode::Write, buffer); }
+Object* Buffer_MapWrite(Buffer* buffer) { return MapSync(wgpu::MapMode::Write, buffer); }
 
 void Buffer_Set(Buffer* buffer, void* data) {
   Type* type = buffer->type;

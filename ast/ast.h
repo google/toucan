@@ -17,6 +17,7 @@
 
 #include <assert.h>
 #include <list>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -28,6 +29,7 @@ namespace Toucan {
 
 struct Var;
 
+class ClassDecl;
 class Visitor;
 
 using Result = std::variant<void*, uint32_t>;
@@ -43,6 +45,199 @@ class ASTNode {
 
  private:
   FileLocation fileLocation_;
+};
+
+class ASTType : public ASTNode {
+ public:
+  virtual bool      IsClass() const { return false; }
+  virtual bool      IsClassTemplateInstance() const { return false; }
+  virtual bool      IsEnum() const { return false; }
+  virtual ASTType*  GetUnqualifiedType() { return this; }
+};
+
+class ASTAutoType : public ASTType {
+ public:
+                ASTAutoType() {}
+  Result        Accept(Visitor* visitor) override;
+};
+
+class ASTVoidType : public ASTType {
+ public:
+          ASTVoidType() {}
+  Result  Accept(Visitor* visitor) override;
+};
+
+class ASTTypeList : public ASTNode {
+ public:
+  void Append(ASTType* type) { types_.push_back(type); }
+  Result    Accept(Visitor* visitor) override { return nullptr; }
+  const std::vector<ASTType*> GetTypes() const { return types_; }
+ private:
+  std::vector<ASTType*> types_;
+};
+
+class ASTIntegerType : public ASTType {
+ public:
+  ASTIntegerType(uint32_t bits, bool isSigned);
+  uint32_t GetBits() const { return bits_; }
+  bool     IsSigned() const { return isSigned_; }
+  Result   Accept(Visitor* visitor) override;
+ private:
+  uint32_t bits_;
+  bool     isSigned_;
+};
+
+class ASTFloatingPointType : public ASTType {
+ public:
+  ASTFloatingPointType(uint32_t bits);
+  uint32_t GetBits() const { return bits_; }
+  Result   Accept(Visitor* visitor) override;
+ private:
+  uint32_t bits_;
+};
+
+class ASTBoolType : public ASTType {
+ public:
+  ASTBoolType();
+  Result Accept(Visitor* visitor) override;
+};
+
+class ASTVectorType : public ASTType {
+ public:
+  ASTVectorType(ASTType* baseType, uint32_t numComponents);
+  ASTType*   GetComponentType() const { return baseType_; }
+  uint32_t   GetNumComponents() const { return numComponents_; }
+  Result     Accept(Visitor* visitor) override;
+ private:
+  ASTType*   baseType_;
+  uint32_t   numComponents_;
+};
+
+class ASTMatrixType : public ASTType {
+ public:
+  ASTMatrixType(ASTVectorType* columnType, uint32_t numColumns);
+  ASTVectorType*   GetColumnType() const { return columnType_; }
+  uint32_t         GetNumColumns() const { return numColumns_; }
+  Result           Accept(Visitor* visitor) override;
+ private:
+  ASTVectorType*   columnType_;
+  uint32_t         numColumns_;
+};
+
+class ASTArrayType : public ASTType {
+ public:
+  ASTArrayType(ASTType* elementType, Expr* numElements);
+  ASTType*   GetElementType() const { return elementType_; }
+  Expr*      GetNumElements() const { return numElements_; }
+  Result     Accept(Visitor* visitor) override;
+ private:
+  ASTType*   elementType_;
+  Expr*      numElements_;
+};
+
+class EnumDecl;
+
+class ASTEnumType : public ASTType {
+ public:
+             ASTEnumType(EnumDecl* decl);
+  EnumDecl*  GetDecl() const { return decl_; }
+  Result     Accept(Visitor* visitor) override;
+  bool       IsEnum() const override { return true; }
+
+ private:
+  EnumDecl*  decl_ = nullptr;
+};
+
+class ASTClassType : public ASTType {
+ public:
+             ASTClassType(ClassDecl* decl);
+  ClassDecl* GetDecl() const { return decl_; }
+  bool       IsClass() const override { return true; }
+  Result     Accept(Visitor* visitor) override;
+ private:
+  ClassDecl* decl_;
+};
+
+class ASTFormalTemplateArg : public ASTType {
+ public:
+  ASTFormalTemplateArg(std::string name);
+  std::string  GetName() const { return name_; }
+  Result       Accept(Visitor* visitor) override;
+ private:
+  std::string  name_;
+};
+
+class ASTFormalTemplateArgList : public ASTNode {
+ public:
+  void Append(ASTFormalTemplateArg* type) { args_.push_back(type); }
+  Result    Accept(Visitor* visitor) override { return nullptr; }
+  const std::vector<ASTFormalTemplateArg*> Get() const { return args_; }
+ private:
+  std::vector<ASTFormalTemplateArg*> args_;
+};
+
+class ASTScopedType : public ASTType {
+ public:
+  ASTScopedType(ASTType* scope, std::string name);
+  ASTType*    GetScope() const { return scope_; }
+  std::string GetName() const { return name_; }
+  Result      Accept(Visitor* visitor) override;
+ private:
+  ASTType*    scope_;
+  std::string name_;
+};
+
+class ASTQualifiedType : public ASTType {
+ public:
+  ASTQualifiedType(ASTType* baseType, uint32_t qualifiers);
+  ASTType*    GetBaseType() const { return baseType_; }
+  uint32_t    GetQualifiers() const { return qualifiers_; }
+  ASTType*    GetUnqualifiedType() override { return baseType_; }
+  Result      Accept(Visitor* visitor) override;
+ private:
+  ASTType*    baseType_;
+  uint32_t    qualifiers_;
+};
+
+class ASTPtrType : public ASTType {
+ public:
+  ASTPtrType(ASTType* baseType);
+  ASTType* GetBaseType() const { return baseType_; }
+ private:
+  ASTType*    baseType_;
+};
+
+class ASTStrongPtrType : public ASTPtrType {
+ public:
+  ASTStrongPtrType(ASTType* baseType);
+  Result Accept(Visitor* visitor) override;
+};
+
+class ASTWeakPtrType : public ASTPtrType {
+ public:
+  ASTWeakPtrType(ASTType* baseType);
+  Result Accept(Visitor* visitor) override;
+};
+
+class ASTRawPtrType : public ASTPtrType {
+ public:
+  ASTRawPtrType(ASTType* baseType);
+  Result Accept(Visitor* visitor) override;
+};
+
+class ASTClassTemplateInstance : public ASTType {
+ public:
+  ASTClassTemplateInstance(ASTType* baseType, ASTTypeList* templateArgs);
+  ASTType*         GetClassTemplate() const { return classTemplate_; }
+  ASTTypeList*     GetTemplateArgs() const { return templateArgs_; }
+  ClassDecl*       GetDecl() const { return decl_; }
+  void             SetDecl(ClassDecl* decl) { decl_ = decl; }
+  Result           Accept(Visitor* visitor) override;
+  bool             IsClassTemplateInstance() const override { return true; }
+ private:
+  ASTType*         classTemplate_;
+  ASTTypeList*     templateArgs_;
+  ClassDecl*       decl_;
 };
 
 class Expr : public ASTNode {
@@ -73,14 +268,13 @@ class HeapAllocation : public Expr {
 
 class Data : public Expr {
  public:
-  Data(Type* type, std::unique_ptr<uint8_t[]> data, size_t size);
+  Data(std::unique_ptr<uint8_t[]> data, size_t size);
   Result Accept(Visitor* visitor) override;
   Type*  GetType(TypeTable* types) override;
   void*  GetData() { return data_.get(); }
   size_t GetSize() const { return size_; }
 
  private:
-  Type*                      type_;
   std::unique_ptr<uint8_t[]> data_;
   size_t                     size_;
 };
@@ -153,6 +347,19 @@ class CastExpr : public Expr {
  private:
   Type* type_;
   Expr* expr_;
+};
+
+class UnresolvedCastExpr : public Expr {
+ public:
+           UnresolvedCastExpr(ASTType* type, Expr* expr);
+  Result   Accept(Visitor* visitor) override;
+  Type*    GetType(TypeTable* types) override { assert(false); return nullptr; }
+  ASTType* GetType() { return type_; }
+  Expr*    GetExpr() { return expr_; }
+
+ private:
+  ASTType* type_;
+  Expr*    expr_;
 };
 
 class BoolConstant : public Expr {
@@ -275,15 +482,15 @@ class Initializer : public Expr {
 
 class UnresolvedInitializer : public Expr {
  public:
-  UnresolvedInitializer(Type* type, ArgList* arglist, bool constructor);
+  UnresolvedInitializer(ASTType* type, ArgList* arglist, bool constructor);
   Result   Accept(Visitor* visitor) override;
-  Type*    GetType(TypeTable* types) override { return type_; }
-  Type*    GetType() { return type_; }
+  Type*    GetType(TypeTable* types) override { assert(false); return nullptr; }
+  ASTType* GetType() { return type_; }
   ArgList* GetArgList() { return arglist_; }
   bool     IsConstructor() { return constructor_; }
 
  private:
-  Type*    type_;
+  ASTType* type_;
   ArgList* arglist_;
   bool     constructor_;
 };
@@ -330,14 +537,14 @@ class UnresolvedDot : public Expr {
 
 class UnresolvedStaticDot : public Expr {
  public:
-  UnresolvedStaticDot(Type* type, std::string id);
+  UnresolvedStaticDot(ASTType* type, std::string id);
   Result      Accept(Visitor* visitor) override;
   Type*       GetType(TypeTable* types) override { return nullptr; }
-  Type*       GetType() { return type_; }
+  ASTType*    GetType() { return type_; }
   std::string GetID() { return id_; }
 
  private:
-  Type*       type_;
+  ASTType*    type_;
   std::string id_;
 };
 
@@ -369,15 +576,15 @@ class UnresolvedMethodCall : public Expr {
 
 class UnresolvedStaticMethodCall : public Expr {
  public:
-  UnresolvedStaticMethodCall(ClassType* classType, std::string id, ArgList* arglist);
+  UnresolvedStaticMethodCall(ASTType* baseType, std::string id, ArgList* arglist);
   Result      Accept(Visitor* visitor) override;
   Type*       GetType(TypeTable* types) override { return nullptr; }
-  ClassType*  classType() { return classType_; }
+  ASTType*    GetBaseType() { return baseType_; }
   std::string GetID() { return id_; }
   ArgList*    GetArgList() { return arglist_; }
 
  private:
-  ClassType*  classType_;
+  ASTType*    baseType_;
   std::string id_;
   ArgList*    arglist_;
 };
@@ -541,13 +748,18 @@ class Stmt : public ASTNode {
   virtual bool ContainsReturn() const { return false; }
 };
 
+using ASTTypeMap = std::unordered_map<std::string, ASTType*>;
+
 class Scope : public Stmt {
  public:
   Scope();
-  virtual void              DefineType(std::string id, Type* type) = 0;
-  virtual Type*             FindType(const std::string& id) const = 0;
-  virtual bool              IsStmts() const { return false; }
-  virtual bool              IsClassDecl() const { return false; }
+  void              DefineType(std::string id, ASTType* type) { types_[id] = type; }
+  ASTType*          FindType(const std::string& id) const;
+  virtual bool      IsStmts() const { return false; }
+  virtual bool      IsClassDecl() const { return false; }
+  const ASTTypeMap& GetTypes() const { return types_; }
+ private:
+  ASTTypeMap        types_;
 };
 
 class Stmts : public Scope {
@@ -560,11 +772,10 @@ class Stmts : public Scope {
   const std::list<Stmt*>& GetStmts() { return stmts_; }
   void                    AppendConstant(std::string name, Expr* value);
   Expr*                   FindConstant(const std::string& id) const;
-  void                    DefineType(std::string id, Type* type) override { types_[id] = type; }
-  Type*                   FindType(const std::string& id) const override;
   Var*                    FindVar(const std::string& id) const;
   void                    AppendVar(std::shared_ptr<Var> v);
   const VarVector&        GetVars() const { return vars_; }
+  void                    ClearVars() { vars_.clear(); }
   bool                    ContainsReturn() const override;
   bool                    IsStmts() const override { return true; }
 
@@ -664,10 +875,17 @@ class ZeroInitStmt : public Stmt {
 class MethodDecl : public Stmt {
  public:
               MethodDecl(int modifiers, std::array<uint32_t, 3> workgroupSize, std::string id,
-                         Stmts* formalArguments, int thisQualifiers, Type* returnType,
+                         Stmts* formalArguments, int thisQualifiers, ASTType* returnType,
                          Expr* initializer, Stmts* body);
   Result      Accept(Visitor* visitor) override;
-  Method*     CreateMethod(ClassType* classType, TypeTable* types);
+  int         GetModifiers() const { return modifiers_; }
+  std::string GetID() const { return id_; }
+  std::array<uint32_t, 3> GetWorkgroupSize() const { return workgroupSize_; }
+  Stmts*      GetFormalArguments() const { return formalArguments_; }
+  int         GetThisQualifiers() const { return thisQualifiers_; }
+  ASTType*    GetReturnType() const { return returnType_; }
+  Stmts*      GetBody() const { return body_; }
+  Expr*       GetInitializer() const { return initializer_; }
 
  private:
   int                     modifiers_;
@@ -675,7 +893,7 @@ class MethodDecl : public Stmt {
   std::array<uint32_t, 3> workgroupSize_;
   Stmts*                  formalArguments_;
   int                     thisQualifiers_;
-  Type*                   returnType_;
+  ASTType*                returnType_;
   Stmts*                  body_;
   Expr*                   initializer_;
 };
@@ -694,15 +912,15 @@ class ConstDecl : public Stmt {
 
 class VarDeclaration : public Stmt {
  public:
-  VarDeclaration(std::string id, Type* type, Expr* initExpr);
+  VarDeclaration(std::string id, ASTType* type, Expr* initExpr);
   Result      Accept(Visitor* visitor) override;
-  Type*       GetType() { return type_; }
+  ASTType*    GetType() { return type_; }
   std::string GetID() { return id_; }
   Expr*       GetInitExpr() { return initExpr_; }
-  void        SetType(Type* type) { type_ = type; }
+  void        SetType(ASTType* type) { type_ = type; }
 
  private:
-  Type*       type_;
+  ASTType*    type_;
   std::string id_;
   Expr*       initExpr_;
 };
@@ -785,16 +1003,16 @@ class ReturnStatement : public Stmt {
 
 class UnresolvedNewExpr : public Expr {
  public:
-  UnresolvedNewExpr(Type* type, Expr* length, ArgList* arglist, bool constructor);
+  UnresolvedNewExpr(ASTType* type, Expr* length, ArgList* arglist, bool constructor);
   Result   Accept(Visitor* visitor) override;
   Type*    GetType(TypeTable* types) override;
-  Type*    GetType() { return type_; }
+  ASTType* GetType() { return type_; }
   Expr*    GetLength() { return length_; }
   ArgList* GetArgList() { return arglist_; }
   bool     IsConstructor() const { return constructor_; }
 
  private:
-  Type*    type_;
+  ASTType* type_;
   Expr*    length_;  // used for unsized arrays as last field
   ArgList* arglist_;
   bool     constructor_;
@@ -802,14 +1020,66 @@ class UnresolvedNewExpr : public Expr {
 
 class ClassDecl : public Scope {
  public:
-                    ClassDecl(ClassType* classType);
+                    ClassDecl(std::string name,
+                              ASTFormalTemplateArgList* formalTemplateArgs = nullptr);
   Result            Accept(Visitor* visitor) override;
+  std::string       GetName() const { return name_; }
+  ASTFormalTemplateArgList* GetFormalTemplateArgs() const { return formalTemplateArgs_; }
   ClassType*        GetClass() const { return class_; }
-  void              DefineType(std::string id, Type* type) override { class_->DefineType(id, type); }
-  Type*             FindType(const std::string& id) const override { return class_->FindType(id); }
+  void              SetClass(ClassType* classType) { class_ = classType; }
+  ASTType*          GetParent() const { return parent_; }
+  void              SetParent(ASTType* parent) { parent_ = parent; }
+  Decls*            GetBody() const { return body_; }
+  void              SetBody(Decls* body) { body_ = body; }
   bool              IsClassDecl() const override { return true; }
+  bool              IsTemplate() const { return formalTemplateArgs_ != nullptr; }
+
  private:
-  ClassType* class_;
+  std::string               name_;
+  ASTFormalTemplateArgList* formalTemplateArgs_;
+  ClassType*                class_ = nullptr;
+  ASTType*                  parent_ = nullptr;
+  Decls*                    body_ = nullptr;
+};
+
+class ASTEnumValue : public Stmt {
+ public:
+                     ASTEnumValue(std::string id) : id_(id) {}
+                     ASTEnumValue(std::string id, int value) : id_(id), value_(value) {}
+  std::string        GetID() const { return id_; }
+  std::optional<int> GetValue() const { return value_; }
+  Result             Accept(Visitor* visitor) override;
+ private:
+  std::string        id_;
+  std::optional<int> value_;
+};
+
+typedef std::vector<ASTEnumValue*> ASTEnumValueVector;
+
+class ASTEnumValues : public ASTNode {
+ public:
+                            ASTEnumValues() {}
+  Result                    Accept(Visitor* visitor) override;
+  void                      Append(ASTEnumValue* value) { values_.push_back(value); }
+  const ASTEnumValueVector& GetValues() const { return values_; }
+ private:
+  ASTEnumValueVector        values_;
+};
+
+class EnumDecl : public Stmt {
+ public:
+                        EnumDecl(std::string name);
+  std::string           GetName() const { return name_; }
+  ASTEnumValues*        GetValues() const { return values_; }
+  void                  SetValues(ASTEnumValues* values) { values_ = values; }
+  EnumType*             GetResult() const { return result_; }
+  void                  SetResult(EnumType* result) { result_ = result; }
+  Result                Accept(Visitor* visitor) override;
+
+ private:
+  ASTEnumValues*        values_;
+  std::string           name_;
+  EnumType*             result_ = nullptr;            // FIXME: remove this
 };
 
 class UnaryOp : public Expr {
@@ -851,6 +1121,25 @@ class ScopeStack : public std::deque<Scope*> {
 
 class Visitor {
  public:
+  virtual Result Visit(ASTArrayType* node) { return Default(node); }
+  virtual Result Visit(ASTAutoType* node) { return Default(node); }
+  virtual Result Visit(ASTBoolType* node) { return Default(node); }
+  virtual Result Visit(ASTClassTemplateInstance* node) { return Default(node); }
+  virtual Result Visit(ASTClassType* node) { return Default(node); }
+  virtual Result Visit(ASTEnumType* node) { return Default(node); }
+  virtual Result Visit(ASTEnumValue* node) { return Default(node); }
+  virtual Result Visit(ASTEnumValues* node) { return Default(node); }
+  virtual Result Visit(ASTFloatingPointType* node) { return Default(node); }
+  virtual Result Visit(ASTFormalTemplateArg* node) { return Default(node); }
+  virtual Result Visit(ASTIntegerType* node) { return Default(node); }
+  virtual Result Visit(ASTMatrixType* node) { return Default(node); }
+  virtual Result Visit(ASTQualifiedType* node) { return Default(node); }
+  virtual Result Visit(ASTRawPtrType* node) { return Default(node); }
+  virtual Result Visit(ASTScopedType* node) { return Default(node); }
+  virtual Result Visit(ASTStrongPtrType* node) { return Default(node); }
+  virtual Result Visit(ASTVectorType* node) { return Default(node); }
+  virtual Result Visit(ASTVoidType* node) { return Default(node); }
+  virtual Result Visit(ASTWeakPtrType* node) { return Default(node); }
   virtual Result Visit(Arg* node) { return Default(node); }
   virtual Result Visit(ArgList* node) { return Default(node); }
   virtual Result Visit(ArrayAccess* node) { return Default(node); }
@@ -861,6 +1150,7 @@ class Visitor {
   virtual Result Visit(ConstDecl* node) { return Default(node); }
   virtual Result Visit(Data* node) { return Default(node); }
   virtual Result Visit(EnumConstant* node) { return Default(node); }
+  virtual Result Visit(EnumDecl* node) { return Default(node); }
   virtual Result Visit(SmartToRawPtr* node) { return Default(node); }
   virtual Result Visit(RawToSmartPtr* node) { return Default(node); }
   virtual Result Visit(Decls* node) { return Default(node); }
@@ -889,6 +1179,7 @@ class Visitor {
   virtual Result Visit(ToRawArray* node) { return Default(node); }
   virtual Result Visit(UnaryOp* node) { return Default(node); }
   virtual Result Visit(DestroyStmt* node) { return Default(node); }
+  virtual Result Visit(UnresolvedCastExpr* node) { return Default(node); }
   virtual Result Visit(UnresolvedInitializer* node) { return Default(node); }
   virtual Result Visit(UnresolvedDot* node) { return Default(node); }
   virtual Result Visit(UnresolvedStaticDot* node) { return Default(node); }

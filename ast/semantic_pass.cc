@@ -25,30 +25,12 @@
 #include <ranges>
 
 #include "api_validator.h"
+#include "constant_folder.h"
+#include "name_mangler.h"
 
 namespace Toucan {
 
 namespace {
-
-class UnresolvedClassVisitor : public Visitor {
- public:
-  UnresolvedClassVisitor(SemanticPass* semanticPass) : semanticPass_(semanticPass) {}
-
- private:
-  Result Visit(ClassDecl* node) override {
-    semanticPass_->PreVisit(node);
-    return {};
-  }
-
-  Result Visit(Stmts* stmts) override {
-    for (auto stmt : stmts->GetStmts()) stmt->Accept(this);
-    return {};
-  }
-
-  Result Default(ASTNode* node) override { return {}; }
-
-  SemanticPass* semanticPass_;
-};
 
 // Returns in the index corresponding to a given swizzle char, or -1 if invalid.
 int ParseSwizzleChar(char c) {
@@ -87,8 +69,7 @@ SemanticPass::SemanticPass(NodeVector* nodes, TypeTable* types)
     : CopyVisitor(nodes), types_(types), numErrors_(0) {}
 
 Stmts* SemanticPass::Run(Stmts* stmts) {
-  UnresolvedClassVisitor ucv(this);
-  stmts->Accept(&ucv);
+  rootStmts_ = stmts;
 
   stmts = Resolve(stmts);
 
@@ -139,12 +120,13 @@ Result SemanticPass::Visit(SliceExpr* node) {
   return Make<SliceExpr>(expr, start, end);
 }
 
-Result SemanticPass::Visit(CastExpr* node) {
+Result SemanticPass::Visit(UnresolvedCastExpr* node) {
   Expr* expr = Resolve(node->GetExpr());
   if (!expr) { return nullptr; }
+  Type* dstType = ResolveType(node->GetType());
+  if (!dstType) { return nullptr; }
 
   Type* srcType = expr->GetType(types_);
-  Type* dstType = node->GetType();
   if (srcType == dstType) {
     return expr;
   } else if (srcType->CanWidenTo(dstType) || srcType->CanNarrowTo(dstType)) {
@@ -178,6 +160,7 @@ Result SemanticPass::Visit(Stmts* stmts) {
       newStmts->Append(Make<DestroyStmt>(Make<VarExpr>(var.get())));
     }
   }
+  stmts->ClearVars();
   return newStmts;
 }
 
@@ -213,7 +196,8 @@ Result SemanticPass::Visit(ArgList* node) {
 }
 
 Result SemanticPass::Visit(UnresolvedInitializer* node) {
-  Type*              type = node->GetType();
+  Type*              type = ResolveType(node->GetType());
+  if (!type) return nullptr;
   ArgList*           argList = Resolve(node->GetArgList());
   if (!argList) return nullptr;
 
@@ -299,21 +283,30 @@ Stmts* SemanticPass::InitializeArray(Expr* dest, Type* elementType, Expr* length
 
 Result SemanticPass::Visit(VarDeclaration* decl) {
   std::string id = decl->GetID();
-  Type*       type = decl->GetType();
-  assert(scopeStack_.Top()->IsStmts());
-  auto scope = static_cast<Stmts*>(scopeStack_.Top());
-  if (scope->FindVar(id) || scope->FindConstant(id)) {
-    return Error("identifier \"%s\" already defined in this scope", id.c_str());
-  }
+  Type*       type = ResolveType(decl->GetType());
   if (!type) return nullptr;
+
   Expr* initExpr = nullptr;
   if (decl->GetInitExpr()) {
     initExpr = Resolve(decl->GetInitExpr());
     if (!initExpr) { return nullptr; }
   }
+
   if (type->IsAuto()) {
     assert(initExpr);
     type = initExpr->GetType(types_);
+  }
+
+  if (scopeStack_.Top()->IsClassDecl()) {
+    auto classDecl = static_cast<ClassDecl*>(scopeStack_.Top());
+    auto classType = classDecl->GetClass();
+    classDecl->GetClass()->AddField(decl->GetID(), type, initExpr);
+    return {};
+  }
+  assert(scopeStack_.Top()->IsStmts());
+  auto scope = static_cast<Stmts*>(scopeStack_.Top());
+  if (scope->FindVar(id) || scope->FindConstant(id)) {
+    return Error("identifier \"%s\" already defined in this scope", id.c_str());
   }
   typesToValidate_.push_back({type, decl->GetFileLocation()});
   if (type->IsVoid() || (type->IsArray() && static_cast<ArrayType*>(type)->GetNumElements() == 0)) {
@@ -332,20 +325,63 @@ Result SemanticPass::Visit(VarDeclaration* decl) {
   return Initialize(varExpr, initExpr);
 }
 
+Result SemanticPass::Visit(MethodDecl* decl) {
+  auto returnType = ResolveType(decl->GetReturnType());
+  if (!returnType) return nullptr;
+
+  assert(scopeStack_.Top()->IsClassDecl());
+  auto classDecl = static_cast<ClassDecl*>(scopeStack_.Top());
+  auto classType = classDecl->GetClass();
+
+  Method* method = new Method(decl->GetModifiers(), returnType, decl->GetID(), classType);
+  method->stmts = decl->GetBody();
+  method->initializer = decl->GetInitializer();
+  method->workgroupSize = decl->GetWorkgroupSize();
+  if (!(decl->GetModifiers() & Method::Modifier::Static)) {
+    Type* thisType = types_->GetQualifiedType(classType, decl->GetThisQualifiers());
+    thisType = types_->GetRawPtrType(thisType);
+    method->AddFormalArg("this", thisType, nullptr);
+  }
+  if (decl->GetFormalArguments()) {
+    for (auto& it : decl->GetFormalArguments()->GetStmts()) {
+      VarDeclaration* v = static_cast<VarDeclaration*>(it);
+      auto type = ResolveType(v->GetType());
+      if (!type) return {};
+      auto initExpr = Resolve(v->GetInitExpr());
+      if (type->IsAuto()) {
+        assert(initExpr);
+        type = initExpr->GetType(types_);
+      }
+      method->AddFormalArg(v->GetID(), type, initExpr);
+    }
+  }
+
+  bool isOverloaded = overloadedMethods_.contains(method->name);
+  method->mangledName = GetMangledName(classDecl, decl, isOverloaded);
+  classType->AddMethod(method);
+  return {};
+}
+
 Result SemanticPass::Visit(ConstDecl* decl) {
   std::string id = decl->GetID();
-  assert(scopeStack_.Top()->IsStmts());
+  auto expr = Resolve(decl->GetExpr());
+  if (!expr) return nullptr;
+  if (!expr->IsConstant(types_)) {
+    return Error("expression is not constant");
+  }
+
+  if (scopeStack_.Top()->IsClassDecl()) {
+    auto classDecl = static_cast<ClassDecl*>(scopeStack_.Top());
+    classDecl->GetClass()->AddConstant(decl->GetID(), decl->GetExpr());
+    return {};
+  }
+
   auto scope = static_cast<Stmts*>(scopeStack_.Top());
   if (scope->FindVar(id) || scope->FindConstant(id)) {
     return Error("identifier \"%s\" already defined in this scope", id.c_str());
   }
-  auto expr = Resolve(decl->GetExpr());
-  if (!expr) return nullptr;
   auto type = expr->GetType(types_);
 
-  if (!expr->IsConstant(types_)) {
-    return Error("expression is not constant");
-  }
   typesToValidate_.push_back({type, decl->GetFileLocation()});
 
   scope->AppendConstant(id, expr);
@@ -543,8 +579,14 @@ Result SemanticPass::Visit(UnresolvedStaticMethodCall* node) {
   std::string id = node->GetID();
   ArgList*    arglist = Resolve(node->GetArgList());
   if (!arglist) return nullptr;
-  ClassType* classType = node->classType();
-  return ResolveMethodCall(nullptr, classType, id, arglist);
+
+  auto baseType = ResolveType(node->GetBaseType());
+  if (!baseType) return nullptr;
+
+  if (!baseType->IsClass()) {
+    return Error("attempt to call a static method on a non-class");
+  }
+  return ResolveMethodCall(nullptr, static_cast<ClassType*>(baseType), id, arglist);
 }
 
 Expr* SemanticPass::MakeLoad(Expr* expr) {
@@ -693,7 +735,7 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
 }
 
 Result SemanticPass::Visit(UnresolvedStaticDot* node) {
-  auto type = node->GetType();
+  auto type = ResolveType(node->GetType());
   if (!type) return nullptr;
   std::string id = node->GetID();
   if (type->IsEnum()) {
@@ -859,7 +901,7 @@ void SemanticPass::WidenArgList(std::vector<Expr*>& argList, const VarVector& fo
 }
 
 Result SemanticPass::Visit(UnresolvedNewExpr* node) {
-  Type* type = node->GetType();
+  Type* type = ResolveType(node->GetType());
   if (!type) return nullptr;
   typesToValidate_.push_back({type, node->GetFileLocation()});
   if (type->IsUnsizedArray()) { return Error("cannot allocate unsized array"); }
@@ -898,8 +940,9 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
       Expr* result = Make<MethodCall>(constructor, args);
       result = Make<RawToSmartPtr>(result);
       // This is for native templated constructors, which return an untemplated type
-      if (result->GetType(types_) != node->GetType(types_)) {
-        result = Widen(result, node->GetType(types_));
+      auto returnType = types_->GetStrongPtrType(type);
+      if (result->GetType(types_) != returnType) {
+        result = Widen(result, returnType);
       }
       return result;
     }
@@ -959,34 +1002,19 @@ Result SemanticPass::Visit(ForStatement* node) {
   return Make<ForStatement>(initStmt, cond, loopStmt, body);
 }
 
-void SemanticPass::PreVisit(ClassDecl* node) {
-  ClassType* classType = node->GetClass();
-
-  // Non-native template classes don't need inferred type resolution
-  if (!classType->HasNativeMethods() && classType->IsClassTemplate()) return;
-
-  for (const auto& method : classType->GetMethods()) {
-    for (int i = 0; i < method->defaultArgs.size(); ++i) {
-      method->defaultArgs[i] = Resolve(method->defaultArgs[i]);
-      if (method->formalArgList[i]->type->IsAuto()) {
-        method->formalArgList[i]->type = method->defaultArgs[i]->GetType(types_);
-      }
-    }
-  }
-
-  for (const auto& field : classType->GetFields()) {
-    field->defaultValue = Resolve(field->defaultValue);
-    if (field->type->IsAuto()) {
-      field->type = field->defaultValue->GetType(types_);
-    }
+void SemanticPass::SetCurrentTemplateArgs(const TypeList& srcTypes, const TypeList& dstTypes) {
+  assert(srcTypes.size() == dstTypes.size());
+  for (int i = 0; i < srcTypes.size(); ++i) {
+    auto name = static_cast<FormalTemplateArg*>(srcTypes[i])->GetName();
+    currentTemplateArgs_[name] = dstTypes[i];
   }
 }
 
 Result SemanticPass::Visit(ClassDecl* node) {
-  ClassType* classType = node->GetClass();
+  if (node->IsTemplate()) return {};
 
-  // Template classes don't need semantic analysis, since their code won't be directly generated.
-  if (classType->IsClassTemplate()) return nullptr;
+  ClassType* classType = GetOrCreateClassType(node);
+  if (!classType) return nullptr;
 
   scopeStack_.Push(node);
 
@@ -995,6 +1023,7 @@ Result SemanticPass::Visit(ClassDecl* node) {
     if (!destructor) {
       std::string name = std::string("~") + classType->GetName();
       destructor = new Method(0, types_->GetVoid(), name, classType);
+      destructor->mangledName = classType->GetName() + "_Destroy";
       destructor->AddFormalArg("this", types_->GetRawPtrType(classType), nullptr);
       destructor->stmts = Make<Stmts>();
       classType->AddMethod(destructor);
@@ -1010,8 +1039,16 @@ Result SemanticPass::Visit(ClassDecl* node) {
     }
   }
 
+  if (auto classTemplate = classType->GetTemplate()) {
+    nodeCache_.clear();
+    SetCurrentTemplateArgs(classTemplate->GetFormalTemplateArgs(), classType->GetTemplateArgs());
+  }
   for (const auto& method : classType->GetMethods()) {
-    if (!method->stmts) continue;
+    if (!method->stmts) {
+      if (auto* t = classType->GetTemplate()) t->SetNative(true);
+      classType->SetNative(true);
+      continue;
+    }
 
     auto newStmts = Make<Stmts>();
     for (const auto& var : method->formalArgList) {
@@ -1047,6 +1084,9 @@ Result SemanticPass::Visit(ClassDecl* node) {
       }
     }
   }
+  if (classType->GetTemplate()) {
+    currentTemplateArgs_.clear();
+  }
 
   const auto& fields = classType->GetFields();
   for (const auto& field : fields) {
@@ -1056,6 +1096,23 @@ Result SemanticPass::Visit(ClassDecl* node) {
   }
   scopeStack_.Pop();
   return nullptr;
+}
+
+Result SemanticPass::Visit(EnumDecl* node) {
+  if (auto result = node->GetResult()) { return result; }
+
+  auto result = types_->Make<EnumType>(node->GetName());
+  for (auto entry : node->GetValues()->GetValues()) {
+    auto value = entry->GetValue();
+    if (value.has_value()) {
+      result->Append(entry->GetID(), value.value());
+    } else {
+      result->Append(entry->GetID());
+    }
+  }
+  node->SetResult(result);
+
+  return result;
 }
 
 void SemanticPass::UnwindStack(Stmts* stmts) {
@@ -1207,6 +1264,249 @@ Expr* SemanticPass::AutoDereference(Expr* expr) {
     return Make<SmartToRawPtr>(expr);
   }
   return expr;
+}
+
+Type* SemanticPass::ResolveType(ASTType* node) {
+  if (!node) { return nullptr; }
+
+  ScopedFileLocation scopedFile(&fileLocation_, node->GetFileLocation());
+  return static_cast<Type*>(std::get<void*>(node->Accept(this)));
+}
+
+bool SemanticPass::ResolveTypeList(ASTTypeList* typeList, TypeList* result) {
+  for (auto t : typeList->GetTypes()) {
+    auto type = ResolveType(t);
+    if (!type) return false;
+    result->push_back(type);
+  }
+  return true;
+}
+
+Result SemanticPass::Visit(ASTArrayType* node) {
+  int numElements = 0;
+  if (auto numElementsExpr = node->GetNumElements()) {
+    if (!numElementsExpr->IsIntConstant()) {
+      return Error("array size is not an integer constant");
+    }
+    ConstantFolder constantFolder(types_, &numElements);
+    constantFolder.Resolve(numElementsExpr);
+  }
+  return types_->GetArrayType(ResolveType(node->GetElementType()), numElements, MemoryLayout::Default);
+}
+
+Result SemanticPass::Visit(ASTBoolType* node) {
+  return types_->GetBool();
+}
+
+Result SemanticPass::Visit(ASTEnumType* node) {
+  return Resolve(node->GetDecl());
+}
+
+Result SemanticPass::Visit(ASTClassType* node) {
+  return GetOrCreateClassType(node->GetDecl());
+}
+
+Result SemanticPass::Visit(ASTClassTemplateInstance* node) {
+  if (!node->GetClassTemplate()->IsClass()) {
+    return Error("template is not of class type");
+  }
+
+  auto astClassTemplate = static_cast<ASTClassType*>(node->GetClassTemplate());
+
+  auto classTemplate = static_cast<ClassTemplate*>(ResolveType(astClassTemplate));
+  assert(classTemplate && classTemplate->IsClassTemplate());
+
+  auto templateDecl = astClassTemplate->GetDecl();
+  assert(templateDecl);
+
+  TypeList dstTypes;
+  if (!ResolveTypeList(node->GetTemplateArgs(), &dstTypes)) return nullptr;
+
+  if (auto classType = classTemplate->FindInstance(dstTypes)) {
+     return classType;
+  }
+
+  auto classType = types_->Make<ClassType>(templateDecl->GetName());
+
+  auto srcTypes = classTemplate->GetFormalTemplateArgs();
+  if (srcTypes.size() != dstTypes.size()) {
+    return Error("expected %d arguments to template %s, received %d",
+      srcTypes.size(), classTemplate->ToString().c_str(), dstTypes.size());
+  }
+
+  auto prevTemplateArgs = currentTemplateArgs_;
+  currentTemplateArgs_.clear();
+  SetCurrentTemplateArgs(srcTypes, dstTypes);
+
+  for (int i = 0; i < srcTypes.size(); ++i) {
+    auto name = static_cast<FormalTemplateArg*>(srcTypes[i])->GetName();
+    classType->DefineType(name, dstTypes[i]);
+  }
+  classType->SetTemplate(classTemplate);
+  classType->SetTemplateArgs(dstTypes);
+  if (templateDecl->GetParent()) {
+    auto parent = ResolveType(templateDecl->GetParent());
+    if (parent && !parent->IsClass()) {
+      return Error("parent \"%s\" is not class type", parent->ToString().c_str());
+    }
+    classType->SetParent(static_cast<ClassType*>(parent));
+  }
+  classTemplate->AddInstance(classType);
+
+  auto decl = Make<ClassDecl>(classTemplate->GetName());
+  decl->SetBody(Make<Decls>());
+  node->SetDecl(decl);
+  decl->SetClass(classType);
+  rootStmts_->Append(decl);
+
+  copyFileLocation_ = false;
+  scopeStack_.Push(decl);
+  auto templateBody = templateDecl->GetBody();
+  overloadedMethods_ = OverloadFinder::Run(templateBody);
+  templateBody->Accept(this);
+  scopeStack_.Pop();
+  copyFileLocation_ = true;
+  currentTemplateArgs_ = prevTemplateArgs;
+
+  return classType;
+}
+
+Result SemanticPass::Visit(ASTFloatingPointType* node) {
+  return types_->GetFloatingPoint(node->GetBits());
+}
+
+Result SemanticPass::Visit(ASTFormalTemplateArg* node) {
+  auto name = node->GetName();
+  if (Type* type = currentTemplateArgs_[name]) {
+    return type;
+  }
+  assert(false);
+  return nullptr;
+}
+
+Result SemanticPass::Visit(ASTIntegerType* node) {
+  return types_->GetInteger(node->GetBits(), node->IsSigned());
+}
+
+Result SemanticPass::Visit(ASTMatrixType* node) {
+  auto columnType = ResolveType(node->GetColumnType());
+  if (!columnType) return nullptr;
+  assert(columnType->IsVector());
+
+  return types_->GetMatrix(static_cast<VectorType*>(columnType), node->GetNumColumns());
+}
+
+Type* SemanticPass::PushQualifiers(Type* type, int qualifiers) {
+  if (type->IsArray()) {
+    auto arrayType = static_cast<ArrayType*>(type);
+    return types_->GetArrayType(
+        PushQualifiers(arrayType->GetElementType(), qualifiers),
+        arrayType->GetNumElements(), arrayType->GetMemoryLayout());
+  } else if (type->IsClass()) {
+    auto memoryLayout = MemoryLayout::Default;
+    if (qualifiers & Type::Qualifier::Uniform) {
+      memoryLayout = MemoryLayout::Uniform;
+    } else if (qualifiers & Type::Qualifier::Storage) {
+      memoryLayout = MemoryLayout::Storage;
+    }
+    static_cast<ClassType*>(type)->SetMemoryLayout(memoryLayout, types_);
+    return types_->GetQualifiedType(type, qualifiers);
+  } else {
+    return types_->GetQualifiedType(type, qualifiers);
+  }
+}
+
+Result SemanticPass::Visit(ASTQualifiedType* node) {
+  auto baseType = ResolveType(node->GetBaseType());
+  if (!baseType) return nullptr;
+
+  return PushQualifiers(baseType, node->GetQualifiers());
+}
+
+Result SemanticPass::Visit(ASTRawPtrType* node) {
+  auto baseType = ResolveType(node->GetBaseType());
+  if (!baseType) return nullptr;
+
+  return types_->GetRawPtrType(baseType);
+}
+
+Result SemanticPass::Visit(ASTScopedType* node) {
+  auto scope = ResolveType(node->GetScope());
+  if (!scope) return nullptr;
+
+  if (!scope->IsClass()) {
+    return Error("\"%s\" is not a class type", scope->ToString().c_str());
+  }
+  auto classType = static_cast<ClassType*>(scope);
+  if (node->GetName() == "BaseClass") {
+    return classType->GetParent() ? classType->GetParent() : classType;
+  }
+  Type* scopedType = classType->FindType(node->GetName());
+  if (!scopedType) {
+    return Error("class \"%s\" has no type named \"%s\"", scope->ToString().c_str(), node->GetName().c_str());
+  }
+  return scopedType;
+
+}
+
+Result SemanticPass::Visit(ASTStrongPtrType* node) {
+  auto baseType = ResolveType(node->GetBaseType());
+  if (!baseType) return nullptr;
+
+  return types_->GetStrongPtrType(baseType);
+}
+
+Result SemanticPass::Visit(ASTVectorType* node) {
+  auto componentType = ResolveType(node->GetComponentType());
+  if (!componentType) return nullptr;
+
+  return types_->GetVector(componentType, node->GetNumComponents());
+}
+
+Result SemanticPass::Visit(ASTAutoType* node) {
+  return types_->GetAuto();
+}
+
+Result SemanticPass::Visit(ASTVoidType* node) {
+  return types_->GetVoid();
+}
+
+Result SemanticPass::Visit(ASTWeakPtrType* node) {
+  auto baseType = ResolveType(node->GetBaseType());
+  if (!baseType) return nullptr;
+
+  return types_->GetWeakPtrType(baseType);
+}
+
+ClassType* SemanticPass::GetOrCreateClassType(ClassDecl* decl) {
+  auto classType = decl->GetClass();
+  if (classType) return classType;
+
+  if (decl->IsTemplate()) {
+    TypeList formalTemplateArgs;
+    for (auto arg : decl->GetFormalTemplateArgs()->Get()) {
+      formalTemplateArgs.push_back(types_->GetFormalTemplateArg(arg->GetName()));
+    }
+    classType = types_->Make<ClassTemplate>(decl->GetName(), formalTemplateArgs);
+    decl->SetClass(classType);
+  } else {
+    classType = types_->Make<ClassType>(decl->GetName());
+    decl->SetClass(classType);
+    auto parent = ResolveType(decl->GetParent());
+    if (parent && !parent->IsClass()) {
+      Error("parent type \"%s\" is not class type", parent->ToString().c_str());
+      return nullptr;
+    }
+    classType->SetParent(static_cast<ClassType*>(parent));
+    scopeStack_.Push(decl);
+    overloadedMethods_ = OverloadFinder::Run(decl->GetBody());
+    decl->GetBody()->Accept(this);
+    scopeStack_.Pop();
+    for (auto type : decl->GetTypes()) {
+      classType->DefineType(type.first, ResolveType(type.second));
+    }
+  }
+  return classType;
 }
 
 };  // namespace Toucan
