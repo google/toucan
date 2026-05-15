@@ -35,7 +35,7 @@ class UnresolvedClassVisitor : public Visitor {
   UnresolvedClassVisitor(SemanticPass* semanticPass) : semanticPass_(semanticPass) {}
 
  private:
-  Result Visit(UnresolvedClassDefinition* node) override {
+  Result Visit(ClassDecl* node) override {
     semanticPass_->PreVisit(node);
     return {};
   }
@@ -574,8 +574,8 @@ Expr* SemanticPass::FindID(std::string id) {
       } else if (auto constant = stmts->FindConstant(id)) {
         return MakeReadOnlyTempVar(constant);
       }
-    } else if (scope->IsUnresolvedClassDefinition()) {
-      auto classType = static_cast<UnresolvedClassDefinition*>(scope)->GetClass();
+    } else if (scope->IsClassDecl()) {
+      auto classType = static_cast<ClassDecl*>(scope)->GetClass();
       if (auto field = classType->FindField(id)) {
         Expr* thisPtr = Make<UnresolvedIdentifier>("this");
         return Make<FieldAccess>(thisPtr, field);
@@ -959,8 +959,8 @@ Result SemanticPass::Visit(ForStatement* node) {
   return Make<ForStatement>(initStmt, cond, loopStmt, body);
 }
 
-void SemanticPass::PreVisit(UnresolvedClassDefinition* defn) {
-  ClassType* classType = defn->GetClass();
+void SemanticPass::PreVisit(ClassDecl* node) {
+  ClassType* classType = node->GetClass();
 
   // Non-native template classes don't need inferred type resolution
   if (!classType->HasNativeMethods() && classType->IsClassTemplate()) return;
@@ -982,13 +982,13 @@ void SemanticPass::PreVisit(UnresolvedClassDefinition* defn) {
   }
 }
 
-Result SemanticPass::Visit(UnresolvedClassDefinition* defn) {
-  ClassType* classType = defn->GetClass();
+Result SemanticPass::Visit(ClassDecl* node) {
+  ClassType* classType = node->GetClass();
 
   // Template classes don't need semantic analysis, since their code won't be directly generated.
   if (classType->IsClassTemplate()) return nullptr;
 
-  scopeStack_.Push(defn);
+  scopeStack_.Push(node);
 
   if (classType->NeedsDestruction()) {
     auto destructor = classType->GetDestructor();

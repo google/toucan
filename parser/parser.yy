@@ -751,14 +751,14 @@ static void BeginClass(Type* t, ClassType* parent) {
   }
   c->SetParent(parent);
   c->SetDefined(true);
-  scopeStack_.Push(Make<UnresolvedClassDefinition>(c));
+  scopeStack_.Push(Make<ClassDecl>(c));
 }
 
 static ClassType* BeginClassTemplate(TypeList* templateArgs, const char* id) {
   ClassTemplate* t = types_->Make<ClassTemplate>(id, *templateArgs);
   DefineType(id, t);
   t->SetDefined(true);
-  scopeStack_.Push(Make<UnresolvedClassDefinition>(t));
+  scopeStack_.Push(Make<ClassDecl>(t));
   for (Type* const& i : *templateArgs) {
     auto type = static_cast<FormalTemplateArg*>(i);
     DefineType(type->GetName(), type);
@@ -802,11 +802,11 @@ class ClassPopulator : public Visitor {
 };
 
 static Stmt* EndClass(Stmts* body) {
-  auto defn = static_cast<UnresolvedClassDefinition*>(scopeStack_.Pop());
-  auto classType = defn->GetClass();
+  auto node = static_cast<ClassDecl*>(scopeStack_.Pop());
+  auto classType = node->GetClass();
   ClassPopulator populator(classType);
   body->Accept(&populator);
-  return defn;
+  return node;
 }
 
 static void BeginEnum(Type* t) {
@@ -927,7 +927,7 @@ static void InstantiateClassTemplates() {
     TypeReplacementPass pass(nodes_, types_, classTemplate->GetFormalTemplateArgs(), instance->GetTemplateArgs(), &OnNewClass);
     pass.ResolveClassInstance(classTemplate, instance);
     numSyntaxErrors += pass.NumErrors();
-    rootStmts_->Append(Make<UnresolvedClassDefinition>(instance));
+    rootStmts_->Append(Make<ClassDecl>(instance));
   }
 }
 

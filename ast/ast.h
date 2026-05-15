@@ -547,7 +547,7 @@ class Scope : public Stmt {
   virtual void              DefineType(std::string id, Type* type) = 0;
   virtual Type*             FindType(const std::string& id) const = 0;
   virtual bool              IsStmts() const { return false; }
-  virtual bool              IsUnresolvedClassDefinition() const { return false; }
+  virtual bool              IsClassDecl() const { return false; }
 };
 
 class Stmts : public Scope {
@@ -800,14 +800,14 @@ class UnresolvedNewExpr : public Expr {
   bool     constructor_;
 };
 
-class UnresolvedClassDefinition : public Scope {
+class ClassDecl : public Scope {
  public:
-                    UnresolvedClassDefinition(ClassType* classType);
+                    ClassDecl(ClassType* classType);
   Result            Accept(Visitor* visitor) override;
   ClassType*        GetClass() const { return class_; }
   void              DefineType(std::string id, Type* type) override { class_->DefineType(id, type); }
   Type*             FindType(const std::string& id) const override { return class_->FindType(id); }
-  bool              IsUnresolvedClassDefinition() const override { return true; }
+  bool              IsClassDecl() const override { return true; }
  private:
   ClassType* class_;
 };
@@ -857,6 +857,7 @@ class Visitor {
   virtual Result Visit(BinOpNode* node) { return Default(node); }
   virtual Result Visit(BoolConstant* node) { return Default(node); }
   virtual Result Visit(CastExpr* node) { return Default(node); }
+  virtual Result Visit(ClassDecl* node) { return Default(node); }
   virtual Result Visit(ConstDecl* node) { return Default(node); }
   virtual Result Visit(Data* node) { return Default(node); }
   virtual Result Visit(EnumConstant* node) { return Default(node); }
@@ -893,7 +894,6 @@ class Visitor {
   virtual Result Visit(UnresolvedStaticDot* node) { return Default(node); }
   virtual Result Visit(UnresolvedIdentifier* node) { return Default(node); }
   virtual Result Visit(UnresolvedListExpr* node) { return Default(node); }
-  virtual Result Visit(UnresolvedClassDefinition* node) { return Default(node); }
   virtual Result Visit(UnresolvedNewExpr* node) { return Default(node); }
   virtual Result Visit(UnresolvedMethodCall* node) { return Default(node); }
   virtual Result Visit(UnresolvedStaticMethodCall* node) { return Default(node); }

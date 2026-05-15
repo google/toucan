@@ -390,7 +390,7 @@ UnresolvedNewExpr::UnresolvedNewExpr(Type* type, Expr* length, ArgList* arglist,
 
 Type* UnresolvedNewExpr::GetType(TypeTable* types) { return types->GetStrongPtrType(type_); }
 
-UnresolvedClassDefinition::UnresolvedClassDefinition(ClassType* classType) : class_(classType) {}
+ClassDecl::ClassDecl(ClassType* classType) : class_(classType) {}
 
 NodeVector::NodeVector() {}
 
@@ -402,6 +402,7 @@ Result ArrayAccess::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result BinOpNode::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result BoolConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result CastExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ClassDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ConstDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Data::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result EnumConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
@@ -436,7 +437,6 @@ Result DestroyStmt::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedDot::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedIdentifier::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedListExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
-Result UnresolvedClassDefinition::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedInitializer::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedMethodCall::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result UnresolvedNewExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }

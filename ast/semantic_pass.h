@@ -35,7 +35,7 @@ class SemanticPass : public CopyVisitor {
   Result Visit(BinOpNode* node) override;
   Result Visit(CastExpr* expr) override;
   Result Visit(ConstDecl* decl) override;
-  Result Visit(UnresolvedClassDefinition* defn) override;
+  Result Visit(ClassDecl* node) override;
   Result Visit(Data* expr) override;
   Result Visit(Decls* decls) override;
   Result Visit(DoStatement* stmt) override;
@@ -61,7 +61,7 @@ class SemanticPass : public CopyVisitor {
   Result Error(const char* fmt, ...);
   Result Default(ASTNode* node) override;
   int    GetNumErrors() const { return numErrors_; }
-  void   PreVisit(UnresolvedClassDefinition* node);
+  void   PreVisit(ClassDecl* node);
 
  private:
   void    UnwindStack(Stmts* stmts);
