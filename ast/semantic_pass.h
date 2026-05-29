@@ -124,6 +124,7 @@ class SemanticPass : public CopyVisitor {
   int              numErrors_ = 0;
   Method*          currentMethod_ = nullptr;
   TypeMap          currentTemplateArgs_;
+  Type*            currentAutoType_ = nullptr;
   std::unordered_set<std::string>  overloadedMethods_;
 };
 

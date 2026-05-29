@@ -71,8 +71,6 @@ int GenBindings::EmitType(Type* type) {
     emitLHS() << "types->GetString();\n";
   } else if (type->IsVoid()) {
     emitLHS() << "types->GetVoid();\n";
-  } else if (type->IsAuto()) {
-    emitLHS() << "types->GetAuto();\n";
   } else if (type->IsClassTemplate()) {
     ClassTemplate* classTemplate = static_cast<ClassTemplate*>(type);
     emitLHS() << "types->Make<ClassTemplate>(\"" << classTemplate->GetName()
@@ -130,11 +128,6 @@ int GenBindings::EmitType(Type* type) {
     int baseTypeID = EmitType(qualifiedType->GetBaseType());
     emitLHS() << "types->GetQualifiedType(type" << baseTypeID << ", "
               << qualifiedType->GetQualifiers() << ");\n";
-  } else if (type->IsUnresolvedScopedType()) {
-    auto unresolvedScopedType = static_cast<UnresolvedScopedType*>(type);
-    auto baseTypeID = EmitType(unresolvedScopedType->GetBaseType());
-    emitLHS() << "types->GetUnresolvedScopedType(type" << baseTypeID << ", \""
-              << unresolvedScopedType->GetID() << "\");\n";
   } else if (type->IsList()) {
     const VarVector& vars = static_cast<ListType*>(type)->GetTypes();
     std::vector<int> varIDs;

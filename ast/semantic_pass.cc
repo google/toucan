@@ -283,19 +283,18 @@ Stmts* SemanticPass::InitializeArray(Expr* dest, Type* elementType, Expr* length
 
 Result SemanticPass::Visit(VarDeclaration* decl) {
   std::string id = decl->GetID();
-  Type*       type = ResolveType(decl->GetType());
-  if (!type) return nullptr;
 
   Expr* initExpr = nullptr;
   if (decl->GetInitExpr()) {
     initExpr = Resolve(decl->GetInitExpr());
     if (!initExpr) { return nullptr; }
+    currentAutoType_ = initExpr->GetType(types_);
   }
 
-  if (type->IsAuto()) {
-    assert(initExpr);
-    type = initExpr->GetType(types_);
-  }
+  Type*       type = ResolveType(decl->GetType());
+  if (!type) return nullptr;
+  
+  currentAutoType_ = nullptr;
 
   if (scopeStack_.Top()->IsClassDecl()) {
     auto classDecl = static_cast<ClassDecl*>(scopeStack_.Top());
@@ -345,14 +344,12 @@ Result SemanticPass::Visit(MethodDecl* decl) {
   if (decl->GetFormalArguments()) {
     for (auto& it : decl->GetFormalArguments()->GetStmts()) {
       VarDeclaration* v = static_cast<VarDeclaration*>(it);
+      auto initExpr = Resolve(v->GetInitExpr());
+      if (initExpr) currentAutoType_ = initExpr->GetType(types_);
       auto type = ResolveType(v->GetType());
       if (!type) return {};
-      auto initExpr = Resolve(v->GetInitExpr());
-      if (type->IsAuto()) {
-        assert(initExpr);
-        type = initExpr->GetType(types_);
-      }
       method->AddFormalArg(v->GetID(), type, initExpr);
+      currentAutoType_ = nullptr;
     }
   }
 
@@ -1464,7 +1461,7 @@ Result SemanticPass::Visit(ASTVectorType* node) {
 }
 
 Result SemanticPass::Visit(ASTAutoType* node) {
-  return types_->GetAuto();
+  return currentAutoType_;
 }
 
 Result SemanticPass::Visit(ASTVoidType* node) {

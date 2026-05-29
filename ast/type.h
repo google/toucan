@@ -69,11 +69,9 @@ class Type {
   virtual bool  IsPtr() const { return false; }
   virtual bool  IsString() const { return false; }
   virtual bool  IsVoid() const { return false; }
-  virtual bool  IsAuto() const { return false; }
   virtual bool  IsClass() const { return false; }
   virtual bool  IsClassTemplate() const { return false; }
   virtual bool  IsFormalTemplateArg() const { return false; }
-  virtual bool  IsUnresolvedScopedType() const { return false; }
   virtual bool  IsFullySpecified() const { return true; }
   virtual bool  IsReadable() const { return true; }
   virtual bool  IsWriteable() const { return true; }
@@ -218,14 +216,6 @@ class VoidType : public Type {
   int         GetSizeInBytes() const override { return 0; }
 };
 
-class AutoType : public Type {
- public:
-  AutoType();
-  bool        IsAuto() const override { return true; }
-  std::string ToString() const override { return "auto"; }
-  int         GetSizeInBytes() const override { return 0; }
-};
-
 class ArrayType : public ArrayLikeType {
  public:
   ArrayType(Type* elementType, uint32_t numElements, MemoryLayout memoryLayout);
@@ -305,7 +295,6 @@ struct Method {
   Type*                   returnType;
   std::string             name;
   ClassType*              classType;
-  Method*                 templateMethod = nullptr;
   std::array<uint32_t, 3> workgroupSize = {1, 1, 1};
   VarVector               formalArgList;
   std::vector<Expr*>      defaultArgs;
@@ -359,24 +348,6 @@ class FormalTemplateArg : public Type {
 
  private:
   std::string name_;
-};
-
-class UnresolvedScopedType : public Type {
- public:
-  UnresolvedScopedType(FormalTemplateArg* baseType, std::string name);
-  std::string ToString() const override;
-  bool IsUnresolvedScopedType() const override { return true; }
-  bool IsFullySpecified() const override { return false; }
-  int  GetSizeInBytes() const override {
-    assert(false);
-    return 0;
-  }
-  FormalTemplateArg* GetBaseType() { return baseType_; }
-  std::string        GetID() const { return id_; }
-
- private:
-  FormalTemplateArg* baseType_;
-  std::string        id_;
 };
 
 typedef std::vector<std::unique_ptr<EnumType>> EnumVector;
@@ -543,7 +514,6 @@ class TypeTable {
   FloatingPointType* GetFloat();
   FloatingPointType* GetDouble();
   VoidType*          GetVoid();
-  AutoType*          GetAuto();
   ListType*          GetList(VarVector&& types);
   VectorType*        GetVector(Type* componentType, int size);
   MatrixType*        GetMatrix(VectorType* columnType, int numColumns);
@@ -554,7 +524,6 @@ class TypeTable {
   FormalTemplateArg* GetFormalTemplateArg(std::string name);
   ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs);
   Type*       GetQualifiedType(Type* type, int qualifiers);
-  Type*       GetUnresolvedScopedType(FormalTemplateArg* baseType, std::string id);
   TypeList*   AppendTypeList(TypeList* type);
   static bool VectorScalar(Type* lhs, Type* rhs);
   static bool ScalarVector(Type* lhs, Type* rhs);
@@ -579,11 +548,9 @@ class TypeTable {
   std::unordered_map<TypeAndInt, MatrixType*>          matrixTypes_;
   std::unordered_map<std::string, FormalTemplateArg*>  formalTemplateArgs_;
   std::unordered_map<TypeAndInt, QualifiedType*>       qualifiedTypes_;
-  std::unordered_map<TypeAndId, UnresolvedScopedType*> unresolvedScopedTypes_;
   std::vector<ListType*>                               listTypes_;
   BoolType*                                            bool_;
   VoidType*                                            void_;
-  AutoType*                                            auto_;
 };
 
 };  // namespace Toucan

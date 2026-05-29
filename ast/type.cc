@@ -120,8 +120,6 @@ std::string FloatingPointType::ToString() const {
 
 VoidType::VoidType() {}
 
-AutoType::AutoType() {}
-
 ListType::ListType(const VarVector& types) : types_(types) {}
 
 int ListType::GetSizeInBytes() const {
@@ -300,11 +298,6 @@ Type* QualifiedType::GetUnqualifiedType(int* qualifiers) {
 std::string QualifiedType::ToString() const {
   return QualifiersToString(qualifiers_, " ") + baseType_->ToString();
 }
-
-UnresolvedScopedType::UnresolvedScopedType(FormalTemplateArg* baseType, std::string id)
-    : baseType_(baseType), id_(id) {}
-
-std::string UnresolvedScopedType::ToString() const { return baseType_->ToString() + "::" + id_; }
 
 EnumType::EnumType(std::string name) : name_(name), nextValue_(0) {}
 
@@ -617,7 +610,6 @@ std::string RawPtrType::ToString() const { return "&" + GetBaseType()->ToString(
 TypeTable::TypeTable() {
   bool_ = Make<BoolType>();
   void_ = Make<VoidType>();
-  auto_ = Make<AutoType>();
 }
 
 IntegerType* TypeTable::GetInteger(int bits, bool isSigned) {
@@ -678,8 +670,6 @@ MatrixType* TypeTable::GetMatrix(VectorType* columnType, int numColumns) {
 }
 
 VoidType* TypeTable::GetVoid() { return void_; }
-
-AutoType* TypeTable::GetAuto() { return auto_; }
 
 ListType* TypeTable::GetList(VarVector&& types) {
   auto matchVarVectors = [](const VarVector& types1, const VarVector& types2) {
@@ -759,15 +749,6 @@ Type* TypeTable::GetQualifiedType(Type* type, int qualifiers) {
   if (auto result = qualifiedTypes_[key]) { return result; }
   QualifiedType* result = Make<QualifiedType>(type, qualifiers);
   qualifiedTypes_[key] = result;
-  return result;
-}
-
-Type* TypeTable::GetUnresolvedScopedType(FormalTemplateArg* baseType, std::string id) {
-  TypeAndId key(baseType, id);
-  if (Type* result = unresolvedScopedTypes_[key]) { return result; }
-
-  auto* result = Make<UnresolvedScopedType>(baseType, id);
-  unresolvedScopedTypes_[key] = result;
   return result;
 }
 
