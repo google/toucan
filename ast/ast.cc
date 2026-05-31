@@ -332,10 +332,6 @@ Type* CastExpr::GetType(TypeTable* types) { return type_; }
 
 UnresolvedCastExpr::UnresolvedCastExpr(ASTType* type, Expr* expr) : type_(type), expr_(expr) {}
 
-EnumConstant::EnumConstant(const EnumValue* value) : value_(value) {}
-
-Type* EnumConstant::GetType(TypeTable* types) { return value_->type; }
-
 NullConstant::NullConstant() {}
 
 Type* NullConstant::GetType(TypeTable* types) { return types->GetStrongPtrType(types->GetVoid()); }
@@ -460,7 +456,6 @@ Result ClassTemplateDecl::Accept(Visitor* visitor) { return visitor->Visit(this)
 Result ClassTemplateInstance::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ConstDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Data::Accept(Visitor* visitor) { return visitor->Visit(this); }
-Result EnumConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result EnumDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprList::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ExprWithStmt::Accept(Visitor* visitor) { return visitor->Visit(this); }

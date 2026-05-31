@@ -75,12 +75,6 @@ int GenBindings::EmitType(Type* type) {
     ClassType* classType = static_cast<ClassType*>(type);
     emitLHS() << "types->Make<ClassType>(\"" << classType->GetName() << "\");\n";
     classes_.push_back(classType);
-  } else if (type->IsEnum()) {
-    EnumType* enumType = static_cast<EnumType*>(type);
-    emitLHS() << "types->Make<EnumType>(\"" << enumType->GetName() << "\");\n";
-    for (const EnumValue& v : enumType->GetValues()) {
-      file_ << "  type" << id << "->Append(\"" << v.id << "\", " << v.value << ");\n";
-    }
   } else if (type->IsPtr()) {
     PtrType* ptrType = static_cast<PtrType*>(type);
     std::string baseType = "type" + std::to_string(EmitType(ptrType->GetBaseType()));

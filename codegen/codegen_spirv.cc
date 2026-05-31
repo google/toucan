@@ -474,8 +474,6 @@ uint32_t CodeGenSPIRV::ConvertType(Type* type) {
     IntegerType* integerType = static_cast<IntegerType*>(type);
     resultId = AppendTypeDecl(spv::Op::OpTypeInt, {static_cast<uint32_t>(integerType->GetBits()),
                                                    integerType->Signed() ? 1u : 0u});
-  } else if (type->IsEnum()) {
-    resultId = AppendTypeDecl(spv::Op::OpTypeInt, {32, 0});
   } else if (type->IsFloat()) {
     resultId = AppendTypeDecl(spv::Op::OpTypeFloat, {32});
   } else if (type->IsBool()) {

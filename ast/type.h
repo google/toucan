@@ -63,7 +63,6 @@ class Type {
   virtual bool  IsUInt() const { return false; }
   virtual bool  IsFloat() const { return false; }
   virtual bool  IsDouble() const { return false; }
-  virtual bool  IsEnum() const { return false; }
   virtual bool  IsList() const { return false; }
   virtual bool  IsStrongPtr() const { return false; }
   virtual bool  IsWeakPtr() const { return false; }
@@ -196,17 +195,6 @@ class BoolType : public Type {
   int         GetSizeInBytes() const override { return 1; }
 };
 
-class EnumType;
-
-struct EnumValue {
-  EnumValue(EnumType* t, std::string i, int v) : type(t), id(i), value(v) {}
-  EnumType*   type;
-  std::string id;
-  int         value;
-};
-
-typedef std::vector<EnumValue> EnumValueVector;
-
 class VoidType : public Type {
  public:
   VoidType();
@@ -313,27 +301,6 @@ struct Method {
 
 typedef std::vector<std::unique_ptr<Method>> MethodVector;
 
-class EnumType : public Type {
- public:
-  EnumType(std::string name);
-  void                   Append(std::string identifier);
-  void                   Append(std::string identifier, int value);
-  bool                   IsEnum() const override { return true; }
-  std::string            ToString() const override;
-  int                    GetSizeInBytes() const override;
-  const EnumValueVector& GetValues() { return values_; }
-  const EnumValue*       FindValue(const std::string& id);
-  std::string            GetName() { return name_; }
-  bool                   CanWidenTo(Type* type) const override;
-
- private:
-  EnumValueVector values_;
-  int             nextValue_;
-  std::string     name_;
-};
-
-typedef std::vector<std::unique_ptr<EnumType>> EnumVector;
-
 class ClassType : public Type {
  public:
   ClassType(std::string name);
@@ -343,7 +310,6 @@ class ClassType : public Type {
   Expr*               FindConstant(const std::string& name);
   void                AddMethod(Method* method);
   size_t              ComputeFieldOffsets();
-  void                AddEnum(std::string id, EnumType* enumType);
   const FieldVector&  GetFields() const { return fields_; }          // local fields only
   int                 GetTotalFields() const { return numFields_; }  // includes inherited fields
   const ExprMap&      GetConstants() const { return constants_; }
@@ -383,7 +349,6 @@ class ClassType : public Type {
   MethodVector         methods_;
   TypeMap              types_;
   ExprMap              constants_;
-  EnumVector           enums_;
   NativeClass          nativeClass_ = NativeClass::None;
   NativeClass          template_ = NativeClass::None;
   TypeList             templateArgs_;

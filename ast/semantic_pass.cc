@@ -732,19 +732,20 @@ Result SemanticPass::Visit(UnresolvedDot* node) {
 }
 
 Result SemanticPass::Visit(UnresolvedStaticDot* node) {
+  std::string id = node->GetID();
+  if (node->GetType()->IsEnum()) {
+    auto decl = static_cast<ASTEnumType*>(node->GetType())->GetDecl();
+    auto value = decl->GetValues().find(id);
+    if (value != decl->GetValues().end()) {
+      return MakeReadOnlyTempVar(Make<IntConstant>(value->second, 32));
+    } else {
+      return Error("value \"%s\" not found on enum \"%s\"", id.c_str(), decl->GetName().c_str());
+    }
+  }
   auto type = ResolveType(node->GetType());
   if (!type) return nullptr;
-  std::string id = node->GetID();
-  if (type->IsEnum()) {
-    auto enumType = static_cast<EnumType*>(type);
-    const EnumValue* enumValue = enumType->FindValue(id);
-    if (enumValue) {
-      return MakeReadOnlyTempVar(Make<EnumConstant>(enumValue));
-    } else {
-      return Error("value \"%s\" not found on enum \"%s\"", id.c_str(),
-                   enumType->ToString().c_str());
-    }
-  } else if (type->IsClass()) {
+
+  if (type->IsClass()) {
     if (auto constant = static_cast<ClassType*>(type)->FindConstant(id)) {
       return MakeReadOnlyTempVar(constant);
     } else {
@@ -871,7 +872,7 @@ Result SemanticPass::Visit(BinOpNode* node) {
     }
   }
   if (node->IsRelOp()) {
-    if (lhsType->IsEnum() || lhsType->IsBool() || lhsType->IsPtr() || lhsType->IsVector()) {
+    if (lhsType->IsBool() || lhsType->IsPtr() || lhsType->IsVector()) {
       if (!isEqualityOp) { return Error("invalid type for binary operator"); }
     } else if (!(lhsType->IsInt() || lhsType->IsUInt() || lhsType->IsFloatingPoint())) {
       return Error("invalid type for relational operator");
@@ -1094,20 +1095,20 @@ Result SemanticPass::Visit(ClassTemplateInstance* node) {
 }
 
 Result SemanticPass::Visit(EnumDecl* node) {
-  if (auto result = node->GetResult()) { return result; }
-
-  auto result = types_->Make<EnumType>(node->GetName());
-  for (auto entry : node->GetValues()->GetValues()) {
+  auto& values = node->GetValues();
+  assert(values.empty());
+  int currentValue = 0;
+  for (auto entry : node->GetEnumValues()->Get()) {
     auto value = entry->GetValue();
     if (value.has_value()) {
-      result->Append(entry->GetID(), value.value());
+      values[entry->GetID()] = currentValue = value.value();
     } else {
-      result->Append(entry->GetID());
+      values[entry->GetID()] = currentValue;
+      currentValue++;
     }
   }
-  node->SetResult(result);
 
-  return result;
+  return {};
 }
 
 void SemanticPass::UnwindStack(Stmts* stmts) {
@@ -1294,7 +1295,7 @@ Result SemanticPass::Visit(ASTBoolType* node) {
 }
 
 Result SemanticPass::Visit(ASTEnumType* node) {
-  return Resolve(node->GetDecl());
+  return types_->GetInt();
 }
 
 Result SemanticPass::Visit(ASTClassType* node) {

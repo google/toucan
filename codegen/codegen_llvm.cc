@@ -255,7 +255,7 @@ llvm::Type* CodeGenLLVM::ConvertType(Type* type) {
     return byteType_;
   } else if (type->IsShort() || type->IsUShort()) {
     return shortType_;
-  } else if (type->IsInt() || type->IsUInt() || type->IsEnum()) {
+  } else if (type->IsInt() || type->IsUInt()) {
     return intType_;
   } else if (type->IsFloat()) {
     return floatType_;
@@ -787,7 +787,7 @@ llvm::Value* CodeGenLLVM::GenerateBinOp(BinOpNode*   node,
                                         llvm::Value* lhs,
                                         llvm::Value* rhs,
                                         Type*        type) {
-  if (type->IsInteger() || type->IsIntegerVector() || type->IsBool() || type->IsEnum()) {
+  if (type->IsInteger() || type->IsIntegerVector() || type->IsBool()) {
     if (type->IsUnsigned()) {
       return GenerateBinOpUInt(builder_, node->GetOp(), lhs, rhs);
     } else {
@@ -899,8 +899,6 @@ llvm::Value* CodeGenLLVM::CreateCast(Type*        srcType,
         return value;
       }
     }
-  } else if (srcType->IsEnum() && (dstType->IsInteger())) {
-    return value;
   } else if (srcType->IsVector() && dstType->IsVector()) {
     return CreateCast(static_cast<VectorType*>(srcType)->GetElementType(),
                       static_cast<VectorType*>(dstType)->GetElementType(), value,
@@ -1127,10 +1125,6 @@ Result CodeGenLLVM::Visit(IntConstant* node) {
 
 Result CodeGenLLVM::Visit(UIntConstant* node) {
   return llvm::ConstantInt::get(ConvertType(node->GetType(types_)), node->GetValue(), true);
-}
-
-Result CodeGenLLVM::Visit(EnumConstant* node) {
-  return llvm::ConstantInt::get(intType_, node->GetValue()->value, true);
 }
 
 Result CodeGenLLVM::Visit(VarExpr* expr) { return allocas_[expr->GetVar()]; }

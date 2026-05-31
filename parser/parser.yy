@@ -746,7 +746,7 @@ static EnumDecl* BeginEnum(ASTType* t, ASTEnumValues* values) {
   }
   ASTEnumType* enumType = static_cast<ASTEnumType*>(t);
   auto decl = enumType->GetDecl();
-  decl->SetValues(values);
+  decl->SetEnumValues(values);
   return decl;
 }
 

@@ -294,30 +294,6 @@ std::string QualifiedType::ToString() const {
   return QualifiersToString(qualifiers_, " ") + baseType_->ToString();
 }
 
-EnumType::EnumType(std::string name) : name_(name), nextValue_(0) {}
-
-void EnumType::Append(std::string id) { values_.push_back(EnumValue(this, id, nextValue_++)); }
-
-void EnumType::Append(std::string id, int value) {
-  values_.push_back(EnumValue(this, id, value));
-  nextValue_ = value + 1;
-}
-
-const EnumValue* EnumType::FindValue(const std::string& id) {
-  for (const EnumValue& e : values_) {
-    if (e.id == id) return &e;
-  }
-  return nullptr;
-}
-
-int EnumType::GetSizeInBytes() const { return 4; }
-
-std::string EnumType::ToString() const { return name_; }
-
-bool EnumType::CanWidenTo(Type* type) const {
-  return type == this || type->IsInt() || type->IsUInt();
-}
-
 Method::Method(int m, Type* r, std::string n, ClassType* c)
     : modifiers(m), returnType(r), name(n), classType(c) {}
 
@@ -430,10 +406,6 @@ size_t ClassType::ComputeFieldOffsets() {
 void ClassType::AddMethod(Method* method) {
   methods_.push_back(std::unique_ptr<Method>(method));
   if (method->IsDestructor()) destructor_ = method;
-}
-
-void ClassType::AddEnum(std::string name, EnumType* enumType) {
-  enums_.push_back(std::unique_ptr<EnumType>(enumType));
 }
 
 Type* ClassType::FindType(const std::string& id) {

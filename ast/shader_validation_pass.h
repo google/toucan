@@ -31,7 +31,6 @@ class ShaderValidationPass : public Visitor {
   Result            Visit(DestroyStmt* stmt) override;
   Result            Visit(DoStatement* stmt) override;
   Result            Visit(DoubleConstant* constant) override;
-  Result            Visit(EnumConstant* node) override;
   Result            Visit(ExprList* node) override;
   Result            Visit(ExprStmt* exprStmt) override;
   Result            Visit(ExprWithStmt* exprStmt) override;

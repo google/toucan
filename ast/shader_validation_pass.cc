@@ -66,8 +66,6 @@ Result ShaderValidationPass::Visit(IntConstant* node) { return {}; }
 
 Result ShaderValidationPass::Visit(UIntConstant* node) { return {}; }
 
-Result ShaderValidationPass::Visit(EnumConstant* node) { return {}; }
-
 Result ShaderValidationPass::Visit(DoubleConstant* node) { return {}; }
  
 Result ShaderValidationPass::Visit(FloatConstant* node) { return {}; }

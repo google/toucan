@@ -373,17 +373,6 @@ class BoolConstant : public Expr {
   bool value_;
 };
 
-class EnumConstant : public Expr {
- public:
-  EnumConstant(const EnumValue* value);
-  Result           Accept(Visitor* visitor) override;
-  Type*            GetType(TypeTable* types) override;
-  const EnumValue* GetValue() { return value_; }
-
- private:
-  const EnumValue* value_;
-};
-
 class NullConstant : public Expr {
  public:
   NullConstant();
@@ -1084,7 +1073,7 @@ class ASTEnumValues : public ASTNode {
                             ASTEnumValues() {}
   Result                    Accept(Visitor* visitor) override;
   void                      Append(ASTEnumValue* value) { values_.push_back(value); }
-  const ASTEnumValueVector& GetValues() const { return values_; }
+  const ASTEnumValueVector& Get() const { return values_; }
  private:
   ASTEnumValueVector        values_;
 };
@@ -1093,16 +1082,15 @@ class EnumDecl : public Stmt {
  public:
                         EnumDecl(std::string name);
   std::string           GetName() const { return name_; }
-  ASTEnumValues*        GetValues() const { return values_; }
-  void                  SetValues(ASTEnumValues* values) { values_ = values; }
-  EnumType*             GetResult() const { return result_; }
-  void                  SetResult(EnumType* result) { result_ = result; }
+  ASTEnumValues*        GetEnumValues() const { return enumValues_; }
+  void                  SetEnumValues(ASTEnumValues* values) { enumValues_ = values; }
+  std::unordered_map<std::string, int>& GetValues() { return values_; }
   Result                Accept(Visitor* visitor) override;
 
  private:
-  ASTEnumValues*        values_;
+  ASTEnumValues*        enumValues_;
   std::string           name_;
-  EnumType*             result_ = nullptr;            // FIXME: remove this
+  std::unordered_map<std::string, int>  values_;
 };
 
 class UnaryOp : public Expr {
@@ -1174,7 +1162,6 @@ class Visitor {
   virtual Result Visit(ClassTemplateInstance* node) { return Default(node); }
   virtual Result Visit(ConstDecl* node) { return Default(node); }
   virtual Result Visit(Data* node) { return Default(node); }
-  virtual Result Visit(EnumConstant* node) { return Default(node); }
   virtual Result Visit(EnumDecl* node) { return Default(node); }
   virtual Result Visit(SmartToRawPtr* node) { return Default(node); }
   virtual Result Visit(RawToSmartPtr* node) { return Default(node); }

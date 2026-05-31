@@ -73,8 +73,6 @@ Result CopyVisitor::Visit(UIntConstant* node) {
   return Make<UIntConstant>(node->GetValue(), node->GetBits());
 }
 
-Result CopyVisitor::Visit(EnumConstant* node) { return Make<EnumConstant>(node->GetValue()); }
-
 Result CopyVisitor::Visit(FloatConstant* node) { return Make<FloatConstant>(node->GetValue()); }
 
 Result CopyVisitor::Visit(DoubleConstant* node) { return Make<DoubleConstant>(node->GetValue()); }

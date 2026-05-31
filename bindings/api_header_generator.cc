@@ -171,7 +171,7 @@ Result APIHeaderGenerator::Visit(ClassTemplateDecl* node) {
 Result APIHeaderGenerator::Visit(EnumDecl* node) {
   if (emitMethods_ ) return {};
   header_ << "enum class " << node->GetName() << " {\n";
-  for (auto value : node->GetValues()->GetValues()) value->Accept(this);
+  for (auto value : node->GetEnumValues()->Get()) value->Accept(this);
   header_ << "};\n";
   return {};
 }
