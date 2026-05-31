@@ -56,6 +56,7 @@ class SemanticPass : public CopyVisitor {
   Result Visit(UnresolvedCastExpr* expr) override;
   Result Visit(ConstDecl* decl) override;
   Result Visit(ClassDecl* node) override;
+  Result Visit(ClassTemplateDecl* node) override;
   Result Visit(Data* expr) override;
   Result Visit(Decls* decls) override;
   Result Visit(DoStatement* stmt) override;
@@ -115,7 +116,9 @@ class SemanticPass : public CopyVisitor {
   bool             ResolveTypeList(ASTTypeList* typeList, TypeList* result);
   ClassType*       GetOrCreateClassType(ClassDecl* decl);
   Type*            PushQualifiers(Type* type, int qualifiers);
-  void             SetCurrentTemplateArgs(const TypeList& srcTypes, const TypeList& dstTypes);
+  void             SetCurrentTemplateArgs(
+                     const std::vector<ASTFormalTemplateArg*>& formalTemplateArgs,
+                     const TypeList& dstTypes);
 
   ScopeStack       scopeStack_;
   TypeTable*       types_;

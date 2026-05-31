@@ -53,6 +53,7 @@ static void BeginClass(ASTType* type, ASTType* parent);
 static ASTClassType* BeginClassTemplate(ASTFormalTemplateArgList* templateArgs, const char* id);
 static ClassDecl* EndClass(Decls* body);
 static EnumDecl* BeginEnum(ASTType* t, ASTEnumValues* values);
+ASTClassTemplateInstance* MakeClassTemplateInstance(ASTType* type, ASTTypeList* typeList);
 static MethodDecl* MakeMethodDecl(int modifiers, ArgList* optWorkgroupSize, std::string id,
                                   Stmts* formalArguments, int thisQualifiers, ASTType* returnType, 
                                   Expr* initializer, Stmts* body);
@@ -240,7 +241,7 @@ const_decl_statement:
 simple_type:
     T_TYPENAME
   | scalar_type
-  | simple_type T_LT types T_GT             { $$ = Make<ASTClassTemplateInstance>($1, $3); }
+  | simple_type T_LT types T_GT             { $$ = MakeClassTemplateInstance($1, $3); }
   | simple_type T_LT T_INT_LITERAL T_GT     { $$ = Make<ASTVectorType>($1, $3); }
   | simple_type T_LT T_INT_LITERAL ',' T_INT_LITERAL T_GT
                                             { auto columnType = Make<ASTVectorType>($1, $3);
@@ -722,7 +723,7 @@ static void BeginClass(ASTType* t, ASTType* parent) {
 }
 
 static ASTClassType* BeginClassTemplate(ASTFormalTemplateArgList* templateArgs, const char* id) {
-  auto decl = Make<ClassDecl>(id, templateArgs);
+  auto decl = Make<ClassTemplateDecl>(id, templateArgs);
   auto result = Make<ASTClassType>(decl);
   DefineType(id, result);
   scopeStack_.Push(decl);
@@ -755,6 +756,17 @@ static void BeginBlock() {
 
 static void EndBlock() {
   scopeStack_.Pop();
+}
+
+ASTClassTemplateInstance* MakeClassTemplateInstance(ASTType* type, ASTTypeList* typeList) {
+  if (!type->IsClass()) {
+    yyerror("base type is not a class template");
+    return nullptr;
+  }
+  auto decl = static_cast<ASTClassType*>(type)->GetDecl();
+  assert(decl->IsTemplate());
+
+  return Make<ASTClassTemplateInstance>(static_cast<ClassTemplateDecl*>(decl), typeList);
 }
 
 static MethodDecl* MakeMethodDecl(int modifiers, ArgList* optWorkgroupSize, std::string id,
@@ -793,11 +805,12 @@ static MethodDecl* MakeConstructor(int modifiers, ASTType* type, Stmts* formalAr
   }
   auto classType = static_cast<ASTClassType*>(type);
   if (classType->GetDecl()->IsTemplate()) {
+    auto decl = static_cast<ClassTemplateDecl*>(classType->GetDecl());
     auto templateArgs = Make<ASTTypeList>();
-    for (auto arg : classType->GetDecl()->GetFormalTemplateArgs()->Get()) {
+    for (auto arg : decl->GetFormalTemplateArgs()->Get()) {
       templateArgs->Append(arg);
     }
-    type = Make<ASTClassTemplateInstance>(classType, templateArgs);
+    type = Make<ASTClassTemplateInstance>(decl, templateArgs);
   }
   auto returnType = Make<ASTRawPtrType>(type);
   auto name = classType->GetDecl()->GetName();

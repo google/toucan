@@ -71,35 +71,9 @@ int GenBindings::EmitType(Type* type) {
     emitLHS() << "types->GetString();\n";
   } else if (type->IsVoid()) {
     emitLHS() << "types->GetVoid();\n";
-  } else if (type->IsClassTemplate()) {
-    ClassTemplate* classTemplate = static_cast<ClassTemplate*>(type);
-    emitLHS() << "types->Make<ClassTemplate>(\"" << classTemplate->GetName()
-              << "\", TypeList({";
-    for (Type* const& type : classTemplate->GetFormalTemplateArgs()) {
-      assert(type->IsFormalTemplateArg());
-      file_ << "types->GetFormalTemplateArg(\""
-            << static_cast<FormalTemplateArg*>(type)->GetName() << "\")";
-      if (&type != &classTemplate->GetFormalTemplateArgs().back()) file_ << ", ";
-    }
-    file_ << "}));\n";
-    classes_.push_back(classTemplate);
   } else if (type->IsClass()) {
     ClassType* classType = static_cast<ClassType*>(type);
-    if (classType->GetTemplate()) {
-      int templateID = EmitType(classType->GetTemplate());
-      std::vector<int> args;
-      for (auto type : classType->GetTemplateArgs()) {
-        args.push_back(EmitType(type));
-      }
-      emitLHS() << "types->GetClassTemplateInstance(type" << templateID << ", {";
-      for (auto arg : args) {
-        file_ << "type" << arg;
-        if (&arg != &args.back()) { file_ << ", "; }
-      }
-      file_ << "});\n";
-    } else {
-      emitLHS() << "types->Make<ClassType>(\"" << classType->GetName() << "\");\n";
-    }
+    emitLHS() << "types->Make<ClassType>(\"" << classType->GetName() << "\");\n";
     classes_.push_back(classType);
   } else if (type->IsEnum()) {
     EnumType* enumType = static_cast<EnumType*>(type);
@@ -119,10 +93,6 @@ int GenBindings::EmitType(Type* type) {
     emitLHS() << "types->GetArrayType(type" << elementTypeID << ", "
               << arrayType->GetNumElements() << ", MemoryLayout::"
               << MemoryLayoutToString(arrayType->GetMemoryLayout()) << ");\n";
-  } else if (type->IsFormalTemplateArg()) {
-    FormalTemplateArg* formalTemplateArg = static_cast<FormalTemplateArg*>(type);
-    emitLHS() << "types->GetFormalTemplateArg(\"" << formalTemplateArg->GetName()
-              << "\");\n";
   } else if (type->IsQualified()) {
     QualifiedType* qualifiedType = static_cast<QualifiedType*>(type);
     int baseTypeID = EmitType(qualifiedType->GetBaseType());
@@ -221,12 +191,25 @@ void GenBindings::EmitMethod(Method* method) {
 }
 
 void GenBindings::EmitClass(ClassType* classType) {
-  if (classType->GetTemplate() && classType->GetTemplate()->IsNative()) { return; }
   auto id = EmitType(classType);
   file_ << "\n  c = type" << id << ";\n";
-  if (classType->IsNative() && !classType->GetTemplate()) {
-    file_ << "  NativeClass::" << classType->GetName() << " = c;\n";
+  file_ << "  c->SetNativeClass(NativeClass::" << GetNativeClassName(classType->GetNativeClass())
+        << ");\n";
+  file_ << "  c->SetTemplate(NativeClass::" << GetNativeClassName(classType->GetTemplate())
+        << ");\n";
+  if (!classType->GetTemplateArgs().empty()) {
+    std::vector<int> args;
+    for (auto type : classType->GetTemplateArgs()) {
+      args.push_back(EmitType(type));
+    }
+    file_ << "  c->SetTemplateArgs({";
+    for (auto& arg : args) {
+      file_ << "type" << arg;
+      if (&arg != &args.back()) { file_ << ", "; }
+    }
+    file_ << "});\n";
   }
+
   file_ << "  c->SetMemoryLayout(MemoryLayout::" <<
     MemoryLayoutToString(classType->GetMemoryLayout()) << ");\n";
   if (ClassType* parent = classType->GetParent()) {

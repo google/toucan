@@ -54,7 +54,7 @@ class ArgToString : public Visitor {
     return {};
   }
   Result Visit(ASTClassTemplateInstance* node) override {
-    node->GetClassTemplate()->Accept(this);
+    result_ += node->GetTemplateDecl()->GetName();
     return {};
   }
   Result Visit(ASTFormalTemplateArg* node) override {
@@ -164,6 +164,10 @@ Result APIHeaderGenerator::Visit(ClassDecl* node) {
   return {};
 }
 
+Result APIHeaderGenerator::Visit(ClassTemplateDecl* node) {
+  return Visit(static_cast<ClassDecl*>(node));
+}
+
 Result APIHeaderGenerator::Visit(EnumDecl* node) {
   if (emitMethods_ ) return {};
   header_ << "enum class " << node->GetName() << " {\n";
@@ -249,7 +253,7 @@ Result APIHeaderGenerator::Visit(MethodDecl* node) {
   header_ << " "<< GetMangledName(currentClassDecl_, node, isOverloaded) << "(";
   if (node->GetID() == className && currentClassDecl_->IsTemplate()) {
     header_ << "int qualifiers, ";
-    auto templateClassDecl = static_cast<ClassDecl*>(currentClassDecl_);
+    auto templateClassDecl = static_cast<ClassTemplateDecl*>(currentClassDecl_);
     for (ASTFormalTemplateArg* arg : templateClassDecl->GetFormalTemplateArgs()->Get()) {
       header_ << "Type* " << arg->GetName();
       if (arg != templateClassDecl->GetFormalTemplateArgs()->Get().back() || (formalArgs && !formalArgs->GetStmts().empty())) {
@@ -345,8 +349,7 @@ Result APIHeaderGenerator::Visit(ASTClassType* node) {
 }
 
 Result APIHeaderGenerator::Visit(ASTClassTemplateInstance* node) {
-  assert(node->GetClassTemplate()->IsClass());
-  header_ << static_cast<ASTClassType*>(node->GetClassTemplate())->GetDecl()->GetName();
+  header_ << node->GetTemplateDecl()->GetName();
   return {};
 }
 

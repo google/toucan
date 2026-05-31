@@ -50,7 +50,7 @@ class ArgToString : public Visitor {
     return {};
   }
   Result Visit(ASTClassTemplateInstance* node) override {
-    node->GetClassTemplate()->Accept(this);
+    result_ += node->GetTemplateDecl()->GetName();
     return {};
   }
   Result Visit(ASTFormalTemplateArg* node) override {

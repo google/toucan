@@ -30,6 +30,7 @@ namespace Toucan {
 struct Var;
 
 class ClassDecl;
+class ClassTemplateDecl;
 class Visitor;
 
 using Result = std::variant<void*, uint32_t>;
@@ -227,17 +228,14 @@ class ASTRawPtrType : public ASTPtrType {
 
 class ASTClassTemplateInstance : public ASTType {
  public:
-  ASTClassTemplateInstance(ASTType* baseType, ASTTypeList* templateArgs);
-  ASTType*         GetClassTemplate() const { return classTemplate_; }
-  ASTTypeList*     GetTemplateArgs() const { return templateArgs_; }
-  ClassDecl*       GetDecl() const { return decl_; }
-  void             SetDecl(ClassDecl* decl) { decl_ = decl; }
-  Result           Accept(Visitor* visitor) override;
-  bool             IsClassTemplateInstance() const override { return true; }
+  ASTClassTemplateInstance(ClassTemplateDecl* templateDecl, ASTTypeList* templateArgs);
+  ClassTemplateDecl* GetTemplateDecl() const { return decl_; }
+  ASTTypeList*       GetTemplateArgs() const { return templateArgs_; }
+  Result             Accept(Visitor* visitor) override;
+  bool               IsClassTemplateInstance() const override { return true; }
  private:
-  ASTType*         classTemplate_;
-  ASTTypeList*     templateArgs_;
-  ClassDecl*       decl_;
+  ASTTypeList*       templateArgs_;
+  ClassTemplateDecl* decl_;
 };
 
 class Expr : public ASTNode {
@@ -1020,26 +1018,44 @@ class UnresolvedNewExpr : public Expr {
 
 class ClassDecl : public Scope {
  public:
-                    ClassDecl(std::string name,
-                              ASTFormalTemplateArgList* formalTemplateArgs = nullptr);
+                    ClassDecl(std::string name);
   Result            Accept(Visitor* visitor) override;
   std::string       GetName() const { return name_; }
-  ASTFormalTemplateArgList* GetFormalTemplateArgs() const { return formalTemplateArgs_; }
   ClassType*        GetClass() const { return class_; }
   void              SetClass(ClassType* classType) { class_ = classType; }
   ASTType*          GetParent() const { return parent_; }
   void              SetParent(ASTType* parent) { parent_ = parent; }
   Decls*            GetBody() const { return body_; }
   void              SetBody(Decls* body) { body_ = body; }
+  void              SetTemplateDecl(ClassTemplateDecl* templateDecl) { templateDecl_ = templateDecl; }
+  ClassTemplateDecl* GetTemplateDecl() const { return templateDecl_; }
+  const TypeList&   GetTemplateArgs() const { return templateArgs_; }
+  void              SetTemplateArgs(const TypeList& templateArgs) { templateArgs_ = templateArgs; }
   bool              IsClassDecl() const override { return true; }
-  bool              IsTemplate() const { return formalTemplateArgs_ != nullptr; }
+  virtual bool      IsTemplate() const { return false; }
 
  private:
   std::string               name_;
-  ASTFormalTemplateArgList* formalTemplateArgs_;
   ClassType*                class_ = nullptr;
   ASTType*                  parent_ = nullptr;
   Decls*                    body_ = nullptr;
+  ClassTemplateDecl*        templateDecl_ = nullptr;
+  TypeList                  templateArgs_;
+};
+
+class ClassTemplateDecl : public ClassDecl {
+ public:
+                            ClassTemplateDecl(std::string name,
+                                              ASTFormalTemplateArgList* formalTemplateArgs);
+  ASTFormalTemplateArgList* GetFormalTemplateArgs() const { return formalTemplateArgs_; }
+  bool                      IsTemplate() const override { return true; }
+  Result                    Accept(Visitor* visitor) override;
+  ClassDecl*                FindInstance(const TypeList& templateArgs);
+  void                      AddInstance(ClassDecl* instance) { instances_.push_back(instance); }
+
+ private:
+  ASTFormalTemplateArgList* formalTemplateArgs_;
+  std::vector<ClassDecl*>   instances_;
 };
 
 class ASTEnumValue : public Stmt {
@@ -1147,6 +1163,7 @@ class Visitor {
   virtual Result Visit(BoolConstant* node) { return Default(node); }
   virtual Result Visit(CastExpr* node) { return Default(node); }
   virtual Result Visit(ClassDecl* node) { return Default(node); }
+  virtual Result Visit(ClassTemplateDecl* node) { return Default(node); }
   virtual Result Visit(ConstDecl* node) { return Default(node); }
   virtual Result Visit(Data* node) { return Default(node); }
   virtual Result Visit(EnumConstant* node) { return Default(node); }

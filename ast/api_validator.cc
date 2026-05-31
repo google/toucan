@@ -67,7 +67,7 @@ bool IsValidBindGroupFieldType(Type* type) {
   type = type->GetUnqualifiedType(&qualifiers);
   if (!type->IsClass()) return false;
   auto classType = static_cast<ClassType*>(type);
-  if (classType == NativeClass::Sampler && qualifiers == 0) return true;
+  if (classType->GetNativeClass() == NativeClass::Sampler && qualifiers == 0) return true;
 
   auto templ = classType->GetTemplate();
 
@@ -96,7 +96,7 @@ void APIValidator::ValidateType(Type* type, const FileLocation& fileLocation) {
 
   auto classType = static_cast<ClassType*>(type);
   auto classTemplate = classType->GetTemplate();
-  if (!classTemplate) return;
+  if (classTemplate == NativeClass::None) return;
 
   if (classTemplate == NativeClass::Buffer) {
     ValidateBuffer(classType, qualifiers);

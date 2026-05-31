@@ -999,19 +999,22 @@ Result SemanticPass::Visit(ForStatement* node) {
   return Make<ForStatement>(initStmt, cond, loopStmt, body);
 }
 
-void SemanticPass::SetCurrentTemplateArgs(const TypeList& srcTypes, const TypeList& dstTypes) {
+void SemanticPass::SetCurrentTemplateArgs(const std::vector<ASTFormalTemplateArg*>& srcTypes, const TypeList& dstTypes) {
   assert(srcTypes.size() == dstTypes.size());
   for (int i = 0; i < srcTypes.size(); ++i) {
-    auto name = static_cast<FormalTemplateArg*>(srcTypes[i])->GetName();
-    currentTemplateArgs_[name] = dstTypes[i];
+    currentTemplateArgs_[srcTypes[i]->GetName()] = dstTypes[i];
   }
 }
 
 Result SemanticPass::Visit(ClassDecl* node) {
-  if (node->IsTemplate()) return {};
-
   ClassType* classType = GetOrCreateClassType(node);
   if (!classType) return nullptr;
+
+  if (auto templateDecl = node->GetTemplateDecl()) {
+    nodeCache_.clear();
+    SetCurrentTemplateArgs(templateDecl->GetFormalTemplateArgs()->Get(),
+                           classType->GetTemplateArgs());
+  }
 
   scopeStack_.Push(node);
 
@@ -1035,14 +1038,8 @@ Result SemanticPass::Visit(ClassDecl* node) {
       }
     }
   }
-
-  if (auto classTemplate = classType->GetTemplate()) {
-    nodeCache_.clear();
-    SetCurrentTemplateArgs(classTemplate->GetFormalTemplateArgs(), classType->GetTemplateArgs());
-  }
   for (const auto& method : classType->GetMethods()) {
     if (!method->stmts) {
-      if (auto* t = classType->GetTemplate()) t->SetNative(true);
       classType->SetNative(true);
       continue;
     }
@@ -1081,9 +1078,6 @@ Result SemanticPass::Visit(ClassDecl* node) {
       }
     }
   }
-  if (classType->GetTemplate()) {
-    currentTemplateArgs_.clear();
-  }
 
   const auto& fields = classType->GetFields();
   for (const auto& field : fields) {
@@ -1092,7 +1086,15 @@ Result SemanticPass::Visit(ClassDecl* node) {
     }
   }
   scopeStack_.Pop();
+
+  if (classType->GetTemplate() != NativeClass::None) {
+    currentTemplateArgs_.clear();
+  }
   return nullptr;
+}
+
+Result SemanticPass::Visit(ClassTemplateDecl* node) {
+  return {};
 }
 
 Result SemanticPass::Visit(EnumDecl* node) {
@@ -1304,42 +1306,32 @@ Result SemanticPass::Visit(ASTClassType* node) {
 }
 
 Result SemanticPass::Visit(ASTClassTemplateInstance* node) {
-  if (!node->GetClassTemplate()->IsClass()) {
-    return Error("template is not of class type");
-  }
-
-  auto astClassTemplate = static_cast<ASTClassType*>(node->GetClassTemplate());
-
-  auto classTemplate = static_cast<ClassTemplate*>(ResolveType(astClassTemplate));
-  assert(classTemplate && classTemplate->IsClassTemplate());
-
-  auto templateDecl = astClassTemplate->GetDecl();
+  auto templateDecl = node->GetTemplateDecl();
   assert(templateDecl);
 
   TypeList dstTypes;
   if (!ResolveTypeList(node->GetTemplateArgs(), &dstTypes)) return nullptr;
 
-  if (auto classType = classTemplate->FindInstance(dstTypes)) {
-     return classType;
+  if (auto classDecl = templateDecl->FindInstance(dstTypes)) {
+     return classDecl->GetClass();
   }
 
   auto classType = types_->Make<ClassType>(templateDecl->GetName());
 
-  auto srcTypes = classTemplate->GetFormalTemplateArgs();
-  if (srcTypes.size() != dstTypes.size()) {
+  auto formalTemplateArgs = templateDecl->GetFormalTemplateArgs()->Get();
+  if (formalTemplateArgs.size() != dstTypes.size()) {
     return Error("expected %d arguments to template %s, received %d",
-      srcTypes.size(), classTemplate->ToString().c_str(), dstTypes.size());
+      formalTemplateArgs.size(), templateDecl->GetName().c_str(), dstTypes.size());
   }
 
   auto prevTemplateArgs = currentTemplateArgs_;
   currentTemplateArgs_.clear();
-  SetCurrentTemplateArgs(srcTypes, dstTypes);
+  SetCurrentTemplateArgs(formalTemplateArgs, dstTypes);
 
-  for (int i = 0; i < srcTypes.size(); ++i) {
-    auto name = static_cast<FormalTemplateArg*>(srcTypes[i])->GetName();
-    classType->DefineType(name, dstTypes[i]);
+  for (int i = 0; i < formalTemplateArgs.size(); ++i) {
+    classType->DefineType(formalTemplateArgs[i]->GetName(), dstTypes[i]);
   }
-  classType->SetTemplate(classTemplate);
+  classType->SetTemplate(FindNativeClass(templateDecl->GetName()));
   classType->SetTemplateArgs(dstTypes);
   if (templateDecl->GetParent()) {
     auto parent = ResolveType(templateDecl->GetParent());
@@ -1348,13 +1340,14 @@ Result SemanticPass::Visit(ASTClassTemplateInstance* node) {
     }
     classType->SetParent(static_cast<ClassType*>(parent));
   }
-  classTemplate->AddInstance(classType);
 
-  auto decl = Make<ClassDecl>(classTemplate->GetName());
+  auto decl = Make<ClassDecl>(templateDecl->GetName());
   decl->SetBody(Make<Decls>());
-  node->SetDecl(decl);
   decl->SetClass(classType);
+  decl->SetTemplateDecl(templateDecl);
+  decl->SetTemplateArgs(dstTypes);
   rootStmts_->Append(decl);
+  templateDecl->AddInstance(decl);
 
   copyFileLocation_ = false;
   scopeStack_.Push(decl);
@@ -1479,29 +1472,21 @@ ClassType* SemanticPass::GetOrCreateClassType(ClassDecl* decl) {
   auto classType = decl->GetClass();
   if (classType) return classType;
 
-  if (decl->IsTemplate()) {
-    TypeList formalTemplateArgs;
-    for (auto arg : decl->GetFormalTemplateArgs()->Get()) {
-      formalTemplateArgs.push_back(types_->GetFormalTemplateArg(arg->GetName()));
-    }
-    classType = types_->Make<ClassTemplate>(decl->GetName(), formalTemplateArgs);
-    decl->SetClass(classType);
-  } else {
-    classType = types_->Make<ClassType>(decl->GetName());
-    decl->SetClass(classType);
-    auto parent = ResolveType(decl->GetParent());
-    if (parent && !parent->IsClass()) {
-      Error("parent type \"%s\" is not class type", parent->ToString().c_str());
-      return nullptr;
-    }
-    classType->SetParent(static_cast<ClassType*>(parent));
-    scopeStack_.Push(decl);
-    overloadedMethods_ = OverloadFinder::Run(decl->GetBody());
-    decl->GetBody()->Accept(this);
-    scopeStack_.Pop();
-    for (auto type : decl->GetTypes()) {
-      classType->DefineType(type.first, ResolveType(type.second));
-    }
+  classType = types_->Make<ClassType>(decl->GetName());
+  decl->SetClass(classType);
+  auto parent = ResolveType(decl->GetParent());
+  if (parent && !parent->IsClass()) {
+    Error("parent type \"%s\" is not class type", parent->ToString().c_str());
+    return nullptr;
+  }
+  classType->SetParent(static_cast<ClassType*>(parent));
+  classType->SetNativeClass(FindNativeClass(decl->GetName()));
+  scopeStack_.Push(decl);
+  overloadedMethods_ = OverloadFinder::Run(decl->GetBody());
+  decl->GetBody()->Accept(this);
+  scopeStack_.Pop();
+  for (auto type : decl->GetTypes()) {
+    classType->DefineType(type.first, ResolveType(type.second));
   }
   return classType;
 }

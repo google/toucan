@@ -520,12 +520,12 @@ static wgpu::BindGroupLayoutEntry CreateBindGroupLayoutEntry(uint32_t binding,
     entry.visibility =
         wgpu::ShaderStage::Vertex | wgpu::ShaderStage::Fragment | wgpu::ShaderStage::Compute;
   }
-  if (classType == NativeClass::Sampler) {
+  if (classType->GetNativeClass() == NativeClass::Sampler) {
     entry.sampler.type = wgpu::SamplerBindingType::Filtering;
     return entry;
   }
-  ClassType* templ = classType->GetTemplate();
-  assert(templ);
+  auto templ = classType->GetTemplate();
+  assert(templ != NativeClass::None);
   if (templ == NativeClass::Buffer) {
     entry.buffer.type = toDawnBufferBindingType(qualifiers);
   } else if (templ == NativeClass::SampleableTexture1D) {
@@ -593,13 +593,13 @@ wgpu::BindGroupEntry CreateBindGroupEntry(Type* type, int binding, void* data) {
   type = type->GetUnqualifiedType(&qualifiers);
   assert(type->IsClass() && "bind group entry must be of class type");
   ClassType* c = static_cast<ClassType*>(type);
-  if (c == NativeClass::Sampler) {
+  if (c->GetNativeClass() == NativeClass::Sampler) {
     Sampler* sampler = static_cast<Sampler*>(data);
     entry.sampler = sampler->sampler;
     return entry;
   }
-  ClassType* templ = c->GetTemplate();
-  assert(templ);
+  auto  templ = c->GetTemplate();
+  assert(templ != NativeClass::None);
   if (templ == NativeClass::SampleableTexture1D || templ == NativeClass::SampleableTexture2D ||
       templ == NativeClass::SampleableTexture3D || templ == NativeClass::SampleableTexture2DArray ||
       templ == NativeClass::SampleableTextureCube) {

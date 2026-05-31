@@ -470,6 +470,7 @@ test/templated-class-on-primitive-type.t
 test/templated-class-with-auto-field.t
 test/templated-class-with-auto-formal-arg.t
 test/templated-class.t
+test/templated-constructor.t
 test/templated-derived-class-with-shader.t
 test/templated-derived-class.t
 test/templated-matrix.t

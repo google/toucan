@@ -145,11 +145,6 @@ std::string ListType::ToString() const {
   return result;
 }
 
-FormalTemplateArg::FormalTemplateArg(std::string name) : name_(name) {}
-
-std::string FormalTemplateArg::ToString() const { return name_; }
-
-
 ArrayLikeType::ArrayLikeType(Type* elementType, uint32_t numElements)
     : elementType_(elementType), numElements_(numElements) {}
 
@@ -383,9 +378,7 @@ bool ClassType::ContainsRawPtr() const {
 }
 
 bool ClassType::IsFullySpecified() const {
-  if (!template_) { return true; }
-
-  if (templateArgs_.size() < template_->GetFormalTemplateArgs().size()) { return false; }
+  if (templateArgs_.size() == 0) { return true; }
 
   for (auto* arg : templateArgs_) {
     if (!arg->IsFullySpecified()) { return false; }
@@ -544,16 +537,6 @@ std::string ClassType::ToString() const {
     result += ">";
   }
   return result;
-}
-
-ClassTemplate::ClassTemplate(std::string name, const TypeList& formalTemplateArgs)
-    : ClassType(name), formalTemplateArgs_(formalTemplateArgs) {}
-
-ClassType* ClassTemplate::FindInstance(const TypeList& templateArgs) {
-  for (ClassType* const& i : instances_) {
-    if (i->GetTemplateArgs() == templateArgs) { return i; }
-  }
-  return nullptr;
 }
 
 PtrType::PtrType(Type* baseType) : baseType_(baseType) {}
@@ -731,15 +714,6 @@ ArrayType* TypeTable::GetArrayType(Type* elementType, int size, MemoryLayout mem
   return type;
 }
 
-FormalTemplateArg* TypeTable::GetFormalTemplateArg(std::string name) {
-  FormalTemplateArg* type = formalTemplateArgs_[name];
-  if (type == nullptr) {
-    type = Make<FormalTemplateArg>(name);
-    formalTemplateArgs_[std::string(name)] = type;
-  }
-  return type;
-}
-
 Type* TypeTable::GetQualifiedType(Type* type, int qualifiers) {
   if (qualifiers == 0) { return type; }
   int currentQualifiers;
@@ -750,19 +724,6 @@ Type* TypeTable::GetQualifiedType(Type* type, int qualifiers) {
   QualifiedType* result = Make<QualifiedType>(type, qualifiers);
   qualifiedTypes_[key] = result;
   return result;
-}
-
-ClassType* TypeTable::GetClassTemplateInstance(ClassTemplate*  classTemplate,
-                                               const TypeList& templateArgs) {
-  for (ClassType* const& i : classTemplate->GetInstances()) {
-    if (i->GetTemplateArgs() == templateArgs) { return i; }
-  }
-  std::string name = classTemplate->GetName();
-  auto instance = Make<ClassType>(name);
-  instance->SetTemplate(classTemplate);
-  instance->SetTemplateArgs(templateArgs);
-  classTemplate->AddInstance(instance);
-  return instance;
 }
 
 bool TypeTable::VectorScalar(Type* lhs, Type* rhs) {
@@ -787,7 +748,7 @@ bool TypeTable::VectorMatrix(Type* lhs, Type* rhs) { return MatrixVector(rhs, lh
 void TypeTable::ComputeFieldOffsets() {
   for (auto type : types_) {
     type = type->GetUnqualifiedType();
-    if (type->IsClass() && !type->IsClassTemplate()) {
+    if (type->IsClass()) {
       static_cast<ClassType*>(type)->ComputeFieldOffsets();
     }
   }

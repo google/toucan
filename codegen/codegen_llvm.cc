@@ -1448,7 +1448,7 @@ llvm::Value* CodeGenLLVM::GenerateMethodCall(Method*             method,
   bool skipFirst = false;
   if (method->IsNative() && method->IsConstructor()) {
     skipFirst = true;
-    if (method->classType->GetTemplate()) {
+    if (method->classType->GetTemplate() != NativeClass::None) {
       auto allocation = argList->Get()[0];
       auto type = allocation->GetType(types_);
       assert(type->IsRawPtr());

@@ -15,6 +15,8 @@
 #ifndef _AST_TYPE_H
 #define _AST_TYPE_H
 
+#include <ast/native_class.h>
+
 #include <assert.h>
 #include <stdio.h>
 
@@ -33,6 +35,7 @@ class Expr;
 class TypeTable;
 class ClassType;
 class ListType;
+enum class NativeClass;
 
 enum class MemoryLayout { Default = 0, Storage = 1, Uniform = 2 };
 
@@ -70,8 +73,6 @@ class Type {
   virtual bool  IsString() const { return false; }
   virtual bool  IsVoid() const { return false; }
   virtual bool  IsClass() const { return false; }
-  virtual bool  IsClassTemplate() const { return false; }
-  virtual bool  IsFormalTemplateArg() const { return false; }
   virtual bool  IsFullySpecified() const { return true; }
   virtual bool  IsReadable() const { return true; }
   virtual bool  IsWriteable() const { return true; }
@@ -334,25 +335,7 @@ class EnumType : public Type {
   std::string     name_;
 };
 
-class FormalTemplateArg : public Type {
- public:
-  FormalTemplateArg(std::string name);
-  std::string ToString() const override;
-  bool IsFormalTemplateArg() const override { return true; }
-  bool IsFullySpecified() const override { return false; }
-  int  GetSizeInBytes() const override {
-    assert(false);
-    return 0;
-  }
-  std::string GetName() const { return name_; }
-
- private:
-  std::string name_;
-};
-
 typedef std::vector<std::unique_ptr<EnumType>> EnumVector;
-
-class ClassTemplate;
 
 class ClassType : public Type {
  public:
@@ -368,7 +351,9 @@ class ClassType : public Type {
   int                 GetTotalFields() const { return numFields_; }  // includes inherited fields
   const ExprMap&      GetConstants() const { return constants_; }
   const MethodVector& GetMethods() { return methods_; }
-  ClassTemplate*      GetTemplate() const { return template_; }
+  NativeClass         GetNativeClass() const { return nativeClass_; }
+  void                SetNativeClass(NativeClass nativeClass) { nativeClass_ = nativeClass; }
+  NativeClass         GetTemplate() const { return template_; }
   const TypeList&     GetTemplateArgs() const { return templateArgs_; }
   std::string         ToString() const override;
   int                 GetSizeInBytes() const override;
@@ -379,7 +364,7 @@ class ClassType : public Type {
   bool                CanInitFrom(const ListType* type) const override;
   bool                IsUnsizedClass() const override;
   void                SetParent(ClassType* parent);
-  void                SetTemplate(ClassTemplate* t) { template_ = t; }
+  void                SetTemplate(NativeClass nativeClass) { template_ = nativeClass; }
   void        SetTemplateArgs(const TypeList& templateArgs) { templateArgs_ = templateArgs; }
   std::string GetName() const { return name_; }
   bool        IsNative() const { return isNative_; }
@@ -405,28 +390,14 @@ class ClassType : public Type {
   TypeMap              types_;
   ExprMap              constants_;
   EnumVector           enums_;
-  ClassTemplate*       template_ = nullptr;
+  NativeClass          nativeClass_ = NativeClass::None;
+  NativeClass          template_ = NativeClass::None;
   TypeList             templateArgs_;
   Method*              destructor_ = nullptr;
   int                  numFields_ = 0;  // includes inherited fields
   bool                 isNative_ = false;
   MemoryLayout         memoryLayout_ = MemoryLayout::Default;
   int                  padding_ = 0;
-};
-
-class ClassTemplate : public ClassType {
- public:
-  ClassTemplate(std::string name, const TypeList& formalTemplateArgs);
-  const TypeList&                GetFormalTemplateArgs() { return formalTemplateArgs_; }
-  bool                           IsClassTemplate() const override { return true; }
-  bool                           IsFullySpecified() const override { return false; }
-  const std::vector<ClassType*>& GetInstances() const { return instances_; }
-  ClassType*                     FindInstance(const TypeList& templateArgs);
-  void                           AddInstance(ClassType* instance) { instances_.push_back(instance); }
-
- private:
-  TypeList                formalTemplateArgs_;
-  std::vector<ClassType*> instances_;
 };
 
 class PtrType : public Type {
@@ -521,8 +492,6 @@ class TypeTable {
   WeakPtrType*       GetWeakPtrType(Type* type);
   RawPtrType*        GetRawPtrType(Type* type);
   ArrayType*         GetArrayType(Type* elementType, int size, MemoryLayout layout);
-  FormalTemplateArg* GetFormalTemplateArg(std::string name);
-  ClassType*  GetClassTemplateInstance(ClassTemplate* classTemplate, const TypeList& templateArgs);
   Type*       GetQualifiedType(Type* type, int qualifiers);
   TypeList*   AppendTypeList(TypeList* type);
   static bool VectorScalar(Type* lhs, Type* rhs);
@@ -546,7 +515,6 @@ class TypeTable {
   std::unordered_map<ArrayTypeKey, ArrayType*>         arrayTypes_;
   std::unordered_map<TypeAndInt, VectorType*>          vectorTypes_;
   std::unordered_map<TypeAndInt, MatrixType*>          matrixTypes_;
-  std::unordered_map<std::string, FormalTemplateArg*>  formalTemplateArgs_;
   std::unordered_map<TypeAndInt, QualifiedType*>       qualifiedTypes_;
   std::vector<ListType*>                               listTypes_;
   BoolType*                                            bool_;

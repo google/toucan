@@ -110,7 +110,6 @@ int main(int argc, char** argv) {
   int syntaxErrors = ParseProgram(filename, &nodes, includePaths, rootStmts);
   if (syntaxErrors > 0) { exit(1); }
   TypeTable   types;
-  InitNativeClasses(rootStmts, &nodes, &types);
   SemanticPass semanticPass(&nodes, &types);
   rootStmts = semanticPass.Run(rootStmts);
   if (semanticPass.GetNumErrors() > 0) { exit(2); }

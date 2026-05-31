@@ -30,7 +30,7 @@ const int WordCountShift = 16;
 
 namespace Toucan {
 
-bool isSampler(ClassType* classType) { return classType == NativeClass::Sampler; }
+bool isSampler(ClassType* classType) { return classType->GetNativeClass() == NativeClass::Sampler; }
 
 bool isSampleableTexture1D(ClassType* classType) {
   return classType->GetTemplate() == NativeClass::SampleableTexture1D;
@@ -58,9 +58,9 @@ bool isTextureView(ClassType* classType) {
          isSampleableTextureCube(classType);
 }
 
-bool isMath(ClassType* classType) { return classType == NativeClass::Math; }
+bool isMath(ClassType* classType) { return classType->GetNativeClass() == NativeClass::Math; }
 
-bool isSystem(ClassType* classType) { return classType == NativeClass::System; }
+bool isSystem(ClassType* classType) { return classType->GetNativeClass() == NativeClass::System; }
 
 uint32_t builtinNameToID(const std::string& name) {
   if (name == "vertexIndex") {

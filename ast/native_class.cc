@@ -14,80 +14,69 @@
 
 #include "native_class.h"
 
-#include "ast.h"
-#include "semantic_pass.h"
-#include "type.h"
+#include <string>
+#include <unordered_map>
 
 namespace Toucan {
 
-ClassType* NativeClass::BindGroup;
-ClassType* NativeClass::Buffer;
-ClassType* NativeClass::ColorOutput;
-ClassType* NativeClass::CommandBuffer;
-ClassType* NativeClass::CommandEncoder;
-ClassType* NativeClass::ComputePass;
-ClassType* NativeClass::ComputePipeline;
-ClassType* NativeClass::DepthStencilOutput;
-ClassType* NativeClass::Device;
-ClassType* NativeClass::Event;
-ClassType* NativeClass::Image;
-ClassType* NativeClass::Math;
-ClassType* NativeClass::Queue;
-ClassType* NativeClass::RenderPass;
-ClassType* NativeClass::RenderPipeline;
-ClassType* NativeClass::SampleableTexture1D;
-ClassType* NativeClass::SampleableTexture2D;
-ClassType* NativeClass::SampleableTexture2DArray;
-ClassType* NativeClass::SampleableTexture3D;
-ClassType* NativeClass::SampleableTextureCube;
-ClassType* NativeClass::Sampler;
-ClassType* NativeClass::SwapChain;
-ClassType* NativeClass::System;
-ClassType* NativeClass::Texture1D;
-ClassType* NativeClass::Texture2D;
-ClassType* NativeClass::Texture2DArray;
-ClassType* NativeClass::Texture3D;
-ClassType* NativeClass::TextureCube;
-ClassType* NativeClass::VertexInput;
-ClassType* NativeClass::Window;
+namespace {
 
-void InitNativeClasses(Scope* scope, NodeVector* nodes, TypeTable* types) {
-  SemanticPass semanticPass(nodes, types);
-  auto findClassType = [scope, types, &semanticPass](const char* id) -> ClassType* {
-    auto* c = scope->FindType(id);
-    if (c == nullptr) return nullptr;
-    return static_cast<ClassType*>(semanticPass.ResolveType(c));
-  };
-  NativeClass::BindGroup = findClassType("BindGroup");
-  NativeClass::Buffer = findClassType("Buffer");
-  NativeClass::ColorOutput = findClassType("ColorOutput");
-  NativeClass::CommandBuffer = findClassType("CommandBuffer");
-  NativeClass::CommandEncoder = findClassType("CommandEncoder");
-  NativeClass::ComputePass = findClassType("ComputePass");
-  NativeClass::ComputePipeline = findClassType("ComputePipeline");
-  NativeClass::DepthStencilOutput = findClassType("DepthStencilOutput");
-  NativeClass::Device = findClassType("Device");
-  NativeClass::Event = findClassType("Event");
-  NativeClass::Image = findClassType("Image");
-  NativeClass::Math = findClassType("Math");
-  NativeClass::Queue = findClassType("Queue");
-  NativeClass::RenderPass = findClassType("RenderPass");
-  NativeClass::RenderPipeline = findClassType("RenderPipeline");
-  NativeClass::SampleableTexture1D = findClassType("SampleableTexture1D");
-  NativeClass::SampleableTexture2D = findClassType("SampleableTexture2D");
-  NativeClass::SampleableTexture2DArray = findClassType("SampleableTexture2DArray");
-  NativeClass::SampleableTexture3D = findClassType("SampleableTexture3D");
-  NativeClass::SampleableTextureCube = findClassType("SampleableTextureCube");
-  NativeClass::Sampler = findClassType("Sampler");
-  NativeClass::SwapChain = findClassType("SwapChain");
-  NativeClass::System = findClassType("System");
-  NativeClass::Texture1D = findClassType("Texture1D");
-  NativeClass::Texture2D = findClassType("Texture2D");
-  NativeClass::Texture2DArray = findClassType("Texture2DArray");
-  NativeClass::Texture3D = findClassType("Texture3D");
-  NativeClass::TextureCube = findClassType("TextureCube");
-  NativeClass::VertexInput = findClassType("VertexInput");
-  NativeClass::Window = findClassType("Window");
+std::unordered_map<std::string, NativeClass> nativeClasses_;
+std::unordered_map<NativeClass, std::string> nativeClassNames_;
+
+void AddNativeClass(std::string name, NativeClass id) {
+  nativeClasses_[name] = id;
+  nativeClassNames_[id] = name;
+}
+
+void InitNativeClasses() {
+  AddNativeClass("None", NativeClass::None);
+  AddNativeClass("BindGroup", NativeClass::BindGroup);
+  AddNativeClass("Buffer", NativeClass::Buffer);
+  AddNativeClass("ColorOutput", NativeClass::ColorOutput);
+  AddNativeClass("CommandBuffer", NativeClass::CommandBuffer);
+  AddNativeClass("CommandEncoder", NativeClass::CommandEncoder);
+  AddNativeClass("ComputePass", NativeClass::ComputePass);
+  AddNativeClass("ComputePipeline", NativeClass::ComputePipeline);
+  AddNativeClass("DepthStencilOutput", NativeClass::DepthStencilOutput);
+  AddNativeClass("Device", NativeClass::Device);
+  AddNativeClass("Event", NativeClass::Event);
+  AddNativeClass("Image", NativeClass::Image);
+  AddNativeClass("Math", NativeClass::Math);
+  AddNativeClass("Queue", NativeClass::Queue);
+  AddNativeClass("RenderPass", NativeClass::RenderPass);
+  AddNativeClass("RenderPipeline", NativeClass::RenderPipeline);
+  AddNativeClass("SampleableTexture1D", NativeClass::SampleableTexture1D);
+  AddNativeClass("SampleableTexture2D", NativeClass::SampleableTexture2D);
+  AddNativeClass("SampleableTexture2DArray", NativeClass::SampleableTexture2DArray);
+  AddNativeClass("SampleableTexture3D", NativeClass::SampleableTexture3D);
+  AddNativeClass("SampleableTextureCube", NativeClass::SampleableTextureCube);
+  AddNativeClass("Sampler", NativeClass::Sampler);
+  AddNativeClass("SwapChain", NativeClass::SwapChain);
+  AddNativeClass("System", NativeClass::System);
+  AddNativeClass("Texture1D", NativeClass::Texture1D);
+  AddNativeClass("Texture2D", NativeClass::Texture2D);
+  AddNativeClass("Texture2DArray", NativeClass::Texture2DArray);
+  AddNativeClass("Texture3D", NativeClass::Texture3D);
+  AddNativeClass("TextureCube", NativeClass::TextureCube);
+  AddNativeClass("VertexInput", NativeClass::VertexInput);
+  AddNativeClass("Window", NativeClass::Window);
+}
+
+}
+
+NativeClass FindNativeClass(std::string className) {
+  if (nativeClasses_.empty()) {
+    InitNativeClasses();
+  }
+  return nativeClasses_[className];
+}
+
+std::string GetNativeClassName(NativeClass id) {
+  if (nativeClasses_.empty()) {
+    InitNativeClasses();
+  }
+  return nativeClassNames_[id];
 }
 
 }  // namespace Toucan

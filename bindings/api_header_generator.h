@@ -43,6 +43,7 @@ class APIHeaderGenerator : public Visitor {
   Result        Visit(ASTVoidType* node) override;
   Result        Visit(BoolConstant* constant) override;
   Result        Visit(ClassDecl* node) override;
+  Result        Visit(ClassTemplateDecl* node) override;
   Result        Visit(Decls* decls) override;
   Result        Visit(DoubleConstant* constant) override;
   Result        Visit(EnumDecl* node) override;

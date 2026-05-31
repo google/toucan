@@ -46,7 +46,7 @@ ASTRawPtrType::ASTRawPtrType(ASTType* baseType) : ASTPtrType(baseType) {}
 
 ASTEnumType::ASTEnumType(EnumDecl* decl) : decl_(decl) {}
 
-ASTClassTemplateInstance::ASTClassTemplateInstance(ASTType* classTemplate, ASTTypeList* templateArgs) : classTemplate_(classTemplate), templateArgs_(templateArgs) {}
+ASTClassTemplateInstance::ASTClassTemplateInstance(ClassTemplateDecl* decl, ASTTypeList* templateArgs) : decl_(decl), templateArgs_(templateArgs) {}
 
 ASTClassType::ASTClassType(ClassDecl* decl) : decl_(decl) {}
 
@@ -408,8 +408,17 @@ UnresolvedNewExpr::UnresolvedNewExpr(ASTType* type, Expr* length, ArgList* argli
 
 Type* UnresolvedNewExpr::GetType(TypeTable* types) { assert(false); return nullptr; }
 
-ClassDecl::ClassDecl(std::string name, ASTFormalTemplateArgList* formalTemplateArgs)
-    : name_(name), formalTemplateArgs_(formalTemplateArgs) {}
+ClassDecl::ClassDecl(std::string name) : name_(name) {}
+
+ClassTemplateDecl::ClassTemplateDecl(std::string name, ASTFormalTemplateArgList* formalTemplateArgs)
+    : ClassDecl(name), formalTemplateArgs_(formalTemplateArgs) {}
+
+ClassDecl* ClassTemplateDecl::FindInstance(const TypeList& templateArgs) {
+  for (ClassDecl* const& i : instances_) {
+    if (i->GetTemplateArgs() == templateArgs) { return i; }
+  }
+  return nullptr;
+}
 
 EnumDecl::EnumDecl(std::string name) : name_(name) {}
 
@@ -443,6 +452,7 @@ Result BinOpNode::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result BoolConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result CastExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ClassDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ClassTemplateDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ConstDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Data::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result EnumConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }

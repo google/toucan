@@ -15,50 +15,48 @@
 #ifndef NATIVE_CLASS_H_
 #define NATIVE_CLASS_H_
 
+#include <string>
+
 // TODO: autogenerate this from api.t.
 
 namespace Toucan {
 
-class ClassType;
-class NodeVector;
-class Scope;
-class TypeTable;
-
-class NativeClass {
- public:
-  static ClassType* BindGroup;
-  static ClassType* Buffer;
-  static ClassType* ColorOutput;
-  static ClassType* CommandBuffer;
-  static ClassType* CommandEncoder;
-  static ClassType* ComputePass;
-  static ClassType* ComputePipeline;
-  static ClassType* DepthStencilOutput;
-  static ClassType* Device;
-  static ClassType* Event;
-  static ClassType* Image;
-  static ClassType* Math;
-  static ClassType* Queue;
-  static ClassType* RenderPass;
-  static ClassType* RenderPipeline;
-  static ClassType* SampleableTexture1D;
-  static ClassType* SampleableTexture2D;
-  static ClassType* SampleableTexture2DArray;
-  static ClassType* SampleableTexture3D;
-  static ClassType* SampleableTextureCube;
-  static ClassType* Sampler;
-  static ClassType* SwapChain;
-  static ClassType* System;
-  static ClassType* Texture1D;
-  static ClassType* Texture2D;
-  static ClassType* Texture2DArray;
-  static ClassType* Texture3D;
-  static ClassType* TextureCube;
-  static ClassType* VertexInput;
-  static ClassType* Window;
+enum class NativeClass {
+  None,
+  BindGroup,
+  Buffer,
+  ColorOutput,
+  CommandBuffer,
+  CommandEncoder,
+  ComputePass,
+  ComputePipeline,
+  DepthStencilOutput,
+  Device,
+  Event,
+  Image,
+  Math,
+  Queue,
+  RenderPass,
+  RenderPipeline,
+  SampleableTexture1D,
+  SampleableTexture2D,
+  SampleableTexture2DArray,
+  SampleableTexture3D,
+  SampleableTextureCube,
+  Sampler,
+  SwapChain,
+  System,
+  Texture1D,
+  Texture2D,
+  Texture2DArray,
+  Texture3D,
+  TextureCube,
+  VertexInput,
+  Window,
 };
 
-void InitNativeClasses(Scope* scope, NodeVector* nodes, TypeTable* types);
+NativeClass FindNativeClass(std::string className);
+std::string GetNativeClassName(NativeClass id);
 
 };  // namespace Toucan
 #endif
