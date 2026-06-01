@@ -413,12 +413,16 @@ ClassDecl::ClassDecl(std::string name) : name_(name) {}
 ClassTemplateDecl::ClassTemplateDecl(std::string name, ASTFormalTemplateArgList* formalTemplateArgs)
     : ClassDecl(name), formalTemplateArgs_(formalTemplateArgs) {}
 
-ClassDecl* ClassTemplateDecl::FindInstance(const TypeList& templateArgs) {
-  for (ClassDecl* const& i : instances_) {
-    if (i->GetTemplateArgs() == templateArgs) { return i; }
+ClassTemplateInstance* ClassTemplateDecl::FindInstance(const TypeList& templateArgs) {
+  for (auto instance : instances_) {
+    if (instance->GetTemplateArgs() == templateArgs) { return instance; }
   }
   return nullptr;
 }
+
+ClassTemplateInstance::ClassTemplateInstance(ClassTemplateDecl* templateDecl,
+                                             const TypeList& templateArgs)
+    : ClassDecl(templateDecl->GetName()), templateDecl_(templateDecl), templateArgs_(templateArgs) {}
 
 EnumDecl::EnumDecl(std::string name) : name_(name) {}
 
@@ -453,6 +457,7 @@ Result BoolConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result CastExpr::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ClassDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ClassTemplateDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
+Result ClassTemplateInstance::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result ConstDecl::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result Data::Accept(Visitor* visitor) { return visitor->Visit(this); }
 Result EnumConstant::Accept(Visitor* visitor) { return visitor->Visit(this); }

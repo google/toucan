@@ -1010,12 +1010,6 @@ Result SemanticPass::Visit(ClassDecl* node) {
   ClassType* classType = GetOrCreateClassType(node);
   if (!classType) return nullptr;
 
-  if (auto templateDecl = node->GetTemplateDecl()) {
-    nodeCache_.clear();
-    SetCurrentTemplateArgs(templateDecl->GetFormalTemplateArgs()->Get(),
-                           classType->GetTemplateArgs());
-  }
-
   scopeStack_.Push(node);
 
   if (classType->NeedsDestruction()) {
@@ -1087,13 +1081,20 @@ Result SemanticPass::Visit(ClassDecl* node) {
   }
   scopeStack_.Pop();
 
-  if (classType->GetTemplate() != NativeClass::None) {
-    currentTemplateArgs_.clear();
-  }
   return nullptr;
 }
 
 Result SemanticPass::Visit(ClassTemplateDecl* node) {
+  return {};
+}
+
+Result SemanticPass::Visit(ClassTemplateInstance* node) {
+  // Clear the cache to avoid re-using nodes from previous instances of this template.
+  nodeCache_.clear();
+  SetCurrentTemplateArgs(node->GetTemplateDecl()->GetFormalTemplateArgs()->Get(),
+                         node->GetTemplateArgs());
+  Visit(static_cast<ClassDecl*>(node));
+  currentTemplateArgs_.clear();
   return {};
 }
 
@@ -1341,11 +1342,9 @@ Result SemanticPass::Visit(ASTClassTemplateInstance* node) {
     classType->SetParent(static_cast<ClassType*>(parent));
   }
 
-  auto decl = Make<ClassDecl>(templateDecl->GetName());
+  auto decl = Make<ClassTemplateInstance>(templateDecl, dstTypes);
   decl->SetBody(Make<Decls>());
   decl->SetClass(classType);
-  decl->SetTemplateDecl(templateDecl);
-  decl->SetTemplateArgs(dstTypes);
   rootStmts_->Append(decl);
   templateDecl->AddInstance(decl);
 

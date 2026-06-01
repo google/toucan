@@ -57,6 +57,7 @@ class SemanticPass : public CopyVisitor {
   Result Visit(ConstDecl* decl) override;
   Result Visit(ClassDecl* node) override;
   Result Visit(ClassTemplateDecl* node) override;
+  Result Visit(ClassTemplateInstance* node) override;
   Result Visit(Data* expr) override;
   Result Visit(Decls* decls) override;
   Result Visit(DoStatement* stmt) override;

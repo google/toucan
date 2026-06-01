@@ -31,6 +31,7 @@ struct Var;
 
 class ClassDecl;
 class ClassTemplateDecl;
+class ClassTemplateInstance;
 class Visitor;
 
 using Result = std::variant<void*, uint32_t>;
@@ -1027,10 +1028,6 @@ class ClassDecl : public Scope {
   void              SetParent(ASTType* parent) { parent_ = parent; }
   Decls*            GetBody() const { return body_; }
   void              SetBody(Decls* body) { body_ = body; }
-  void              SetTemplateDecl(ClassTemplateDecl* templateDecl) { templateDecl_ = templateDecl; }
-  ClassTemplateDecl* GetTemplateDecl() const { return templateDecl_; }
-  const TypeList&   GetTemplateArgs() const { return templateArgs_; }
-  void              SetTemplateArgs(const TypeList& templateArgs) { templateArgs_ = templateArgs; }
   bool              IsClassDecl() const override { return true; }
   virtual bool      IsTemplate() const { return false; }
 
@@ -1039,8 +1036,6 @@ class ClassDecl : public Scope {
   ClassType*                class_ = nullptr;
   ASTType*                  parent_ = nullptr;
   Decls*                    body_ = nullptr;
-  ClassTemplateDecl*        templateDecl_ = nullptr;
-  TypeList                  templateArgs_;
 };
 
 class ClassTemplateDecl : public ClassDecl {
@@ -1050,12 +1045,24 @@ class ClassTemplateDecl : public ClassDecl {
   ASTFormalTemplateArgList* GetFormalTemplateArgs() const { return formalTemplateArgs_; }
   bool                      IsTemplate() const override { return true; }
   Result                    Accept(Visitor* visitor) override;
-  ClassDecl*                FindInstance(const TypeList& templateArgs);
-  void                      AddInstance(ClassDecl* instance) { instances_.push_back(instance); }
+  ClassTemplateInstance*    FindInstance(const TypeList& templateArgs);
+  void                      AddInstance(ClassTemplateInstance* instance) { instances_.push_back(instance); }
 
  private:
-  ASTFormalTemplateArgList* formalTemplateArgs_;
-  std::vector<ClassDecl*>   instances_;
+  ASTFormalTemplateArgList*            formalTemplateArgs_;
+  std::vector<ClassTemplateInstance*>  instances_;
+};
+
+class ClassTemplateInstance : public ClassDecl {
+ public:
+                            ClassTemplateInstance(ClassTemplateDecl* templateDecl, const TypeList& templateArgs);
+  ClassTemplateDecl*        GetTemplateDecl() const { return templateDecl_; }
+  const TypeList&           GetTemplateArgs() const { return templateArgs_; }
+  Result                    Accept(Visitor* visitor) override;
+
+ private:
+  ClassTemplateDecl*        templateDecl_;
+  TypeList                  templateArgs_;
 };
 
 class ASTEnumValue : public Stmt {
@@ -1164,6 +1171,7 @@ class Visitor {
   virtual Result Visit(CastExpr* node) { return Default(node); }
   virtual Result Visit(ClassDecl* node) { return Default(node); }
   virtual Result Visit(ClassTemplateDecl* node) { return Default(node); }
+  virtual Result Visit(ClassTemplateInstance* node) { return Default(node); }
   virtual Result Visit(ConstDecl* node) { return Default(node); }
   virtual Result Visit(Data* node) { return Default(node); }
   virtual Result Visit(EnumConstant* node) { return Default(node); }
