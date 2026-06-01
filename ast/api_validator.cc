@@ -90,7 +90,7 @@ void APIValidator::ValidateType(Type* type, const FileLocation& fileLocation) {
   if (type->IsPtr()) type = static_cast<PtrType*>(type)->GetBaseType();
   int qualifiers;
   type = type->GetUnqualifiedType(&qualifiers);
-  if (!type->IsClass() || !type->IsFullySpecified()) return;
+  if (!type->IsClass()) return;
 
   ScopedFileLocation scopedFile(&fileLocation_, fileLocation);
 

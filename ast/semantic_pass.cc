@@ -915,10 +915,6 @@ Result SemanticPass::Visit(UnresolvedNewExpr* node) {
     if (classType->IsUnsizedClass()) {
       if (!length) { return Error("class with unsized array must be allocated with size"); }
     }
-    if (!classType->IsFullySpecified()) {
-      return Error("cannot allocate partially-specified template class %s",
-                   classType->ToString().c_str());
-    }
     if (node->IsConstructor()) {
       std::vector<Expr*> exprList;
       Method* constructor = FindMethod(nullptr, classType, classType->GetName(), arglist, &exprList);
@@ -1034,7 +1030,6 @@ Result SemanticPass::Visit(ClassDecl* node) {
   }
   for (const auto& method : classType->GetMethods()) {
     if (!method->stmts) {
-      classType->SetNative(true);
       continue;
     }
 

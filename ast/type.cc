@@ -377,16 +377,6 @@ bool ClassType::ContainsRawPtr() const {
   return false;
 }
 
-bool ClassType::IsFullySpecified() const {
-  if (templateArgs_.size() == 0) { return true; }
-
-  for (auto* arg : templateArgs_) {
-    if (!arg->IsFullySpecified()) { return false; }
-  }
-
-  return true;
-}
-
 void ClassType::SetParent(ClassType* parent) {
   assert(parent_ == nullptr);
   if (parent == nullptr) { return; }
@@ -697,11 +687,6 @@ RawPtrType* TypeTable::GetRawPtrType(Type* baseType) {
     rawPtrTypes_[baseType] = type;
   }
   return type;
-}
-
-TypeList* TypeTable::AppendTypeList(TypeList* typeList) {
-  typeLists_.push_back(std::unique_ptr<TypeList>(typeList));
-  return typeList;
 }
 
 ArrayType* TypeTable::GetArrayType(Type* elementType, int size, MemoryLayout memoryLayout) {

@@ -35,7 +35,6 @@ class Expr;
 class TypeTable;
 class ClassType;
 class ListType;
-enum class NativeClass;
 
 enum class MemoryLayout { Default = 0, Storage = 1, Uniform = 2 };
 
@@ -73,7 +72,6 @@ class Type {
   virtual bool  IsString() const { return false; }
   virtual bool  IsVoid() const { return false; }
   virtual bool  IsClass() const { return false; }
-  virtual bool  IsFullySpecified() const { return true; }
   virtual bool  IsReadable() const { return true; }
   virtual bool  IsWriteable() const { return true; }
   virtual bool  NeedsDestruction() const { return false; }
@@ -222,7 +220,6 @@ class ArrayType : public ArrayLikeType {
   ArrayType(Type* elementType, uint32_t numElements, MemoryLayout memoryLayout);
   bool         IsArray() const override { return true; }
   bool         IsUnsizedArray() const override { return numElements_ == 0; }
-  bool         IsFullySpecified() const override { return elementType_->IsFullySpecified(); }
   std::string  ToString() const override;
   int          GetElementSizeInBytes() const;
   int          GetElementPadding() const;
@@ -367,8 +364,7 @@ class ClassType : public Type {
   void                SetTemplate(NativeClass nativeClass) { template_ = nativeClass; }
   void        SetTemplateArgs(const TypeList& templateArgs) { templateArgs_ = templateArgs; }
   std::string GetName() const { return name_; }
-  bool        IsNative() const { return isNative_; }
-  void        SetNative(bool native) { isNative_ = native; }
+  bool        IsNative() const { return nativeClass_ != NativeClass::None || template_ != NativeClass::None; }
   ClassType*  GetParent() const { return parent_; }
   Method*                     GetDestructor() { return destructor_; }
   Type*                       FindType(const std::string& id);
@@ -377,10 +373,8 @@ class ClassType : public Type {
   void                        SetMemoryLayout(MemoryLayout memoryLayout) { memoryLayout_ = memoryLayout; }
   MemoryLayout                GetMemoryLayout() const { return memoryLayout_; }
   int                         GetPadding() const { return padding_; }
-  bool                        IsFullySpecified() const override;
   bool                        NeedsDestruction() const override;
   bool                        ContainsRawPtr() const override;
-  const TypeMap&              GetTypes() { return types_; }
 
  private:
   std::string          name_;
@@ -395,7 +389,6 @@ class ClassType : public Type {
   TypeList             templateArgs_;
   Method*              destructor_ = nullptr;
   int                  numFields_ = 0;  // includes inherited fields
-  bool                 isNative_ = false;
   MemoryLayout         memoryLayout_ = MemoryLayout::Default;
   int                  padding_ = 0;
 };
@@ -405,7 +398,6 @@ class PtrType : public Type {
   PtrType(Type* type);
   bool  IsPtr() const override { return true; }
   Type* GetBaseType() const { return baseType_; }
-  bool  IsFullySpecified() const override { return baseType_->IsFullySpecified(); }
   int   GetSizeInBytes() const override { return 2 * sizeof(void*); }
   bool  NeedsDestruction() const override { return true; }
   bool  ContainsRawPtr() const override { return baseType_->IsRawPtr(); }
@@ -493,7 +485,6 @@ class TypeTable {
   RawPtrType*        GetRawPtrType(Type* type);
   ArrayType*         GetArrayType(Type* elementType, int size, MemoryLayout layout);
   Type*       GetQualifiedType(Type* type, int qualifiers);
-  TypeList*   AppendTypeList(TypeList* type);
   static bool VectorScalar(Type* lhs, Type* rhs);
   static bool ScalarVector(Type* lhs, Type* rhs);
   static bool MatrixScalar(Type* lhs, Type* rhs);
@@ -506,7 +497,6 @@ class TypeTable {
  private:
   TypeStorageVector                                    typesStorage_;
   TypeVector                                           types_;
-  TypeListVector                                       typeLists_;
   std::unordered_map<int, IntegerType*>                integerTypes_;
   std::unordered_map<int, FloatingPointType*>          floatingPointTypes_;
   std::unordered_map<Type*, StrongPtrType*>            strongPtrTypes_;

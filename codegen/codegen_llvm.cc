@@ -181,7 +181,6 @@ void CodeGenLLVM::Run(Stmts* stmts) {
     Type* type = types_->GetTypes()[i];
     if (type->IsClass()) {
       ClassType* classType = static_cast<ClassType*>(type);
-      if (!classType->IsFullySpecified()) { continue; }
       for (const auto& mit : classType->GetMethods()) {
         GenCodeForMethod(mit.get());
       }
