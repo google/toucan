@@ -56,7 +56,6 @@ enum class NativeClass {
 };
 
 NativeClass FindNativeClass(std::string className);
-std::string GetNativeClassName(NativeClass id);
 
 };  // namespace Toucan
 #endif

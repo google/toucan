@@ -187,10 +187,12 @@ void GenBindings::EmitMethod(Method* method) {
 void GenBindings::EmitClass(ClassType* classType) {
   auto id = EmitType(classType);
   file_ << "\n  c = type" << id << ";\n";
-  file_ << "  c->SetNativeClass(NativeClass::" << GetNativeClassName(classType->GetNativeClass())
-        << ");\n";
-  file_ << "  c->SetTemplate(NativeClass::" << GetNativeClassName(classType->GetTemplate())
-        << ");\n";
+  if (classType->GetNativeClass() != NativeClass::None) {
+    file_ << "  c->SetNativeClass(NativeClass::" << classType->GetName() << ");\n";
+  }
+  if (classType->GetTemplate() != NativeClass::None) {
+    file_ << "  c->SetTemplate(NativeClass::" << classType->GetName() << ");\n";
+  }
   if (!classType->GetTemplateArgs().empty()) {
     std::vector<int> args;
     for (auto type : classType->GetTemplateArgs()) {

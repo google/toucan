@@ -22,11 +22,9 @@ namespace Toucan {
 namespace {
 
 std::unordered_map<std::string, NativeClass> nativeClasses_;
-std::unordered_map<NativeClass, std::string> nativeClassNames_;
 
 void AddNativeClass(std::string name, NativeClass id) {
   nativeClasses_[name] = id;
-  nativeClassNames_[id] = name;
 }
 
 void InitNativeClasses() {
@@ -70,13 +68,6 @@ NativeClass FindNativeClass(std::string className) {
     InitNativeClasses();
   }
   return nativeClasses_[className];
-}
-
-std::string GetNativeClassName(NativeClass id) {
-  if (nativeClasses_.empty()) {
-    InitNativeClasses();
-  }
-  return nativeClassNames_[id];
 }
 
 }  // namespace Toucan
