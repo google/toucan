@@ -913,6 +913,8 @@ Result CodeGenSPIRV::Visit(MethodCall* expr) {
                                           spv::MemorySemanticsAcquireReleaseMask));
       AppendCode(spv::Op::OpControlBarrier, resultArgs);
       return {};  // FIXME: handle void method returns
+    } else if (method->name == "GetSourceLine") {
+      return GetUIntConstant(expr->GetFileLocation().lineNum);
     }
   }
   uint32_t functionId = functions_[method];

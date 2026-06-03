@@ -391,7 +391,7 @@ class System {
   static Print(str : &[]ubyte);
   static PrintLine(str : &[]ubyte);
   static GetSourceFile() : *[]ubyte;
-  static GetSourceLine() : int;
+  static GetSourceLine() : uint;
   static Abort();
 }
 

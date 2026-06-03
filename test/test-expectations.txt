@@ -82,6 +82,7 @@ test/decl-test.t
 test/dereference.t
 test/destructor-set-null.t
 test/destructor.t
+test/device-get-source-line.t
 test/do-test.t
 test/double.t
 test/duplicate-method.t
