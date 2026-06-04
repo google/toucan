@@ -175,18 +175,26 @@ CodeGenLLVM::CodeGenLLVM(llvm::LLVMContext*                 context,
 }
 
 void CodeGenLLVM::Run(Stmts* stmts) {
+  stmts->Accept(this);
+  while (!pendingMethods_.empty()) {
+    Method* m = pendingMethods_.front();
+    pendingMethods_.pop_front();
+    GenCodeForMethod(m);
+  }
+  // Generate SPIR-V for shader entry points.
   // An iterator can't be used here, since new types may be added (but won't need codegen).
   int size = types_->GetTypes().size();
   for (int i = 0; i < size; ++i) {
     Type* type = types_->GetTypes()[i];
     if (type->IsClass()) {
       ClassType* classType = static_cast<ClassType*>(type);
-      for (const auto& mit : classType->GetMethods()) {
-        GenCodeForMethod(mit.get());
+      for (const auto& method : classType->GetMethods()) {
+        if ((method->modifiers & (Method::Modifier::Vertex | Method::Modifier::Fragment | Method::Modifier::Compute)) != 0) {
+          GenCodeForMethod(method.get());
+        }
       }
     }
   }
-  stmts->Accept(this);
 }
 
 llvm::Type* CodeGenLLVM::PadType(llvm::Type* type, int padding) {
@@ -510,6 +518,7 @@ llvm::Function* CodeGenLLVM::GetOrCreateMethodStub(Method* method) {
   } else {
     functions_[method] = function;
   }
+  pendingMethods_.push_back(method);
 
   return function;
 }
@@ -1195,9 +1204,14 @@ Result CodeGenLLVM::Visit(StoreStmt* stmt) {
 }
 
 void CodeGenLLVM::CallSystemAbort() {
-  llvm::Type* voidType = llvm::Type::getVoidTy(*context_);
-  llvm::FunctionType* ft = llvm::FunctionType::get(voidType, false);
-  llvm::FunctionCallee systemAbort = module_->getOrInsertFunction("System_Abort", ft);
+  auto systemAbort = nativeFunctions_["System_Abort"];
+  if (!systemAbort) {
+    llvm::Type* voidType = llvm::Type::getVoidTy(*context_);
+    llvm::FunctionType* ft = llvm::FunctionType::get(voidType, false);
+    systemAbort = llvm::Function::Create(ft, llvm::GlobalValue::ExternalLinkage,
+                                      "System_Abort", module_);
+    nativeFunctions_["System_Abort"] = systemAbort;
+  }
   builder_->CreateCall(systemAbort, {});
 }
 

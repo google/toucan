@@ -110,6 +110,7 @@ error-array-size-non-integer.t:5:  array size is not an integer constant
 test/error-assign-padded-array.t
 test/error-assign-padded-array.t:21: expectation failed
 test/error-assign-padded-array.t:22: expectation failed
+test/error-call-deviceonly-method-from-host.t
 test/error-cast-weak-ptr-to-strong.t
 error-cast-weak-ptr-to-strong.t:3:  cannot cast value of type ^int to *int
 test/error-constant-not-constant.t

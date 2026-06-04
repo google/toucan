@@ -202,6 +202,7 @@ class CodeGenLLVM : public Visitor {
   std::unordered_map<ClassType*, llvm::StructType*>     classPlaceholders_;
   std::vector<Type*>                                    referencedTypes_;
   std::unordered_map<Type*, llvm::Value*>               typeMap_;
+  std::list<Method*>                                    pendingMethods_;
 };
 
 };  // namespace Toucan
