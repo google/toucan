@@ -4,8 +4,8 @@ using Vertex = float<2>;
 class Pipeline {
   deviceonly vhelper() : Vertex { return vertices.Get(); }
   deviceonly fhelper() { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
-  vertex main(vb : &VertexBuiltins) { vb.position = {@this.vhelper(), 0.0, 1.0}; }
-  fragment main(fb : &FragmentBuiltins) { this.fhelper(); }
+  vertex main(vb : &VertexBuiltins) { vb.position = {@vhelper(), 0.0, 1.0}; }
+  fragment main(fb : &FragmentBuiltins) { fhelper(); }
   var vertices : *VertexInput<Vertex>;
   var fragColor : *ColorOutput<PreferredPixelFormat>;
 }

@@ -187,7 +187,7 @@ class DeferredRender : TextureQuadPass {
 
     var bufferSize = textures.gBufferDepth.GetSize();
     var coordUV = fb.fragCoord.xy / bufferSize as float<2>;
-    var position = this.worldFromScreenCoord(camera, coordUV, depth);
+    var position = worldFromScreenCoord(camera, coordUV, depth);
     var normal = textures.gBufferNormal.Load(Math.floor(fb.fragCoord.xy) as uint<2>, 0).xyz;
     var albedo = textures.gBufferAlbedo.Load(Math.floor(fb.fragCoord.xy) as uint<2>, 0).xyz;
 

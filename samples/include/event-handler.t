@@ -10,7 +10,7 @@ class EventHandler {
     } else if (event.type == EventType.MouseMove) {
       var diff = event.position - prevPosition;
       if (mouseDown || (event.modifiers & EventModifiers.Control) != 0) {
-        this.Rotate(diff);
+        Rotate(diff);
       } else if ((event.modifiers & EventModifiers.Shift) != 0) {
         distance += diff.y as float / 100.0;
       }
@@ -20,7 +20,7 @@ class EventHandler {
     } else if (event.type == EventType.TouchMove) {
       if (event.numTouches != prevNumTouches) {
       } else if (event.numTouches == 1) {
-        this.Rotate(event.touches[0] - prevTouches[0]);
+        Rotate(event.touches[0] - prevTouches[0]);
       } else if (event.numTouches == 2) {
         var prevDistance = Math.length((prevTouches[1] - prevTouches[0]) as float<2>);
         var curDistance = Math.length((event.touches[1] - event.touches[0]) as float<2>);

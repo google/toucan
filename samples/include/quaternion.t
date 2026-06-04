@@ -8,7 +8,7 @@ class Quaternion {
     q.w = Math.cos(angle * 0.5);
   }
   len() : float { return Math.length(q); }
-  normalize() { q = q / this.len(); }
+  normalize() { q /= len(); }
   mul(other : Quaternion) : Quaternion {
     var p = other.q;
     var r : Quaternion;

@@ -8,7 +8,7 @@ var verts : [3]Vertex = { { 0.0, 1.0, 0.0, 1.0 }, {-1.0, -1.0, 0.0, 1.0 }, { 1.0
 var vb = new vertex Buffer<[]Vertex>(device, &verts);
 class Pipeline {
   static deviceonly getCurrentVert(v : *VertexInput<Vertex>) : float<4> { return v.Get(); }
-  vertex main(vb : &VertexBuiltins) { vb.position = this.getCurrentVert(vertices); }
+  vertex main(vb : &VertexBuiltins) { vb.position = getCurrentVert(vertices); }
   fragment main(fb : &FragmentBuiltins) { fragColor.Set( {0.0, 1.0, 0.0, 1.0} ); }
   var vertices : *VertexInput<Vertex>;
   var fragColor : *ColorOutput<PreferredPixelFormat>;

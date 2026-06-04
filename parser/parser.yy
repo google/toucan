@@ -533,6 +533,9 @@ assignable:
   | simple_type '.' T_IDENTIFIER            { $$ = Make<UnresolvedStaticDot>($1, $3); }
   | assignable '.' T_IDENTIFIER '(' arguments ')'
                                             { $$ = Make<UnresolvedMethodCall>($1, $3, $5); }
+  | T_IDENTIFIER '(' arguments ')'
+                                            { auto* t = Make<UnresolvedIdentifier>("this");
+                                              $$ = Make<UnresolvedMethodCall>(t, $1, $3); }
   | simple_type '.' T_IDENTIFIER '(' arguments ')'
                                             { $$ = Make<UnresolvedStaticMethodCall>($1, $3, $5); }
   | assignable ':'                          { $$ = Make<SmartToRawPtr>(Make<LoadExpr>($1)); }

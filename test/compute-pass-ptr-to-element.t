@@ -17,9 +17,9 @@ class Compute {
     var i : int;
     var array : [1]int;
     var struct : Struct;
-    this.set(&i, 7);
-    this.set(&array[0], 21);
-    this.set(&struct.a, 42);
+    set(&i, 7);
+    set(&array[0], 21);
+    set(&struct.a, 42);
     buffer[0] = i;
     buffer[1] = array[0];
     buffer[2] = struct.a;

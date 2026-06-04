@@ -2,7 +2,6 @@
 - implement foreach
 - implement Math.inverse() on CPU side
 - use O1 optimization in TC
-- implement parsing of a method call without .
 - finish storage textures
 - refactor tc & tj
 - validate return values in semantic pass

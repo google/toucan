@@ -3,12 +3,12 @@
 class Foo {
   var y : float;
   foo(x : int) {
-    if (x > 0) this.bar(x - 1);
+    if (x > 0) bar(x - 1);
     return;
   }
   bar(x : int) {
     y += 1.0;
-    this.foo(x);
+    foo(x);
     return;
   }
 };
@@ -21,12 +21,12 @@ Test.Expect(foo.y == 10.0);
 class Bar {
   var y : float;
   foo(x : int, y = 0) {
-    if (x > 0) this.bar(x - 1, 1.0);
+    if (x > 0) bar(x - 1, 1.0);
     return;
   }
   bar(x : int, z = 0.0) {
     y += 1.0;
-    this.foo(x, 42);
+    foo(x, 42);
     return;
   }
 };
