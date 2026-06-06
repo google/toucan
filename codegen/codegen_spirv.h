@@ -132,7 +132,7 @@ class CodeGenSPIRV : public Visitor {
   std::unordered_map<int32_t, uint32_t>        intConstants_;
   std::unordered_map<uint32_t, uint32_t>       uintConstants_;
   std::unordered_map<float, uint32_t>          floatConstants_;
-  uint32_t                                     boolConstants_[2];
+  uint32_t                                     boolConstants_[2] = { 0u, 0u };
   std::unordered_map<Method*, uint32_t>        functions_;
   std::unordered_map<Var*, uint32_t>           vars_;
   std::list<Method*>                           pendingMethods_;

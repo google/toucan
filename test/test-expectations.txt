@@ -64,6 +64,7 @@ test/class-constructor-calls-constructor.t
 test/class-constructor.t
 test/class-initializer.t
 test/complex-method.t
+test/compute-bool-literals.t
 test/compute-builtins.t
 test/compute-chained-vars.t
 test/compute-empty-class.t
