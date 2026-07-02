@@ -22,14 +22,13 @@ If you simply wish to try some live Toucan demos without building the toolchain,
 ### Prerequisites
 
 - Python 3.0
-- CMake
+- CMake 3.2
 - A C++20 toolchain (clang, gcc, or MSVC)
-- GNU flex
-- GNU bison
+- GNU flex 2.6.4
+- GNU bison 2.3
 - node.js and npm (for the WebAssembly build)
 
-Toucan uses the GN and ninja build systems from the Chromium project.
-These will be retrieved by the git-sync-deps script.
+Toucan uses the ninja build system from the Chromium project. It will be retrieved by the git-sync-deps script.
 
 ### Target executables
 
@@ -58,10 +57,8 @@ These will be retrieved by the git-sync-deps script.
 3. Build tc, tj and native samples:
 
 ```
-   mkdir -p out/Release
-   echo "is_debug=false" > out/Release/args.gn
-   gn gen out/Release
-   ninja -C out/Release
+   cmake -B out/Release -D CMAKE_BUILD_TYPE=Release -G Ninja
+   cmake --build out/Release
 ```
 
 ## Build instructions (Windows)
@@ -83,13 +80,13 @@ These will be retrieved by the git-sync-deps script.
    python3 tools/fetch-win-flex-bison.py
 ```
 
-4. Build tc, tj and native samples:
+4. Open Visual Studio's "x64 Native Tools Command Prompt for VS 20XX".
+
+5. Build tc, tj and native samples:
 
 ```
-   mkdir out\Release
-   echo is_debug=false > out\Release\args.gn
-   gn gen out\Release
-   ninja -C out\Release
+   cmake -B out/Release -D CMAKE_BUILD_TYPE=Release -G Ninja
+   cmake --build out/Release
 ```
 
 ## Build instructions (Android)
@@ -126,14 +123,15 @@ or on Windows:
 7. Build tc and native samples:
 
 ```
-   mkdir -p out/Release-android
-   echo is_debug=false > out/Release-android/args.gn
-   echo target_os=\"android\" >> out/Release-android/args.gn
-   echo target_cpu=\"arm64\" >> out/Release-android/args.gn
-   echo android_ndk_dir=\"$ANDROID_NDK_ROOT\" >> out/Release-android/args.gn
-   echo android_sdk_dir=\"$ANDROID_SDK_ROOT\" >> out/Release-android/args.gn
-   gn gen out/Release-android
-   ninja -C out/Release-android
+   cmake -B out/Release-android -D CMAKE_BUILD_TYPE=Release -D ANDROID_ABI=arm64-v8a -D ANDROID_PLATFORM=android-26 -D CMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android-legacy.toolchain.cmake -G Ninja
+   cmake --build out/Release-android
+```
+
+or on Windows:
+
+```
+   cmake -B out\Release-android -D CMAKE_BUILD_TYPE=Release -D ANDROID_ABI=arm64-v8a -D ANDROID_PLATFORM=android-26 -D CMAKE_TOOLCHAIN_FILE=%ANDROID_NDK_ROOT%\build\cmake\android-legacy.toolchain.cmake -G Ninja
+   cmake --build out\Release-android
 ```
 
 ## Build instructions (iOS)
@@ -169,14 +167,8 @@ or on Windows:
 11. Build tc and native samples:
 
 ```
-   mkdir -p out/Release-ios
-   echo is_debug=false > out/Release-ios/args.gn
-   echo target_os=\"ios\" >> out/Release-ios/args.gn
-   echo mobile_provision=\"$MOBILE_PROVISION_FILE\" >> out/Release-ios/args.gn
-   echo codesign_identity=\"$CODESIGN_IDENTITY\" >> out/Release-ios/args.gn
-   echo team_identifier=\"$TEAM_IDENTIFIER\" >> out/Release-ios/args.gn
-   gn gen out/Release-ios
-   ninja -C out/Release-ios
+   cmake -B out/Release-ios -D CMAKE_BUILD_TYPE=Release -D CMAKE_SYSTEM_NAME=iOS -D CMAKE_OSX_ARCHITECTURES=arm64 -D CMAKE_SYSTEM_PROCESSOR=arm64 -G Ninja
+   cmake --build out/Release
 ```
 
 ## Build instructions (WebAssembly)
@@ -201,12 +193,8 @@ popd
 3. Build WASM targets
 
 ```
-mkdir -p out/Release-wasm
-echo 'is_debug=false\
-target_os="wasm"\
-target_cpu="wasm"' > out/Release-wasm/args.gn
-gn gen out/Release-wasm
-ninja -C out/Release-wasm
+cmake -B out/Release-wasm -DCMAKE_BUILD_TYPE=Release -G Ninja -DCMAKE_TOOLCHAIN_FILE=third_party/emscripten/cmake/Modules/Platform/Emscripten.cmake
+cmake --build out/Release-wasm
 ```
 
 ## Running tj, the Toucan JIT:
