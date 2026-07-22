@@ -171,6 +171,7 @@ class CodeGenLLVM : public Visitor {
   void         DestroyTemporaries();
   void         Destroy(Type* type, llvm::Value* value);
   llvm::Value* CreateTypePtr(Type* type);
+  bool         NeedsAlignedMalloc() const;
 
  private:
   llvm::LLVMContext*                                    context_;

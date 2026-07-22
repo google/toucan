@@ -63,63 +63,6 @@ config("default") {
   }
 
   defines += [ "STACK_SIZE=" + stack_size ]
-
-  if (target_os == "android") {
-    defines += [ "TARGET_OS_IS_ANDROID=1" ]
-  } else {
-    defines += [ "TARGET_OS_IS_ANDROID=0" ]
-  }
-  if (target_os == "linux") {
-    defines += [ "TARGET_OS_IS_LINUX=1" ]
-  } else {
-    defines += [ "TARGET_OS_IS_LINUX=0" ]
-  }
-  if (target_os == "mac") {
-    defines += [ "TARGET_OS_IS_MAC=1" ]
-  } else {
-    defines += [ "TARGET_OS_IS_MAC=0" ]
-  }
-  if (target_os == "ios") {
-    defines += [ "TARGET_OS_IS_IOS=1" ]
-  } else {
-    defines += [ "TARGET_OS_IS_IOS=0" ]
-  }
-  if (target_os == "win") {
-    defines += [ "TARGET_OS_IS_WIN=1" ]
-  } else {
-    defines += [ "TARGET_OS_IS_WIN=0" ]
-  }
-  if (target_os == "wasm") {
-    defines += [ "TARGET_OS_IS_WASM=1" ]
-  } else {
-    defines += [ "TARGET_OS_IS_WASM=0" ]
-  }
-
-  if (target_cpu == "x86") {
-    defines += [ "TARGET_CPU_IS_X86=1" ]
-  } else {
-    defines += [ "TARGET_CPU_IS_X86=0" ]
-  }
-  if (target_cpu == "x64") {
-    defines += [ "TARGET_CPU_IS_X64=1" ]
-  } else {
-    defines += [ "TARGET_CPU_IS_X64=0" ]
-  }
-  if (target_cpu == "arm") {
-    defines += [ "TARGET_CPU_IS_ARM32=1" ]
-  } else {
-    defines += [ "TARGET_CPU_IS_ARM32=0" ]
-  }
-  if (target_cpu == "arm64") {
-    defines += [ "TARGET_CPU_IS_ARM64=1" ]
-  } else {
-    defines += [ "TARGET_CPU_IS_ARM64=0" ]
-  }
-  if (target_cpu == "wasm") {
-    defines += [ "TARGET_CPU_IS_WASM=1" ]
-  } else {
-    defines += [ "TARGET_CPU_IS_WASM=0" ]
-  }
 }
 
 config("debug_symbols") {

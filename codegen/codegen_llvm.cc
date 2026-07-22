@@ -26,9 +26,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
-#if TARGET_OS_IS_WASM
 #include <tint/tint.h>
-#endif
 
 #include <ast/constant_folder.h>
 #include "codegen_spirv.h"
@@ -164,11 +162,8 @@ CodeGenLLVM::CodeGenLLVM(llvm::LLVMContext*                 context,
   llvm::Type* voidType = llvm::Type::getVoidTy(*context_);
   ptrType_ = llvm::PointerType::get(*context_, 0);
   deleterType_ = llvm::FunctionType::get(voidType, { ptrType_ }, false);
-#if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
-  freeFunc_ = module_->getOrInsertFunction("_aligned_free", deleterType_);
-#else
-  freeFunc_ = module_->getOrInsertFunction("free", deleterType_);
-#endif
+  const char* freeFuncName = NeedsAlignedMalloc() ? "_aligned_free" : "free";
+  freeFunc_ = module_->getOrInsertFunction(freeFuncName, deleterType_);
   controlBlockType_ = ControlBlockType();
   typeList_ = new llvm::GlobalVariable(
       *module_, ptrType_, true, llvm::GlobalVariable::ExternalLinkage, nullptr, "_type_list");
@@ -589,23 +584,23 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
     spirv.insert(spirv.end(), codeGenSPIRV.decl().begin(), codeGenSPIRV.decl().end());
     spirv.insert(spirv.end(), codeGenSPIRV.GetBody().begin(), codeGenSPIRV.GetBody().end());
 
-#if TARGET_OS_IS_WASM
-    tint::spirv::reader::Options spirvOptions;
-    tint::Program                program = tint::spirv::reader::Read(spirv, spirvOptions);
-    if (!program.IsValid()) {
-      std::cerr << "Tint SPIR-V reader failure:\n" << program.Diagnostics() << "\n";
-      return;
+    if (module_->getTargetTriple().isWasm()) {
+      tint::spirv::reader::Options spirvOptions;
+      tint::Program                program = tint::spirv::reader::Read(spirv, spirvOptions);
+      if (!program.IsValid()) {
+        std::cerr << "Tint SPIR-V reader failure:\n" << program.Diagnostics() << "\n";
+        return;
+      }
+      tint::wgsl::writer::Options wgslOptions;
+      auto                        result = tint::wgsl::writer::Generate(program, wgslOptions);
+      if (result != tint::Success) {
+        std::cerr << "Tint WGSL writer failure:\n" << result.Failure() << "\n";
+        return;
+      }
+      method->wgsl = result.Get().wgsl;
+    } else {
+      method->spirv = spirv;
     }
-    tint::wgsl::writer::Options wgslOptions;
-    auto                        result = tint::wgsl::writer::Generate(program, wgslOptions);
-    if (result != tint::Success) {
-      std::cerr << "Tint WGSL writer failure:\n" << result.Failure() << "\n";
-      return;
-    }
-    method->wgsl = result.Get().wgsl;
-#else
-    method->spirv = spirv;
-#endif
     return;
   }
   if (method->modifiers & Method::Modifier::DeviceOnly) { return; }
@@ -632,26 +627,30 @@ void CodeGenLLVM::GenCodeForMethod(Method* method) {
 #endif
 }
 
+bool CodeGenLLVM::NeedsAlignedMalloc() const {
+  llvm::Triple targetTriple(module_->getTargetTriple());
+  return targetTriple.isOSWindows() && targetTriple.isArch32Bit();
+}
+
 llvm::Value* CodeGenLLVM::CreateMalloc(llvm::Type* type, llvm::Value* arraySize) {
   // TODO(senorblanco):  initialize this once, not every time
   std::vector<llvm::Type*> args;
   args.push_back(intType_);
-#if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
-  args.push_back(intType_);
-#endif
+  if (NeedsAlignedMalloc()) args.push_back(intType_);
   llvm::FunctionType* ft = llvm::FunctionType::get(ptrType_, args, false);
   llvm::Value*        indices[] = {arraySize ? arraySize : llvm::ConstantInt::get(intType_, 1)};
   llvm::Value*        nullPtr = llvm::ConstantPointerNull::get(ptrType_);
   llvm::Value*        size = builder_->CreateGEP(type, nullPtr, indices);
   llvm::Value*        sizeInt = builder_->CreatePtrToInt(size, intType_);
-#if TARGET_OS_IS_WIN && TARGET_CPU_IS_X86
-  llvm::FunctionCallee alignedMalloc = module_->getOrInsertFunction("_aligned_malloc", ft);
-  llvm::Value*         sixteen = llvm::ConstantInt::get(intType_, 16);
-  llvm::Value*         ptr = builder_->CreateCall(alignedMalloc, {sizeInt, sixteen});
-#else
-  llvm::FunctionCallee malloc = module_->getOrInsertFunction("malloc", ft);
-  llvm::Value*         ptr = builder_->CreateCall(malloc, sizeInt);
-#endif
+  llvm::Value*        ptr;
+  if (NeedsAlignedMalloc()) {
+    llvm::FunctionCallee alignedMalloc = module_->getOrInsertFunction("_aligned_malloc", ft);
+    llvm::Value*         sixteen = llvm::ConstantInt::get(intType_, 16);
+    ptr = builder_->CreateCall(alignedMalloc, {sizeInt, sixteen});
+  } else {
+    llvm::FunctionCallee malloc = module_->getOrInsertFunction("malloc", ft);
+    ptr = builder_->CreateCall(malloc, sizeInt);
+  }
   return builder_->CreateBitCast(ptr, ptrType_);
 }
 

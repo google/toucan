@@ -24,6 +24,7 @@ import tempfile
 argparser = argparse.ArgumentParser(description="Create an APK")
 argparser.add_argument('--target-name')
 argparser.add_argument('--target-cpu')
+argparser.add_argument('--target-abi')
 argparser.add_argument('--sdk-dir')
 argparser.add_argument('--keystore')
 argparser.add_argument('--source-lib')
@@ -32,6 +33,7 @@ args = vars(argparser.parse_args())
 
 target_name = args['target_name']
 target_cpu = args['target_cpu']
+target_abi = args['target_abi']
 android_sdk_dir = args['sdk_dir']
 source_lib = args['source_lib']
 keystore = args['keystore']
@@ -69,8 +71,11 @@ lib_dirs = {
   'x64' : 'x86_64'
 }
 
+if not target_abi:
+  target_abi = lib_dirs[target_cpu]
+
 apk_dir = tempfile.mkdtemp(prefix="toucan-apk-")
-apk_path = apk_dir + "/lib/" + lib_dirs[target_cpu] + "/"
+apk_path = apk_dir + "/lib/" + target_abi + "/"
 os.makedirs(apk_path)
 basename = os.path.basename(source_lib)
 dest_lib = apk_path + os.path.basename(source_lib)

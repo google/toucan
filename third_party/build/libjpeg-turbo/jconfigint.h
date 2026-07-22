@@ -25,7 +25,9 @@
 #define VERSION  "2.1.92"
 
 /* The size of `size_t', as computed by sizeof. */
-#if TARGET_OS_IS_WASM
+#ifdef __EMSCRIPTEN__
+#define SIZEOF_SIZE_T  4
+#elif defined(_MSC_VER) && !defined(_WIN64)
 #define SIZEOF_SIZE_T  4
 #else
 #define SIZEOF_SIZE_T  8
@@ -46,7 +48,7 @@
 #endif
 
 #if defined(_MSC_VER) && defined(HAVE_INTRIN_H)
-#if (SIZEOF_SIZE_T == 8)
+#if defined(_WIN64)
 #define HAVE_BITSCANFORWARD64
 #elif (SIZEOF_SIZE_T == 4)
 #define HAVE_BITSCANFORWARD

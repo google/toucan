@@ -49,14 +49,6 @@ else:
 
 os.makedirs(dest_os_path)
 
-if target_os == "mac":
-  dylibs = [
-    "libdawn_native.dylib",
-    "libdawn_proc.dylib",
-  ]
-  for dylib in dylibs:
-    shutil.copy2(dylib, dest_os_path + dylib)
-
 shutil.copy2(target_name, dest_os_path + target_name)
 
 assets_dir_name = tempfile.mkdtemp()

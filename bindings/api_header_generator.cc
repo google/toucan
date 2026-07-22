@@ -106,6 +106,11 @@ APIHeaderGenerator::APIHeaderGenerator(Stmts* stmts, TypeTable* types, std::ostr
 
 void APIHeaderGenerator::Run() {
   header_ << "#include <cstdint>\n";
+  header_ << "#ifdef _WIN32\n";
+  header_ << "#define TOUCAN_EXPORT __declspec(dllexport)\n";
+  header_ << "#else\n";
+  header_ << "#define TOUCAN_EXPORT\n";
+  header_ << "#endif\n";
   header_ << "extern \"C\" {\n";
   header_ << "namespace Toucan {\n\n";
   header_ << "class ClassType;\n";
@@ -243,9 +248,7 @@ Result APIHeaderGenerator::Visit(MethodDecl* node) {
   auto className = currentClassDecl_->GetName();
   bool isConstructor = node->GetID() == className;
   bool hasThisPtr = !(node->GetModifiers() & Method::Modifier::Static) && !isConstructor;
-#if TARGET_OS_IS_WIN
-  header_ << "__declspec(dllexport) ";
-#endif
+  header_ << "TOUCAN_EXPORT ";
   node->GetReturnType()->Accept(this);
   auto formalArgs = node->GetFormalArguments();
   currentMethodDecl_ = node;

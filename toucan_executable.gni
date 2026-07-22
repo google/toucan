@@ -34,10 +34,35 @@ template("toucan_objects") {
     args = [
       "./" + rebase_path(tc_executable, root_build_dir),
       "-o", rebase_path(target_out_dir, root_build_dir) + "/${outer_target}.o",
-      "-t", rebase_path(target_gen_dir, root_build_dir) + "/init_types_${outer_target}.cc",
+      "-i", rebase_path(target_gen_dir, root_build_dir) + "/init_types_${outer_target}.cc",
       "-I", "../..",
       "-I", "../../samples/include",
-    ] + rebase_path(sources, root_build_dir)
+    ]
+
+    if (is_wasm) {
+      args += [ "-t", "wasm32-unknown-unknown" ]
+    } else if (is_android) {
+      if (target_cpu == "arm64") {
+        args += [ "-t", "aarch64-linux-android" ]
+      } else if (target_cpu == "arm") {
+        args += [ "-t", "armv7a-linux-androideabi" ]
+      } else if (target_cpu == "x86") {
+        args += [ "-t", "x86_64-linux-android" ]
+      } else if (target_cpu == "x64") {
+        args += [ "-t", "i686-linux-android" ]
+      }
+    } else if (is_ios) {
+      if (target_cpu == "arm64") {
+        args += [ "-t", "arm64-apple-ios15.0" ]
+      } else if (target_cpu == "arm") {
+        args += [ "-t", "armv7-apple-ios15.0" ]
+      }
+    } else if (is_win) {
+      if (target_cpu == "x86") {
+        args += [ "-t", "i686-pc-windows-msvc" ]
+      }
+    }
+    args += rebase_path(sources, root_build_dir)
   }
 }
 
@@ -54,7 +79,7 @@ template("toucan_executable") {
       "//third_party/build/libjpeg-turbo",
       "//third_party/dawn/include/dawn:cpp_headers",
     ]
-    if (is_ios) {
+    if (is_ios || is_mac) {
       deps += [
         "//third_party/dawn/src/dawn:proc",
         "//third_party/dawn/src/dawn/native",

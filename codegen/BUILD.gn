@@ -15,9 +15,9 @@
 source_set("codegen") {
   deps = [
     "../ast:ast",
+    "//third_party/dawn/src/tint/api:api",
   ]
   if (target_os == "wasm") {
-    deps += [ "//third_party/dawn/src/tint/api:api" ]
     configs += [ "//third_party/dawn/src/tint:tint_public_config" ]
     public_deps = [ "//third_party/SPIRV-Tools:spvtools_val" ]
   }
