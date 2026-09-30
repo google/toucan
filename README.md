@@ -1,3 +1,9 @@
+# *** TOUCAN HAS MOVED ***
+
+The official Toucan repo is now https://github.com/toucanlang/toucan
+
+---
+
 # Toucan
 
 ## Overview
